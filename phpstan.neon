@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - app
+        - config
+        - database
+        - routes
+    excludePaths:
+        - docs
+    # No new baseline entries without a reviewer decision (oppam-code-standards).
+    reportUnmatchedIgnoredErrors: true

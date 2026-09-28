@@ -1,0 +1,15 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "declare_strict_types": true,
+        "final_class": true,
+        "ordered_imports": { "sort_algorithm": "alpha" },
+        "no_unused_imports": true,
+        "strict_comparison": true,
+        "void_return": true,
+        "fully_qualified_strict_types": true,
+        "global_namespace_import": { "import_classes": true, "import_constants": false, "import_functions": false }
+    },
+    "exclude": ["docs", "storage", "bootstrap/cache"],
+    "notPath": ["tests/Pest.php"]
+}

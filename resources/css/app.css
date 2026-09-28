@@ -1,0 +1,4 @@
+/*
+ * Entry stylesheet. P0.2 imports Bootstrap 5.3, the design tokens (tokens.css) and the
+ * template's style.css / responsive.css here — vendor first, ours last (template-notes.md).
+ */
