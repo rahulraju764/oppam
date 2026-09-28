@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 0 — Foundation
-**Next session:** P0.2 — Template assets & layouts
+**Next session:** P0.3 — Blade components & static public pages
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -16,7 +16,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Phase 0 — Foundation
 - [x] P0.1 Project bootstrap — 2026-09-27 (Windows + XAMPP; see decisions.md)
-- [ ] P0.2 Template assets & layouts
+- [x] P0.2 Template assets & layouts — 2026-09-28 (Swiper 12, self-hosted fonts, Dusk suite; see decisions.md)
 - [ ] P0.3 Blade components & static public pages
 - [ ] P0.4 Core schema, masters & seed data
 - [ ] P0.5 Admin auth, RBAC & audit (A01 + A12 core)

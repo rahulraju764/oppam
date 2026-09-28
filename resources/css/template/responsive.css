@@ -1,0 +1,3088 @@
+/*================ RESPONSIVE ================*/
+
+/* < !-- HOME SLIDER --> */
+
+@media only screen and (max-width: 991.98px) {
+
+    /* LOGIN — the visual column is hidden below lg, so the card is form-only. */
+    .login-form {
+        padding: 35px 25px;
+    }
+
+    .login-head h2 {
+        font-size: 22px;
+    }
+
+    .login-btn,
+    .login-btn-alt {
+        font-size: 14px;
+    }
+
+    .time-card {
+        padding: 0px 10px 6px 10px;
+        margin: 0px 0px 20px 0px;
+    }
+
+    /* Was a fixed 220px, but the column is col-md-3 — from 768–880px the viewport
+       makes that column narrower than 220px and the card overflowed it. */
+    .dashboard-sidebar {
+        width: 100%;
+    }
+
+    .time-card h4 {
+        font-size: 26px;
+    }
+
+    .content-title h2 {
+        font-size: 28px !important;
+    }
+
+    .sidebar-profile h3 {
+        font-size: 24px;
+    }
+
+    .sidebar-menu a {
+        font-size: 14px;
+    }
+
+    .upgrade-btn {
+        padding: 8px 18px !important;
+        font-size: 12px !important;
+    }
+
+    .membership-box p {
+        text-align: center;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+    .dashboard-sidebar {
+        display: none;
+    }
+
+    .dashboard-content {
+        /* margin-bottom: 60px; */
+    }
+
+    .time-card span {
+        font-size: 12px;
+    }
+
+    .time-card h4 {
+        font-size: 15px !important;
+        margin-top: 5px;
+    }
+
+    .time-card {
+        padding: 16px 18px;
+    }
+
+    .home-content {
+        padding: 40px 21px;
+    }
+
+    .content-title p {
+        font-size: 16px;
+    }
+
+    .content-title h2 {
+        font-size: 22px !important;
+    }
+
+    .sidebar-profile h3 {
+        font-size: 22px;
+    }
+
+    .view-btn {
+        font-size: 14px;
+        width: 160px;
+    }
+
+}
+
+@media only screen and (max-width: 575.98px) {
+
+    .view-btn {
+        margin: 0px 0px 0px 0px !important;
+    }
+
+    .content-header {
+        margin-bottom: 10px;
+    }
+
+    .content-title h2 {
+        font-size: 15px !important;
+        text-align: left;
+        margin-bottom: 5px;
+    }
+
+    .content-title p {
+        font-size: 13px !important;
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+    .sidebar-profile h3 {
+        font-size: 18px;
+    }
+
+    .sidebar-profile h4 {
+        font-size: 20px;
+    }
+
+    .time-card span {
+        font-size: 12px;
+    }
+
+    .time-card h4 {
+        font-size: 13px !important;
+    }
+
+    .content-btn {
+        margin-top: 20px;
+    }
+
+    .home-content {
+        padding: 30px 21px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+
+    .dashboard-sidebar {
+        display: none;
+    }
+
+    .content-title p {
+        font-size: 12px !important;
+        margin-bottom: 0px;
+
+    }
+
+    .time-card h4 {
+        font-size: 16px !important;
+    }
+
+    .profile-top h4 {
+        font-size: 16px;
+    }
+
+    .profile-top p {
+        font-size: 14px;
+    }
+
+    .profile-top span {
+        font-size: 12px;
+    }
+
+    .content-title h2 {
+        font-size: 14px !important;
+        margin-bottom: 5px;
+        text-align: left;
+    }
+
+    .content-header {
+        margin-bottom: 20px;
+    }
+
+    .view-btn {
+        margin: 0px !important;
+    }
+
+    .home-content {
+        padding: 20px 10px;
+    }
+
+    .time-card {
+        padding: 12px 8px;
+    }
+
+    /* .profile-card img had min-height: 100px here, which fought the card's
+       1:1 aspect-ratio. The ratio handles the height now. */
+
+    .time-card h4 {
+        font-size: 12px !important;
+    }
+
+    .time-card span {
+        font-size: 11px;
+    }
+
+    .card-details p {
+        font-size: 13px !important;
+        text-align: left;
+    }
+
+    .card-details h4 {
+        font-size: 14px !important;
+    }
+
+    .card-details p {
+        font-size: 14px;
+    }
+
+    .view-btn {
+        padding: 10px 28px;
+        font-size: 12px;
+        width: 150px;
+    }
+
+}
+
+
+/*================ PROFILE CREATION ================*/
+
+@media only screen and (max-width: 767.98px) {
+
+    .register-wrapper {
+        flex-direction: column;
+    }
+
+    .register-left,
+    .register-right {
+        width: 100%;
+        padding: 30px 20px;
+        /* margin-bottom: 50px; */
+    }
+
+    .profile-title {
+        font-size: 28px;
+    }
+
+    .profile-subtitle {
+        font-size: 14px;
+        margin-bottom: 25px;
+    }
+
+    .dashboard-title {
+        margin-bottom: 25px;
+    }
+
+    .dashboard-title h3 {
+        font-size: 24px;
+    }
+
+    .profile-steps {
+        gap: 12px;
+    }
+
+    .step-item {
+        padding: 12px;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+    }
+
+    .btncls .view-btn {
+        width: 100%;
+    }
+
+}
+
+@media only screen and (max-width: 400px) {
+    .profile-title {
+        font-size: 26px;
+    }
+}
+
+@media only screen and (max-width: 360px) {
+    .profile-title {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+
+    .dashboard-title h3 {
+        font-size: 22px;
+    }
+
+    .step-item {
+        padding: 10px;
+    }
+
+    .step-item h4 {
+        font-size: 15px;
+    }
+
+    .step-item p {
+        font-size: 12px;
+    }
+
+/* <!-- partner Preference section --> */
+    .preference-heading {
+        font-size: 16px;
+    }
+}
+
+/*================ DETAILS PAGE ================*/
+
+@media only screen and (max-width: 991.98px) {
+    .success-stories p {
+        line-height: 17px;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+
+    .success-stories h6 {
+        bottom: 44px;
+    }
+
+    .Success-one .new-rw {
+        text-align: center;
+    }
+
+    .success-one-pgh {
+        text-align: center;
+        margin-top: 15px;
+    }
+
+    .success-one-pgh li {
+        list-style: none;
+    }
+
+    .dtl-personal-info {
+        margin-bottom: 25px;
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+    .success-stories h6 {
+        bottom: 44px;
+    }
+
+    /* Phones drop the 60px indent that lines the detail rows up under the
+       .basic-info-hd icon, and the 400px table cap. Together they made the
+       label/value table wider than a 360px screen — the page scrolled
+       sideways. Full width, flush left. */
+    .dtl-sec {
+        padding-left: 0;
+    }
+
+    .dtl-profile {
+        padding-left: 0;
+    }
+
+    .tb-basic-info {
+        max-width: none;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .id-number {
+        text-align: center;
+    }
+
+    .id-img {
+        text-align: center;
+    }
+
+    .id-details {
+        padding: 0px 65px;
+    }
+
+    .btn-link {
+        font-size: 14px;
+    }
+
+    .dtl-basic-info h6 {
+        font-size: 16px;
+    }
+
+}
+
+@media only screen and (max-width: 360px) {
+    .success-stories h6 {
+        margin: 30px 0;
+    }
+
+    .dtl-basic-info i {
+        width: 40px;
+        font-size: 16px;
+        line-height: 40px;
+        height: 40px;
+        margin: 0px 2px 0px 0px;
+    }
+
+    .id-details {
+        padding: 0px 59px;
+    }
+
+    .id-details h6 {
+        font-size: 16px;
+    }
+
+/*================ EDUCATION PAGE ================*/
+    .form-control {
+        font-size: 13px;
+        padding: 10px;
+    }
+}
+
+
+/*================ PRIVACY PAGE ================*/
+
+@media only screen and (max-width: 575.98px) {
+    .privacy-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .privacy-head h3,
+    .privacy-head p {
+        margin-bottom: 0;
+    }
+
+    .privacy-head p {
+        text-align: right;
+        font-size: 14px;
+    }
+
+    .t-head {
+        font-size: 18px;
+    }
+}
+
+@media only screen and (max-width: 360px) {
+    .privacy-section .privacy-head h3 {
+        font-size: 16px;
+    }
+
+}
+
+/* <!-- =========================
+     SLIDER SECTION
+========================= --> */
+@media only screen and (max-width: 991.98px) {
+    .content-title h2 {
+        font-size: 40px;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+    .time-card h4 {
+        font-size: 26px;
+    }
+
+    .time-card {
+        padding: 8px 15px;
+    }
+
+    .content-title h2 {
+        font-size: 32px;
+    }
+
+    .card-details h4 {
+        font-size: 18px;
+    }
+
+    .card-details p {
+        font-size: 14px;
+        text-align: left;
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+    .content-title h2 {
+        font-size: 25px;
+    }
+
+    .time-card {
+        padding: 10px 9px;
+    }
+
+    .content-title p {
+        font-size: 16px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .time-card h4 {
+        font-size: 20px;
+    }
+
+    .time-card {
+        font-size: 12px;
+    }
+
+    .time-card {
+        padding: 10px 7px;
+    }
+
+    .content-title h2 {
+        font-size: 18px;
+    }
+
+    .content-title p {
+        font-size: 14px;
+    }
+
+    .view-btn {
+        padding: 8px 28px;
+        font-size: 14px;
+    }
+}
+
+@media only screen and (max-width: 360px) {
+    .card-details p {
+        font-size: 10px !important;
+    }
+
+    .card-details h4 {
+        font-size: 12px !important;
+        margin-bottom: 3px;
+    }
+
+    .view-btn {
+        font-size: 12px;
+        width: 130px;
+    }
+
+    .content-title h2 {
+        font-size: 12px !important;
+    }
+
+    .time-card {
+        padding: 7px 7px;
+    }
+
+    .time-card span {
+        font-size: 10px;
+    }
+
+    .time-card h4 {
+        font-size: 10px !important;
+    }
+
+    .content-header {
+        margin-bottom: 15px;
+    }
+
+    .content-title p {
+        font-size: 10px !important;
+    }
+}
+
+/* <!-- =========================
+     SLIDER SECTION
+========================= --> */
+/* --------------register------------------ */
+/* The form used to be absolutely positioned against the SECTION (left:30px), so it hung over
+   the viewport edge and every breakpoint below dragged it back with a different `left:`
+   percentage — 25%, 18%, 8%, 1.5%, 0% — while the banner image was grown to 900px tall to
+   stop the form spilling out of it. All of that is gone: below 992px the layer goes static
+   and the form simply flows under the carousel. */
+@media only screen and (max-width: 991.98px) {
+
+    /* The form no longer sits ON the banner here, so the banner doesn't have to be tall
+       enough to hold it. */
+    .basement-images img {
+        height: 420px;
+        min-height: 0;
+    }
+
+    .hero-form-layer {
+        position: static;
+        pointer-events: auto;
+        padding: var(--space-8) 0;
+        background: var(--bg-mist);
+    }
+
+    .hero-form-layer>.container {
+        justify-content: center;
+    }
+
+    .register-form {
+        max-width: 480px;
+    }
+
+    .basement-details {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+
+    /* The banner sources are 1920x700 — a 2.74:1 landscape. `object-fit: cover`
+       into a 390x420 box keeps only ~a third of their width, so a phone got a
+       severe close-up crop of whatever happened to be centred. Shorten the box
+       instead: at 260px roughly half the frame survives and the couple still
+       reads as a couple. Don't take it much lower — the slide thumbnails and
+       arrows sit inside this height. */
+    .basement-images img {
+        height: 260px;
+    }
+}
+
+@media only screen and (max-width: 500px) {
+    .register-form {
+        padding: var(--space-5);
+    }
+}
+
+/* --------------register------------------ */
+/* <!-- =========================
+        FOOTER AREA
+========================= --> */
+
+@media only screen and (max-width: 991.98px) {
+
+    .footer-bg-two {
+        padding-top: 50px;
+    }
+
+    .footer-widget h3 {
+        font-size: 17px;
+        margin-bottom: 16px;
+    }
+}
+
+/* Below 576px the columns are all full width, so centre the whole footer —
+   a single left-aligned column of links reads badly on a narrow screen. */
+@media only screen and (max-width: 575.98px) {
+
+    .footer-widget,
+    .footer-desc {
+        text-align: center;
+    }
+
+    .footer-desc {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .footer-widget h3::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .social_media,
+    .office-icon-text {
+        justify-content: center;
+    }
+
+    .contact-links,
+    .footer-contact address {
+        text-align: left;
+    }
+
+    .fot-list li a:hover {
+        transform: none;
+    }
+
+    /* .footer-menu is gone — it was a duplicate of the Help & Support column
+       and it overflowed. The credit line takes its size instead. */
+    .copyright-text,
+    .footer-credit {
+        font-size: 13px;
+    }
+}
+
+/* <!-- MOBILE FOOTER --> */
+
+/* DESKTOP HIDE */
+
+@media only screen and (min-width: 992px) {
+    .mobile-footer {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+    .package-section .package-box {
+        margin: 30px 0px 85px 0px;
+    }
+}
+
+@media only screen and (max-width: 360px) {
+    .mobile-footer a i {
+        font-size: 18px;
+    }
+}
+
+
+/* Moved out of style.css - viewport rules belong in this file. */
+/* WIZARD PREV / NEXT in the tab bar — three text blocks do not fit a 360px row,
+   the same reason .page-nav sheds its title and step labels at 768px. Here the
+   step title goes first, then the ": Education" destination tail, leaving two
+   plain Prev / Next chips. */
+@media (max-width: 420px) {
+  .wizard-steps-title {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .wizard-step-to {
+    display: none;
+  }
+}
+
+/* The fixed .mobile-footer tab bar sits on top of the page on member pages —
+   without this the copyright line ends up underneath it. */
+@media (max-width: 991.98px) {
+  /* --tab-bar-h is measured from the bar in custom.js, so this tracks the bar
+     when it grows a second row (the wizard Prev/Next strip). The 90px fallback
+     is the bar's usual one-row height if JS hasn't run. */
+  .footer-bg-two {
+    padding-bottom: calc(var(--tab-bar-h, 90px) + var(--space-3));
+  }
+}
+
+@media (min-width: 992px) {
+  .copyright-area {
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+/* <!-- MOBILE TOP HEADER --> */
+
+/* DESKTOP HIDE */
+
+@media only screen and (max-width: 991.98px) {
+    .mobile-top-header {
+        display: block;
+    }
+
+    /* Member pages swap the logo for the avatar + name .mobile-header, so the
+       logo is hidden THERE only. Public pages have no mobile header — hiding it
+       for them left the bar with nothing but a toggler. */
+    .navbar-member .nav-logo {
+        display: none;
+    }
+
+    /* Takes over the space the hidden logo left, between brand and toggler. */
+    .mobile-header {
+        flex: 1;
+        margin-right: 12px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+
+    .mobile-left img {
+        width: 38px;
+        height: 38px;
+    }
+
+    .mobile-right {
+        gap: 6px;
+    }
+
+    .mobile-right a,
+    .mobile-right button {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    /* Not enough width for name + two actions + toggler — drop the upgrade shortcut,
+       it is still one tap away in the menu. */
+    .mobile-upgrade {
+        display: none;
+    }
+}
+
+/* -------------navbar---------------- */
+@media only screen and (max-width: 991.98px) {
+
+    .nav-logo img {
+        width: 100px;
+    }
+
+    /* Desktop's scrolled bar is rgba(255,255,255,.88) + backdrop blur — a thin
+       strip where see-through reads as depth. On mobile the SAME element also
+       carries the open .navbar-collapse panel, which is tall enough to sit over
+       real page content: the page shows through the menu in patches, and where
+       the blur meets an opaque child it looks like the header is two colours.
+       Go fully opaque here. Also drop the blur — backdrop-filter creates a
+       stacking context, so the panel's own children get flattened into it. */
+    .sticky-nav.menu-fixed {
+        background: var(--color-default);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    /* ---- OFF-CANVAS NAV DRAWER ----------------------------------------
+       The menu used to drop INSIDE the bar as an inline panel: it pushed the
+       page, it could grow taller than the viewport, and it rode along with the
+       sticky bar's transform. It is now a right-edge drawer over a scrim.
+
+       position:fixed works from here even though the markup sits inside
+       .sticky-nav, because the bar only takes a transform in its .nav-hidden
+       state and custom.js never applies that while the drawer is open — and
+       the mobile rule above already drops the backdrop-filter, which would
+       otherwise create a containing block and trap the drawer in the bar.
+
+       That only ever covered the drawer while it is OPEN, and the CLOSED
+       drawer is why the mobile tab bar used to break on scroll. The fix is
+       NOT here — custom.js now moves the drawer out of .sticky-nav entirely
+       below 992px (see "PORTAL THE DRAWER" in the NAV DRAWER block), so it
+       can never be trapped in the first place. Do not move it back into the
+       bar, and do not try to solve it in CSS: overflow-x:clip on html does
+       not stop Chrome growing the layout viewport for a trapped fixed box. */
+    .navbar-collapse {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(340px, 86vw);
+        /* Above .mobile-footer (10001) and its own scrim (10002), same as
+           .profile-drawer. At --z-dropdown (9999) the tab bar punched through
+           the open drawer and painted a SECOND, different menu across its
+           bottom links. The drawer is modal: it covers the bar, and the scrim
+           dims it. */
+        z-index: 10003;
+        background: var(--color-default);
+        box-shadow: var(--shadow-lg);
+        /* No top padding: .nav-drawer-head owns it, so the head can sit flush
+           at top:0 as a sticky bar with nothing scrolling into a gap above it. */
+        padding: 0 var(--space-5);
+        /* Slid out of view, not display:none — a hidden element cannot animate.
+           visibility keeps it out of the tab order and off the pointer while closed. */
+        transform: translateX(100%);
+        visibility: hidden;
+        transition: transform var(--transition), visibility var(--transition);
+        overflow-y: auto;
+        /* Keep the scroll gesture inside the drawer; without it, dragging past
+           the end chains to the page and the sticky bar jumps. */
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        /* The drawer now sits ABOVE the tab bar, so it no longer has to clear
+           90px of it — just the home-indicator inset plus normal breathing room
+           under the last link (Logout). */
+        padding-bottom: calc(var(--space-7) + env(safe-area-inset-bottom));
+    }
+
+    .navbar-collapse.open {
+        transform: none;
+        visibility: visible;
+    }
+
+    .nav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .45);
+        /* One step under the drawer and one over .mobile-footer (10001), so the
+           tab bar is dimmed with the rest of the page instead of staying lit in
+           front of a modal drawer. */
+        z-index: 10002;
+        opacity: 0;
+        transition: opacity var(--transition);
+    }
+
+    .nav-backdrop.open {
+        opacity: 1;
+    }
+
+    /* The JS un-hides it a frame before fading in, and re-hides after fading
+       out. Without this the transparent scrim would sit over the whole page
+       eating taps while the menu is closed. */
+    .nav-backdrop[hidden] {
+        display: none;
+    }
+
+    /* The page must not scroll behind the open drawer. */
+    body.nav-open {
+        overflow: hidden;
+    }
+
+    /* ---- drawer chrome ---- */
+
+    /* STICKY. The member drawer is taller than a phone viewport (identity card +
+       six primary rows + the account block and its membership box), so the head
+       used to scroll away with everything else — and with it the only visible way
+       out. Escape is not a gesture on a phone and the scrim is a ~50px strip at
+       86vw, so a member who scrolled to Logout had no obvious close.
+
+       It spans the full drawer width (negative margins cancelling the drawer's
+       side padding) and carries an opaque background: at the drawer's own padding
+       width, rows would scroll past visibly on both sides of it. */
+    .nav-drawer-head {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+        margin: 0 calc(var(--space-5) * -1);
+        /* Top padding lives here rather than on the drawer — plus the notch
+           inset, which the drawer's padding-bottom already accounts for at the
+           other end. */
+        padding: calc(var(--space-5) + env(safe-area-inset-top)) var(--space-5) var(--space-4);
+        background: var(--color-default);
+        border-bottom: var(--border-hair);
+    }
+
+    .nav-drawer-logo {
+        width: 110px;
+        /* The tag carries the file's real height (301) to reserve the box. Setting
+           only width in CSS leaves that attribute driving height, so the logo
+           renders 110x301 — stretched. Both axes must be overridden together. */
+        height: auto;
+    }
+
+    .nav-drawer-close {
+        border: none;
+        background: var(--color-back);
+        color: var(--color-bltxt);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-circle);
+        font-size: 16px;
+        line-height: 1;
+        flex: 0 0 auto;
+        transition: var(--transition);
+    }
+
+    .nav-drawer-close:hover,
+    .nav-drawer-close:focus-visible {
+        background: var(--color-primary);
+        color: var(--color-default);
+    }
+
+    /* Identity card. The .mobile-header avatar in the bar is behind the drawer
+       while it is open, so this is not a second copy on screen. */
+    .nav-drawer-user {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        margin-top: var(--space-5);
+        padding: var(--space-4);
+        border-radius: var(--radius-md);
+        background: var(--bg-rose);
+        text-decoration: none;
+    }
+
+    .nav-drawer-user img {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius-circle);
+        object-fit: cover;
+        flex: 0 0 auto;
+    }
+
+    .nav-drawer-user-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .nav-drawer-user-info strong {
+        font-size: var(--text-sm);
+        color: var(--color-black);
+        font-weight: var(--fw-semibold);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .nav-drawer-user-info .profile-id {
+        font-size: var(--text-xs);
+        color: var(--color-gr-dark);
+        margin: 0;
+    }
+
+    .nav-drawer-user .chip {
+        margin-left: auto;
+        flex: 0 0 auto;
+    }
+
+    /* Section kickers. "Account" is generated rather than marked up so the
+       account block keeps its single desktop structure. */
+    .nav-drawer-label,
+    .menus .profile-dropdown::before {
+        display: block;
+        font-size: var(--text-xs);
+        font-weight: var(--fw-semibold);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--color-gr-dark);
+        margin: var(--space-6) 0 var(--space-2);
+    }
+
+    .menus .profile-dropdown::before {
+        content: "Account";
+    }
+
+    /* ---- drawer links ---- */
+
+    .menus {
+        align-items: stretch;
+        gap: 0;
+    }
+
+    /* Each item is a flex ROW on desktop, which shrink-wraps the link to its
+       own text — so the active/hover pill stopped at the end of the label
+       while the Register Free button below it ran the full width. In a
+       stacked drawer every row is a full-width band. */
+    .menus .nav-item {
+        display: block;
+    }
+
+    .menus .nav-item .head-link {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        padding: 12px var(--space-4);
+        border-radius: var(--radius-md);
+        font-size: var(--text-sm);
+    }
+
+    /* Icon chip, so the labels line up on a common left edge whatever the
+       glyph width — Font Awesome's icons are not monospaced. */
+    .menus .nav-item .head-link i {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        border-radius: var(--radius-sm);
+        background: var(--color-back);
+        color: var(--color-gr-dark);
+        font-size: 15px;
+        margin: 0;
+        transition: var(--transition);
+    }
+
+    .menus .nav-item .head-link.active,
+    .menus .nav-item .head-link:hover {
+        background: var(--bg-rose);
+        color: var(--color-primary);
+    }
+
+    .menus .nav-item .head-link.active i,
+    .menus .nav-item .head-link:hover i {
+        background: var(--color-primary);
+        color: var(--color-default);
+    }
+
+    /* Matches stays a dropdown here, as it is on desktop — it just expands in
+       place instead of floating. Bootstrap's own dropdown JS is detached below
+       992px (see custom.js); the .open class is ours. */
+    /* The label takes the slack so the caret is pinned to the right edge of the
+       row rather than trailing the word (margin-left:auto alone loses to the
+       label's own sizing). */
+    .menus .nav-item .head-link>span {
+        flex: 1 1 auto;
+    }
+
+    /* The Matches toggle is a <button>, and a button shrink-wraps its content even
+       as a flex container — it does not fill its block parent the way the <a>
+       siblings do. Without this the row's active pill and its tap target stop at
+       the end of the word while every other row spans the drawer. */
+    .menus button.head-link {
+        width: 100%;
+    }
+
+    .menus .dropdown-toggle::after {
+        margin-left: auto;
+        border: 0;
+        content: "\f107";
+        /* fa-angle-down */
+        font: normal normal normal 16px/1 FontAwesome;
+        color: var(--color-gr-dark);
+        transition: transform var(--transition);
+    }
+
+    .menus .dropdown.open>.dropdown-toggle::after {
+        transform: rotate(180deg);
+    }
+
+    .menus .nav-dropdown,
+    .menus .dropdown.show .nav-dropdown {
+        display: block;
+        position: static;
+        float: none;
+        width: 100%;
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+        padding: 0 0 0 46px;
+        margin: 0;
+        /* Collapsed by default. max-height rather than display:none so the
+           expand/collapse animates; the cap only has to exceed the real height
+           of the three items (~120px) — and not by much. max-height animates
+           linearly across the whole declared range, so a cap far above the real
+           height spends most of the duration travelling through empty space:
+           the open snaps and the close hangs before anything moves. */
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height var(--transition);
+    }
+
+    .menus .dropdown.open .nav-dropdown {
+        max-height: 180px;
+    }
+
+    .menus .nav-dropdown .dropdown-item {
+        padding: 9px var(--space-3);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
+    }
+
+    .menus .nav-cta {
+        margin: var(--space-5) 0 0 0;
+    }
+
+    .menus .nav-cta .upgrade-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* The account block is the last section of the drawer — flat and always
+       open (see below), so it stacks rather than floating over the page. */
+    .menus .profile-dropdown {
+        /* It is a flex ROW on desktop (avatar + caret). Left as flex here, the
+           generated "Account" kicker becomes a sibling column and shoves the
+           whole account block off to the right. */
+        display: block;
+        margin-left: 0;
+        padding-left: 0;
+    }
+
+    /* Identity already lives in .mobile-header at the top of the bar, so the
+       avatar toggle + profile-top card here would repeat it a second and third
+       time — and the click-toggle nested inside the already-open hamburger read
+       as a broken dropdown-in-a-dropdown. Hide both and let the account links
+       render flat and always-open (the .active toggle no longer gates them). */
+    .profile-toggle,
+    .profile-top {
+        display: none;
+    }
+
+    /* Flex only to reorder — the children are block-level either way, so this
+       changes nothing else. The membership box is authored FIRST (it leads the
+       desktop dropdown, where it is the whole point of opening it), but in the
+       drawer that put a promo panel directly under the "Account" kicker and
+       pushed My Profile / Logout a full screen down. The kicker should label the
+       account links; the upsell tails the section. */
+    .profile-dropdown-content,
+    .profile-dropdown.active .profile-dropdown-content {
+        display: flex;
+        flex-direction: column;
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        /* The generated "Account" kicker above now does the separating that a
+           border-top used to, so this is flush with the rest of the drawer. */
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .profile-dropdown-content .profile-links {
+        order: 1;
+    }
+
+    /* Align the account links to the SAME label edge as the primary rows above:
+       row padding + icon box + gap must total the primary row's 66px
+       (16 + 34 + 16). Desktop's 8 + 18 + 12 = 38px left the two groups of links
+       on two different left edges in one narrow column, which read as two
+       unrelated menus. The icons stay BARE — no rose chip — because this is the
+       secondary section and six more chipped 58px rows would add a screenful. */
+    .profile-dropdown-content .profile-links a {
+        gap: var(--space-4);
+        padding: 10px var(--space-4);
+        border-radius: var(--radius-md);
+    }
+
+    .profile-dropdown-content .profile-links a i {
+        width: 34px;
+        text-align: center;
+        flex: 0 0 auto;
+    }
+
+    .profile-dropdown-content .membership-box {
+        order: 2;
+    }
+
+    /* Logout is the one destructive action in the drawer — mark it. */
+    .profile-links .profile-logout,
+    .profile-links .profile-logout i {
+        color: var(--color-primary);
+    }
+
+    /* It now tails the account links (order: 2 above) rather than leading them,
+       so it needs the gap back: at 8px the upsell crowded Logout and read as a
+       sixth row of the list instead of a separate panel. */
+    .profile-dropdown-content .membership-box {
+        margin-top: var(--space-5);
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .mobile-user-info h4 {
+        font-size: 15px;
+    }
+
+    /* The toggler is a fixed 44px box (style.css) — it does not need shrinking
+       at 400px, but the drawer should take nearly the whole screen there. */
+    .navbar-collapse {
+        width: min(340px, 92vw);
+    }
+}
+
+
+@media only screen and (max-width: 767.98px) {
+    .all-matches-list {
+        justify-content: start;
+    }
+
+    .arrow-icon {
+        margin-left: auto;
+    }
+
+    .profile-icons-m {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+
+    .service-img {
+        width: 100% !important;
+    }
+}
+
+
+@media only screen and (max-width: 767.98px) {
+    .side-bar {
+        margin: 0px 0px 25px 0px;
+    }
+
+    .pf-tt {
+        text-align: center
+    }
+}
+
+/* .profile-list ul li::after {
+        display: none;
+    } */
+
+
+@media only screen and (max-width: 320px) {
+    .profiles {
+        padding: 20px 0px 20px 0px !important;
+    }
+}
+
+
+/* Moved out of style.css - viewport rules belong in this file. */
+/* THE RAIL INTEREST CARDS — centred contents.
+   Both cards get this: Interest Received (.interest-parent, my-matches.php) and
+   the "She is Interested" widget (.success-one, search.php / details.php). They
+   share every inner class, and they sit in the same rail — the widget used to
+   opt OUT of this block and read as a different component beside it.
+   Desktop-only on purpose: below 992px the cards are deliberately laid out
+   photo-beside-details, left-aligned (see the "MOBILE — my-matches.php" block at
+   the end of responsive.css). The header keeps its red bar (+ pending chip, where
+   the card has one). */
+@media only screen and (min-width: 992px) {
+
+  /* Vertical rhythm is tighter than the left-aligned version: stacking the photo
+     ABOVE the details turns what used to be horizontal space into height, so the
+     gaps between the blocks are pulled to 8/12px. */
+  .interest-parent .success-one-head,
+  .success-one .success-one-head {
+    margin-bottom: var(--space-3);
+  }
+
+  .interest-parent .success-detail,
+  .success-one .success-detail {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-2);
+    padding-bottom: var(--space-3);
+  }
+
+  /* The photo is the biggest single block in the stack. 96px beside the text was
+     right; centred on its own row it dominates the card. */
+  .interest-parent .success-image img,
+  .success-one .success-image img {
+    width: 84px;
+    height: 84px;
+  }
+
+  .interest-parent .success-one-pgh,
+  .success-one .success-one-pgh {
+    margin: 0;                /* the 16px left offset only makes sense beside the photo */
+    text-align: center;
+  }
+
+  /* ID and stats run as ONE meta line — "V2315778 · 26 yrs, 5 ft" — instead of two
+     stacked lines. They are siblings (<p> + <ul>) with no wrapper, so they are
+     inlined rather than flexed, and the parent's text-align centres the pair. */
+  .interest-parent .success-one-pgh .pf-id,
+  .interest-parent .success-one-pgh .dt-list,
+  .success-one .success-one-pgh .pf-id,
+  .success-one .success-one-pgh .dt-list {
+    display: inline;
+    padding-left: 0;          /* a centred <ul> is still carrying the UA list indent */
+    margin: 0;
+  }
+
+  .interest-parent .success-one-pgh .dt-list li,
+  .success-one .success-one-pgh .dt-list li {
+    display: inline;
+  }
+
+  /* The separator sits on ::after of the item BEFORE it, not on ::before of the
+     one after. This rail is a col-lg-3, so the meta line wraps — and a ::before
+     dot then opened the wrapped line with an orphaned "·". :not(:last-child) is
+     what still keeps a dot off a lone ID: the ID is only followed by one while a
+     <ul> actually follows it. The widget's list has TWO items ("24 yrs, 5ft 4in" /
+     "Thrissur"), so they take the same dot between them. */
+  .interest-parent .success-one-pgh .pf-id:not(:last-child)::after,
+  .success-one .success-one-pgh .pf-id:not(:last-child)::after,
+  .success-one .success-one-pgh .dt-list li:not(:last-child)::after {
+    content: "·";
+    margin: 0 6px;
+    color: var(--color-gr);
+  }
+
+  .interest-parent .my-intrest-btn,
+  .interest-parent .interest-btn,
+  .success-one .success-btn {
+    text-align: center;
+  }
+
+  .interest-parent .my-intrest-btn p {
+    margin-bottom: var(--space-3);
+  }
+
+  .interest-parent .interest-btn {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+  }
+
+  /* .yes-btn/.no-btn carry an 8px RIGHT margin each. Left-aligned that was
+     invisible; centred, the trailing one shifts the pair 4px off centre. */
+  .interest-parent .my-intrest-btn .no-btn {
+    margin-right: 0;
+  }
+
+  /* The card's own bottom inset, under the "Yes All" row. */
+  .interest-parent {
+    padding-bottom: var(--space-4);
+  }
+
+}
+
+/* ---------------------interest-------------------------- */
+/* --------------------------matches-------------------------------- */
+@media only screen and (max-width: 991.98px) {
+
+    /* The .pf-dt-m::before percentage divider used to be re-nudged here (13%)
+       and at 768px (25%). It now hangs off .pf-dt-m span in style.css and needs
+       no per-breakpoint correction. */
+    .side-bar {
+        padding: 25px 15px 2px 15px;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+
+    /* Stacked: only the bottom margin applies. The side margin has to go or the
+       centred photo sits 7.5px left of centre. */
+    .profile-img {
+        margin-right: 0;
+    }
+
+    .all-matches {
+        margin: 0px 0px 20px 0px;
+
+    }
+
+    .profile-link h2 {
+        text-align: center;
+    }
+
+    .profile-list {
+        align-items: center;
+        margin: 0px 0px 10px 0px;
+    }
+
+    .profiles {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 0px 0px 0px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .all-matches-list p {
+        text-align: left;
+    }
+}
+
+@media only screen and (max-width: 320px) {
+    .icon-parent {
+        display: none;
+    }
+}
+
+/* A `@media (min-width: 320px) and (max-width: 365px)` block used to restore `.intst-parent { display:flex !important }` here — it existed ONLY to undo a bare
+   `.intst-parent { display:block }` in style.css that had killed the flex site-wide.
+   That rule is gone, so .intst-parent is flex at every width and this 45px-wide
+   patch is unnecessary. Removed with it. */
+
+
+/* Moved out of style.css - viewport rules belong in this file. */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+
+  .match-results .profile-img img {
+    width: 140px;
+  }
+
+  .match-results .profile-tittle {
+    padding-right: 85px;
+  }
+
+  .match-results .profile-icons-m {
+    top: 16px;
+    right: 16px;
+  }
+
+  /* Title + sort will not sit side by side in a tight column. */
+  .match-results .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+}
+
+@media (min-width: 1400px) {
+  .match-results .profile-tittle {
+    padding-right: 100px;
+  }
+}
+
+/* The left rail STAYS PUT while the centre column and the ads rail scroll past
+   it — the nav/filters are needed at any scroll depth, and the centre result
+   list runs to hundreds of rows, so a rail that scrolled away left a tall
+   column of dead white space.
+   Same pattern as .filter-card / .search-rail: sticky (not fixed, which would
+   drop it out of flow and collapse the column), offset by --offset-sticky so it
+   clears the sticky navbar. Desktop only — below 992px the rails stack above
+   the content and there is nothing to stick to.
+   `height: fit-content` above is what makes this work: the column stretches to
+   the row's full height, so the card must NOT, or it would have no room to
+   travel within its own container. */
+@media (min-width: 992px) {
+  /* .dashboard-row sets align-items: flex-start, which shrink-wraps every column
+     to its own content height. A sticky child can only travel inside its
+     PARENT's box, so a shrink-wrapped column gives it zero travel and sticky
+     silently does nothing. Stretch the left column back to the row's full
+     height — it's an empty grid cell, so nothing moves visually. */
+  .dashboard-row > [class*="col-lg-3"]:first-child {
+    align-self: stretch;
+  }
+
+  .dashboard-sidebar,
+  .side-bar,
+  .filter-card {
+    position: sticky;
+    top: var(--offset-sticky);
+    /* Deliberately NO max-height/overflow here: capping the rail to the viewport
+       gives it its own scrollbar, which is visual noise next to the page's. The
+       rails are short menus, so they fit. If one ever grows past the viewport
+       its tail will be unreachable while pinned — shorten the menu rather than
+       reintroducing an inner scroll area. */
+  }
+
+  /* A rail with MORE THAN ONE card in it — my-matches.php stacks the nav, the
+     Interest Received card and the She is Interested card. Sticking only the top
+     card makes it a positioned element while its siblings stay in flow, so it
+     scrolls OVER them and paints on top. Stick the whole stack instead and
+     cancel the nav's own rule inside it — the rail then travels as one unit.
+
+     Top-stuck at --offset-sticky, same as every other rail on the site, so it
+     pins immediately rather than only after you have scrolled past it.
+     MEASURED: the stack is ~906px at 1440 wide, so on a ~900px viewport its last
+     ~110px (the Connect button on the She is Interested card) sits below the fold
+     while pinned. That is the accepted trade for pinning on contact. If a fourth
+     card is ever added to this rail, that tail grows — drop a card or move one to
+     the centre column rather than capping the height with an inner scrollbar.
+
+     `height: fit-content` for the same reason as the cards above: the column is
+     stretched to the row height by the align-self rule, and a full-height child
+     would have no room to travel. */
+  .rail-stack {
+    position: sticky;
+    top: var(--offset-sticky);
+    height: fit-content;
+  }
+
+  .rail-stack .side-bar {
+    position: static;
+  }
+}
+
+/* --------------------------matches-------------------------------- */
+/* ---------profile----------- */
+@media only screen and (max-width: 991.98px) {
+
+    /* Floating button (bottom-left, cleared above the mobile tab bar) that opens
+       the My Matches drawer. See the PROFILE.PHP block in custom.js. */
+    .profile-fab {
+        position: fixed;
+        /* Right edge: the card CTAs (Yes/No, Connect) sit on the left of their
+           rows, and a left-hand FAB landed straight on top of them. */
+        right: var(--space-4);
+        bottom: calc(90px + var(--space-4));
+        z-index: var(--z-sticky);
+        /* Extended FAB: a pill sized by its label, not a fixed circle. min-width
+           keeps the collapsed state (label hidden on scroll down) at the same 60px
+           thumb target it had when it was icon-only. */
+        min-width: 60px;
+        height: 60px;
+        padding: 0 var(--space-5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        border: 0;
+        border-radius: var(--radius-pill);
+        /* Black, not --color-primary. The FAB floats over result cards that are
+           themselves full of brand-red CTAs, so a red button read as one more card
+           action instead of page chrome. --shadow-brand is a red-tinted glow, so it
+           goes with it — a neutral drop shadow replaces it. */
+        background: var(--color-bltxt);
+        color: #fff;
+        font-size: 22px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+        cursor: pointer;
+        /* Width, padding and gap all animate so collapse/expand reads as one
+           motion instead of the label snapping out. */
+        transition: min-width var(--transition), padding var(--transition),
+            gap var(--transition), background var(--transition-fast);
+    }
+
+    .profile-fab:hover,
+    .profile-fab:active {
+        background: #000;
+    }
+
+    /* The label sits at body size — 22px is the ICON's size, inherited from the
+       button, and the word rendered at it would be as wide as a card. */
+    .profile-fab-label {
+        font-size: var(--text-sm);
+        font-weight: var(--fw-semibold);
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 10em;
+        transition: max-width var(--transition), opacity var(--transition-fast);
+    }
+
+    /* Scrolling down collapses the pill back to the 60px circle. max-width, not
+       display:none — a display flip cannot transition, and the label would jump. */
+    .profile-fab.is-collapsed {
+        padding: 0;
+        gap: 0;
+    }
+
+    .profile-fab.is-collapsed .profile-fab-label {
+        max-width: 0;
+        opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .profile-fab,
+        .profile-fab-label {
+            transition: none;
+        }
+    }
+
+    /* Off-canvas drawer holding the moved-in .side-bar nav. */
+    .profile-drawer {
+        position: fixed;
+        inset: 0;
+        /* Above .mobile-footer (10001). This one is a full-screen off-canvas
+           drawer, so unlike the Interests tab sheet it DOES cover the tab bar. */
+        z-index: 10002;
+        background: rgba(0, 0, 0, .45);
+        opacity: 0;
+        transition: opacity var(--transition);
+    }
+
+    .profile-drawer.open {
+        opacity: 1;
+    }
+
+    .profile-drawer-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(85%, 340px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: var(--space-4);
+        background: var(--color-default);
+        transform: translateX(-100%);
+        transition: transform var(--transition);
+    }
+
+    .profile-drawer.open .profile-drawer-panel {
+        transform: translateX(0);
+    }
+
+    body.drawer-open {
+        overflow: hidden;
+    }
+
+    .profile-drawer-close {
+        display: block;
+        margin-left: auto;
+        margin-bottom: var(--space-2);
+        border: 0;
+        background: transparent;
+        font-size: 22px;
+        color: var(--color-bltxt);
+        cursor: pointer;
+    }
+
+    /* The drawer holds the nav on its own, so drop the card's margin there. */
+    .profile-drawer-body .side-bar {
+        margin: 0;
+    }
+
+    /* NOTE: .success-detail used to be forced to `flex-direction: column` here.
+       The "photo beside the details" rule further down this file sets
+       `display: flex` but no direction, so the column stuck and the widget
+       stayed a tall stack at every width below lg. Layout for this widget now
+       lives in one place — see the "She is Interested" block at the end. */
+
+    .service-img img {
+        min-height: 0px;
+        width: 100%;
+    }
+
+    .success-content h1 {
+        bottom: 54px;
+    }
+
+    .success-content p {
+        margin: 0px 10px 10px 10px;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+    /* NOTE: the full-width-photo / stacked treatment for .success-image and
+       .success-one-pgh that used to live here made those cards absurdly tall on a
+       phone. They are now laid out side-by-side in the "MOBILE — my-matches.php"
+       block at the end of this file. */
+
+    .success-content p {
+        margin: 10px 0px 10px 0px;
+    }
+
+}
+
+@media only screen and (max-width: 575.98px) {
+
+    .service {
+        padding: 0px;
+        margin: 0px 0px 20px 0px;
+    }
+
+}
+
+@media only screen and (min-width: 320px) and (max-width: 365px) {
+    .intst-button {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .profile-icons-m {
+        display: none;
+    }
+}
+
+
+/* Moved out of style.css - viewport rules belong in this file. */
+/* Only where there is room — below this the avatar alone carries it. */
+@media (min-width: 1200px) {
+  .profile-toggle-meta {
+    display: flex;
+  }
+}
+
+/* ---------profile----------- */
+/* ----------single profile----------------- */
+@media only screen and (max-width: 991.98px) {
+    .short-list-sin {
+        right: 20px;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+    .single-detail {
+        flex-direction: column;
+        display: block;
+        text-align: center;
+        padding: 30px 20px 30px 20px
+    }
+
+    .profile-tittle {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .intst-parent {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .profile-tittle h3 {
+        /* margin: 0px 0px 10px 0px; */
+    }
+
+    .advertise-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .advertise-content p {
+        text-align: center;
+        max-width: none;
+    }
+
+    .about-head p {
+        text-align: justify;
+    }
+
+    .point-icon {
+        display: none;
+    }
+
+    /* .single-detail goes display:block above, so it is no longer a flex row —
+       but .short-list-sin is absolutely positioned against it (style.css),
+       which left the Shortlist pill hanging off the card's right edge. Drop it
+       back into normal flow, centred under the card. */
+    .icon-parent {
+        display: flex;
+        justify-content: center;
+        /* margin: var(--space-5) 0 0 0; */
+    }
+
+    .short-list-sin {
+        position: static;
+        top: auto;
+        right: auto;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+    .profile-list ul li::after {
+        bottom: 8px;
+        right: -6px;
+    }
+
+}
+
+@media only screen and (max-width: 500px) {
+
+    .list .status,
+    .list .created,
+    .list .study,
+    .list .job,
+    .list .place {
+        display: none;
+    }
+
+    .profile-list ul li::after {
+        display: none;
+    }
+
+    .profile-list ul {
+        text-align: center;
+    }
+
+}
+
+@media only screen and (max-width: 400px) {
+    .profile-list {
+        align-items: center;
+    }
+}
+
+@media only screen and (max-width: 320px) {
+    .list {
+        display: flex;
+        flex-direction: column;
+        align-items: center
+    }
+
+    .intst-button {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+
+/* Moved out of style.css - viewport rules belong in this file. */
+/* Clear the absolutely-positioned .short-list-sin / .profile-icons stack on the
+   right, or the name and action row run underneath them. Only while the card is
+   side-by-side: below 768px it stacks and centres, the icons move out of the
+   way, and a 190px reservation would leave the name ~130px to wrap in. */
+@media only screen and (min-width: 768px) {
+  .single-detail .profile-tittle {
+    padding-right: 190px;
+  }
+}
+
+/* single-profile.php reserves 190px on the right of the header card for its
+   absolutely-positioned Shortlist / WhatsApp stack. The own-profile card has no
+   such stack, so the name would sit in a 190px-narrow column for nothing. */
+@media only screen and (min-width: 768px) {
+  .single-detail.is-self .profile-tittle {
+    padding-right: 0;
+  }
+
+/* Only pinned to the corner while the card is side-by-side. Below 768px
+   .single-detail stacks and centres, and an absolutely-positioned chip would
+   land on top of the photo. */
+  .single-detail.is-self .self-tier {
+    position: absolute;
+    right: var(--space-5);
+    top: var(--space-5);
+  }
+}
+
+@media only screen and (max-width: 767px) {
+  .single-detail.is-self .self-tier {
+    align-self: center;
+    margin: var(--space-3) auto 0px auto;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ----------single profile----------------- */
+/* ---------search------------ */
+@media only screen and (max-width: 991.98px) {
+    .service-img {
+        width: 120px;
+        padding: 10px;
+    }
+
+    /* NOTE: a `.success-image img { width: 100%; margin-bottom: 10px }` used to
+       sit here, left over from when the card stacked the photo above the details
+       below 992px. The "MOBILE — my-matches.php" block at the end of this file
+       now sizes the photo to a fixed 88px beside the text, so the width was
+       already overridden — but the 10px margin was not, and it survived as an
+       unexplained gap under the photo. Don't re-add it. */
+}
+
+@media only screen and (max-width: 767.98px) {
+    .success-content h1 {
+        position: static;
+        padding: 10px;
+        margin: 0px;
+        text-align: center;
+    }
+
+    .success-stories img {
+        margin: 0px;
+    }
+
+    .success-stories {
+        /* padding: 20px 0px 0px 0px; */
+    }
+
+    .success-one-pgh h1 {
+        font-size: 32px;
+    }
+
+}
+
+@media only screen and (max-width: 575.98px) {
+
+    /* The form is a grid now; the old rules here unpicked a layout <table>
+       row by row, including hiding the "to" spacer cell. */
+    .range-row {
+        gap: 8px;
+    }
+
+    /* Pills go full width and split the row, rather than overflowing it. */
+    .segmented {
+        display: flex;
+        width: 100%;
+    }
+
+    .segmented label {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 12px;
+    }
+
+    .filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    .profile-btn button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media only screen and (max-width: 320px) {
+    .d-head h1 {
+        font-size: 25px !important;
+    }
+}
+
+
+/* Moved out of style.css - viewport rules belong in this file. */
+/* =========================
+   SEARCH RESULTS (centre, col-6)
+   Narrower than the col-9 the rows were drawn for, so the fixed 180px thumb
+   and the absolutely-positioned "View profile" link need reining in — the
+   link sits top-right, which is exactly where the name ends.
+
+   Only while the column is actually tight. On a fluid container past ~1400px
+   the col-6 is wide enough for the full-size row again.
+========================= */
+
+@media (min-width: 992px) and (max-width: 1399.98px) {
+
+  .search-results .home-content {
+    padding: 30px;
+  }
+
+  .search-results .profile-img img {
+    width: 140px;
+  }
+
+  .search-results .profile-tittle {
+    padding-right: 85px;     /* reserve the corner for .profile-icons-m */
+  }
+
+  .search-results .profile-icons-m {
+    top: 16px;
+    right: 16px;
+  }
+}
+
+/* Wide viewports: the rows have room, just keep the name clear of the
+   corner link. */
+@media (min-width: 1400px) {
+
+  .search-results .profile-tittle {
+    padding-right: 100px;
+  }
+}
+
+/* =========================
+   SEARCH FILTER RAIL (left, col-3)
+   The card is ~255px wide on desktop, so the generous .home-content padding
+   and the side-by-side range rows have to give.
+========================= */
+
+@media (min-width: 992px) {
+
+  /* (sticky lives with the other left rails, in the SIDEBAR section) */
+
+  .filter-card .home-content {
+    padding: 24px 20px;
+  }
+
+  .filter-card .content-header {
+    /* margin-bottom: 24px; */
+  }
+
+  .filter-card .content-title h2 {
+    font-size: 22px;
+  }
+
+  .filter-card .segmented {
+    display: flex;
+    width: 100%;
+    padding: 4px;
+  }
+
+  .filter-card .segmented label {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 8px;
+  }
+
+  .filter-card .filter-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-card .profile-btn button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* min / to / max stay on ONE line at every width. In a narrow rail the two
+   selects shrink instead of stacking — see .range-row .profile-select. */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+
+  .filter-card .range-row {
+    gap: 8px;
+  }
+}
+
+/* ---------search------------ */
+/* ---------------register--------------- */
+@media only screen and (max-width: 767.98px) {
+    .profile-image {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .profile-form-content h1 {
+        font-size: 28px;
+    }
+
+/* ---------------register--------------- */
+/* ---------daily matches---------- */
+    .d-head h1 {
+        font-size: 25px !important;
+    }
+}
+
+/* ---------daily matches---------- */
+/* ---------family----------- */
+@media only screen and (max-width: 767.98px) {
+    .family-select {
+        max-width: 700px;
+    }
+
+    .family-section {
+        padding: 40px 0px 100px 0px;
+    }
+
+    .matrimony-forms {
+        margin: 0px 0px 30px 0px;
+    }
+
+    .contact-section {
+        padding: 60px 0px 60px 0px;
+    }
+
+    .map-section {
+        margin: 0px 0px 100px 0px;
+    }
+
+    .location {
+        min-height: 250px !important;
+    }
+}
+
+
+@media only screen and (max-width: 500px) {
+    .location {
+        margin: 0px 0px 20px 0px;
+        min-height: 110px !important;
+    }
+
+    .contact-section {
+        padding: 10px 0px 10px 0px;
+    }
+}
+
+/* ---------contact---------- */
+/* <!-- faq page --> */
+
+@media only screen and (max-width: 991.98px) {
+    .faq-heading h2 {
+        font-size: 38px;
+        margin: 20px 0 15px 0;
+
+    }
+
+    .custom-accordion .accordion-button:not(.collapsed) {
+        font-size: 16px;
+    }
+
+    .accordion-button {
+        width: 95%;
+    }
+
+    .custom-accordion .accordion-button {
+        padding: 20px 30px;
+        font-size: 16px;
+    }
+
+    .accordion-body {
+        line-height: 24px;
+        text-align: justify;
+        font-size: 15px;
+    }
+}
+
+@media only screen and (max-width: 767.98px) {
+
+    .faq-heading h2 {
+        font-size: 34px;
+    }
+
+    .custom-accordion .accordion-button {
+        font-size: 16px;
+        padding: 18px 20px;
+        color: var(--color-primary);
+        font-family: var(--font-primary);
+    }
+
+}
+
+@media only screen and (max-width: 575.98px) {
+    .faq-heading h2 {
+        font-size: 26px;
+        margin: 10px 0 10px 0;
+    }
+
+    .faq-heading p {
+        font-size: 14px;
+    }
+
+    .custom-accordion .accordion-button {
+
+        padding: 10px 27px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .custom-accordion .accordion-button::after {
+        width: 15px;
+        height: 14px;
+        background-size: 15px;
+    }
+
+    .custom-accordion .accordion-button {
+        padding: 10px 8px;
+        font-size: 15px;
+    }
+
+    .custom-accordion .accordion-button:not(.collapsed) {
+        font-size: 15px;
+
+    }
+
+    .faq-tag::after {
+        height: 2px;
+        margin: 5px auto 0;
+    }
+}
+
+@media only screen and (max-width: 360px) {
+    .faq-heading h2 {
+        font-size: 22px;
+    }
+
+    .faq-heading p {
+        font-size: 14px;
+        text-align: justify;
+    }
+
+    .accordion-body {
+        text-align: justify;
+        max-width: 294px;
+    }
+
+    .custom-accordion .accordion-button:not(.collapsed) {
+        font-size: 14px;
+    }
+
+    .custom-accordion .accordion-button::after {
+        width: 13px;
+        height: 13px;
+        background-size: 13px;
+    }
+
+    .custom-accordion .accordion-button {
+        font-size: 14px;
+    }
+}
+
+/* <!-- faq page --> */
+/* ---------about---------- */
+/* This block used to be ~150 lines: `.about-content` was an absolutely positioned box at
+   `right:-90%` on top of the photo, and every breakpoint nudged it (-105%, top:3%, right:40px
+   top:70%, left:40px…) while `.download-section` was pushed clear with margin-top:170px. The
+   copy is a real grid column now, so it stacks on its own and none of that is needed. */
+@media only screen and (max-width: 767.98px) {
+    .about-image img {
+        min-height: 320px;
+        max-height: 420px;
+    }
+
+    .view-btn {
+        margin: 0px 0px 40px 0px;
+    }
+
+    .section-title p {
+        max-width: 400px;
+        margin: 0 auto;
+        margin-bottom: 20px;
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+    .about-section {
+        padding: var(--space-9) 0;
+    }
+
+    .about-content h2 {
+        font-size: var(--text-xl);
+    }
+
+    .subscription-content h1::after {
+        width: 5%;
+        left: 48%;
+    }
+}
+
+/* ---------about---------- */
+/* --------subscribition----------------- */
+@media only screen and (max-width: 767.98px) {
+    .pricing-card {
+        margin: 0px 0px 20px 0px;
+
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+    .subscription-content h2 {
+        font-size: 25px;
+    }
+
+    .pricing-section .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .pricing-card {
+        transform: none;
+        margin: 0 auto 20px auto;
+    }
+}
+
+/* --------subscribition----------------- */
+
+@media only screen and (max-width: 320px) {
+    .section-title h2 {
+        font-size: 28px;
+    }
+
+    .section-title h2 span {
+        font-size: 28px;
+    }
+}
+
+/* ------awesome embers------ */
+/* <!-- work-section --> */
+
+@media only screen and (max-width: 767.98px) {
+    .theme-color {
+        font-size: 18px;
+    }
+
+    .lab-item {
+        /* `auto` on the inline axis, not 0: the item is capped at 300px (style.css)
+           and a plain `margin: 0 0 35px` shorthand resets the `margin-inline: auto`
+           that centres it, so on a phone the whole step — icon, badge, heading —
+           sat left of the column's centre line. */
+        margin: 0px auto 35px auto;
+    }
+
+    .work-section {
+        padding: 60px 0px 30px 0px;
+    }
+}
+
+@media only screen and (max-width: 575.98px) {
+    .lab-content h4 {
+        margin-bottom: 15px;
+    }
+
+    .section-header h2 {
+        font-size: 24px;
+    }
+
+    .step {
+        top: -22px;
+        right: -3px;
+    }
+
+    .thumb-inner {
+        width: 130px;
+        height: 130px;
+    }
+
+    .lab-content p {
+        font-size: 14px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .step p {
+        font-size: 12px;
+    }
+
+    .step span {
+        font-size: 12px;
+    }
+
+    .step {
+
+        width: 45px;
+        height: 45px;
+    }
+
+    .section-header h2 {
+        font-size: 22px;
+    }
+
+    .theme-color {
+        font-size: 16px;
+    }
+
+    .lab-content h4 {
+        margin-bottom: 10px;
+    }
+}
+
+@media (min-width: 320px) and (max-width: 400px) {
+    .about-content h2 {
+        font-size: 25px;
+    }
+
+    .section-title h2 {
+        font-size: 30px;
+    }
+
+    .section-title h2 span {
+        font-size: 30px;
+    }
+}
+
+@media only screen and (max-width: 360px) {
+    .section-header h2 {
+        font-size: 19px;
+    }
+
+    .theme-color {
+        font-size: 16px;
+    }
+
+    .lab-content p {
+        font-size: 14px;
+    }
+
+    .about-content {
+        position: static;
+    }
+}
+
+/* <!-- work-section --> */
+/* <!-- testimonial-section --> */
+
+/* The card sizes itself from its content now — the old `min-height: 367px`/`400px` and the
+   24px/22px name overrides were all propping up a card that was too big to begin with. */
+@media only screen and (max-width: 575.98px) {
+    .testimonial-card {
+        padding: var(--space-5) var(--space-4);
+    }
+}
+
+/* =============================================================================
+   MOBILE — NO PANEL WRAPPER AROUND THE RESULT LIST
+   On desktop .home-content is the panel and each .profiles row is a flat list
+   item inside it. On a phone that single tall white card just traces the whole
+   column and reads as a page background, not a panel — so below 768px the
+   relationship inverts: the wrapper goes transparent and each row gets the card
+   shell back (the same treatment standalone .profiles already have).
+============================================================================= */
+@media only screen and (max-width: 767.98px) {
+
+    .home-content {
+        background-color: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+    }
+
+    .home-content .profiles {
+        background-color: var(--color-default);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card);
+        padding: var(--pad-card);
+        margin-bottom: var(--space-5);
+    }
+
+    /* The hairline separated rows that shared one surface; with real cards the
+       gap does that job. Hover-lift is meaningless on touch, so leave it out. */
+    .home-content .profiles+.profiles {
+        border-top: 0;
+    }
+}
+
+/* =============================================================================
+   MOBILE — my-matches.php (and the other [data-mobile-rail] pages)
+   Four things read badly below 992px:
+     1. .counter-section stacked its four cols to col-12, so the page opened on a
+        tall slab of brand red. It becomes a compact 2x2 tile grid instead.
+     2. .interest-parent ran the photo, name, details and buttons in one tall
+        column. It goes side-by-side.
+     3. The woven promo widgets landed flush against the .profiles rows.
+     4. .success-one / contact-style detail cards were equally over-tall.
+============================================================================= */
+@media only screen and (max-width: 991.98px) {
+
+    /* 1 — compact counter tiles, not a red slab.
+       On a phone this panel is the FIRST thing under the header, and a solid
+       brand-red block that size reads as an error banner rather than as stats.
+       It becomes the same white card shell as everything else in the column,
+       with the numbers carrying the brand colour instead of the background. */
+    .myhome-section .counter-section {
+        background-color: var(--color-default);
+        background-image: none;
+        color: var(--color-black);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card);
+        padding: var(--space-4);
+        margin-bottom: var(--space-6);
+    }
+
+    .myhome-section .counter-section .row {
+        --bs-gutter-x: var(--space-3);
+        --bs-gutter-y: var(--space-3);
+    }
+
+    .myhome-section .counter-section .row>[class*="col-"] {
+        width: 50%;
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    .myhome-section .counter-sec {
+        padding: var(--space-1) var(--space-1);
+        text-align: center;
+    }
+
+    /* Card header, matching .content-header on the dashboard cards: title +
+       subtitle over a hairline. Every rail widget woven into the mobile column
+       gets one, so the promos read as cards in the same family as the .profiles
+       result rows rather than as loose blocks of content. */
+    /* .success-one-head is NOT in this list, but for the opposite reason it used
+       to be: it is no longer a teal filled band that needs protecting — it IS a
+       hairline title now (red rule + inset kicker, see style.css), so it already
+       matches this treatment and needs no override here. */
+    .myhome-section .counter-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding-bottom: var(--space-3);
+        margin-bottom: var(--space-4);
+        border-bottom: var(--border-hair);
+    }
+
+    .myhome-section .counter-header h2 {
+        font-family: var(--font-primary);
+        font-size: var(--text-base);
+        font-weight: var(--fw-semibold);
+        color: var(--color-black);
+        margin: 0;
+    }
+
+    .myhome-section .counter-header-meta {
+        font-size: var(--text-xs);
+        color: var(--color-gr-dark);
+    }
+
+    /* Each tile: the label is the subject, the count is a chip badge beside it —
+       same treatment as the .nav-count badges in the My Matches rail. */
+    .myhome-section .counter-sec {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        text-align: left;
+        background-color: var(--bg-mist);
+        border: var(--border-hair);
+        border-radius: var(--radius-md);
+    }
+
+    .myhome-section .counter-no {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        width: 100%;
+    }
+
+    .myhome-section .counter-value {
+        flex: 0 0 auto;
+        min-width: 34px;
+        padding: 2px var(--space-2);
+        border-radius: var(--radius-pill);
+        background: var(--color-primary);
+        color: var(--color-default);
+        text-align: center;
+        font-size: var(--text-sm);
+        font-weight: var(--fw-bold);
+        line-height: var(--leading-snug);
+    }
+
+    .myhome-section .counter-label {
+        flex: 1 1 auto;
+        color: var(--color-gr-dark);
+        font-size: var(--text-xs);
+        line-height: var(--leading-snug);
+        /* min-height keeps a one-line and a two-line tile the same height; the
+           flex centring stops the one-liners hanging from the top of that box. */
+        min-height: 35px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* 2 — the "Interest Received" / "She is Interested" widgets: photo beside the
+       details. Both are built from these classes now. */
+    .success-detail {
+        display: flex;
+        flex-direction: row;
+        /* explicit: an earlier rule used to force column */
+        align-items: center;
+        gap: var(--space-4);
+        text-align: left;
+        /* the action band below now carries its own top inset + hairline */
+        padding-bottom: var(--space-3);
+    }
+
+    .success-image {
+        flex: 0 0 88px;
+        width: 88px;
+        margin: 0;
+    }
+
+    .success-image img {
+        /* block, not the inline default: as an inline box the img sat on a text
+           baseline and carried ~10px of descender space under it, which showed
+           up as an unexplained gap between the photo and the card's action band. */
+        display: block;
+        width: 88px;
+        height: 88px;
+        object-fit: cover;
+        border-radius: var(--radius-md);
+    }
+
+    .success-one-pgh {
+        flex: 1 1 auto;
+        margin: 0;
+        text-align: left;
+    }
+
+    .success-one-pgh h2 {
+        font-size: var(--text-base);
+        margin-bottom: var(--space-1);
+    }
+
+    /* ONE META LINE, not four stacked ones.
+       The ID, the age/height and the district each used to own a full row, so
+       the text column ran 105px tall against an 88px photo — a portrait card
+       for content that is really a two-line strip, with the right half of every
+       row empty. They now run as "V61132U · 24 yrs, 5ft 4in · Thrissur" and
+       wrap as one paragraph, which is what the >=992px rail already did; the
+       narrow widths were the only place still stacking them.
+
+       .pf-id is a <p> and .dt-list is a <ul> with no shared wrapper, so they are
+       joined by going `display: inline` into one anonymous line box rather than
+       by a flex row. */
+    .success-one-pgh .pf-id,
+    .success-one-pgh .dt-list {
+        display: inline;
+        margin: 0;
+        padding-left: 0;      /* the UA list indent has nothing to indent from now */
+        font-size: var(--text-sm);
+    }
+
+    .success-one-pgh .dt-list li {
+        display: inline;
+        font-size: var(--text-sm);
+        margin-bottom: 0;     /* was 8px, which is also what left the dead gap
+                                 above the Connect button */
+    }
+
+    /* The separators sit on ::after of the item BEFORE the break, not on ::before
+       of the one after it. The line wraps at this width ("… 5ft 4in / · Thrissur"),
+       and a leading ::before dot became an orphan at the start of the second line.
+       :not(:last-child) is what keeps a dangling dot off the end: the ID is only
+       followed by a dot while a <ul> actually follows it, so a member with no
+       stats still renders clean. */
+    .success-one-pgh .pf-id:not(:last-child)::after,
+    .success-one-pgh .dt-list li:not(:last-child)::after {
+        content: "·";
+        margin: 0 6px;
+        color: var(--color-gr);
+    }
+
+    /* One size, one colour for the whole meta line — the ID used to be 12px/500
+       and the stats 14px/400, so two runs of the same kind of information were
+       set two different ways. */
+    .success-one-pgh .pf-id,
+    .success-one-pgh .dt-list li {
+        font-weight: var(--fw-regular);
+        color: var(--color-gr-dark);
+        line-height: var(--leading-snug);
+        /* Each item is one unbreakable value. Without this the line wrapped
+           INSIDE one — "24 yrs, 5ft / 4in" at 360px — instead of at a dot. */
+        white-space: nowrap;
+    }
+
+    .my-intrest-btn {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+
+    .my-intrest-btn p {
+        flex: 1 1 100%;
+        text-align: left;
+        font-size: var(--text-sm);
+        margin-bottom: var(--space-1);
+    }
+
+    .my-intrest-btn .btn {
+        padding: 6px var(--space-5);
+        margin-bottom: 0;
+    }
+
+    /* Card footer, the same shape as .content-btn on the dashboard cards:
+       a hairline, then the "view everything" link. */
+    .interest-btn {
+        padding-top: var(--space-3);
+        margin-top: var(--space-4);
+        border-top: var(--border-hair);
+        text-align: right;
+    }
+
+    .interest-btn a {
+        font-size: var(--text-sm);
+        font-weight: var(--fw-semibold);
+    }
+
+    /* 3 — woven widgets get the same rhythm as the result rows */
+    [data-mobile-rail] [data-rail="weave"] {
+        margin-bottom: var(--space-6);
+    }
+
+    [data-mobile-rail] .profiles {
+        margin-bottom: var(--space-6);
+    }
+
+    /* 4 — trim the over-tall detail/contact cards */
+
+    .advertisement-section {
+        padding: var(--pad-card-sm);
+    }
+
+    /* .interest-parent takes none: its header band runs flush to the card edges
+       (same as .success-one) and the blocks below it carry their own inset. */
+    .interest-parent {
+        padding: 0;
+    }
+
+    /* The action becomes a full-width band under a hairline — the same card
+       footer shape as .interest-btn above and .content-btn on the dashboard
+       cards. As a shrink-wrapped pill it sat in the bottom-LEFT corner under
+       the photo with the rest of the row empty, which is what made the card
+       look bottom-heavy and unfinished. Full width also gives the one
+       affirmative action a thumb-sized target. */
+    .success-one .success-btn {
+        /* Inset moves from padding to margin so the hairline runs the full
+           width of the content, not just behind the button. */
+        padding: var(--space-3) 0 0;
+        margin: 0 var(--pad-card-sm) var(--pad-card-sm);
+        border-top: var(--border-hair);
+    }
+
+    .success-btn a {
+        display: block;
+        padding: 8px var(--space-5);
+        font-size: var(--text-sm);
+        text-align: center;
+    }
+}
+
+/* =============================================================================
+   PAGINATION — assets/includes/pagination.php
+   Seven 40px slots plus gaps is ~330px, which only just fits a 360px screen
+   once the container gutter (16px a side) is taken off. Shrink the slots
+   rather than let the bar wrap into two ragged lines, and keep the tap target
+   at the 40px minimum until the very narrowest phones.
+============================================================================= */
+
+@media only screen and (max-width: 575.98px) {
+
+    .pagination-bar {
+        gap: 6px;
+        /* margin-top: var(--space-5); */
+        margin-bottom: var(--space-3);
+    }
+
+    .page-link {
+        min-width: 40px;
+        height: 40px;
+        padding: 0 var(--space-2);
+    }
+}
+
+@media only screen and (max-width: 360px) {
+
+    .pagination-bar {
+        gap: var(--space-1);
+    }
+
+    .page-link {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 6px;
+        font-size: var(--text-xs);
+    }
+
+    .page-gap {
+        padding: 0;
+    }
+}
+
+/* =============================================================================
+   MOBILE — 2-UP PROFILE GRID
+   Below 768px a .profiles row already stacks and centres (photo above the
+   details), which makes it a TILE, not a row — and one tile per screen row left
+   a phone scrolling past a single profile at a time. .profile-grid (see
+   style.css, where it is `display: contents` and therefore inert on desktop)
+   becomes a two-column grid here, so two profiles are always in view.
+
+   Everything below is the consequence of the tile being ~150px wide at 360px:
+   the fixed 180px photo, the side-by-side action pills and the corner
+   "View profile" link were all sized for a full-width row.
+============================================================================= */
+@media only screen and (max-width: 767.98px) {
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-4);
+    }
+
+    /* The mobile-rail JS weaves the promo widgets in among the rows, which puts
+       them inside this grid. Full-width span, or an ad card would sit in a
+       half-width cell beside a profile. */
+    .profile-grid > [data-rail="weave"] {
+        grid-column: 1 / -1;
+    }
+
+    /* The grid gap owns the rhythm now — these margins were set for a stacked
+       list and would double it. Listed at this specificity to beat the
+       `.home-content .profiles` / `[data-mobile-rail] .profiles` rules above. */
+    .profile-grid > .profiles,
+    .home-content .profile-grid > .profiles,
+    [data-mobile-rail] .profile-grid > .profiles {
+        margin: 0;
+        padding: var(--space-4);
+    }
+
+    /* The photo fills the tile instead of holding a fixed 180px, which would
+       overflow a ~150px column. Square crop is kept by aspect-ratio. */
+    .profile-grid .profile-img {
+        width: 100%;
+        margin: 0px 0px var(--space-3) 0px;
+    }
+
+    .profile-grid .profile-img img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    /* Two pills side by side don't fit the column — they stack full width. */
+    .profile-grid .intst-parent {
+        width: 100%;
+    }
+
+    .profile-grid .intst-button {
+        flex-direction: column;
+        gap: var(--space-2);
+        width: 100%;
+    }
+
+    .profile-grid .intst-button a,
+    .profile-grid .intst-button .btn-accept,
+    .profile-grid .intst-button .btn-decline {
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* Pinned to a corner of the tile, over content that now reaches it. The name
+       is a .stretched-link, so the whole tile still opens the profile. */
+    .profile-grid .icon-parent {
+        display: none;
+    }
+
+    /* The NEWLY JOINED flag is a 45° corner wedge sized for a 180px photo. Shrunk
+       to fit a ~144px tile it stops being legible at all: the usable band inside
+       the diagonal is ~48px, so the rotated two-line label runs straight through
+       the hypotenuse and "JOINED" is sliced in half. A corner wedge has no size
+       below which it both fits and reads.
+       So at tile width it stops being a wedge and becomes a flat corner badge —
+       same colour, same corner, same meaning, and it holds its label. The label's
+       own "NEWLY<br>JOINED" break is kept: two tight lines is the compact shape
+       here, and the break is in the markup on seven pages. */
+    .profile-grid .triangle {
+        clip-path: none;
+        /* Shorthand, so it also resets the base rule's border-top-left-radius. */
+        border-radius: var(--radius-sm);
+        padding: 3px 6px;
+        top: var(--space-2);
+        left: var(--space-2);
+    }
+
+    .profile-grid .triagle-content {
+        position: static;
+        transform: none;
+        font-size: 8px;
+        font-weight: var(--fw-semibold);
+        letter-spacing: .04em;
+        line-height: 1.25;
+        text-align: center;
+    }
+
+    /* One notch down the scale so a name doesn't wrap to three lines. */
+    .profile-grid .pf-tt {
+        font-size: var(--text-base);
+    }
+
+    .profile-grid .pf-dt-m,
+    .profile-grid .profile-list ul li {
+        font-size: var(--text-xs);
+    }
+
+    /* `.profiles` is `align-items: center` below 768px (see the stacked-row block
+       above), which SHRINK-WRAPS .profile-tittle to its widest line — the ID row.
+       Every shorter line then floats inside that narrower block, which is why the
+       age line read as centred and the action pills stopped short of the tile edge.
+       In the grid the photo is already full-bleed, so there is nothing left to
+       centre against: stretch the details to the tile and left-align them. */
+    .profile-grid > .profiles {
+        align-items: stretch;
+        text-align: left;
+    }
+
+    /* The same centring is re-declared on the two inner flex columns further up
+       this file (.profile-tittle, .profile-list, and a `.profile-list ul`
+       text-align at 575px). Each one shrink-wraps its own children, so the name,
+       the ID block and the facts list all ended up at three different widths and
+       three different apparent alignments inside one 144px tile. */
+    .profile-grid .profile-tittle,
+    .profile-grid .profile-list {
+        align-items: stretch;
+    }
+
+    .profile-grid .profile-list ul {
+        text-align: left;
+    }
+
+    .profile-grid .pf-tt {
+        text-align: left;
+    }
+
+    /* The ID / "Last seen" divider is a vertical rule between two things on ONE
+       line. At tile width the pair always wraps, leaving the rule hanging at the
+       start of the second line ("VIS12370 | Last seen / an hour ago"). Stack them
+       instead and drop the rule — the line break is the separator here. */
+    .profile-grid .pf-dt-m span {
+        display: block;
+        margin-left: 0;
+        padding-left: 0;
+        border-left: 0;
+    }
+
+    /* Set for a full-width row: the 10px left margin pushed the facts off the
+       tile's own padding edge while the bullet hung 10px outside that again,
+       landing in the tile's corner. Indent from the bullet, not from the box. */
+    .profile-grid .profile-list ul li {
+        margin: 0;
+        padding-left: var(--space-3);
+    }
+
+    /* The 575px block hides the bullet outright. It is the only thing marking
+       these as separate facts once they wrap, so it comes back on the tile. */
+    .profile-grid .profile-list ul li::after {
+        display: block;
+        left: 0;
+        bottom: auto;
+        top: 0.55em;
+    }
+
+    /* Vertical rhythm — at tile scale the name/meta/facts ran together while a
+       full 20px sat under the facts. */
+    .profile-grid .pf-tt {
+        margin-bottom: var(--space-2);
+    }
+
+    .profile-grid .pf-dt-m {
+        margin-bottom: var(--space-3);
+    }
+
+    .profile-grid .intst-parent {
+        padding-top: var(--space-3);
+    }
+
+    /* Full-width stacked pills: give them one consistent height and centre the
+       icon with the label, which `text-align` alone cannot do. */
+    /* Full-width stacked pills. The label has to hold ONE line: at the base 14px
+       "Send Interest" does not fit a ~112px pill, and the two-line wrap it fell
+       into left the icon floating beside a two-line block. Down a step on the
+       scale with a tighter icon gap, and nowrap so a longer label truncates the
+       layout's attention rather than silently re-wrapping. */
+    .profile-grid .intst-button a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: var(--space-2) var(--space-2);
+        border-radius: var(--radius-pill);
+        font-size: var(--text-xs);
+        white-space: nowrap;
+    }
+
+    .profile-grid .intst-button a i {
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    /* The bookmark is pinned 5px off the corner of .profile-img — fine over a
+       180px photo, but at tile width that corner is the image's own rounding, so
+       the pill sat half off the crop. Inset it and make it a true circle. */
+    .profile-grid .short-list {
+        top: var(--space-2);
+        right: var(--space-2);
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-circle);
+    }
+}
+
+/* =========================
+   DASHBOARD CONTENT CARD (desktop)
+   Moved out of style.css. This must stay AFTER the SEARCH FILTER RAIL block above:
+   the search rail element carries BOTH .dashboard-content and .filter-card, and
+   `.filter-card .home-content` has the same specificity (0,2,0), so whichever comes
+   last wins. In style.css this rule sat later and won at 992-1399.98px; keeping it
+   last here preserves that exactly.
+========================= */
+/* The centre column is col-6 now, so .home-content's 40px padding eats too much
+   of it in the band where the column is tightest. */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+  .dashboard-content .home-content {
+    padding: var(--pad-card) var(--space-6);
+  }
+}
+
+/* =========================
+   SUCCESS STORIES  (success-stories.php)
+========================= */
+@media only screen and (max-width: 991.98px) {
+  .stories-section,
+  .story-longform {
+    padding: var(--pad-section-sm) 0;
+  }
+}
+
+@media only screen and (max-width: 575.98px) {
+  /* The circular portrait plus the name side by side leaves the date wrapping
+     onto three lines at 360px. Stack them. */
+  .story-full-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .stories-cta-inner {
+    padding: var(--space-7) var(--space-4);
+  }
+}
+
+/* =========================
+   MESSAGES  (messages.php)
+========================= */
+@media only screen and (max-width: 991.98px) {
+  /* The columns stack, so the conversation list needs a ceiling — otherwise five
+     threads push the open thread a full screen down the page.
+     TODO(backend): the real page should show ONE pane at a time on mobile. */
+  .msg-list {
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: var(--space-5);
+  }
+
+  .msg-thread-body-scroll {
+    height: 340px;
+  }
+}
+
+@media only screen and (max-width: 575.98px) {
+  .msg-bubble {
+    max-width: 88%;
+  }
+
+  /* The label is the first thing to go — the paper-plane icon carries the meaning
+     at this width. HIDDEN, NOT REMOVED: this span is the button's only text, so
+     `display: none` would leave an icon-only button with no accessible name at
+     all (the <i> is aria-hidden). Same clip technique as .visually-hidden. */
+  .msg-composer-send-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .msg-composer-send {
+    padding: 10px 14px;
+  }
+
+  .msg-panel-head {
+    flex-wrap: wrap;
+  }
+}

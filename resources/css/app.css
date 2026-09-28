@@ -1,4 +1,27 @@
 /*
- * Entry stylesheet. P0.2 imports Bootstrap 5.3, the design tokens (tokens.css) and the
- * template's style.css / responsive.css here — vendor first, ours last (template-notes.md).
+ * Member / public / broker stylesheet (Vite). Replaces the template's links.php.
+ * ORDER IS LOAD-BEARING (docs/template-notes.md): every vendor stylesheet first, ours last,
+ * so our rules win on cascade order instead of extra specificity or !important.
  */
+
+/* ---- vendor ---- */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'swiper/css/bundle';
+@import 'font-awesome/css/font-awesome.css';
+
+/* ---- fonts: self-hosted (no Google Fonts CDN). Weights = --fw-regular/medium/semibold/bold ---- */
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/great-vibes/400.css';
+
+/* ---- ours — last, so it wins ---- */
+@import './tokens.css';
+@import './template/style.css';
+@import './template/responsive.css';
+@import './oppam.css';

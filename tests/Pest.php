@@ -16,3 +16,6 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(LazilyRefreshDatabase::class)
     ->in('Feature', 'Livewire', 'Broadcasting');
+
+// Browser tests (php artisan dusk) — phone-width ones use device emulation.
+pest()->extend(Tests\MobileDuskTestCase::class)->in('Browser/Mobile');

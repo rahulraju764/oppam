@@ -26,6 +26,25 @@ return [
     // Replaces the template's SITE_LIVE: while false every page is noindex (PRD §6.1).
     'indexable' => (bool) env('APP_INDEXABLE', false),
 
+    // Site identity shown in the footer and contact page. Moves to admin-editable settings in P0.6
+    // (A15 "Site settings"); until then these are the defaults.
+    'site' => [
+        'name' => 'Oppam Matrimony',
+        'tagline' => 'Two hearts, one journey',
+        'address' => ['Sajaya 7A Block, First Floor,', 'Office No: 10, Nad Al Sheba-3'],
+        // Rendered as a link only when set (no placeholder URLs).
+        'map_url' => env('SITE_MAP_URL'),
+        'phones' => ['+971551609872' => '+971 55 160 9872', '042726787' => '+042 726 787'],
+        'emails' => ['support@oppam.in', 'info@oppam.in'],
+        // Only rendered when set — the template's href="#" placeholders are not carried over.
+        'social' => [
+            'facebook' => env('SOCIAL_FACEBOOK_URL'),
+            'twitter' => env('SOCIAL_TWITTER_URL'),
+            'linkedin' => env('SOCIAL_LINKEDIN_URL'),
+            'youtube' => env('SOCIAL_YOUTUBE_URL'),
+        ],
+    ],
+
     'sms' => [
         // log (local/testing) | msg91 (production). Bound in AppServiceProvider once SmsGateway exists (P1.1).
         'driver' => env('SMS_DRIVER', 'log'),

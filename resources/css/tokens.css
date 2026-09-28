@@ -1,0 +1,143 @@
+/* =============================================================================
+   DESIGN TOKENS
+   The single source of truth for every colour, space, radius, shadow and type
+   size on the site. Use the variables — do not hardcode values. If a value you
+   need has no token, add one here rather than inventing a one-off.
+============================================================================= */
+
+:root {
+
+  /* ---------- TYPEFACES ---------- */
+  /* Three families, all loaded in links.php. Nothing else — no hardcoded
+     font-family anywhere; every rule resolves through these tokens. */
+  --font-primary: "Manrope", sans-serif;              /* body, UI, nav, cards, labels */
+  --font-secondary: "Manrope", sans-serif;            /* was Roboto, which links.php NEVER LOADED —
+                                                         its 22 rules had been silently falling back
+                                                         to the system sans. Collapsed onto Manrope. */
+  --font-display: "Plus Jakarta Sans", sans-serif;    /* headings, .display-title */
+  --font-accent: "Great Vibes", cursive;              /* script accent — rare, decorative, .script-accent only */
+
+  /* ---------- BRAND COLOURS ---------- */
+  --color-default: #fff;
+  --color-primary: #e02349;
+  --color-primary-rgb: 224, 35, 73;   /* same colour, for rgba(var(--color-primary-rgb), a) */
+  --color-primary-dark: #b81b3a;      /* hover/pressed state for primary fills */
+  --color-secondary: #0d9ab8;
+  --color-secondary-dark: #0a7c94;    /* same hue, darkened so white text clears WCAG AA (4.86:1) */
+  --color-secondary-dark-rgb: 10, 124, 148;   /* same colour, for rgba(var(--color-secondary-dark-rgb), a) */
+  --color-bltxt: #2d2d2d;             /* body text */
+  --color-black: #000000;
+  --color-blsdw: #2d2d2d29;
+  --color-back: #fef0ef;              /* pale brand tint — chips, hover fills */
+  --color-gr: #758694;
+  --color-gr-dark: #5e6f80;           /* same slate, darkened — use for muted TEXT (--color-gr is only 3.75:1 on white) */
+
+  /* ---------- SECTION BACKGROUNDS ---------- */
+  /* Subtle tints of the brand palette. These replace the decorative background
+     images; do not reintroduce those. */
+  --bg-rose: #fdf3f4;   /* tint of --color-primary   #e02349 */
+  --bg-teal: #eff8fa;   /* tint of --color-secondary #0d9ab8 */
+  --bg-sand: #fdf7f1;   /* warm neutral */
+  --bg-mist: #f6f8f9;   /* desaturated from --color-gr #758694 */
+
+  /* ---------- FOOTER (dark surface) ---------- */
+  /* The footer is the one dark chrome band, so it carries its own text tokens —
+     --color-bltxt / --color-gr-dark are for text on white and vanish on this fill. */
+  --footer-bg: var(--color-primary-dark);        /* the brand red's own dark step — no new colour */
+  --footer-heading: #ffffff;
+  --footer-text: #f7e3e7;                        /* muted body/link colour — 5.5:1 on --footer-bg, so it still clears AA */
+  --footer-border: rgba(255, 255, 255, .22);     /* .14 disappears on a saturated fill */
+  --footer-accent: #ffffff;                      /* hover: nothing reads as "brighter" than white on this red */
+
+  /* ---------- SPACING SCALE ---------- */
+  /* 4px base. Reach for these instead of arbitrary px in margins/padding/gaps. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+  --space-11: 80px;
+
+  /* ---------- LAYOUT ---------- */
+  /* Containers are FLUID site-wide (see the .container override below): the page
+     uses the full viewport, with a gutter that grows with it. Set --container-max
+     to a px value if a section ever needs to be capped again. */
+  --container-max: 100%;              /* page content is full-bleed by default */
+  --container-gutter: clamp(16px, 2.5vw, 48px);
+  --container-readable: 1200px;       /* content pages — see .container.is-readable */
+  --container-chrome: 1400px;         /* header + footer — see .container.is-chrome */
+  --gutter-col: 24px;                 /* space between grid columns */
+  --pad-section: 20px;                /* vertical rhythm of a page section */
+  --pad-section-sm: 40px;             /* …below 992px */
+  --offset-nav: 100px;                /* height of the sticky navbar itself */
+  --pagenav-h: 53px;                  /* the back/prev/next bar under it (52 + hairline) */
+  --offset-sticky: var(--offset-nav); /* sticky rails must clear the chrome above them —
+                                         bumped by --pagenav-h on pages that have the bar,
+                                         see body:has(.page-nav) */
+
+  /* ---------- RADII ---------- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-card: 20px;                /* the card shell — see "Card surface" below */
+  --radius-pill: 50px;                /* buttons, chips, segmented controls */
+  --radius-circle: 50%;               /* avatars, icon buttons */
+
+  /* ---------- BORDERS ---------- */
+  --border-color: rgba(0, 0, 0, .08);
+  --border-hair: 1px solid var(--border-color);
+  --border-card: 1px solid rgba(0, 0, 0, .06);
+
+  /* ---------- SHADOWS ---------- */
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, .06);
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, .08);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, .10);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, .12);
+  --shadow-brand: 0 2px 8px rgba(var(--color-primary-rgb), .30);
+  --ring-focus: 0 0 0 3px rgba(var(--color-primary-rgb), .12);
+
+  /* ---------- CARD SURFACE ---------- */
+  /* The dashboard.php shell. This is the design basis: every panel/card on a
+     member page uses these, so they all read as one system. */
+  --pad-card: 15px;
+  --pad-card-sm: 15px;                /* narrow rails, e.g. the search filters */
+
+  /* ---------- TYPE SCALE ---------- */
+  --text-xs: 12px;
+  --text-sm: 14px;                    /* UI default: nav, labels, buttons, meta */
+  --text-base: 16px;                  /* body copy */
+  --text-md: 18px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --text-3xl: 40px;
+  --text-hero: clamp(32px, 4vw, 56px);
+
+  /* ---------- WEIGHTS ---------- */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* ---------- LINE HEIGHTS ---------- */
+  --leading-tight: 1.2;               /* headings */
+  --leading-snug: 1.4;
+  --leading-normal: 1.6;              /* body copy */
+
+  /* ---------- MOTION ---------- */
+  --transition-fast: .2s ease;
+  --transition: .3s ease;
+  --transition-slow: .5s ease;
+
+  /* ---------- LAYERS ---------- */
+  --z-sticky: 999;                    /* sticky navbar */
+  --z-dropdown: 9999;                 /* profile menu, mobile tab bar */
+  --z-preloader: 10000;               /* the load curtain — above everything, incl. the tab bar */
+  --z-skip: 10001;                    /* skip link — must clear even the curtain when focused */
+}

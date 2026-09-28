@@ -1,0 +1,45 @@
+/*
+ * Rules the Laravel port needs on top of the template CSS. Keep this file small: anything
+ * that is really a template rule belongs in template/style.css. Tokens only — no raw values.
+ */
+
+/* Logout is a POST form (a GET logout link can be triggered cross-site). The template styled
+   it as an <a> in .profile-links; the same look for the <button>, values copied from those rules
+   (template/style.css ".profile-links a") so the template file itself stays untouched. */
+.profile-links form {
+  margin: 0;
+}
+
+.profile-links button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 10px var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-bltxt);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-regular);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.profile-links button i {
+  width: 18px;
+  color: var(--color-gr-dark);
+  transition: var(--transition);
+}
+
+.profile-links button:hover,
+.profile-links button:focus-visible {
+  color: var(--color-primary);
+  background: var(--color-back);
+}
+
+.profile-links button:hover i {
+  color: var(--color-primary);
+}

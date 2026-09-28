@@ -12,3 +12,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::view('/', 'welcome')->name('home');
+
+// Living styleguide for visual checks (P0.2). Local only: never registered in testing/production.
+if (app()->environment('local')) {
+    Route::view('/styleguide', 'pages.styleguide.index')->name('styleguide');
+    Route::view('/styleguide/member', 'pages.styleguide.member')->name('styleguide.member');
+}
