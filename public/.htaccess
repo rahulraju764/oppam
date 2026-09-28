@@ -13,6 +13,13 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # /index.php is the front controller, so no route ever sees it: a client that asked for it
+    # (old template links) gets a 301 to the canonical home instead of a second copy of "/".
+    # Matched on THE_REQUEST (the raw request line) so the internal rewrite below can't loop.
+    # Production nginx needs the equivalent rule (P9.5 deployment).
+    RewriteCond %{THE_REQUEST} \s/index\.php[\s?] [NC]
+    RewriteRule ^index\.php$ / [R=301,L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

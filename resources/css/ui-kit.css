@@ -1,0 +1,272 @@
+/*
+ * UI kit — styles for resources/views/components/ui/*. Tokens only (tokens.css).
+ * The template has no generic button / card / empty-state classes; these follow its look
+ * (pill buttons, the card shell, brand tints).
+ */
+
+/* ---- Buttons: <x-ui.button> ---- */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  line-height: var(--leading-tight);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.ui-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.ui-btn:disabled,
+.ui-btn[aria-disabled="true"] {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.ui-btn--sm {
+  min-height: var(--tap-compact);
+  padding: var(--space-1) var(--space-4);
+  font-size: var(--text-xs);
+}
+
+.ui-btn--lg {
+  padding: var(--space-3) var(--space-7);
+  font-size: var(--text-base);
+}
+
+.ui-btn--primary { background: var(--color-primary); color: var(--color-default); }
+.ui-btn--primary:hover:not(:disabled) { background: var(--color-primary-dark); color: var(--color-default); }
+
+.ui-btn--secondary { background: var(--color-secondary-dark); color: var(--color-default); }
+.ui-btn--secondary:hover:not(:disabled) { background: var(--color-bltxt); color: var(--color-default); }
+
+.ui-btn--outline { background: transparent; border-color: var(--color-primary); color: var(--color-primary); }
+.ui-btn--outline:hover:not(:disabled) { background: var(--color-back); color: var(--color-primary-dark); }
+
+.ui-btn--ghost { background: var(--color-back); color: var(--color-primary-dark); }
+.ui-btn--ghost:hover:not(:disabled) { background: var(--bg-rose); color: var(--color-primary-dark); }
+
+.ui-btn--danger { background: var(--color-primary-dark); color: var(--color-default); }
+.ui-btn--danger:hover:not(:disabled) { background: var(--color-bltxt); color: var(--color-default); }
+
+.ui-btn--link {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-secondary-dark);
+  text-decoration: underline;
+}
+
+.ui-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-circle);
+  animation: ui-spin .7s linear infinite;
+}
+
+@keyframes ui-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Card: <x-ui.card> — the template's card shell ---- */
+.ui-card {
+  background: var(--color-default);
+  border: var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.ui-card__header,
+.ui-card__body,
+.ui-card__footer { padding: var(--pad-card); }
+
+.ui-card__header { border-bottom: var(--border-hair); }
+.ui-card__footer { border-top: var(--border-hair); }
+
+.ui-card--accent {
+  background: var(--color-primary);
+  border-color: transparent;
+  color: var(--color-default);
+}
+
+/* ---- Fields: <x-ui.input> etc. reuse the template's .mat-label / .mat-text ---- */
+.ui-field + .ui-field { margin-top: var(--space-4); }
+.ui-field .required-mark { color: var(--color-primary-dark); }
+
+.ui-field .form-text {
+  margin-top: var(--space-1);
+  color: var(--color-gr-dark);
+  font-size: var(--text-xs);
+}
+
+/* ---- Empty state: <x-ui.empty-state> ---- */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.ui-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-circle);
+  background: var(--bg-rose);
+  color: var(--color-primary);
+  font-size: var(--text-xl);
+}
+
+.ui-empty__title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.ui-empty__message {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--color-gr-dark);
+}
+
+/* ---- Alerts: <x-ui.alert> (Bootstrap .alert + brand colours) ---- */
+.ui-alert { border-radius: var(--radius-md); font-size: var(--text-sm); }
+.ui-alert--success { background: var(--bg-success); border-color: var(--color-success); color: var(--color-success); }
+.ui-alert--info { background: var(--bg-teal); border-color: var(--color-secondary); color: var(--color-secondary-dark); }
+.ui-alert--warning { background: var(--bg-warning); border-color: var(--color-warning); color: var(--color-warning); }
+.ui-alert--danger { background: var(--bg-rose); border-color: var(--color-primary); color: var(--color-primary-dark); }
+
+/* ---- Badges: <x-ui.badge> — .chip variants, chosen by a PHP map (never string-built) ---- */
+.chip.chip--verified { background: var(--bg-teal); color: var(--color-secondary-dark); }
+.chip.chip--premium { background: var(--color-primary); color: var(--color-default); }
+.chip.chip--muted { background: var(--bg-mist); color: var(--color-gr-dark); }
+.chip.chip--success { background: var(--bg-success); color: var(--color-success); }
+.chip.chip--warning { background: var(--bg-warning); color: var(--color-warning); }
+
+/* ---- Modal: <x-ui.modal> (Alpine) ---- */
+.ui-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--scrim);
+}
+
+.ui-modal__panel {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - var(--space-8));
+  overflow-y: auto;
+  background: var(--color-default);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+}
+
+.ui-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-hair);
+}
+
+.ui-modal__title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.ui-modal__body { padding: var(--space-5); }
+
+.ui-modal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-hair);
+}
+
+.ui-modal__close {
+  flex-shrink: 0;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: 0;
+  border-radius: var(--radius-circle);
+  background: var(--bg-mist);
+  color: var(--color-bltxt);
+}
+
+.ui-modal__close:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* ---- Presence dot: <x-ui.online-dot> ---- */
+.online-dot {
+  display: inline-block;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: 2px solid var(--color-default);
+  border-radius: var(--radius-circle);
+  background: var(--color-online);
+}
+
+/* ---- Skeleton: <x-ui.skeleton> ---- */
+.ui-skeleton {
+  display: block;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--bg-mist) 25%, var(--color-back) 50%, var(--bg-mist) 75%);
+  background-size: 200% 100%;
+  animation: ui-shimmer 1.4s ease-in-out infinite;
+}
+
+.ui-skeleton--line { height: var(--space-4); }
+.ui-skeleton--row { height: 140px; }
+.ui-skeleton--card { height: 240px; }
+
+.ui-skeleton--avatar {
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-circle);
+}
+
+@keyframes ui-shimmer {
+  to { background-position: -200% 0; }
+}
+
+/* Alpine: hidden until initialised (modals, dismissible alerts). */
+[x-cloak] { display: none !important; }
+
+/* ---- Forms whose handler arrives in a later session (P0.3) ---- */
+.form-pending-note {
+  margin: var(--space-3) 0 0;
+  color: var(--color-gr-dark);
+  font-size: var(--text-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner { animation-duration: 2s; }
+  .ui-skeleton { animation: none; }
+}

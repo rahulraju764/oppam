@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 0 — Foundation
-**Next session:** P0.3 — Blade components & static public pages
+**Next session:** P0.4 — Core schema, masters & seed data
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -17,7 +17,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 ## Phase 0 — Foundation
 - [x] P0.1 Project bootstrap — 2026-09-27 (Windows + XAMPP; see decisions.md)
 - [x] P0.2 Template assets & layouts — 2026-09-28 (Swiper 12, self-hosted fonts, Dusk suite; see decisions.md)
-- [ ] P0.3 Blade components & static public pages
+- [x] P0.3 Blade components & static public pages — 2026-09-28 (public pages = Livewire components; DemoContent until P8.1)
 - [ ] P0.4 Core schema, masters & seed data
 - [ ] P0.5 Admin auth, RBAC & audit (A01 + A12 core)
 - [ ] P0.6 Settings, feature flags & entitlements service
@@ -89,3 +89,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P0.1: dev env is Windows + XAMPP (MariaDB, no Redis locally), Livewire 4 instead of 3, package routes
   locked down, public routes pinned to the app domain. All in docs/decisions.md (2026-09-27).
 - Local URLs: http://localhost:8000 (site), http://admin.localhost:8000 (admin). Don't use 127.0.0.1.
+- P0.3 → P1.1: replace the home hero form with `<livewire:public.quick-register>` in the same session that adds the
+  `register` route (the hero form's submit is disabled only while that route is missing).
+- P0.3 → P0.4: replace `DemoContent::plans()` with plans from the `plans` / `plan_features` tables.
+- P0.3 → P9.5: nginx needs the `/index.php` → `/` 301 (Apache has it in public/.htaccess).

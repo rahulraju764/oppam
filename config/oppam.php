@@ -31,15 +31,22 @@ return [
     'site' => [
         'name' => 'Oppam Matrimony',
         'tagline' => 'Two hearts, one journey',
-        'address' => ['Sajaya 7A Block, First Floor,', 'Office No: 10, Nad Al Sheba-3'],
+        // One source for the footer and the contact page (the template listed a Dubai address in
+        // the footer and this Kerala office on contact.php). Placeholder values from the template.
+        'address' => ['1st floor 272-3, near St George Basilica church,', 'Angamaly, Kerala 683572'],
+        'hours' => 'Monday – Saturday, 9:30am – 6:30pm',
         // Rendered as a link only when set (no placeholder URLs).
         'map_url' => env('SITE_MAP_URL'),
-        'phones' => ['+971551609872' => '+971 55 160 9872', '042726787' => '+042 726 787'],
+        // Contact-page map embed (the template's Angamaly embed by default); omitted when empty.
+        'map_embed_url' => env('SITE_MAP_EMBED_URL', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125655.32334806089!2d76.2986082794851!3d10.202660579800396!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b080665e0bb9959%3A0x19b75e6b4e671ef1!2sAngamaly%2C%20Kerala!5e0!3m2!1sen!2sin!4v1780653618173!5m2!1sen!2sin'),
+        // dial string => display (the template's placeholder number, dialled exactly as it had it).
+        'phones' => ['089538812873' => '0895 - 3881 - 2873'],
         'emails' => ['support@oppam.in', 'info@oppam.in'],
         // Only rendered when set — the template's href="#" placeholders are not carried over.
         'social' => [
             'facebook' => env('SOCIAL_FACEBOOK_URL'),
             'twitter' => env('SOCIAL_TWITTER_URL'),
+            'instagram' => env('SOCIAL_INSTAGRAM_URL'),
             'linkedin' => env('SOCIAL_LINKEDIN_URL'),
             'youtube' => env('SOCIAL_YOUTUBE_URL'),
         ],

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Data\Profile\MemberChromeData;
+use App\Support\Navigation\Navigation;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 
@@ -167,10 +168,12 @@ it('renders the member tab bar and its sheets once their routes exist', function
         ->and($html)->toMatch('/class="tab-sheet-link active"\s+aria-current="page"/');
 });
 
-it('omits footer widgets whose links are not built yet', function (): void {
+it('drops links to unbuilt routes and only renders footer widgets that have links', function (): void {
     layoutRoute('/_layout/member', 'test.member', '<x-layouts::member :member="$m"><h1>Hi</h1></x-layouts::member>', ['m' => demoMember()]);
 
+    expect(app(Navigation::class)->links([['member.not-built', 'Nowhere']]))->toBe([]);
+
     $this->get('/_layout/member')
-        ->assertDontSee('<h3>Explore</h3>', false)
-        ->assertDontSee('Help &amp; Support', false);
+        ->assertSee('<h3>Help &amp; Support</h3>', false)   // about, plans, terms… exist since P0.3
+        ->assertDontSee('>Dashboard</a>', false);            // member.dashboard arrives in P2.3
 });

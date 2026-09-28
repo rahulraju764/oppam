@@ -26,6 +26,7 @@
                             @foreach ([
                                 'facebook' => ['Facebook', 'fa-facebook'],
                                 'twitter' => ['Twitter', 'fa-twitter'],
+                                'instagram' => ['Instagram', 'fa-instagram'],
                                 'linkedin' => ['LinkedIn', 'fa-linkedin'],
                                 'youtube' => ['YouTube', 'fa-youtube-play'],
                             ] as $network => [$networkName, $icon])

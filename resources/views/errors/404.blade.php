@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => 404, 'title' => __('We couldn’t find that page'), 'lead' => __('The link may be out of date, or the address may have a typo in it. Nothing is wrong with your account.')])

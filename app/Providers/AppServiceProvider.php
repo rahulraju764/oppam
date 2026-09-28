@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Dusk\DuskServiceProvider;
 use Laravel\Fortify\Fortify;
@@ -33,5 +34,8 @@ final class AppServiceProvider extends ServiceProvider
         // Catch N+1 queries, silently discarded attributes and missing attributes
         // everywhere except production (oppam-code-standards: Eloquent rules).
         Model::shouldBeStrict(! $this->app->isProduction());
+
+        // $paginator->links() renders the template's pagination bar (x-ui.pagination).
+        Paginator::defaultView('vendor.pagination.oppam');
     }
 }

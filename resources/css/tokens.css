@@ -141,3 +141,17 @@
   --z-preloader: 10000;               /* the load curtain — above everything, incl. the tab bar */
   --z-skip: 10001;                    /* skip link — must clear even the curtain when focused */
 }
+
+/* ---------- OPPAM ADDITIONS (not in the template) ----------
+   Tokens the Laravel port needed that the template never had. Add new ones here,
+   not as raw values in a stylesheet. */
+:root {
+  --color-online: #1f8a4c;            /* presence dot */
+  --color-success: #1f7a45;           /* success text/borders — AA on white and on --bg-success */
+  --bg-success: #eef8f1;
+  --color-warning: #7a5000;           /* warning text — AA on --bg-warning */
+  --bg-warning: #fff6e0;
+  --scrim: rgba(0, 0, 0, .45);        /* modal backdrop */
+  --tap-min: 44px;                    /* minimum tap target (oppam-ui-standards) */
+  --tap-compact: 36px;                /* small buttons inside dense rows only */
+}

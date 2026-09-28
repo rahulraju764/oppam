@@ -35,6 +35,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->domain(config('oppam.app_domain'))
                 ->group(base_path('routes/web.php'));
 
+            // 301s from the PHP template's *.php URLs (PRD §6.1). No session needed.
+            Route::domain(config('oppam.app_domain'))
+                ->group(base_path('routes/legacy.php'));
+
             // Uptime probe for load balancers / monitors — deliberately host-agnostic (probed by IP).
             Route::get('/up', fn () => response('OK'))->name('health');
         },

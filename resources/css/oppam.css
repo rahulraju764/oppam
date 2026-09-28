@@ -43,3 +43,41 @@
 .profile-links button:hover i {
   color: var(--color-primary);
 }
+
+/* Register/login submit: the template drew it as an <a> (".regi-button a") so the static
+   skeleton could navigate; PRD §6.2 restores a real <button type="submit">. Same look. */
+.regi-button button {
+  display: block;
+  width: 100%;
+  padding: 10px var(--space-5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-primary);
+  color: var(--color-default);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  text-align: center;
+  transition: background-color var(--transition);
+}
+
+.regi-button button:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+
+.regi-button button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.regi-button button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* The template's map iframe carried width="100%" and style="border:0" inline; inline styles are
+   not allowed in the port (oppam-ui-standards), so the same look lives here. */
+.map-section .map-embed {
+  width: 100%;
+  border: 0;
+}

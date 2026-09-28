@@ -46,6 +46,8 @@ function heroOptions(hero) {
         navigation: {
             prevEl: hero.querySelector('.swiper-button-prev'),
             nextEl: hero.querySelector('.swiper-button-next'),
+            // Swiper 12 injects its own SVG chevron; the template draws the arrows itself.
+            addIcons: false,
         },
         pagination: {
             el: hero.querySelector('.swiper-pagination'),

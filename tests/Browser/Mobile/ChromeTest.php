@@ -71,4 +71,13 @@ it('has no horizontal overflow at phone width', function (string $path): void {
             ->waitUntilMissing('#preloader', 10)
             ->assertScript('document.scrollingElement.scrollWidth <= document.documentElement.clientWidth');
     });
-})->with(['/styleguide', '/styleguide/member']);
+})->with(['/styleguide', '/styleguide/member', '/', '/about', '/branches', '/success-stories', '/plans', '/contact', '/privacy', '/terms', '/no-such-page']);
+
+it('stacks the home register form under the hero banner on a phone', function (): void {
+    $this->browse(function (Browser $browser): void {
+        $browser->visit('/')
+            ->waitUntilMissing('#preloader', 10)
+            ->assertScript('document.querySelector(".register-form").getBoundingClientRect().top >= document.querySelector(".basement-carousel").getBoundingClientRect().bottom - 1')
+            ->assertScript('document.querySelector(".basement-carousel").swiper !== undefined');   // carousel initialised
+    });
+});
