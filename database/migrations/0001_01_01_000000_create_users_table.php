@@ -30,6 +30,9 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('last_seen_at')->nullable();          // presence (PRD §9.6)
             $table->string('status', 20)->default(UserStatus::Active->value);
+            // Bumped by "log out other devices" / password reset; every session carries the value it
+            // signed in with and is ended when they differ (works on any session driver — P1.1).
+            $table->unsignedInteger('session_epoch')->default(0);
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

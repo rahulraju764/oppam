@@ -36,17 +36,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $code
  * @property Gender $gender
  * @property string $first_name
- * @property string $last_name
- * @property CarbonImmutable $dob
- * @property int $height_cm
+ * @property string|null $last_name null only while DRAFT (DB CHECK)
+ * @property CarbonImmutable|null $dob
+ * @property int|null $height_cm
  * @property int|null $weight_kg
- * @property MaritalStatus $marital_status
+ * @property MaritalStatus|null $marital_status
  * @property int $children_count
  * @property PhysicalStatus $physical_status
- * @property int $religion_id
+ * @property int|null $religion_id
  * @property int|null $caste_id
  * @property bool $caste_no_bar
- * @property int $mother_tongue_id
+ * @property int|null $mother_tongue_id
  * @property int|null $star_id
  * @property int|null $rasi_id
  * @property int|null $district_id
@@ -108,12 +108,16 @@ final class Profile extends Model
 
     public function fullName(): string
     {
-        return trim($this->first_name.' '.$this->last_name);
+        return trim($this->first_name.' '.($this->last_name ?? ''));
     }
 
-    /** Age in completed years on $today (default: today in IST, where members live). */
-    public function age(?CarbonInterface $today = null): int
+    /** Age in completed years on $today (default: today in IST); null while a DRAFT has no DOB yet. */
+    public function age(?CarbonInterface $today = null): ?int
     {
+        if ($this->dob === null) {
+            return null;
+        }
+
         return AgeCalculator::ageOn($this->dob, $today ?? CarbonImmutable::now(config('oppam.display_timezone')));
     }
 

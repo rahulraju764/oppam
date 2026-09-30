@@ -1,7 +1,6 @@
 {{-- Landing page (template index.php). Every section is .container.is-chrome, lined up with the nav. --}}
 @inject('nav', 'App\Support\Navigation\Navigation')
 @php($registerUrl = $nav->url('register'))
-@php($loginUrl = $nav->url('login'))
 
 <div>
     <section class="matrimony-slides">
@@ -38,103 +37,10 @@
         </div>
 
         {{-- The form rides a layer that shares the page container, so it lines up with the navbar;
-             below 992px it flows under the carousel. It becomes <livewire:public.quick-register>
-             in P1.1 (M01). Until then the submit is disabled — a disabled default button also
-             blocks Enter-to-submit, so nothing (least of all a password) is sent anywhere. --}}
+             below 992px it flows under the carousel. The form itself is Public\QuickRegister (M01). --}}
         <div class="hero-form-layer">
             <div class="container is-chrome">
-                <form class="register-form" method="post" @if ($registerUrl) action="{{ $registerUrl }}" @endif>
-                    @csrf
-
-                    <div class="register-head">
-                        <p class="eyebrow">{{ __('Official matrimony service') }}</p>
-                        <h2>{{ __('Create your free profile') }}</h2>
-                    </div>
-
-                    {{-- Visually-hidden labels: the placeholder says the same word, and the form must fit the banner. --}}
-                    <div class="form-row">
-                        <label class="form-label visually-hidden" for="reg-first-name">{{ __('First name') }}</label>
-                        <input type="text" class="form-control mat-register" id="reg-first-name" name="first_name" placeholder="{{ __('First name') }}" autocomplete="given-name" required>
-                    </div>
-
-                    <fieldset class="form-row gender-head">
-                        <legend class="form-label">{{ __('Gender') }}</legend>
-                        <div class="gender-options">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="gender" id="reg-gender-male" value="MALE" required>
-                                <label class="form-check-label" for="reg-gender-male">{{ __('Male') }}</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="gender" id="reg-gender-female" value="FEMALE">
-                                <label class="form-check-label" for="reg-gender-female">{{ __('Female') }}</label>
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset class="form-row">
-                        <legend class="form-label">{{ __('Date of birth') }}</legend>
-                        <div class="row g-2">
-                            <div class="col-4">
-                                <input type="text" class="form-control mat-register" id="reg-dob-day" name="dob_day" placeholder="DD" aria-label="{{ __('Date of birth: day') }}" inputmode="numeric" maxlength="2" autocomplete="bday-day" required>
-                            </div>
-                            <div class="col-4">
-                                <input type="text" class="form-control mat-register" id="reg-dob-month" name="dob_month" placeholder="MM" aria-label="{{ __('Date of birth: month') }}" inputmode="numeric" maxlength="2" autocomplete="bday-month" required>
-                            </div>
-                            <div class="col-4">
-                                <input type="text" class="form-control mat-register" id="reg-dob-year" name="dob_year" placeholder="YYYY" aria-label="{{ __('Date of birth: year') }}" inputmode="numeric" maxlength="4" autocomplete="bday-year" required>
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <div class="form-row">
-                        <label class="form-label visually-hidden" for="reg-email">{{ __('Email') }}</label>
-                        <input type="email" class="form-control mat-register" id="reg-email" name="email" placeholder="you@example.com" autocomplete="email">
-                    </div>
-
-                    <fieldset class="form-row">
-                        <legend class="form-label">{{ __('Mobile number') }}</legend>
-                        <div class="row g-2">
-                            <div class="col-5">
-                                <select class="form-select mat-register" id="reg-country-code" name="country_code" aria-label="{{ __('Country code') }}">
-                                    <option value="91" selected>India [+91]</option>
-                                    <option value="971">UAE [+971]</option>
-                                    <option value="966">Saudi Arabia [+966]</option>
-                                    <option value="44">UK [+44]</option>
-                                    <option value="1">USA [+1]</option>
-                                </select>
-                            </div>
-                            <div class="col-7">
-                                <input type="tel" class="form-control mat-register" id="reg-mobile" name="mobile" placeholder="{{ __('Mobile number') }}" aria-label="{{ __('Mobile number') }}" autocomplete="tel-national" required>
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <div class="form-row">
-                        <label class="form-label visually-hidden" for="reg-password">{{ __('Password') }}</label>
-                        <input type="password" class="form-control mat-register" id="reg-password" name="password" placeholder="{{ __('Password') }}" autocomplete="new-password" required>
-                    </div>
-
-                    <div class="form-check tick-box">
-                        <input class="form-check-input" type="checkbox" id="reg-terms" name="terms" value="1" required>
-                        <label class="form-check-label" for="reg-terms">
-                            {{ __('I have read and agreed to the') }}
-                            <a href="{{ route('terms') }}" wire:navigate>{{ __('Terms of Use') }}</a>
-                            {{ __('and') }} <a href="{{ route('privacy') }}" wire:navigate>{{ __('Privacy Policy') }}</a>
-                        </label>
-                    </div>
-
-                    <div class="regi-button">
-                        <button type="submit" @disabled($registerUrl === null)>{{ __('Create an account for free') }}</button>
-                    </div>
-
-                    @if ($registerUrl === null)
-                        <p class="form-pending-note">{{ __('Online registration opens soon. Meanwhile, call or visit any of our branches.') }}</p>
-                    @endif
-
-                    @if ($loginUrl)
-                        <p class="account">{{ __('Already have an account?') }} <a href="{{ $loginUrl }}" wire:navigate>{{ __('Login') }}</a></p>
-                    @endif
-                </form>
+                <livewire:public.quick-register />
             </div>
         </div>
     </section>

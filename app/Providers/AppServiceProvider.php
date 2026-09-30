@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\SmsGateway;
+use App\Domain\Billing\UsagePeriodResolver;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
+use App\Http\Middleware\EnsurePhoneIsVerified;
+use App\Http\Middleware\EnsureProfileOnboarded;
 use App\Http\Middleware\EnsureTwoFactorConfirmed;
 use App\Models\AdminUser;
 use App\Models\Masters\Caste;
@@ -22,8 +26,17 @@ use App\Models\Masters\Religion;
 use App\Models\Masters\Star;
 use App\Models\Masters\State;
 use App\Observers\MasterDataObserver;
+use App\Services\Entitlements\EntitlementService;
+use App\Services\Settings\FeatureFlags;
+use App\Services\Settings\SettingsRepository;
+use App\Services\Sms\LogSmsGateway;
+use App\Services\Sms\Msg91Gateway;
+use Illuminate\Auth\SessionGuard;
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -31,6 +44,7 @@ use Laravel\Dusk\DuskServiceProvider;
 use Laravel\Fortify\Fortify;
 use Laravel\Passkeys\Passkeys;
 use Livewire\Livewire;
+use RuntimeException;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 
 final class AppServiceProvider extends ServiceProvider
@@ -49,6 +63,32 @@ final class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('local', 'testing')) {
             $this->app->register(DuskServiceProvider::class);
         }
+
+        // One instance per request: they memoise settings / flags / the member's current plan.
+        $this->app->scoped(SettingsRepository::class);
+        $this->app->scoped(FeatureFlags::class);
+        $this->app->scoped(EntitlementService::class);
+        $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
+
+        $this->app->singleton(SmsGateway::class, function (): SmsGateway {
+            $driver = (string) config('oppam.sms.driver');
+
+            // The log gateway writes codes to a file: never in production.
+            if ($driver === 'log' && $this->app->isProduction()) {
+                throw new RuntimeException('SMS_DRIVER=log is not allowed in production.');
+            }
+
+            return match ($driver) {
+                'msg91' => new Msg91Gateway(
+                    $this->app->make(HttpFactory::class),
+                    (string) config('services.msg91.auth_key'),
+                    (string) config('services.msg91.otp_template_id'),
+                    (string) config('services.msg91.account_exists_template_id'),
+                ),
+                'log' => $this->app->make(LogSmsGateway::class),
+                default => throw new RuntimeException("Unknown SMS_DRIVER [{$driver}]."),
+            };
+        });
     }
 
     public function boot(): void
@@ -68,6 +108,21 @@ final class AppServiceProvider extends ServiceProvider
         }
 
         $this->bootAdminSecurity();
+
+        // "Stay logged in" lasts 30 days for members (PRD §8.1), not Laravel's 400-day default.
+        Auth::resolved(function (AuthFactory $auth): void {
+            $guard = $auth->guard('web');
+
+            if ($guard instanceof SessionGuard) {
+                $guard->setRememberDuration((int) config('oppam.auth.remember_days') * 24 * 60);
+            }
+        });
+
+        // Member pages keep their access checks on every Livewire update, not just the first load.
+        Livewire::addPersistentMiddleware([
+            EnsurePhoneIsVerified::class,
+            EnsureProfileOnboarded::class,
+        ]);
     }
 
     /** Admin panel security wiring (PRD §8.1, §8.4, A01). */
@@ -109,8 +164,8 @@ final class AppServiceProvider extends ServiceProvider
             EnsureTwoFactorConfirmed::class,
         ]);
 
-        // Staff passwords (and, from P1.1, member passwords): 12+ chars, mixed case, a number;
-        // the breached-password check (an external API call) runs in production only.
+        // Staff passwords: 12+ chars, mixed case, a number; the breached-password check (an
+        // external API call) runs in production only. Members use App\Support\Auth\MemberPassword.
         Password::defaults(fn (): Password => $this->app->isProduction()
             ? Password::min(12)->mixedCase()->numbers()->uncompromised()
             : Password::min(12)->mixedCase()->numbers());

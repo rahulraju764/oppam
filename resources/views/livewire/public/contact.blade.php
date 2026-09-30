@@ -4,7 +4,7 @@
     Turnstile). Until then its submit is disabled and says so — a disabled default button also
     blocks Enter-to-submit.
 --}}
-@php($social = array_filter($site['social']))
+@php($social = $site->social)
 
 <div>
     <section class="contact-section">
@@ -64,10 +64,10 @@
                             <div class="location-body">
                                 <h3>{{ __('Contact') }}</h3>
                                 <ul class="location-content">
-                                    @foreach ($site['emails'] as $email)
+                                    @foreach ($site->emails as $email)
                                         <li><a href="mailto:{{ $email }}">{{ $email }}</a></li>
                                     @endforeach
-                                    @foreach ($site['phones'] as $dial => $display)
+                                    @foreach ($site->phones as $dial => $display)
                                         <li><a href="tel:{{ $dial }}">{{ $display }}</a></li>
                                     @endforeach
                                 </ul>
@@ -80,7 +80,7 @@
                                 <h3>{{ __('Address') }}</h3>
                                 <ul class="location-content">
                                     <li>
-                                        @foreach ($site['address'] as $line)
+                                        @foreach ($site->addressLines as $line)
                                             {{ $line }}@unless ($loop->last)<br>@endunless
                                         @endforeach
                                     </li>
@@ -93,7 +93,7 @@
                             <div class="location-body">
                                 <h3>{{ __('Office Hours') }}</h3>
                                 <ul class="location-content">
-                                    <li>{{ $site['hours'] }}</li>
+                                    <li>{{ $site->hours }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -116,9 +116,9 @@
         </div>
     </section>
 
-    @if ($site['map_embed_url'])
+    @if ($site->mapEmbedUrl)
         <section class="map-section">
-            <iframe title="{{ __('Oppam Matrimony office location') }}" src="{{ $site['map_embed_url'] }}"
+            <iframe title="{{ __('Oppam Matrimony office location') }}" src="{{ $site->mapEmbedUrl }}"
                     class="map-embed" width="600" height="450" allowfullscreen loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade"></iframe>
         </section>

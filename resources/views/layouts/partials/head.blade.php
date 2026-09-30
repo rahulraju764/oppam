@@ -1,10 +1,11 @@
 {{--
     The whole <head> for every member-facing page (template head.php + links.php).
-    $seo: App\Data\Content\SeoData. Robots is forced to noindex until config('oppam.indexable')
-    is on (the template's SITE_LIVE). canonical / og:url are absolute and host-pinned
-    (the public routes only answer on config('oppam.app_domain')).
+    $seo: App\Data\Content\SeoData. Robots is forced to noindex until the A15 setting
+    seo.indexable is on (the template's SITE_LIVE; defaults to APP_INDEXABLE). canonical / og:url
+    are absolute and host-pinned (the public routes only answer on config('oppam.app_domain')).
 --}}
 @php($canonical = url()->current())
+@php($indexable = \App\Support\Facades\Settings::bool(\App\Enums\SettingKey::SeoIndexable))
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -14,8 +15,8 @@
 <meta name="keywords" content="{{ $seo->keywords }}">
 <link rel="canonical" href="{{ $canonical }}">
 
-<meta name="robots" content="{{ $seo->robots(config('oppam.indexable')) }}">
-@unless (config('oppam.indexable'))
+<meta name="robots" content="{{ $seo->robots($indexable) }}">
+@unless ($indexable)
     <meta name="googlebot" content="noindex, nofollow">
 @endunless
 

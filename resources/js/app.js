@@ -19,6 +19,8 @@ import './template/tab-sheet';
 import './template/page-back';
 import './template/option-buttons';
 
+import './alpine/otp-countdown';
+
 window.bootstrap = bootstrap;
 
 boot();

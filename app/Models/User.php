@@ -28,6 +28,8 @@ use Illuminate\Notifications\Notifiable;
  * @property UserStatus $status
  * @property \Illuminate\Support\Carbon|null $phone_verified_at
  * @property \Illuminate\Support\Carbon|null $last_seen_at
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property int $session_epoch bumped by "log out other devices" / password reset (P1.1)
  */
 final class User extends Authenticatable
 {
@@ -40,6 +42,11 @@ final class User extends Authenticatable
         'email',
         'password',
         'created_for',
+    ];
+
+    /** Mirrors the column default, so a user created in this request has it without a reload. */
+    protected $attributes = [
+        'session_epoch' => 0,
     ];
 
     /** @var list<string> */
@@ -58,6 +65,7 @@ final class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'last_seen_at' => 'datetime',
+            'session_epoch' => 'integer',
             'password' => 'hashed',
         ];
     }
@@ -72,6 +80,12 @@ final class User extends Authenticatable
     public function notificationPreferences(): HasMany
     {
         return $this->hasMany(NotificationPreference::class);
+    }
+
+    /** @return HasMany<LoginEvent, $this> */
+    public function loginEvents(): HasMany
+    {
+        return $this->hasMany(LoginEvent::class);
     }
 
     public function isActive(): bool

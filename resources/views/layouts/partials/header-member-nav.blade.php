@@ -119,17 +119,10 @@
                 @endif
             @endforeach
 
-            {{-- Logout is a POST (P1.1). Until the route exists nothing is rendered. --}}
-            @php($logoutUrl = $nav->url('logout'))
-            @if ($logoutUrl)
-                <form method="POST" action="{{ $logoutUrl }}">
-                    @csrf
-                    <button type="submit" class="profile-logout">
-                        <i class="fa fa-sign-out" aria-hidden="true"></i>
-                        {{ __('Logout') }}
-                    </button>
-                </form>
-            @endif
+            {{-- Logout / log out other devices are POSTs through Livewire (M01), never GET links. --}}
+            @auth('web')
+                <livewire:member.auth.logout-button />
+            @endauth
         </div>
     </div>
 </li>

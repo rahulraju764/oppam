@@ -75,6 +75,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Local development only: LogSmsGateway writes OTPs here (never bound in production).
+        'sms' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/sms.log'),
+            'level' => 'info',
+            'days' => 3,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

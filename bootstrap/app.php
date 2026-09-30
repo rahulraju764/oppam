@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\CaptureReferralCode;
 use App\Http\Middleware\ConfigureAdminSession;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
 use App\Http\Middleware\EnsureLivewireComponentHost;
+use App\Http\Middleware\EnsureMemberSessionIsValid;
+use App\Http\Middleware\EnsurePhoneIsVerified;
+use App\Http\Middleware\EnsureProfileOnboarded;
 use App\Http\Middleware\EnsureTwoFactorConfirmed;
+use App\Support\Navigation\MemberLanding;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -61,21 +66,29 @@ return Application::configure(basePath: dirname(__DIR__))
         // the admin domain, and nothing else may run there (P0.5 review Blocker).
         $middleware->web(append: [EnsureLivewireComponentHost::class]);
 
+        // Members/brokers: a suspended account or a session from before "log out other devices"
+        // is signed out on its next request, pages and Livewire updates alike (M01, R-M01-5).
+        // ?ref=BRK… sets the 30-day first-touch referral cookie (R-M13-9).
+        $middleware->web(append: [EnsureMemberSessionIsValid::class, CaptureReferralCode::class]);
+
         $middleware->alias([
             'admin.session' => EnsureAdminSessionIsValid::class,
             'admin.active' => EnsureAdminIsActive::class,
             '2fa.confirmed' => EnsureTwoFactorConfirmed::class,
             'ip.allowlist' => EnsureAdminIpAllowed::class,
+            'verified.phone' => EnsurePhoneIsVerified::class,
+            'profile.onboarded' => EnsureProfileOnboarded::class,
         ]);
 
-        // Guests go to the login page of the surface they tried to reach (member login: P1.1).
+        // Guests go to the login page of the surface they tried to reach.
         $middleware->redirectGuestsTo(fn (Request $request): string => $request->getHost() === config('oppam.admin_domain')
             ? route('admin.login')
-            : (Route::has('login') ? route('login') : route('home')));
+            : route('login'));
 
+        // Signed-in members who open /login or /register go where they belong (wizard or home).
         $middleware->redirectUsersTo(fn (Request $request): string => $request->getHost() === config('oppam.admin_domain')
             ? route('admin.dashboard')
-            : route('home'));
+            : app(MemberLanding::class)->url($request->user('web')));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

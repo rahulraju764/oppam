@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Created and verified only by the OTP Actions (P1.1), so nothing here is mass-assignable.
  *
  * @property string $id
+ * @property string|null $user_id
  * @property string $phone
  * @property OtpPurpose $purpose
  * @property int $attempts

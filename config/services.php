@@ -30,6 +30,15 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    // SMS / OTP (PRD §4). SMS_DRIVER in config/oppam.php picks the gateway.
+    'msg91' => [
+        'auth_key' => env('MSG91_AUTH_KEY'),
+        'sender_id' => env('MSG91_SENDER_ID', 'OPPAMM'),
+        'otp_template_id' => env('MSG91_OTP_TEMPLATE_ID'),
+        // DLT template: "You already have an Oppam Matrimony account. Log in instead." (M01)
+        'account_exists_template_id' => env('MSG91_ACCOUNT_EXISTS_TEMPLATE_ID'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

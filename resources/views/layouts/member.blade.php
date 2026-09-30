@@ -9,6 +9,8 @@
 
 {{-- Always private, even when a page passes its own $seo: these pages name real people. --}}
 @php($seo = ($seo ?? \App\Data\Content\SeoData::private($title ?? \App\Data\Content\SeoData::DEFAULT_TITLE))->asPrivate())
+{{-- A signed-in member keeps their own chrome when a page does not pass one (P1.1). --}}
+@php($member ??= \App\Data\Profile\MemberChromeData::current())
 @inject('nav', 'App\Support\Navigation\Navigation')
 @php($resolvedPageNav = $nav->pageNav($pageNav))
 

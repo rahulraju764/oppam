@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Livewire\Member\Auth\ForgotPassword;
+use App\Livewire\Member\Auth\Login;
+use App\Livewire\Member\Auth\Register;
+use App\Livewire\Member\Auth\VerifyOtp;
+use App\Livewire\Member\Onboarding\Wizard;
 use App\Livewire\Public\About;
 use App\Livewire\Public\Branches;
 use App\Livewire\Public\Contact;
@@ -14,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Public + member site — oppam.in
 |--------------------------------------------------------------------------
-| Public pages (PRD §6.2, M12); member pages arrive from P1.1. Legacy *.php URLs: routes/legacy.php.
+| Public pages (PRD §6.2, M12), auth (M01) and member pages. Legacy *.php URLs: routes/legacy.php.
 */
 
 Route::get('/', Home::class)->name('home');
@@ -28,6 +33,19 @@ Route::view('/terms', 'pages.terms')->name('terms');
 
 // The FAQ lives on the plans page (template faq.php was a 301 stub to package#faq).
 Route::permanentRedirect('/faq', '/plans#faq')->name('faq');
+
+// Registration, login and password reset (M01, PRD §8.2). Signed-in members are sent on.
+Route::middleware('guest')->group(function (): void {
+    Route::get('/register', Register::class)->name('register');
+    Route::get('/verify-otp', VerifyOtp::class)->name('register.verify');
+    Route::get('/login', Login::class)->name('login');
+    Route::get('/forgot-password', ForgotPassword::class)->name('password.forgot');
+});
+
+// Member area. Pages after onboarding also get `profile.onboarded` (PRD §13); the wizard can't.
+Route::middleware(['auth', 'verified.phone'])->group(function (): void {
+    Route::get('/onboarding/{step}', Wizard::class)->whereNumber('step')->name('member.onboarding');
+});
 
 // Living styleguide for visual checks (P0.2). Local only: never registered in testing/production.
 if (app()->environment('local')) {

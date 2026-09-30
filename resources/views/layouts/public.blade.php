@@ -6,11 +6,13 @@
     seo      ?App\Data\Content\SeoData  (a Livewire #[Title] alone also works)
     pageNav  runtime overrides for the page-nav bar: ['title' => …, 'prev' => [url, label]|null, …]
     member   ?App\Data\Profile\MemberChromeData — a signed-in member keeps their own chrome on
-             shared pages (resolved from the session from P1.1; null = logged-out chrome)
+             shared pages (resolved from the session when not passed; null = logged-out chrome)
 --}}
 @props(['seo' => null, 'title' => null, 'pageNav' => [], 'member' => null])
 
 @php($seo ??= $title !== null ? new \App\Data\Content\SeoData(title: $title) : new \App\Data\Content\SeoData())
+{{-- A signed-in member keeps their own chrome when a page does not pass one (P1.1). --}}
+@php($member ??= \App\Data\Profile\MemberChromeData::current())
 @inject('nav', 'App\Support\Navigation\Navigation')
 
 <!DOCTYPE html>

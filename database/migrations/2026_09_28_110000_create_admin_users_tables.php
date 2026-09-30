@@ -46,7 +46,7 @@ return new class extends Migration
             $table->string('role', 60);
             $table->string('token_hash', 64)->unique();
             $table->foreignUlid('invited_by_id')->constrained('admin_users')->restrictOnDelete();
-            $table->timestamp('expires_at');
+            $table->timestamp('expires_at')->useCurrent();   // explicit default: see docs/decisions.md (MariaDB implicit ON UPDATE)
             $table->timestamp('accepted_at')->nullable();
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
@@ -59,7 +59,7 @@ return new class extends Migration
             $table->foreignUlid('admin_user_id')->constrained()->cascadeOnDelete();
             $table->string('ip_address', 45)->nullable();
             $table->string('user_agent', 255)->nullable();
-            $table->timestamp('last_seen_at');
+            $table->timestamp('last_seen_at')->useCurrent();   // explicit default: see docs/decisions.md (MariaDB implicit ON UPDATE)
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
 

@@ -1,10 +1,10 @@
 {{--
     Main footer (template footer.php). Same shell for everyone; only "Explore" branches on
-    whether a member is signed in ($member). Contact details come from config('oppam.site')
-    until admin-editable site settings exist (P0.6). Unbuilt routes are skipped.
+    whether a member is signed in ($member). Contact details: SiteContactData (A15 settings).
+    Unbuilt routes are skipped.
 --}}
 @inject('nav', 'App\Support\Navigation\Navigation')
-@php($site = config('oppam.site'))
+@php($site = \App\Data\Content\SiteContactData::current())
 
 <footer class="footer-area footer-bg-two">
     <div class="container is-chrome">
@@ -13,14 +13,14 @@
             <div class="col-lg-4 col-md-6">
                 <div class="footer-widget footer-brand">
                     <a href="{{ $nav->homeUrl() }}" class="footer-logo" wire:navigate>
-                        <img src="{{ asset('images/logo/oppam-logo.webp') }}" alt="{{ $site['name'] }}" width="600" height="301" loading="lazy" decoding="async">
+                        <img src="{{ asset('images/logo/oppam-logo.webp') }}" alt="{{ config('oppam.site.name') }}" width="600" height="301" loading="lazy" decoding="async">
                     </a>
 
                     <p class="footer-desc">
                         {{ __('We help individuals and families find meaningful, lifelong relationships through a trusted and secure matrimony platform.') }}
                     </p>
 
-                    @php($social = array_filter($site['social']))
+                    @php($social = $site->social)
                     @if ($social !== [])
                         <div class="social_media">
                             @foreach ([
@@ -86,13 +86,13 @@
                     <div class="office-icon-text">
                         <i class="fa fa-map-marker" aria-hidden="true"></i>
                         <address>
-                            @if ($site['map_url'])
-                                <a href="{{ $site['map_url'] }}" target="_blank" rel="noopener">
+                            @if ($site->mapUrl)
+                                <a href="{{ $site->mapUrl }}" target="_blank" rel="noopener">
                             @endif
-                            @foreach ($site['address'] as $line)
+                            @foreach ($site->addressLines as $line)
                                 {{ $line }}@unless ($loop->last)<br>@endunless
                             @endforeach
-                            @if ($site['map_url'])
+                            @if ($site->mapUrl)
                                 </a>
                             @endif
                         </address>
@@ -101,7 +101,7 @@
                     <div class="office-icon-text">
                         <i class="fa fa-phone" aria-hidden="true"></i>
                         <div class="contact-links">
-                            @foreach ($site['phones'] as $dial => $display)
+                            @foreach ($site->phones as $dial => $display)
                                 <a href="tel:{{ $dial }}">{{ $display }}</a>
                             @endforeach
                         </div>
@@ -110,7 +110,7 @@
                     <div class="office-icon-text">
                         <i class="fa fa-envelope" aria-hidden="true"></i>
                         <div class="contact-links">
-                            @foreach ($site['emails'] as $email)
+                            @foreach ($site->emails as $email)
                                 <a href="mailto:{{ $email }}">{{ $email }}</a>
                             @endforeach
                         </div>
@@ -122,7 +122,7 @@
 
         {{-- No .row here: its negative margins overflowed the strip at 390px (template-notes.md). --}}
         <div class="copyright-area">
-            <p class="copyright-text">&copy; {{ now(config('oppam.display_timezone'))->year }} {{ $site['name'] }}. {{ __('All Rights Reserved.') }}</p>
+            <p class="copyright-text">&copy; {{ now(config('oppam.display_timezone'))->year }} {{ config('oppam.site.name') }}. {{ __('All Rights Reserved.') }}</p>
             <p class="footer-credit">Created by Eyednext</p>
         </div>
     </div>

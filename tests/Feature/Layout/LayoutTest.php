@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Data\Profile\MemberChromeData;
+use App\Enums\SettingKey;
+use App\Models\Setting;
 use App\Support\Navigation\Navigation;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +61,15 @@ it('lets public pages be indexed but never member pages once the site is indexab
 
     $this->get('/_layout/public')->assertSee('<meta name="robots" content="index, follow">', false);
     $this->get('/_layout/member')->assertSee('<meta name="robots" content="noindex, nofollow">', false);
+});
+
+it('takes the indexable switch from the A15 setting over the deployment default', function (): void {
+    Setting::factory()->keyed(SettingKey::SeoIndexable, true)->create();
+    layoutRoute('/_layout/public', 'test.public', '<x-layouts::public><h1>Hi</h1></x-layouts::public>');
+
+    $this->get('/_layout/public')
+        ->assertSee('<meta name="robots" content="index, follow">', false)
+        ->assertDontSee('googlebot', false);
 });
 
 it('builds canonical and og:url as absolute URLs on the app domain', function (): void {

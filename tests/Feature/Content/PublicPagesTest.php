@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\SettingKey;
+use App\Models\Setting;
 use Database\Seeders\PlansSeeder;
 use Illuminate\Support\Facades\Route;
 
@@ -74,14 +76,15 @@ it('returns 404 for a *.php URL the template never had', function (): void {
     $this->get('/wp-login.php')->assertNotFound();
 });
 
-it('does not let the hero register form submit anywhere until registration exists (P1.1)', function (): void {
-    expect(Route::has('register'))->toBeFalse();
+it('renders the hero register form as the live QuickRegister component (P1.1 replaced the disabled placeholder)', function (): void {
+    expect(Route::has('register'))->toBeTrue();
 
     $html = $this->get('/')->getContent();
 
-    expect($html)->toMatch('/<form class="register-form" method="post"\s*>/')      // no action to a missing route
-        ->and($html)->toMatch('/<button type="submit"\s+disabled>/')                // Enter can't submit either
-        ->and($html)->toContain('Online registration opens soon');
+    expect($html)->toContain('wire:submit="register"')                              // posts through Livewire, not a plain form
+        ->and($html)->toContain('id="reg-created-for"')                               // "Profile for" (PRD M01)
+        ->and($html)->not->toContain('Online registration opens soon')
+        ->and($html)->not->toMatch('/<button type="submit"\s+disabled>/');
 });
 
 it('keeps the contact form disabled until its handler exists (P8.1)', function (): void {
@@ -109,8 +112,8 @@ it('links each success-story card to its full story on the same page', function 
         ->assertSee('id="story-allen-riya"', false);
 });
 
-it('shows the contact details from the single site config on both the page and the footer', function (): void {
-    config(['oppam.site.emails' => ['help@oppam.test']]);
+it('shows the contact details from the admin-editable settings on both the page and the footer (A15)', function (): void {
+    Setting::factory()->keyed(SettingKey::SiteSupportEmail, 'help@oppam.test')->create();
 
     $html = $this->get('/contact')->getContent();
 

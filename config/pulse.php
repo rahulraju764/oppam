@@ -189,6 +189,8 @@ return [
             'threshold' => env('PULSE_SLOW_OUTGOING_REQUESTS_THRESHOLD', 1000),
             'ignore' => [
                 // '#^http://127\.0\.0\.1:13714#', // Inertia SSR...
+                // MSG91's OTP API takes the number and the code in the URL: never store it (P1.1 review).
+                '#^https?://control\.msg91\.com/#',
             ],
             'groups' => [
                 // '#^https://api\.github\.com/repos/.*$#' => 'api.github.com/repos/*',

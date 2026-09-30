@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('purpose', 20);
             $table->string('code_hash');
             $table->unsignedTinyInteger('attempts')->default(0);
-            $table->timestamp('expires_at');
+            $table->timestamp('expires_at')->useCurrent();   // explicit default: see docs/decisions.md (MariaDB implicit ON UPDATE)
             $table->timestamp('consumed_at')->nullable();
             $table->string('ip_address', 45)->nullable();
             $table->timestamps();

@@ -31,17 +31,12 @@ return [
     'site' => [
         'name' => 'Oppam Matrimony',
         'tagline' => 'Two hearts, one journey',
-        // One source for the footer and the contact page (the template listed a Dubai address in
-        // the footer and this Kerala office on contact.php). Placeholder values from the template.
-        'address' => ['1st floor 272-3, near St George Basilica church,', 'Angamaly, Kerala 683572'],
-        'hours' => 'Monday – Saturday, 9:30am – 6:30pm',
+        // Contact details (emails, phone, address, hours) are admin-editable settings since P0.6
+        // (App\Enums\SettingKey::Site*); read them through App\Data\Content\SiteContactData.
         // Rendered as a link only when set (no placeholder URLs).
         'map_url' => env('SITE_MAP_URL'),
         // Contact-page map embed (the template's Angamaly embed by default); omitted when empty.
         'map_embed_url' => env('SITE_MAP_EMBED_URL', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125655.32334806089!2d76.2986082794851!3d10.202660579800396!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b080665e0bb9959%3A0x19b75e6b4e671ef1!2sAngamaly%2C%20Kerala!5e0!3m2!1sen!2sin!4v1780653618173!5m2!1sen!2sin'),
-        // dial string => display (the template's placeholder number, dialled exactly as it had it).
-        'phones' => ['089538812873' => '0895 - 3881 - 2873'],
-        'emails' => ['support@oppam.in', 'info@oppam.in'],
         // Only rendered when set — the template's href="#" placeholders are not carried over.
         'social' => [
             'facebook' => env('SOCIAL_FACEBOOK_URL'),
@@ -71,8 +66,22 @@ return [
     ],
 
     'sms' => [
-        // log (local/testing) | msg91 (production). Bound in AppServiceProvider once SmsGateway exists (P1.1).
+        // log (local/testing) | msg91 (production). Bound in AppServiceProvider; `log` is refused in production.
         'driver' => env('SMS_DRIVER', 'log'),
+    ],
+
+    // Member / broker sign-in (M01, PRD §8.2). Security policy, so config rather than admin settings
+    // (same reasoning as the admin block above). OTP send limits and TTL are A15 settings (SettingKey::Otp*).
+    'auth' => [
+        'otp_resend_seconds' => 30,              // minimum gap between two codes to one number
+        'password_attempts' => 5,                // per login id, then locked for password_lockout_minutes
+        'password_lockout_minutes' => 15,
+        'ip_attempts_per_minute' => 30,          // password logins + OTP verifications from one IP
+        'registrations_per_ip_per_hour' => 20,
+        'remember_days' => 30,                   // "Stay logged in"
+        'device_cookie' => 'oppam_device',       // random id, recognises a returning device (new-device alert)
+        'referral_cookie' => 'oppam_ref',        // ?ref=BRK1042, 30-day first touch (R-M13-9; used from P7.2)
+        'referral_cookie_days' => 30,
     ],
 
 ];

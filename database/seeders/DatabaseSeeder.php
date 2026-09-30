@@ -19,6 +19,7 @@ final class DatabaseSeeder extends Seeder
             MastersSeeder::class,
             PlansSeeder::class,
             AdminRolesSeeder::class,
+            SettingsSeeder::class,
         ]);
 
         if (app()->environment('local')) {

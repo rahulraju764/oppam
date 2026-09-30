@@ -113,9 +113,10 @@ final class DemoProfilesSeeder extends Seeder
             'family_status_option_id' => $lookups['family_status']->random(),
             'family_values_option_id' => $lookups['family_values']->random(),
         ]);
+        $age = $profile->age() ?? 30;   // demo profiles are ACTIVE, so they always have a DOB
         PartnerPreference::factory()->for($profile)->create([
-            'age_min' => max(21, $profile->age() - ($profile->gender === Gender::Male ? 7 : 1)),
-            'age_max' => $profile->age() + ($profile->gender === Gender::Male ? 1 : 7),
+            'age_min' => max(21, $age - ($profile->gender === Gender::Male ? 7 : 1)),
+            'age_max' => $age + ($profile->gender === Gender::Male ? 1 : 7),
             'religion_ids' => [$profile->religion_id],
         ]);
         ContactDetail::factory()->for($profile)->create(['country_id' => $india, 'district_id' => $profile->district_id]);

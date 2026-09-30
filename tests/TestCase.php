@@ -14,5 +14,9 @@ abstract class TestCase extends BaseTestCase
 
         // Layout tests must not depend on a built Vite manifest (CI doesn't run npm build).
         $this->withoutVite();
+
+        // defer() work (e.g. OTP SMS sent after the response, P1.1) runs immediately in tests,
+        // so its effects can be asserted in the same test.
+        $this->withoutDefer();
     }
 }

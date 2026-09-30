@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 0 — Foundation
-**Next session:** P0.6 — Settings, feature flags & entitlements service
+**Current phase:** 1 — Identity & profiles (Phase 0 built; P0.4–P0.6 commits await owner review)
+**Next session:** P1.2 — Wizard steps 1–3 (M02) (P1.1 built; its commit, with P0.4–P0.6, awaits owner review)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -20,10 +20,10 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P0.3 Blade components & static public pages — 2026-09-28 (public pages = Livewire components; DemoContent until P8.1)
 - [x] P0.4 Core schema, masters & seed data — 2026-09-28 (reviewer READY; commit held for owner review of users/otp_challenges schema — rule 5)
 - [x] P0.5 Admin auth, RBAC & audit (A01 + A12 core) — 2026-09-28 (reviewer READY after 1 Blocker + 3 Majors fixed; commit held for owner review — rule 5)
-- [ ] P0.6 Settings, feature flags & entitlements service
+- [x] P0.6 Settings, feature flags & entitlements service — 2026-09-28 (reviewer READY after 3 Majors fixed incl. a reproduced consume deadlock; commit held with P0.4/P0.5 for owner review — rule 5)
 
 ## Phase 1 — Identity & profiles
-- [ ] P1.1 Registration, OTP, login (M01)
+- [x] P1.1 Registration, OTP, login (M01) — 2026-09-29 (reviewer READY after 1 Blocker + 4 Majors fixed over 4 rounds; commit held for owner review — rule 5)
 - [ ] P1.2 Wizard steps 1–3 (M02)
 - [ ] P1.3 Wizard steps 4–6, completeness, submit (M02)
 - [ ] P1.4 Photos & media privacy (M11)
@@ -82,7 +82,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [ ] P9.3 Font Awesome 6, accessibility & performance pass
 - [ ] P9.4 Security review & load test
 - [ ] P9.5 Deployment
-- [ ] Launch: APP_INDEXABLE=true, live Razorpay keys, monitoring green
+- [ ] Launch: APP_INDEXABLE=true (unless seo.indexable was set in A15 settings), live Razorpay keys, monitoring green
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
@@ -93,6 +93,11 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
   `register` route (the hero form's submit is disabled only while that route is missing).
 - P0.3 → P0.4: replace `DemoContent::plans()` with plans from the `plans` / `plan_features` tables.
 - P0.3 → P9.5: nginx needs the `/index.php` → `/` 301 (Apache has it in public/.htaccess).
+- P1.1 → P9.5: configure `trustProxies` for the load balancer / Cloudflare, otherwise every per-IP limit
+  (OTP 200/day, 20 registrations/hour, 30 logins/min) becomes one site-wide limit. Add a scheduled clean-up
+  of abandoned unverified registrations (P1.7 or later). Production must run nginx + PHP-FPM: the OTP SMS is sent
+  after the response with defer(), which only hides the SMS time where the response is flushed first
+  (not Apache mod_php / artisan serve). Register the MSG91 "account exists" DLT template (MSG91_ACCOUNT_EXISTS_TEMPLATE_ID).
 - P0.5 → P1.7: admin impersonation (A01) is built with member management.
 - Local admin sign-in: http://admin.localhost:8000 — admin@oppam.test (and one demo admin per role) with the
   ADMIN_SEED_PASSWORD from your local .env; 2FA is enrolled at first sign-in. Production: `php artisan oppam:create-super-admin`.

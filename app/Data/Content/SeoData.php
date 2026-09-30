@@ -7,7 +7,7 @@ namespace App\Data\Content;
 /**
  * Everything a page's <head> needs (PRD §6.1, template head.php). A page sets what differs;
  * the rest falls back to site defaults. Robots is only honoured while the site is indexable
- * (config('oppam.indexable'), the template's SITE_LIVE) — until then every page is noindex.
+ * (A15 setting seo.indexable, the template's SITE_LIVE) — until then every page is noindex.
  */
 final readonly class SeoData
 {

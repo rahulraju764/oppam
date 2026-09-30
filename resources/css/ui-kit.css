@@ -266,6 +266,17 @@
   font-size: var(--text-xs);
 }
 
+/* ---- Template form fields in an error state (P1.1 auth forms) ----
+   The template's .login-input / .mat-register padding overrides Bootstrap's, so Bootstrap's
+   is-invalid icon would sit on the text. The red border plus the message below carry the error. */
+.login-input.is-invalid,
+.mat-register.is-invalid,
+.login-input.is-invalid:focus,
+.mat-register.is-invalid:focus {
+  background-image: none;
+  border-color: var(--color-primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ui-spinner { animation-duration: 2s; }
   .ui-skeleton { animation: none; }
