@@ -52,6 +52,24 @@ return [
         ],
     ],
 
+    // Admin panel security policy (PRD A01, §8.1). Deployment-level security settings, not
+    // business rules, so they live here (env-overridable) rather than in admin-editable settings.
+    'admin' => [
+        'session_cookie' => env('ADMIN_SESSION_COOKIE', 'oppam_admin_session'),
+        'idle_timeout_minutes' => (int) env('ADMIN_IDLE_TIMEOUT', 30),
+        'absolute_timeout_minutes' => (int) env('ADMIN_ABSOLUTE_TIMEOUT', 720),   // 12 h
+        'max_login_attempts' => 3,              // then locked for lockout_minutes (per email, known or not)
+        'max_two_factor_attempts' => 5,         // then account locked + super admins alerted
+        'lockout_minutes' => 30,
+        'pending_login_minutes' => 10,          // password accepted, 2FA not yet done
+        'invitation_hours' => 72,               // single-use staff invitation link
+        'recovery_codes' => 10,
+        // LOCAL demo admins only (AdminUsersSeeder). Never set in staging/production.
+        'seed_password' => env('ADMIN_SEED_PASSWORD'),
+        // Comma-separated IPs / CIDR ranges allowed to reach the admin panel; empty = no restriction.
+        'ip_allowlist' => array_values(array_filter(array_map('trim', explode(',', (string) env('ADMIN_IP_ALLOWLIST', ''))))),
+    ],
+
     'sms' => [
         // log (local/testing) | msg91 (production). Bound in AppServiceProvider once SmsGateway exists (P1.1).
         'driver' => env('SMS_DRIVER', 'log'),

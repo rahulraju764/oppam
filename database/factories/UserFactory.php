@@ -4,43 +4,63 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\CreatedFor;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * Fake members only (CLAUDE.md: seeders use fake data). Mobile numbers use the +91 90000 xxxxx
+ * block, which the demo data never shares with a real person's number range in tests.
+ *
+ * @extends Factory<User>
  */
 final class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
+    protected $model = User::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected static ?string $password = null;
+
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
+            'phone' => '+9190000'.$this->faker->unique()->numerify('#####'),
+            'email' => $this->faker->unique()->safeEmail(),
             'password' => self::$password ??= Hash::make('password'),
+            'created_for' => CreatedFor::Self,
+            'role' => UserRole::Member,
+            'status' => UserStatus::Active,
+            'phone_verified_at' => now(),
             'remember_token' => Str::random(10),
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(['phone_verified_at' => null]);
+    }
+
+    public function suspended(): static
+    {
+        return $this->state(['status' => UserStatus::Suspended]);
+    }
+
+    public function banned(): static
+    {
+        return $this->state(['status' => UserStatus::Banned]);
+    }
+
+    public function broker(): static
+    {
+        return $this->state(['role' => UserRole::Broker]);
+    }
+
+    public function createdFor(CreatedFor $createdFor): static
+    {
+        return $this->state(['created_for' => $createdFor]);
     }
 }

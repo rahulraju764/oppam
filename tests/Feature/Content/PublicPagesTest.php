@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use Database\Seeders\PlansSeeder;
 use Illuminate\Support\Facades\Route;
 
 /*
 | P0.3 — the public pages converted from the template (PRD §6.2, M12) and the legacy *.php
 | redirects (PRD §6.1).
 */
+
+beforeEach(function (): void {
+    $this->seed(PlansSeeder::class);   // pricing cards come from the plans table (P0.4)
+});
 
 dataset('public pages', [
     'home' => ['/', 'Oppam Matrimony | Trusted Kerala Matrimony'],
@@ -29,7 +34,12 @@ it('serves every public page with exactly one h1 and its own title', function (s
 })->with('public pages');
 
 it('never serves the public pages on the admin domain', function (string $uri): void {
-    $this->get('http://'.config('oppam.admin_domain').$uri)->assertNotFound();
+    $response = $this->get('http://'.config('oppam.admin_domain').$uri);
+
+    // "/" there is the admin dashboard (guests → admin login, P0.5); every other public path 404s.
+    $uri === '/'
+        ? $response->assertRedirect(route('admin.login'))
+        : $response->assertNotFound();
 })->with('public pages');
 
 it('returns a real 404 status and the designed not-found page for an unknown URL', function (): void {

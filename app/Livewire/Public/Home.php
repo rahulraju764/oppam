@@ -6,6 +6,7 @@ namespace App\Livewire\Public;
 
 use App\Data\Content\SeoData;
 use App\Data\Profile\ProfileCardData;
+use App\Queries\Billing\PlanCatalog;
 use App\Support\DemoContent;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -29,7 +30,7 @@ final class Home extends Component
         return view('livewire.public.home', [
             'members' => $members,
             'testimonials' => DemoContent::testimonials(),
-            'plans' => DemoContent::plans(ctaUrl: route('plans')),
+            'plans' => app(PlanCatalog::class)->cards(ctaUrl: route('plans')),
         ])->layout('layouts::public', ['seo' => new SeoData(
             title: 'Oppam Matrimony | Trusted Kerala Matrimony',
             description: 'Oppam Matrimony helps Malayalis in Kerala to find genuine life partners through verified profiles, secure matchmaking, and trusted connections.',

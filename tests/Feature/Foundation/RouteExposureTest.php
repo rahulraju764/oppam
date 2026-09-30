@@ -35,7 +35,10 @@ it('keeps the Horizon and Pulse dashboards on the admin domain only', function (
 })->with(['horizon.index', 'pulse']);
 
 it('never serves the public home page on the admin domain', function (): void {
-    $this->get('http://'.config('oppam.admin_domain').'/')->assertNotFound();
+    // "/" on the admin domain is the admin dashboard: a guest is sent to the ADMIN login.
+    $this->get('http://'.config('oppam.admin_domain').'/')
+        ->assertRedirect(route('admin.login'))
+        ->assertDontSee('matrimony-slides');
 });
 
 it('only loads the Dusk login helper routes in local and testing', function (): void {

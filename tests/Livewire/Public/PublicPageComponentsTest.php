@@ -8,11 +8,16 @@ use App\Livewire\Public\Contact;
 use App\Livewire\Public\Home;
 use App\Livewire\Public\Plans;
 use App\Livewire\Public\SuccessStories;
+use Database\Seeders\PlansSeeder;
 use Livewire\Livewire;
 
 /*
 | P0.3 — the public page components render their template content (PRD M12).
 */
+
+beforeEach(function (): void {
+    $this->seed(PlansSeeder::class);
+});
 
 it('renders each public page component', function (string $component, string $expected): void {
     Livewire::test($component)->assertOk()->assertSee($expected);

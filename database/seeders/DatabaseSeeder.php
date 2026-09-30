@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * `php artisan migrate:fresh --seed` (LOCAL ONLY — CLAUDE.md). Reference data (masters, plans)
+ * is idempotent and safe everywhere; demo members are seeded in the local environment only.
+ * Settings/flags (P0.6) join this list in their session.
+ */
 final class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            MastersSeeder::class,
+            PlansSeeder::class,
+            AdminRolesSeeder::class,
         ]);
+
+        if (app()->environment('local')) {
+            $this->call([DemoProfilesSeeder::class, AdminUsersSeeder::class]);
+        }
     }
 }

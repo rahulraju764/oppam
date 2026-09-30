@@ -19,3 +19,7 @@ pest()->extend(TestCase::class)
 
 // Browser tests (php artisan dusk) — phone-width ones use device emulation.
 pest()->extend(Tests\MobileDuskTestCase::class)->in('Browser/Mobile');
+
+require_once __DIR__.'/Support/admin.php';
+pest()->extend(Tests\DuskTestCase::class)->in('Browser/Admin');
+require_once __DIR__.'/Support/dusk.php';

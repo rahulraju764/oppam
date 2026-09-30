@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 0 — Foundation
-**Next session:** P0.4 — Core schema, masters & seed data
+**Next session:** P0.6 — Settings, feature flags & entitlements service
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -18,8 +18,8 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P0.1 Project bootstrap — 2026-09-27 (Windows + XAMPP; see decisions.md)
 - [x] P0.2 Template assets & layouts — 2026-09-28 (Swiper 12, self-hosted fonts, Dusk suite; see decisions.md)
 - [x] P0.3 Blade components & static public pages — 2026-09-28 (public pages = Livewire components; DemoContent until P8.1)
-- [ ] P0.4 Core schema, masters & seed data
-- [ ] P0.5 Admin auth, RBAC & audit (A01 + A12 core)
+- [x] P0.4 Core schema, masters & seed data — 2026-09-28 (reviewer READY; commit held for owner review of users/otp_challenges schema — rule 5)
+- [x] P0.5 Admin auth, RBAC & audit (A01 + A12 core) — 2026-09-28 (reviewer READY after 1 Blocker + 3 Majors fixed; commit held for owner review — rule 5)
 - [ ] P0.6 Settings, feature flags & entitlements service
 
 ## Phase 1 — Identity & profiles
@@ -93,3 +93,6 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
   `register` route (the hero form's submit is disabled only while that route is missing).
 - P0.3 → P0.4: replace `DemoContent::plans()` with plans from the `plans` / `plan_features` tables.
 - P0.3 → P9.5: nginx needs the `/index.php` → `/` 301 (Apache has it in public/.htaccess).
+- P0.5 → P1.7: admin impersonation (A01) is built with member management.
+- Local admin sign-in: http://admin.localhost:8000 — admin@oppam.test (and one demo admin per role) with the
+  ADMIN_SEED_PASSWORD from your local .env; 2FA is enrolled at first sign-in. Production: `php artisan oppam:create-super-admin`.

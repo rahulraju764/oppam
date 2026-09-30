@@ -23,16 +23,21 @@ final class HorizonServiceProvider extends HorizonApplicationServiceProvider
     }
 
     /**
+     * Horizon's default lets anyone in when APP_ENV=local. Not here: the dashboard is always
+     * behind the admin middleware and the viewHorizon gate (AppServiceProvider, system.horizon).
+     */
+    protected function authorization(): void
+    {
+        Horizon::auth(fn ($request): bool => Gate::check('viewHorizon', [$request->user('admin')]));
+    }
+
+    /**
      * Register the Horizon gate.
      *
      * This gate determines who can access Horizon in non-local environments.
      */
     protected function gate(): void
     {
-        Gate::define('viewHorizon', function ($user = null) {
-            return in_array(optional($user)->email, [
-                //
-            ]);
-        });
+        // Defined in AppServiceProvider::bootAdminSecurity() (admin guard + system.horizon).
     }
 }

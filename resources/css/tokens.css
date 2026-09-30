@@ -154,4 +154,13 @@
   --scrim: rgba(0, 0, 0, .45);        /* modal backdrop */
   --tap-min: 44px;                    /* minimum tap target (oppam-ui-standards) */
   --tap-compact: 36px;                /* small buttons inside dense rows only */
+
+  /* Admin panel skin (PRD §11.0: same tokens, neutral admin skin). */
+  --admin-sidebar-bg: #1f2428;
+  --admin-sidebar-text: #d7dde2;          /* 11:1 on the sidebar */
+  --admin-sidebar-muted: #9aa5ae;         /* section labels — 6.3:1 on the sidebar */
+  --admin-sidebar-active: #2d343a;
+  --admin-sidebar-w: 248px;
+  --admin-topbar-h: 60px;
+  --admin-bg: var(--bg-mist);
 }

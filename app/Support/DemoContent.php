@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Data\Billing\PlanCardData;
 use App\Data\Content\StoryData;
-use App\ValueObjects\Money;
 
 /**
  * Demo copy for the public pages, ported verbatim from the template's data files
@@ -117,35 +115,6 @@ final class DemoContent
             quote: $story['quote'],
             paragraphs: $story['story'],
         ), self::storyRows());
-    }
-
-    /**
-     * The template's three plans (plans.php) — only until the plans table exists (P0.4).
-     *
-     * @return list<PlanCardData>
-     */
-    public static function plans(?string $ctaUrl): array
-    {
-        return [
-            new PlanCardData('SILVER', 'Silver', Money::rupees(499), Money::rupees(499)->multiply(12), [
-                'Send 25 interests a month',
-                'View 10 verified mobile numbers',
-                'Chat with accepted matches',
-                'Daily match recommendations',
-            ], ctaUrl: $ctaUrl),
-            new PlanCardData('GOLD', 'Gold', Money::rupees(999), Money::rupees(999)->multiply(12), [
-                'Send 100 interests a month',
-                'View 50 verified mobile numbers',
-                'Unlimited chat and messages',
-                'Profile highlighted in search',
-            ], isFeatured: true, badge: 'Most Popular', ctaUrl: $ctaUrl),
-            new PlanCardData('DIAMOND', 'Diamond', Money::rupees(1999), Money::rupees(1999)->multiply(12), [
-                'Unlimited interests',
-                'Unlimited verified mobile numbers',
-                'Unlimited chat and messages',
-                'Dedicated relationship manager',
-            ], ctaUrl: $ctaUrl),
-        ];
     }
 
     /**

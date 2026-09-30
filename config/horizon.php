@@ -85,7 +85,8 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    // Admin domain only, behind the full admin stack + the viewHorizon gate (system.horizon).
+    'middleware' => ['web', 'ip.allowlist', 'auth:admin', 'admin.session', 'admin.active', '2fa.confirmed'],
 
     /*
     |--------------------------------------------------------------------------

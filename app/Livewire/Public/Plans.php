@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Public;
 
 use App\Data\Content\SeoData;
+use App\Queries\Billing\PlanCatalog;
 use App\Support\DemoContent;
 use App\Support\Navigation\Navigation;
 use Illuminate\Contracts\View\View;
@@ -19,7 +20,7 @@ final class Plans extends Component
     public function render(): View
     {
         return view('livewire.public.plans', [
-            'plans' => DemoContent::plans(ctaUrl: app(Navigation::class)->url('member.checkout')),
+            'plans' => app(PlanCatalog::class)->cards(ctaUrl: app(Navigation::class)->url('member.checkout')),
             'faqs' => DemoContent::faqs(),
         ])->layout('layouts::public', ['seo' => new SeoData(
             title: 'Membership Packages & FAQ | Oppam Matrimony',

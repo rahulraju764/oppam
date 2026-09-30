@@ -2,7 +2,14 @@
 @props(['plans'])
 
 <div class="row justify-content-center pricing-row">
-    @foreach ($plans as $plan)
+    @forelse ($plans as $plan)
         <x-pricing.card :plan="$plan" />
-    @endforeach
+    @empty
+        <div class="col-12">
+            <x-ui.card>
+                <x-ui.empty-state icon="fa-diamond" :title="__('Membership plans are being updated')"
+                                  :message="__('Please check back shortly, or contact us to upgrade.')" />
+            </x-ui.card>
+        </div>
+    @endforelse
 </div>
