@@ -277,7 +277,59 @@
   border-color: var(--color-primary);
 }
 
+/* ---- Profile wizard additions (P1.2) — the template's .register-wrapper / .step-item stay as is ---- */
+.wizard-progress {
+  height: var(--space-2);
+  margin: 0 0 var(--space-6);
+  border-radius: var(--radius-pill);
+  background: var(--color-default);
+  overflow: hidden;
+}
+
+.wizard-progress-bar {
+  display: block;
+  width: var(--progress, 0%);
+  height: 100%;
+  background: var(--color-primary);
+  transition: width var(--transition-base, .3s) ease;
+}
+
+.step-item.is-locked { opacity: .6; cursor: not-allowed; }
+.step-item.is-done .step-number { color: var(--color-success); }
+
+.wizard-fieldset {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--color-back);
+  border-radius: var(--radius-md);
+}
+
+.wizard-fieldset legend {
+  float: none;
+  width: auto;
+  padding: 0 var(--space-2);
+  font-size: var(--text-base, 1rem);
+  font-weight: 600;
+}
+
+.wizard-actions .form-text { min-height: 1.5em; text-align: right; }
+
+.wizard-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  margin-right: var(--space-4);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-secondary-dark);
+  cursor: pointer;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .wizard-progress-bar { transition: none; }
   .ui-spinner { animation-duration: 2s; }
   .ui-skeleton { animation: none; }
 }

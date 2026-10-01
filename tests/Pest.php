@@ -22,6 +22,7 @@ pest()->extend(Tests\MobileDuskTestCase::class)->in('Browser/Mobile');
 
 require_once __DIR__.'/Support/admin.php';
 require_once __DIR__.'/Support/auth.php';
+require_once __DIR__.'/Support/profile.php';
 pest()->extend(Tests\DuskTestCase::class)->in('Browser/Admin', 'Browser/Member');
 require_once __DIR__.'/Support/dusk.php';
 require_once __DIR__.'/Support/dusk-member.php';

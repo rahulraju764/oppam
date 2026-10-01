@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 1 — Identity & profiles (Phase 0 built; P0.4–P0.6 commits await owner review)
-**Next session:** P1.2 — Wizard steps 1–3 (M02) (P1.1 built; its commit, with P0.4–P0.6, awaits owner review)
+**Next session:** P1.3 — Wizard steps 4–6, completeness, submit (M02)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -24,7 +24,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Phase 1 — Identity & profiles
 - [x] P1.1 Registration, OTP, login (M01) — 2026-09-29 (reviewer READY after 1 Blocker + 4 Majors fixed over 4 rounds; commit held for owner review — rule 5)
-- [ ] P1.2 Wizard steps 1–3 (M02)
+- [x] P1.2 Wizard steps 1–3 (M02) — 2026-10-01 (reviewer READY after 2 Majors fixed: missing-profile redirect loop, search-district decision recorded)
 - [ ] P1.3 Wizard steps 4–6, completeness, submit (M02)
 - [ ] P1.4 Photos & media privacy (M11)
 - [ ] P1.5 Profile view, own & others (M03)

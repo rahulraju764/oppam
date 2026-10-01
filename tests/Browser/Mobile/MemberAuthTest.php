@@ -40,7 +40,7 @@ it('registers from the home hero on a phone and lands on the wizard', function (
         $browser->type('#otpCode', (string) duskLatestOtp('+91 99•••••001'))
             ->click('.login-form button[type="submit"]')
             ->waitForLocation('/onboarding/1')
-            ->assertSee('Create your profile');
+            ->assertSourceHas('class="register-wrapper"');   // the profile wizard (P1.2)
 
         assertNoHorizontalScroll($browser);
     });
@@ -87,3 +87,24 @@ it('has no horizontal scroll on the auth pages at 375 px', function (string $pat
         assertNoHorizontalScroll($browser);
     });
 })->with(['/login', '/register', '/forgot-password']);
+
+it('P1.2: the wizard has no horizontal scroll at 375 px', function (): void {
+    $this->browse(function (Browser $browser): void {
+        $browser->visit('/register')
+            ->waitUntilMissing('#preloader', 10)
+            ->select('#profileFor', 'SON')
+            ->waitForText('Set from')
+            ->type('#regName', 'Dusk Groom')
+            ->type('#regMobile', '9999900001')
+            ->type('#regPassword', 'kerala2026')
+            ->check('#regTerms')
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/verify-otp')
+            ->type('#otpCode', (string) duskLatestOtp('+91 99•••••001'))
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/onboarding/1')
+            ->waitUntilMissing('#preloader', 10);
+
+        assertNoHorizontalScroll($browser);
+    });
+});

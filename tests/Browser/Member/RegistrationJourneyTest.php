@@ -35,9 +35,8 @@ it('registers, verifies the SMS code and lands on the wizard, then logs out', fu
         $browser->type('#otpCode', $code)
             ->click('.login-form button[type="submit"]')
             ->waitForLocation('/onboarding/1')
-            ->assertSee('Create your profile')
-            ->assertSourceHas('Step 1 of 6')
-            ->assertSee('Dusk');
+            ->assertSourceHas('class="register-wrapper"')   // the profile wizard (P1.2)
+            ->assertInputValue('#basic-first_name', 'Dusk');
 
         // Signed in: /login now sends the member on to the wizard.
         $browser->visit('/login')->waitForLocation('/onboarding/1');

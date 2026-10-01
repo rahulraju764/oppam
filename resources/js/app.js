@@ -20,6 +20,7 @@ import './template/page-back';
 import './template/option-buttons';
 
 import './alpine/otp-countdown';
+import './alpine/wizard-autosave';
 
 window.bootstrap = bootstrap;
 

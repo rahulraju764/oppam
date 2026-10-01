@@ -370,10 +370,12 @@ it('refuses "log out other devices" for a guest', function (): void {
 
 // ---- Wizard placeholder ---------------------------------------------------------------------
 
-it('clamps the wizard step and refuses a tampered step', function (): void {
+it('clamps an out-of-range wizard step, guards step order and refuses a tampered step', function (): void {
     $this->actingAs(memberWithPhone(status: ProfileStatus::Draft), 'web');
 
-    Livewire::test(Wizard::class, ['step' => 9])->assertSet('step', 6);
+    // Out-of-range steps are clamped, then the step-order guard (P1.2) sends the member to the
+    // first unfinished step: this factory draft has step 1 done, so that is step 2.
+    Livewire::test(Wizard::class, ['step' => 9])->assertRedirect(route('member.onboarding', ['step' => 2]));
 
     expect(fn () => Livewire::test(Wizard::class, ['step' => 1])->set('step', 3))
         ->toThrow(CannotUpdateLockedPropertyException::class);
