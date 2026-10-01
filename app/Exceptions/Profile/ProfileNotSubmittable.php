@@ -23,6 +23,11 @@ final class ProfileNotSubmittable extends RuntimeException
         return new self(__('Please complete “:step” before submitting.', ['step' => $step->title()]), $step);
     }
 
+    public static function needsPhoto(): self
+    {
+        return new self(__('Please add at least one photo of yourself before submitting.'), WizardStep::Photos);
+    }
+
     public static function alreadySubmitted(): self
     {
         return new self(__('Your profile has already been submitted for review.'));

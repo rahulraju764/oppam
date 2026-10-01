@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Profile;
 
 use App\Enums\WizardStep;
+use App\Models\Media;
 use App\Models\Profile;
 use App\Services\Masters\Masters;
 
@@ -12,10 +13,12 @@ use App\Services\Masters\Masters;
  * Which wizard steps a profile has completed (M02) — read from the saved data itself, so an
  * autosaved half-step never counts as done. Guards step order (template TODO "a user can
  * deep-link straight to any step"): a step can be opened only when every earlier step is done.
- * Step 6 is complete with an about-me of ABOUT_MIN characters; P1.4 adds the profile photo.
+ * Step 6 is complete with an about-me of ABOUT_MIN characters and at least one photo.
  */
 final class WizardProgress
 {
+    private ?bool $hasPhoto = null;
+
     public function __construct(private readonly Profile $profile) {}
 
     public function isComplete(WizardStep $step): bool
@@ -26,7 +29,7 @@ final class WizardProgress
             WizardStep::Family => $this->filled($this->profile->familyDetail, ['father_name', 'mother_name', 'family_status_option_id']),
             WizardStep::Preferences => $this->filled($this->profile->partnerPreference, ['age_min', 'age_max', 'religion_ids']),
             WizardStep::Contact => $this->contactComplete(),
-            WizardStep::Photos => $this->hasAbout(),
+            WizardStep::Photos => $this->hasAbout() && $this->hasPhoto(),
         };
     }
 
@@ -48,10 +51,18 @@ final class WizardProgress
         return mb_strlen(trim((string) $this->profile->getAttribute('about'))) >= ProfileRules::ABOUT_MIN;
     }
 
-    /** A profile photo (completeness "photo", R-M02-3). Photos arrive with the media library in P1.4. */
+    /**
+     * At least one photo that isn't rejected (completeness "photo", R-M02-3; required for
+     * submit, M02 step 6). A pending photo counts: moderation decides what others see.
+     */
     public function hasPhoto(): bool
     {
-        return false;
+        return $this->hasPhoto ??= Media::query()
+            ->where('model_type', $this->profile->getMorphClass())
+            ->where('model_id', $this->profile->getKey())
+            ->where('collection_name', Profile::PHOTOS)
+            ->notRejected()
+            ->exists();
     }
 
     /** The first step that still needs input (the furthest a member may open). */

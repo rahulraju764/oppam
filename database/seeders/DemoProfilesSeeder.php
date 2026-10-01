@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domain\Media\PerceptualHash;
 use App\Enums\Gender;
 use App\Enums\MaritalStatus;
+use App\Enums\PhotoStatus;
 use App\Enums\ProfileStatus;
 use App\Models\ContactDetail;
 use App\Models\EducationCareer;
@@ -23,22 +25,33 @@ use App\Models\Masters\Occupation;
 use App\Models\Masters\Rasi;
 use App\Models\Masters\Religion;
 use App\Models\Masters\Star;
+use App\Models\Media;
 use App\Models\PartnerPreference;
 use App\Models\PrivacySetting;
 use App\Models\Profile;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * 200 fake member profiles for local development (CLAUDE.md "200 demo profiles"). Every name,
  * number and detail is invented; phones use the +91 90000 block. The first four are the
  * template's demo members (profiles-data.php). LOCAL ONLY — DatabaseSeeder never runs this in
- * testing or production. Photos arrive with the media library (P1.4).
+ * testing or production. The first female profiles get an APPROVED photo from the template's
+ * member images (all of women; conversions run on the `media` queue).
  */
 final class DemoProfilesSeeder extends Seeder
 {
     private const COUNT = 200;
+
+    private const PHOTO_COUNT = 30;
+
+    /** The template's member photos (public/images/home, all of women). */
+    private const PHOTOS = ['images/home/profile1.webp', 'images/home/profile2.webp', 'images/home/profile3.webp',
+        'images/home/profile4.webp', 'images/home/profile5.webp', 'images/home/profile6.webp', 'images/home/profile7.webp',
+        'images/home/profile8.webp', 'images/home/webp-women-01.webp', 'images/home/webp-women-02.webp',
+        'images/home/webp-women-03.webp', 'images/home/webp-women-04.webp'];
 
     private const FEMALE_NAMES = ['Anna', 'Meera', 'Divya', 'Sneha', 'Anjali', 'Reshma', 'Athira', 'Neethu', 'Aparna', 'Lakshmi', 'Devika', 'Sreya', 'Arya', 'Gayathri', 'Nimisha', 'Aswathy', 'Riya', 'Mariya', 'Ann', 'Fathima', 'Ayesha', 'Nisha', 'Parvathy', 'Keerthana', 'Anusree', 'Sandra', 'Jisha', 'Sruthy'];
 
@@ -63,6 +76,34 @@ final class DemoProfilesSeeder extends Seeder
                 $this->createProfile($i, $lookups);
             }
         });
+
+        $this->seedPhotos();
+    }
+
+    /** One approved photo for each of the first PHOTO_COUNT female profiles (M11). */
+    private function seedPhotos(): void
+    {
+        $profiles = Profile::query()->where('gender', Gender::Female)->orderBy('code')->limit(self::PHOTO_COUNT)->get();
+
+        foreach ($profiles as $index => $profile) {
+            $source = public_path(self::PHOTOS[$index % count(self::PHOTOS)]);
+
+            if (! is_file($source)) {
+                continue;
+            }
+
+            /** @var Media $media */
+            $media = $profile->addMedia($source)
+                ->preservingOriginal()
+                ->usingName('photo')
+                ->usingFileName(Str::random(24).'.webp')
+                ->toMediaCollection(Profile::PHOTOS);
+
+            $media->forceFill([
+                'moderation_status' => PhotoStatus::Approved,
+                'phash' => PerceptualHash::ofFile($source),
+            ])->save();
+        }
     }
 
     /** @param array<string, Collection<int, int>|Collection<int, Caste>> $lookups */

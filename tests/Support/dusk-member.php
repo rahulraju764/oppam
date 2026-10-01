@@ -20,8 +20,13 @@ function duskMemberCleanup(string $e164 = DUSK_MEMBER_PHONE): void
     $user = User::withTrashed()->where('phone', $e164)->first();
 
     if ($user !== null) {
-        Profile::withTrashed()->where('user_id', $user->id)->forceDelete();
+        // Model by model, so the media library's delete hook removes photo rows + files too.
+        Profile::withTrashed()->where('user_id', $user->id)->get()->each(fn (Profile $profile) => $profile->forceDelete());
         $user->forceDelete();
+    }
+
+    if ($user !== null) {
+        RateLimiter::clear('media-upload:'.$user->id);
     }
 
     $number = sha1($e164);
@@ -51,4 +56,20 @@ function duskLatestOtp(string $masked): ?string
     }
 
     return null;
+}
+
+/** A real 900×1100 JPEG for the upload tests (GD), written once to storage/app/dusk-photo.jpg. */
+function duskPhotoFixture(): string
+{
+    $path = storage_path('app/dusk-photo.jpg');
+
+    if (! is_file($path)) {
+        $image = imagecreatetruecolor(900, 1100);
+        imagefilledrectangle($image, 0, 0, 900, 1100, (int) imagecolorallocate($image, 224, 35, 73));
+        imagefilledellipse($image, 450, 420, 360, 420, (int) imagecolorallocate($image, 250, 220, 200));
+        imagejpeg($image, $path, 90);
+        imagedestroy($image);
+    }
+
+    return $path;
 }

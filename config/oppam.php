@@ -65,6 +65,20 @@ return [
         'ip_allowlist' => array_values(array_filter(array_map('trim', explode(',', (string) env('ADMIN_IP_ALLOWLIST', ''))))),
     ],
 
+    // Photos & media (M11). Originals and horoscopes on the private disk (served only through
+    // signed, audited routes); photo conversions on the public disk under unguessable uuid paths.
+    'media' => [
+        'private_disk' => env('MEDIA_PRIVATE_DISK', 'local'),      // production: s3-private
+        'public_disk' => env('MEDIA_PUBLIC_DISK', 'public'),       // production: s3 (public bucket)
+        'max_photos' => 10,                                        // profile photo + 9 more (M02 step 6)
+        'photo_max_kb' => 10240,                                   // 10 MB
+        'photo_min_px' => 400,                                     // shorter side
+        'horoscope_max_kb' => 5120,
+        'uploads_per_hour' => 30,                                  // per member, photos + horoscope
+        'signed_url_minutes' => 5,                                 // horoscope downloads
+        'watermark_font' => resource_path('fonts/DejaVuSans-Bold.ttf'),
+    ],
+
     'sms' => [
         // log (local/testing) | msg91 (production). Bound in AppServiceProvider; `log` is refused in production.
         'driver' => env('SMS_DRIVER', 'log'),

@@ -232,7 +232,7 @@ it('R-M02-3: completeness follows the weights as each step is saved', function (
     'steps 1–3 (+ family 15)' => [3, 55],
     'steps 1–4 (+ preferences 15)' => [4, 70],
     'steps 1–5 (+ contact 10)' => [5, 80],
-    'steps 1–6 (+ about 5; photo 15 arrives in P1.4)' => [6, 85],
+    'steps 1–6 (+ about 5 + photo 15)' => [6, 100],
 ]);
 
 it('R-M02-3: a half-saved step adds nothing', function (): void {

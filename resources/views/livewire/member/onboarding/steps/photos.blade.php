@@ -1,8 +1,5 @@
-{{-- Step 6 — photos & about (template profile-photos.php + ➕ about me, lifestyle). Upload: P1.4. --}}
-<div class="form-group">
-    <span class="form-label d-block">{{ __('Profile Photo') }}</span>
-    <x-ui.alert type="info">{{ __('Photo upload opens very soon. You can submit your profile now and add photos afterwards — profiles with photos get far more responses.') }}</x-ui.alert>
-</div>
+{{-- Step 6 — photos & about (template profile-photos.php + ➕ about me, lifestyle). Photos + horoscope: M11. --}}
+<livewire:member.profile.photo-manager />
 
 <x-wizard.select :label="__('Photo Visibility')" model="about.photo_visibility" :options="$photoVisibilities" required />
 

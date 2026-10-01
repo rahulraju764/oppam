@@ -276,6 +276,7 @@ it('step 5: changing the country clears state and district', function (): void {
 
 it('step 6 submits for review and lands on the "under review" page (R-M02-2)', function (): void {
     $user = memberThroughStep(5);
+    addTestPhoto($user);
 
     wizardAs($user, 6)
         ->assertSee('Submit for review')
@@ -342,6 +343,7 @@ it('signing in lands a pending member on "under review" and a rejected member ba
 
 it('step 6 submits with hobbies typed as comma-separated text (review Major)', function (): void {
     $user = memberThroughStep(5);
+    addTestPhoto($user);
 
     wizardAs($user, 6)
         ->set('about.about', 'I am a software engineer in Kochi who loves music, travel and time with family.')

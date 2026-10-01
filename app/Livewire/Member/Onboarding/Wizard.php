@@ -35,6 +35,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
@@ -129,6 +130,10 @@ final class Wizard extends Component
             $this->preference->clear('caste_ids');
         }
     }
+
+    /** The photo manager (step 6) changed photos: re-render so progress and completeness follow. */
+    #[On('photos-changed')]
+    public function photosChanged(): void {}
 
     // ---- Saving -------------------------------------------------------------------------------
 

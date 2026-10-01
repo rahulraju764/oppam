@@ -11,7 +11,15 @@ use App\Models\Concerns\KeyedByProfile;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-/** Per-profile privacy (PRD §7.2, M11, M14). Defaults come from the migration. */
+/**
+ * Per-profile privacy (PRD §7.2, M11, M14). Defaults come from the migration.
+ *
+ * @property PhotoVisibility $photo_visibility
+ * @property PhoneVisibility $phone_visibility
+ * @property HoroscopeVisibility $horoscope_visibility
+ * @property bool $incognito
+ * @property bool $contact_filter_enabled
+ */
 final class PrivacySetting extends Model
 {
     /** @use HasFactory<\Database\Factories\PrivacySettingFactory> */

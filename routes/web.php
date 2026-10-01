@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Member\HoroscopeController;
 use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
@@ -47,6 +48,10 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware(['auth', 'verified.phone'])->group(function (): void {
     Route::get('/onboarding/{step}', Wizard::class)->whereNumber('step')->name('member.onboarding');
     Route::get('/onboarding/submitted', Submitted::class)->name('member.onboarding.submitted');
+
+    // Horoscope file (M11): short-lived signed link from HoroscopeAccess; checked + audited again.
+    Route::get('/media/horoscope/{profile}', HoroscopeController::class)
+        ->middleware('signed')->where('profile', 'OPM[0-9]+')->name('member.horoscope');
 });
 
 // Living styleguide for visual checks (P0.2). Local only: never registered in testing/production.

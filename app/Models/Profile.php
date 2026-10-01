@@ -25,6 +25,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
 /**
  * A matrimony profile (PRD §7.2). URLs use `code` (OPM10001), never the ULID. code, status,
@@ -55,10 +59,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $is_premium
  * @property int $completeness
  */
-final class Profile extends Model
+final class Profile extends Model implements HasMedia
 {
     /** @use HasFactory<ProfileFactory> */
-    use HasFactory, HasUlids, SoftDeletes;
+    use HasFactory, HasUlids, InteractsWithMedia, SoftDeletes;
+
+    /** Media collections (M11). */
+    public const PHOTOS = 'photos';
+
+    public const HOROSCOPE = 'horoscope';
 
     /** @var list<string> */
     protected $fillable = [
@@ -125,6 +134,45 @@ final class Profile extends Model
     public function scopeSearchable(Builder $query): void
     {
         $query->where('status', ProfileStatus::Active->value);
+    }
+
+    /**
+     * Photos: originals on the private disk, conversions on the public disk under uuid paths.
+     * Horoscope: one private file, served only through a signed + audited route (M11).
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(self::PHOTOS)
+            ->useDisk((string) config('oppam.media.private_disk'))
+            ->storeConversionsOnDisk((string) config('oppam.media.public_disk'))
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+
+        $this->addMediaCollection(self::HOROSCOPE)
+            ->singleFile()
+            ->useDisk((string) config('oppam.media.private_disk'))
+            ->acceptsMimeTypes(['application/pdf', 'image/jpeg', 'image/png']);
+    }
+
+    /**
+     * Photo conversions (M11), WebP, queued on `media`: thumb 200 (square), card 600, full 1200
+     * with a light profile-code watermark, and blurred 600 — the only version a viewer without
+     * permission ever receives (PhotoUrls).
+     */
+    public function registerMediaConversions(?SpatieMedia $media = null): void
+    {
+        $this->addMediaConversion('thumb')->performOnCollections(self::PHOTOS)->nonOptimized()
+            ->fit(Fit::Crop, 200, 200)->format('webp');
+
+        $this->addMediaConversion('card')->performOnCollections(self::PHOTOS)->nonOptimized()
+            ->fit(Fit::Max, 600, 600)->format('webp');
+
+        $this->addMediaConversion('full')->performOnCollections(self::PHOTOS)->nonOptimized()
+            ->fit(Fit::Max, 1200, 1200)
+            ->text($this->code.' · oppam.in', 16, 'rgba(255, 255, 255, 0.55)', 20, 36, 0, (string) config('oppam.media.watermark_font'))
+            ->format('webp');
+
+        $this->addMediaConversion('blurred')->performOnCollections(self::PHOTOS)->nonOptimized()
+            ->fit(Fit::Max, 600, 600)->pixelate(24)->blur(12)->format('webp');
     }
 
     /** @return BelongsTo<User, $this> */

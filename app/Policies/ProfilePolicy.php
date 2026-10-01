@@ -24,4 +24,16 @@ final class ProfilePolicy
             && $user->isActive()
             && in_array($profile->status, [ProfileStatus::Draft, ProfileStatus::Rejected], true);
     }
+
+    /**
+     * Upload, order, caption and delete photos and the horoscope (M11): the owner, while their
+     * account is active and the profile isn't suspended or deleted. Live profiles may change
+     * photos too — every new photo goes through A04 moderation first.
+     */
+    public function managePhotos(User $user, Profile $profile): bool
+    {
+        return $profile->user_id === $user->id
+            && $user->isActive()
+            && ! in_array($profile->status, [ProfileStatus::Suspended, ProfileStatus::Deleted], true);
+    }
 }

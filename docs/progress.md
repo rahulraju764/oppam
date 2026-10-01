@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 1 — Identity & profiles (Phase 0 built; P0.4–P0.6 commits await owner review)
-**Next session:** P1.4 — Photos & media privacy (M11)
+**Next session:** P1.5 — Profile view, own & others (M03)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -26,7 +26,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.1 Registration, OTP, login (M01) — 2026-09-29 (reviewer READY after 1 Blocker + 4 Majors fixed over 4 rounds; commit held for owner review — rule 5)
 - [x] P1.2 Wizard steps 1–3 (M02) — 2026-10-01 (reviewer READY after 2 Majors fixed: missing-profile redirect loop, search-district decision recorded)
 - [x] P1.3 Wizard steps 4–6, completeness, submit (M02) — 2026-10-01 (reviewer READY after 1 Major fixed: hobbies text blocked submit)
-- [ ] P1.4 Photos & media privacy (M11)
+- [x] P1.4 Photos & media privacy (M11) — 2026-10-01 (reviewer READY after 1 Blocker fixed: clear photo derivable from blurred URL → HMAC conversion names; media ULID keys)
 - [ ] P1.5 Profile view, own & others (M03)
 - [ ] P1.6 Moderation queues (A04)
 - [ ] P1.7 Member management (A03)
@@ -86,7 +86,14 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
-- P1.3 → P1.4: make a profile photo required for submit (WizardProgress::hasPhoto), photo weight 15 in completeness.
+- P1.4 local setup: run `php artisan storage:link` once (public disk for photo conversions). Demo photos are added by
+  DemoProfilesSeeder only on a fresh seed (`php artisan migrate:fresh --seed`, LOCAL ONLY).
+- P1.4 → P1.5: profile pages show photos only through `PhotoUrls::forViewer()`; horoscope links via `HoroscopeAccess::link()`.
+- P1.4 → P1.6: photo queue uses `moderation_items` PHOTO rows (subject_id = media uuid) and `media.phash` for duplicates.
+- P1.4 → P2.x: `PhotoUrls` queries per profile; add a batch `forViewers()` (eager-loaded) before search/list cards use it.
+- P1.4 → P9.5: S3 public bucket with listing disabled; `media-library:regenerate` after an APP_KEY rotation (conversion names are keyed).
+- P1.4 → P1.5: PhotoAccess / HoroscopeAccess must also refuse non-ACTIVE owners and blocked pairs.
+- P1.4 → P3.4: `PhotoAccess::isConnected()` / `HoroscopeAccess` ON_REQUEST + ACCEPTED_ONLY plug into accepted interests.
 - P1.3 → P1.5: R-M02-4 edited-fields queue (moderation_items PROFILE_EDIT) with the own-profile edit screen.
 - P1.3 → P3.1: admin-domain /broadcasting/auth + Echo listener for `admin.queues` (channel + event already exist).
 - P0.1: dev env is Windows + XAMPP (MariaDB, no Redis locally), Livewire 4 instead of 3, package routes

@@ -71,7 +71,9 @@ return [
             'queue' => env('REDIS_QUEUE', 'default'),
             'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
             'block_for' => null,
-            'after_commit' => false,
+            // Jobs queued inside a DB transaction (e.g. photo conversions, M11) run only after it
+            // commits, so a worker never looks for a row that isn't visible yet.
+            'after_commit' => true,
         ],
 
     ],

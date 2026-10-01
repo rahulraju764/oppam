@@ -9,6 +9,7 @@ use App\Domain\Profile\WizardProgress;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
 use App\Enums\ProfileStatus;
+use App\Enums\WizardStep;
 use App\Events\Profile\ProfileSubmitted;
 use App\Exceptions\Profile\ProfileNotSubmittable;
 use App\Models\ModerationItem;
@@ -46,7 +47,11 @@ final class SubmitProfile
             $progress = new WizardProgress($locked);
 
             if (! $progress->isReadyToSubmit()) {
-                throw ProfileNotSubmittable::incomplete($progress->firstIncomplete());
+                $step = $progress->firstIncomplete();
+
+                throw $step === WizardStep::Photos && $progress->hasAbout() && ! $progress->hasPhoto()
+                    ? ProfileNotSubmittable::needsPhoto()
+                    : ProfileNotSubmittable::incomplete($step);
             }
 
             $locked->forceFill([

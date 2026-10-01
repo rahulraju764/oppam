@@ -19,6 +19,7 @@
         "@fontsource/plus-jakarta-sans": "^5.3.0",
         "@popperjs/core": "2.11.8",
         "bootstrap": "5.3.2",
+        "cropperjs": "1.6.3",
         "font-awesome": "4.7.0",
         "swiper": "12.2.0"
     }

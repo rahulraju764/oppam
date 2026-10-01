@@ -89,7 +89,7 @@ function duskCompleteFirstSteps(): void
     app(App\Actions\Profile\SaveFamilyDetails::class)->handle($user, $profile->refresh(), familyData());
 }
 
-it('P1.3: completes steps 4–6 and submits for review, landing on the "under review" page', function (): void {
+it('P1.3: completes steps 4–6; without a photo the submit asks for one', function (): void {
     $this->browse(function (Browser $browser): void {
         duskRegisterAndVerify($browser);
         duskCompleteFirstSteps();
@@ -117,6 +117,32 @@ it('P1.3: completes steps 4–6 and submits for review, landing on the "under re
             ->waitFor('#about-about-error')
             ->type('#about-about', 'I teach mathematics in Kochi and love Carnatic music, books and long drives with family.')
             ->type('#about-hobbies', 'Music, Reading, Travel')
+            ->click('.register-right button[type="submit"]')
+            // Since P1.4 a photo is required: the submit is refused with a clear message (see the P1.4 journey).
+            ->waitForText('Please add at least one photo')
+            ->assertPathIs('/onboarding/6');
+    });
+});
+
+it('P1.4: uploads a photo through the cropper, then submits the profile', function (): void {
+    $this->browse(function (Browser $browser): void {
+        duskRegisterAndVerify($browser);
+        duskCompleteFirstSteps();
+
+        $user = App\Models\User::query()->where('phone', DUSK_MEMBER_PHONE)->firstOrFail();
+        $profile = $user->profile()->firstOrFail();
+        app(App\Actions\Profile\SavePartnerPreferences::class)->handle($user, $profile, preferenceData());
+        app(App\Actions\Profile\SaveContactDetails::class)->handle($user, $profile->refresh(), contactData());
+
+        $browser->visit('/onboarding/6')
+            ->waitUntilMissing('#preloader', 10)
+            ->assertSee('No photos yet')
+            ->attach('#photo-input', duskPhotoFixture())
+            ->waitForText('Crop your photo')
+            ->press('Use this photo')
+            ->waitForText('Awaiting review', 20)
+            ->assertSee('Profile photo')
+            ->type('#about-about', 'I teach mathematics in Kochi and love Carnatic music, books and long drives with family.')
             ->click('.register-right button[type="submit"]')
             ->waitForLocation('/onboarding/submitted')
             ->assertSee('under review');

@@ -21,6 +21,7 @@ import './template/option-buttons';
 
 import './alpine/otp-countdown';
 import './alpine/wizard-autosave';
+import './alpine/photo-cropper';
 
 window.bootstrap = bootstrap;
 

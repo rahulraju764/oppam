@@ -368,3 +368,79 @@
   .ui-spinner { animation-duration: 2s; }
   .ui-skeleton { animation: none; }
 }
+
+/* ---- Photo manager (M11) ------------------------------------------------------------------ */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.photo-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  cursor: grab;
+}
+
+.photo-tile__image { position: relative; }
+
+.photo-tile__image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.photo-tile__primary,
+.photo-tile__status { position: absolute; left: var(--space-2); }
+.photo-tile__primary { top: var(--space-2); }
+.photo-tile__status { bottom: var(--space-2); }
+
+.photo-tile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ui-icon-btn,
+.ui-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-secondary-dark);
+  cursor: pointer;
+}
+
+.ui-icon-btn { min-width: var(--tap-min); border-radius: var(--radius-pill); }
+.ui-icon-btn:hover { background: var(--color-back); }
+.ui-link-btn { text-decoration: underline; }
+.ui-icon-btn.is-danger,
+.ui-link-btn.is-danger { color: var(--color-primary-dark); }
+
+.photo-add { display: inline-flex; gap: var(--space-2); cursor: pointer; }
+/* The real file input is visually hidden right after its label: show its keyboard focus on the label. */
+.photo-add:has(+ input:focus-visible) { box-shadow: var(--ring-focus); outline: 2px solid var(--color-primary); }
+
+.photo-progress { margin-top: var(--space-3); }
+
+.photo-crop { max-height: 60vh; overflow: hidden; }
+.photo-crop img { display: block; max-width: 100%; }

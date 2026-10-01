@@ -135,6 +135,9 @@ it('P1.3: wizard steps 4–6 have no horizontal scroll at 375 px', function (int
         }
         if ($step >= 6) {
             app(App\Actions\Profile\SaveContactDetails::class)->handle($user, $profile->refresh(), contactData());
+            // A real photo on the dev server, so the photo grid is part of the width check.
+            app(App\Actions\Profile\Photos\UploadProfilePhoto::class)->handle($user, $profile->refresh(),
+                new Illuminate\Http\UploadedFile(duskPhotoFixture(), 'photo.jpg', 'image/jpeg', null, true));
         }
 
         $browser->visit('/onboarding/'.$step)->waitUntilMissing('#preloader', 10);

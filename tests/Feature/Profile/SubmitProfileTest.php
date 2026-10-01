@@ -46,12 +46,12 @@ it('R-M02-2: submitting a finished wizard moves DRAFT → PENDING_REVIEW and ope
 
     expect($profile->status)->toBe(ProfileStatus::PendingReview)
         ->and($profile->status->isSearchable())->toBeFalse()
-        ->and($profile->completeness)->toBe(85)
+        ->and($profile->completeness)->toBe(100)
         ->and($item->type)->toBe(ModerationItemType::ProfileNew)
         ->and($item->status)->toBe(ModerationStatus::Open)
         ->and($item->profile_id)->toBe($profile->id)
         ->and($item->is_priority)->toBeFalse()
-        ->and(ModerationItem::query()->count())->toBe(1);
+        ->and(ModerationItem::query()->ofType(ModerationItemType::ProfileNew)->count())->toBe(1);
 });
 
 it('R-M02-2 acceptance: submitting fires ProfileSubmitted and a live count on admin.queues', function (): void {
@@ -103,7 +103,7 @@ it('refuses to submit an incomplete profile and names the first unfinished step'
     }
 
     expect(statusOf($user))->toBe(ProfileStatus::Draft)
-        ->and(ModerationItem::query()->count())->toBe(0);
+        ->and(ModerationItem::query()->ofType(ModerationItemType::ProfileNew)->count())->toBe(0);
 });
 
 it('can\'t be submitted twice: the second attempt is refused and no second item is created', function (): void {
@@ -111,7 +111,7 @@ it('can\'t be submitted twice: the second attempt is refused and no second item 
     submitProfile($user);
 
     expect(fn () => submitProfile($user->refresh()))->toThrow(AuthorizationException::class)
-        ->and(ModerationItem::query()->count())->toBe(1);
+        ->and(ModerationItem::query()->ofType(ModerationItemType::ProfileNew)->count())->toBe(1);
 });
 
 it('R-M02-5: a REJECTED profile can be edited and resubmitted, creating a fresh queue item', function (): void {
@@ -133,7 +133,7 @@ it('security matrix: refuses submit by another member, a suspended member, or fo
 
     expect(fn () => app(SubmitProfile::class)->handle($actor->refresh(), $user->profile()->firstOrFail()))
         ->toThrow(AuthorizationException::class)
-        ->and(ModerationItem::query()->count())->toBe(0);
+        ->and(ModerationItem::query()->ofType(ModerationItemType::ProfileNew)->count())->toBe(0);
 })->with([
     'another member' => fn (User $u) => memberThroughStep(6),
     'suspended member' => fn (User $u) => tap($u)->forceFill(['status' => UserStatus::Suspended])->save() ? null : null,

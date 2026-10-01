@@ -194,7 +194,37 @@ function aboutData(array $overrides = []): AboutDetailsData
     ], $overrides));
 }
 
-/** A DRAFT member who has finished steps 1–$lastStep through the real Actions. */
+/**
+ * Upload a real (generated) photo through UploadProfilePhoto. Media disks are faked, so files land
+ * in a throwaway folder. Conversions (GD resize, blur, watermark) are skipped unless $convert —
+ * tests about photo URLs ask for them; everything else stays fast.
+ */
+function addTestPhoto(User $user, int $width = 600, int $height = 800, bool $convert = false): App\Models\Media
+{
+    fakeMediaDisks();
+
+    if (! $convert) {
+        Illuminate\Support\Facades\Bus::fake([Spatie\MediaLibrary\Conversions\Jobs\PerformConversionsJob::class]);
+    }
+
+    return app(App\Actions\Profile\Photos\UploadProfilePhoto::class)->handle(
+        $user,
+        $user->profile()->firstOrFail(),
+        Illuminate\Http\UploadedFile::fake()->image('photo.jpg', $width, $height),
+    );
+}
+
+/** Fake the private + public media disks once per test (a second fake would wipe the first's files). */
+function fakeMediaDisks(): void
+{
+    if (! app()->bound('oppam.media-faked')) {
+        Illuminate\Support\Facades\Storage::fake((string) config('oppam.media.private_disk'));
+        Illuminate\Support\Facades\Storage::fake((string) config('oppam.media.public_disk'));
+        app()->instance('oppam.media-faked', true);
+    }
+}
+
+/** A DRAFT member who has finished steps 1–$lastStep through the real Actions (step 6 includes one photo). */
 function memberThroughStep(int $lastStep, Gender $gender = Gender::Female): User
 {
     $user = draftMember($gender);
@@ -217,6 +247,7 @@ function memberThroughStep(int $lastStep, Gender $gender = Gender::Female): User
     }
     if ($lastStep >= 6) {
         app(App\Actions\Profile\SaveAboutDetails::class)->handle($user, $profile->refresh(), aboutData());
+        addTestPhoto($user);
     }
 
     return $user->refresh();
@@ -225,4 +256,33 @@ function memberThroughStep(int $lastStep, Gender $gender = Gender::Female): User
 function statusOf(User $user): ProfileStatus
 {
     return $user->profile()->firstOrFail()->status;
+}
+
+/** A real JPEG with an APP1 EXIF segment carrying a GPS tag (for "EXIF is stripped" tests). */
+function jpegWithGps(string $name = 'gps.jpg'): Illuminate\Http\UploadedFile
+{
+    $file = Illuminate\Http\UploadedFile::fake()->image($name, 600, 800);
+    $bytes = (string) file_get_contents($file->getRealPath());
+    $app1 = "Exif\x00\x00MM\x00*\x00\x00\x00\x08\x00\x00GPSLatitude-10.0889";
+    file_put_contents($file->getRealPath(), substr($bytes, 0, 2)."\xFF\xE1".pack('n', strlen($app1) + 2).$app1.substr($bytes, 2));
+
+    return $file;
+}
+
+/** A colourful 800×1000 JPEG (gradient + shapes), so blur / pixelation can be measured. */
+function gradientPhoto(string $name = 'gradient.jpg'): Illuminate\Http\UploadedFile
+{
+    $image = imagecreatetruecolor(800, 1000);
+    for ($y = 0; $y < 1000; $y++) {
+        for ($x = 0; $x < 800; $x += 4) {
+            imagefilledrectangle($image, $x, $y, $x + 3, $y, (int) imagecolorallocate($image, intdiv($x * 255, 800), intdiv($y * 255, 1000), intdiv(($x + $y) * 255, 1800)));
+        }
+    }
+    imagefilledellipse($image, 400, 400, 300, 360, (int) imagecolorallocate($image, 250, 220, 200));
+
+    $path = tempnam(sys_get_temp_dir(), 'opm-test-').'.jpg';
+    imagejpeg($image, $path, 92);
+    imagedestroy($image);
+
+    return new Illuminate\Http\UploadedFile($path, $name, 'image/jpeg', null, true);
 }
