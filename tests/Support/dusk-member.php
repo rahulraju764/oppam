@@ -36,6 +36,7 @@ function duskMemberCleanup(string $e164 = DUSK_MEMBER_PHONE): void
     // The dev server sees the browser as IPv4 or IPv6 loopback, depending on how localhost resolves.
     foreach (['127.0.0.1', '::1'] as $ip) {
         RateLimiter::clear('register:ip:'.$ip);
+        RateLimiter::clear('otp:ipday:'.$ip);   // per-IP daily OTP ceiling: every Dusk run comes from loopback
     }
 }
 
@@ -72,4 +73,66 @@ function duskPhotoFixture(): string
     }
 
     return $path;
+}
+
+function duskRegisterAndVerify(Laravel\Dusk\Browser $browser): void
+{
+    $masked = '+91 99•••••001';
+    $previous = duskLatestOtp($masked);
+
+    $browser->visit('/register')
+        ->waitUntilMissing('#preloader', 10)
+        ->select('#profileFor', 'DAUGHTER')
+        ->waitUntil('document.getElementById("regGenderFemale").checked')
+        ->type('#regName', 'Dusk Bride')
+        ->type('#regMobile', '9999900001')
+        ->type('#regPassword', 'kerala2026')
+        ->check('#regTerms')
+        ->click('.login-form button[type="submit"]')
+        ->waitForLocation('/verify-otp')
+        // The SMS is written after the response (defer()): wait for the NEW code, never an old one.
+        ->waitUsing(10, 100, fn (): bool => duskLatestOtp($masked) !== null && duskLatestOtp($masked) !== $previous)
+        ->type('#otpCode', (string) duskLatestOtp($masked))
+        ->click('.login-form button[type="submit"]')
+        ->waitForLocation('/onboarding/1')
+        ->waitUntilMissing('#preloader', 10);
+}
+
+/** Steps 1–3 for the throwaway Dusk member, through the real Actions (the browser part is P1.2's test). */
+function duskCompleteFirstSteps(): void
+{
+    $user = User::query()->where('phone', DUSK_MEMBER_PHONE)->firstOrFail();
+    $profile = $user->profile()->firstOrFail();
+
+    app(App\Actions\Profile\SaveBasicDetails::class)->handle($user, $profile, basicData(['first_name' => 'Dusk', 'last_name' => 'Bride']));
+    app(App\Actions\Profile\SaveCareerDetails::class)->handle($user, $profile->refresh(), careerData());
+    app(App\Actions\Profile\SaveFamilyDetails::class)->handle($user, $profile->refresh(), familyData());
+}
+
+/** Register the throwaway member through the UI, finish the wizard through the Actions, make it live. */
+function duskLiveMember(Laravel\Dusk\Browser $browser): User
+{
+    duskRegisterAndVerify($browser);
+    duskCompleteFirstSteps();
+
+    $user = User::query()->where('phone', DUSK_MEMBER_PHONE)->firstOrFail();
+    $profile = $user->profile()->firstOrFail();
+    app(App\Actions\Profile\SavePartnerPreferences::class)->handle($user, $profile, preferenceData());
+    app(App\Actions\Profile\SaveContactDetails::class)->handle($user, $profile->refresh(), contactData());
+    app(App\Actions\Profile\SaveAboutDetails::class)->handle($user, $profile->refresh(), aboutData());
+    $profile->refresh()->forceFill(['status' => App\Enums\ProfileStatus::Active, 'published_at' => now()])->save();
+
+    return $user->refresh();
+}
+
+function demoGroomCode(): string
+{
+    return (string) Profile::query()->where('status', App\Enums\ProfileStatus::Active)->where('gender', App\Enums\Gender::Male)
+        ->orderBy('code')->value('code');
+}
+
+/** No sideways scrolling at the current (emulated) width. */
+function assertNoHorizontalScroll(Laravel\Dusk\Browser $browser): void
+{
+    expect((bool) $browser->script('return document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth;')[0])->toBeTrue();
 }

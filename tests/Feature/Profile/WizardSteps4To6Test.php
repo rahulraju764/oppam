@@ -258,13 +258,12 @@ it('refuses to save steps 4–6 of another member\'s profile', function (string 
     expect($attempt)->toThrow(AuthorizationException::class);
 })->with(['preferences', 'contact', 'about']);
 
-it('refuses wizard saves on a live, pending or suspended profile, and by a suspended member', function (Closure $arrange): void {
+it('refuses wizard saves on a pending or suspended profile, and by a suspended member', function (Closure $arrange): void {
     $user = memberThroughStep(5);
     $arrange($user);
 
     expect(fn () => saveAbout($user->refresh()))->toThrow(AuthorizationException::class);
 })->with([
-    'ACTIVE profile' => fn (User $u) => $u->profile->forceFill(['status' => ProfileStatus::Active])->save(),
     'PENDING_REVIEW profile' => fn (User $u) => $u->profile->forceFill(['status' => ProfileStatus::PendingReview])->save(),
     'SUSPENDED profile' => fn (User $u) => $u->profile->forceFill(['status' => ProfileStatus::Suspended])->save(),
     'suspended member' => fn (User $u) => $u->forceFill(['status' => UserStatus::Suspended])->save(),

@@ -6,6 +6,7 @@ namespace App\Actions\Profile;
 
 use App\Actions\Profile\Concerns\GuardsWizardStep;
 use App\Data\Profile\AboutDetailsData;
+use App\Domain\Profile\PendingTextEdits;
 use App\Domain\Profile\ProfileRules;
 use App\Enums\PhotoVisibility;
 use App\Models\LifestyleDetail;
@@ -39,7 +40,7 @@ final class SaveAboutDetails
             ->unique()->values()->all();
 
         $this->persist($profile, function () use ($profile, $values, $about, $hobbies): void {
-            $profile->forceFill(['about' => $about === '' ? null : $about])->save();
+            $profile->forceFill(app(PendingTextEdits::class)->hold($profile, 'profiles', ['about' => $about === '' ? null : $about], $profile->getAttributes()))->save();
 
             $lifestyle = LifestyleDetail::query()->whereKey($profile->id)->first() ?? new LifestyleDetail;
             $lifestyle->forceFill([

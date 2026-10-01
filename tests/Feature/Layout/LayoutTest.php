@@ -104,7 +104,8 @@ it('never links to a page that is not built yet', function (): void {
 
     expect($html)->not->toContain('href="#"')
         ->and($html)->not->toContain('/login')
-        ->and($html)->not->toContain('mobile-footer')      // no tab routes yet → no empty bar
+        ->and($html)->toContain('mobile-footer')          // the bar appears once a tab route exists (/me, P1.5)…
+        ->and($html)->toContain(route('member.profile.me', absolute: false))   // …and links only to built pages
         ->and($html)->not->toContain('profile-logout');   // logout is a POST form once the route exists
 });
 

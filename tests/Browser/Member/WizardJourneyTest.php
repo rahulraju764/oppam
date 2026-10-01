@@ -16,24 +16,6 @@ use Laravel\Dusk\Browser;
 beforeEach(fn () => duskMemberCleanup());
 afterEach(fn () => duskMemberCleanup());
 
-function duskRegisterAndVerify(Browser $browser): void
-{
-    $browser->visit('/register')
-        ->waitUntilMissing('#preloader', 10)
-        ->select('#profileFor', 'DAUGHTER')
-        ->waitUntil('document.getElementById("regGenderFemale").checked')
-        ->type('#regName', 'Dusk Bride')
-        ->type('#regMobile', '9999900001')
-        ->type('#regPassword', 'kerala2026')
-        ->check('#regTerms')
-        ->click('.login-form button[type="submit"]')
-        ->waitForLocation('/verify-otp')
-        ->type('#otpCode', (string) duskLatestOtp('+91 99•••••001'))
-        ->click('.login-form button[type="submit"]')
-        ->waitForLocation('/onboarding/1')
-        ->waitUntilMissing('#preloader', 10);
-}
-
 it('fills step 1 with live caste list, continues to step 2 and restores after a reload', function (): void {
     $hindu = Religion::query()->where('code', 'HINDU')->firstOrFail();
     $caste = Caste::query()->where('religion_id', $hindu->id)->where('is_active', true)->orderBy('sort_order')->firstOrFail();
@@ -77,17 +59,6 @@ it('shows errors under the fields when Continue is pressed with missing details'
             ->assertPathIs('/onboarding/1');
     });
 });
-
-/** Steps 1–3 for the throwaway Dusk member, through the real Actions (the browser part is P1.2's test). */
-function duskCompleteFirstSteps(): void
-{
-    $user = App\Models\User::query()->where('phone', DUSK_MEMBER_PHONE)->firstOrFail();
-    $profile = $user->profile()->firstOrFail();
-
-    app(App\Actions\Profile\SaveBasicDetails::class)->handle($user, $profile, basicData(['first_name' => 'Dusk', 'last_name' => 'Bride']));
-    app(App\Actions\Profile\SaveCareerDetails::class)->handle($user, $profile->refresh(), careerData());
-    app(App\Actions\Profile\SaveFamilyDetails::class)->handle($user, $profile->refresh(), familyData());
-}
 
 it('P1.3: completes steps 4–6; without a photo the submit asks for one', function (): void {
     $this->browse(function (Browser $browser): void {

@@ -9,6 +9,8 @@ use App\Livewire\Member\Auth\Register;
 use App\Livewire\Member\Auth\VerifyOtp;
 use App\Livewire\Member\Onboarding\Submitted;
 use App\Livewire\Member\Onboarding\Wizard;
+use App\Livewire\Member\Profile\MyProfile;
+use App\Livewire\Member\Profile\Show;
 use App\Livewire\Public\About;
 use App\Livewire\Public\Branches;
 use App\Livewire\Public\Contact;
@@ -48,6 +50,12 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware(['auth', 'verified.phone'])->group(function (): void {
     Route::get('/onboarding/{step}', Wizard::class)->whereNumber('step')->name('member.onboarding');
     Route::get('/onboarding/submitted', Submitted::class)->name('member.onboarding.submitted');
+
+    // Profiles (M03): own (/me) and others' (/profile/OPM…). Onboarded members only.
+    Route::middleware('profile.onboarded')->group(function (): void {
+        Route::get('/me', MyProfile::class)->name('member.profile.me');
+        Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');
+    });
 
     // Horoscope file (M11): short-lived signed link from HoroscopeAccess; checked + audited again.
     Route::get('/media/horoscope/{profile}', HoroscopeController::class)

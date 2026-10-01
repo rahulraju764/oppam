@@ -13,11 +13,6 @@ use Laravel\Dusk\Browser;
 beforeEach(fn () => duskMemberCleanup());
 afterEach(fn () => duskMemberCleanup());
 
-function assertNoHorizontalScroll(Browser $browser): void
-{
-    expect((bool) $browser->script('return document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth;')[0])->toBeTrue();
-}
-
 it('registers from the home hero on a phone and lands on the wizard', function (): void {
     $this->browse(function (Browser $browser): void {
         $browser->visit('/')

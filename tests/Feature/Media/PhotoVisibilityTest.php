@@ -29,6 +29,7 @@ function memberWithApprovedPhoto(PhotoVisibility $visibility = PhotoVisibility::
     app(App\Actions\Profile\Photos\UploadProfilePhoto::class)
         ->handle($user, $user->profile()->firstOrFail(), gradientPhoto())
         ->forceFill(['moderation_status' => PhotoStatus::Approved])->save();
+    $user->profile->forceFill(['status' => App\Enums\ProfileStatus::Active, 'published_at' => now()])->save();
 
     return $user->refresh();
 }
@@ -37,23 +38,30 @@ function viewer(string $kind): ?User
 {
     return match ($kind) {
         'guest' => null,
-        'free member' => memberWithPhone('+919800000001'),
-        'premium member' => tap(memberWithPhone('+919800000002'), fn (User $u) => $u->profile->forceFill(['is_premium' => true])->save()),
-        'suspended member' => tap(memberWithPhone('+919800000003'), fn (User $u) => $u->forceFill(['status' => UserStatus::Suspended])->save()),
+        'free member' => groom('+919800000001'),
+        'premium member' => tap(groom('+919800000002'), fn (User $u) => $u->profile->forceFill(['is_premium' => true])->save()),
+        'suspended member' => tap(groom('+919800000003'), fn (User $u) => $u->forceFill(['status' => UserStatus::Suspended])->save()),
         'broker login' => User::factory()->broker()->create(),
     };
 }
 
-it('Done when: viewers see the clear photo only when the visibility allows, otherwise ONLY the blurred URL', function (PhotoVisibility $visibility, string $kind, bool $clear): void {
+it('Done when: viewers see the clear photo only when the visibility allows, otherwise ONLY the blurred URL', function (PhotoVisibility $visibility, string $kind, string $sees): void {
     $owner = memberWithApprovedPhoto($visibility);
     $media = Media::query()->firstOrFail();
 
     $photos = app(PhotoUrls::class)->forViewer($owner->profile()->firstOrFail(), viewer($kind));
 
+    // Members who may not open the profile at all (suspended, broker logins) get nothing.
+    if ($sees === 'none') {
+        expect($photos)->toBe([]);
+
+        return;
+    }
+
     expect($photos)->toHaveCount(1);
     $photo = $photos[0];
 
-    if ($clear) {
+    if ($sees === 'clear') {
         expect($photo->blurred)->toBeFalse()
             ->and($photo->cardUrl)->toBe($media->getUrl('card'))
             ->and($photo->fullUrl)->toBe($media->getUrl('full'));
@@ -68,14 +76,14 @@ it('Done when: viewers see the clear photo only when the visibility allows, othe
         ->and(serialize($photos))->not->toContain($media->getUrl('full'))
         ->and(serialize($photos))->not->toContain($media->getUrl('thumb'));
 })->with([
-    'all members → guest' => [PhotoVisibility::AllMembers, 'guest', false],
-    'all members → free member' => [PhotoVisibility::AllMembers, 'free member', true],
-    'all members → suspended member' => [PhotoVisibility::AllMembers, 'suspended member', false],
-    'all members → broker login' => [PhotoVisibility::AllMembers, 'broker login', false],
-    'premium only → free member' => [PhotoVisibility::PremiumOnly, 'free member', false],
-    'premium only → premium member' => [PhotoVisibility::PremiumOnly, 'premium member', true],
-    'on request → premium member (not connected)' => [PhotoVisibility::OnRequest, 'premium member', false],
-    'accepted only → premium member (not connected)' => [PhotoVisibility::AcceptedOnly, 'premium member', false],
+    'all members → guest' => [PhotoVisibility::AllMembers, 'guest', 'blurred'],
+    'all members → free member' => [PhotoVisibility::AllMembers, 'free member', 'clear'],
+    'all members → suspended member' => [PhotoVisibility::AllMembers, 'suspended member', 'none'],
+    'all members → broker login' => [PhotoVisibility::AllMembers, 'broker login', 'none'],
+    'premium only → free member' => [PhotoVisibility::PremiumOnly, 'free member', 'blurred'],
+    'premium only → premium member' => [PhotoVisibility::PremiumOnly, 'premium member', 'clear'],
+    'on request → premium member (not connected)' => [PhotoVisibility::OnRequest, 'premium member', 'blurred'],
+    'accepted only → premium member (not connected)' => [PhotoVisibility::AcceptedOnly, 'premium member', 'blurred'],
 ]);
 
 it('the owner always sees their photos clearly, whatever the visibility', function (): void {
@@ -95,16 +103,16 @@ it('Done when: pending (and rejected) photos are visible to the owner only, with
 
     expect($urls->forViewer($profile, $owner))->toHaveCount(1)
         ->and($urls->forViewer($profile, $owner)[0]->status)->toBe($status)
-        ->and($urls->forViewer($profile, memberWithPhone('+919800000009')))->toBe([])
+        ->and($urls->forViewer($profile, groom('+919800000009')))->toBe([])
         ->and($urls->forViewer($profile, null))->toBe([])
-        ->and($urls->primaryCardUrl($profile, memberWithPhone('+919800000008')))->toBeNull();
+        ->and($urls->primaryCardUrl($profile, groom('+919800000008')))->toBeNull();
 })->with([PhotoStatus::Pending, PhotoStatus::Rejected]);
 
 it('other viewers never see the moderation status or rejection reason', function (): void {
     $owner = memberWithApprovedPhoto();
     Media::query()->firstOrFail()->forceFill(['rejection_reason' => 'internal note'])->save();
 
-    $photo = app(PhotoUrls::class)->forViewer($owner->profile()->firstOrFail(), memberWithPhone('+919800000007'))[0];
+    $photo = app(PhotoUrls::class)->forViewer($owner->profile()->firstOrFail(), groom('+919800000007'))[0];
 
     expect($photo->status)->toBeNull()->and($photo->rejectionReason)->toBeNull();
 });
@@ -141,7 +149,7 @@ it('visibility defaults to all members when the member never chose one', functio
     $owner = memberWithApprovedPhoto();
     PrivacySetting::query()->whereKey($owner->profile->id)->delete();
 
-    expect(app(PhotoUrls::class)->forViewer($owner->profile()->firstOrFail()->unsetRelations(), memberWithPhone('+919800000006'))[0]->blurred)->toBeFalse();
+    expect(app(PhotoUrls::class)->forViewer($owner->profile()->firstOrFail()->unsetRelations(), groom('+919800000006'))[0]->blurred)->toBeFalse();
 });
 
 it('P1.4 review Blocker: the clear versions can\'t be derived from the blurred URL', function (): void {

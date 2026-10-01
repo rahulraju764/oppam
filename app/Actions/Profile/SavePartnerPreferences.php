@@ -6,6 +6,7 @@ namespace App\Actions\Profile;
 
 use App\Actions\Profile\Concerns\GuardsWizardStep;
 use App\Data\Profile\PartnerPreferenceData;
+use App\Domain\Profile\PendingTextEdits;
 use App\Domain\Profile\ProfileRules;
 use App\Models\PartnerPreference;
 use App\Models\Profile;
@@ -49,6 +50,7 @@ final class SavePartnerPreferences
 
         $this->persist($profile, function () use ($profile, $attributes): void {
             $preference = PartnerPreference::query()->whereKey($profile->id)->first() ?? new PartnerPreference;
+            $attributes = app(PendingTextEdits::class)->hold($profile, 'partner_preferences', $attributes, $preference->getAttributes());
             $preference->forceFill(['profile_id' => $profile->id, ...$attributes])->save();
         });
     }

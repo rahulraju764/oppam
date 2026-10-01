@@ -156,14 +156,13 @@ it('opens steps only in order: a deep link to a later step goes back to the firs
     wizardAs(memberThroughStep(2), 3)->assertOk()->assertSee('Father');
 });
 
-it('sends members with a submitted or live profile away from the wizard', function (ProfileStatus $status, string $route): void {
+it('sends members with a submitted profile away from the wizard', function (ProfileStatus $status, string $route): void {
     $user = memberThroughStep(3);
     $user->profile->forceFill(['status' => $status, 'published_at' => now()])->save();
 
     wizardAs($user->refresh())->assertRedirect(route($route));
 })->with([
     'pending review → under-review page' => [ProfileStatus::PendingReview, 'member.onboarding.submitted'],
-    'live → home (dashboard from P2.3)' => [ProfileStatus::Active, 'home'],
 ]);
 
 it('lets a REJECTED profile back in to edit and resubmit (R-M02-5)', function (): void {
@@ -375,4 +374,32 @@ it('step 4 never suggests or offers a partner age below the legal minimum (bride
         ->assertDontSeeHtml('<option value="20"')
         ->call('next')
         ->assertHasNoErrors(['preference.age_min']);
+});
+
+it('R-M02-4: a live profile opens the wizard in edit mode and "Save changes" goes back to My Profile', function (): void {
+    $user = memberThroughStep(6);
+    $user->profile->forceFill(['status' => ProfileStatus::Active, 'published_at' => now()])->save();
+
+    wizardAs($user->refresh(), 6)
+        ->assertSee('You are editing your live profile')
+        ->assertSee('Save changes')
+        ->assertDontSee('Submit for review')
+        ->set('about.about', 'An updated about me that clearly runs longer than the fifty character minimum.')
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('member.profile.me'));
+
+    expect(statusOf($user))->toBe(ProfileStatus::Active)
+        ->and(app(App\Domain\Profile\PendingTextEdits::class)->pending($user->profile()->firstOrFail()))->toHaveKey('profiles.about');
+});
+
+it('R-M02-4: the wizard shows the member their own pending text, labelled as waiting for review', function (): void {
+    $user = memberThroughStep(6);
+    $user->profile->forceFill(['status' => ProfileStatus::Active, 'published_at' => now()])->save();
+    app(App\Actions\Profile\SaveBasicDetails::class)->handle($user->refresh(), $user->profile()->firstOrFail(), basicData(['first_name' => 'Anjana']));
+
+    wizardAs($user->refresh(), 1)
+        ->assertSet('basic.first_name', 'Anjana')
+        ->assertSee('Waiting for review:')
+        ->assertSee('first name');
 });

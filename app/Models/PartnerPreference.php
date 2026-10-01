@@ -8,7 +8,27 @@ use App\Models\Concerns\KeyedByProfile;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-/** Wizard step 4 — partner preferences (M02). Empty id lists mean "any". */
+/**
+ * Wizard step 4 — partner preferences (M02). Empty id lists mean "any".
+ *
+ * @property int|null $age_min
+ * @property int|null $age_max
+ * @property int|null $height_min_cm
+ * @property int|null $height_max_cm
+ * @property list<string>|null $marital_statuses
+ * @property list<string>|null $physical_statuses
+ * @property list<int>|null $religion_ids
+ * @property list<int>|null $caste_ids
+ * @property list<int>|null $mother_tongue_ids
+ * @property list<int>|null $star_ids
+ * @property list<int>|null $education_ids
+ * @property list<int>|null $occupation_ids
+ * @property int|null $min_income_band_id
+ * @property list<int>|null $country_ids
+ * @property list<int>|null $district_ids
+ * @property list<int>|null $diet_option_ids
+ * @property string|null $about_partner
+ */
 final class PartnerPreference extends Model
 {
     /** @use HasFactory<\Database\Factories\PartnerPreferenceFactory> */

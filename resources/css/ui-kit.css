@@ -444,3 +444,41 @@
 
 .photo-crop { max-height: 60vh; overflow: hidden; }
 .photo-crop img { display: block; max-width: 100%; }
+
+/* ---- Profile page (M03) ------------------------------------------------------------------- */
+/* Actions that open later (P3.x): visibly disabled, not just inert. */
+.profile-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.profile-actions button { display: inline-flex; align-items: center; gap: var(--space-2); border: 0; }
+.profile-actions button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* "You match X of Y": small inline tick / cross, not the template's big icon discs. */
+.preference-checks i {
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none;
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+.preference-checks i.is-match { color: var(--color-success); }
+.preference-checks i.is-miss { color: var(--color-gr-dark); }
+
+.profile-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+.profile-gallery img { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius-md); }
+
+.profile-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+
+.profile-neighbours {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+.profile-neighbours a { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--tap-min); }

@@ -12,6 +12,7 @@ use App\Actions\Profile\SaveFamilyDetails;
 use App\Actions\Profile\SavePartnerPreferences;
 use App\Actions\Profile\SubmitProfile;
 use App\Data\Content\SeoData;
+use App\Domain\Profile\PendingTextEdits;
 use App\Domain\Profile\ProfileRules;
 use App\Domain\Profile\WizardProgress;
 use App\Enums\Gender;
@@ -95,7 +96,21 @@ final class Wizard extends Component
             $form->load($profile);
         }
 
+        $this->showPendingText($profile);
+
         return null;
+    }
+
+    /** A live profile's held text edits (R-M02-4) are what the owner last typed: show those. */
+    private function showPendingText(Profile $profile): void
+    {
+        $pending = app(PendingTextEdits::class)->pending($profile);
+
+        $this->basic->first_name = $pending['profiles.first_name'] ?? $this->basic->first_name;
+        $this->basic->last_name = $pending['profiles.last_name'] ?? $this->basic->last_name;
+        $this->about->about = $pending['profiles.about'] ?? $this->about->about;
+        $this->family->about_family = $pending['family_details.about_family'] ?? $this->family->about_family;
+        $this->preference->about_partner = $pending['partner_preferences.about_partner'] ?? $this->preference->about_partner;
     }
 
     // ---- Dependent fields -----------------------------------------------------------------------
@@ -190,6 +205,13 @@ final class Wizard extends Component
         $this->save(partial: false);
         $user = $this->member();
 
+        // A live profile has nothing to submit: its changes are saved (text edits wait for review).
+        if ($user->profile?->status === ProfileStatus::Active) {
+            session()->flash('status', __('Your changes are saved. Edited names and "about" texts appear once reviewed.'));
+
+            return $this->redirectRoute('member.profile.me', navigate: true);
+        }
+
         try {
             $submit->handle($user, $user->profile ?? abort(404));
         } catch (ProfileNotSubmittable $e) {
@@ -248,9 +270,29 @@ final class Wizard extends Component
             'profile' => $profile,
             'locked' => $profile !== null ? ProfileRules::lockedFields($profile) : [],
             'rejectionNote' => $this->rejectionNote($profile),
+            'pendingFields' => $this->pendingFieldLabels($profile),
             'phone' => $this->member()->phone,
             ...$options->forStep($current, $profile->gender ?? Gender::Female, $this->basic, $this->career, $this->preference, $this->contact),
         ])->layout('layouts::member', ['seo' => SeoData::private('Create your profile | Oppam Matrimony')]);
+    }
+
+    /**
+     * Friendly names of a live profile's text fields waiting for review (R-M02-4).
+     *
+     * @return list<string>
+     */
+    private function pendingFieldLabels(?Profile $profile): array
+    {
+        if ($profile?->status !== ProfileStatus::Active) {
+            return [];
+        }
+
+        $names = ProfileRules::attributes();
+
+        return array_map(
+            fn (string $key): string => $names[substr($key, (int) strpos($key, '.') + 1)] ?? $key,
+            array_keys(app(PendingTextEdits::class)->pending($profile)),
+        );
     }
 
     /** The moderator's note for a rejected profile (R-M02-5), or null. */

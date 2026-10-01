@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Media;
 
+use App\Domain\Profile\ProfileVisibility;
 use App\Enums\HoroscopeVisibility;
 use App\Enums\UserRole;
 use App\Models\Profile;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\URL;
  */
 final class HoroscopeAccess
 {
+    public function __construct(private readonly ProfileVisibility $visibility) {}
+
     public function canView(Profile $owner, ?User $viewer): bool
     {
         if ($viewer === null || ! $viewer->isActive()) {
@@ -28,7 +31,8 @@ final class HoroscopeAccess
             return true;
         }
 
-        if ($viewer->role !== UserRole::Member) {
+        // Same gate as the profile page itself: ACTIVE, opposite gender, not blocked (M03).
+        if ($viewer->role !== UserRole::Member || ! $this->visibility->canView($owner, $viewer)) {
             return false;
         }
 

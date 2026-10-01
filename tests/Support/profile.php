@@ -286,3 +286,21 @@ function gradientPhoto(string $name = 'gradient.jpg'): Illuminate\Http\UploadedF
 
     return new Illuminate\Http\UploadedFile($path, $name, 'image/jpeg', null, true);
 }
+
+/** An ACTIVE, onboarded male member — a typical viewer of the (female) test profiles. */
+function groom(string $e164 = '+919800000099'): User
+{
+    $user = memberWithPhone($e164);
+    $user->profile->forceFill(['gender' => Gender::Male])->save();
+
+    return $user->refresh();
+}
+
+/** An ACTIVE, onboarded female member. */
+function bride(string $e164 = '+919800000098'): User
+{
+    $user = memberWithPhone($e164);
+    $user->profile->forceFill(['gender' => Gender::Female])->save();
+
+    return $user->refresh();
+}

@@ -10,6 +10,16 @@
                 <p class="profile-subtitle">{{ __('Create your profile and begin your journey to find your perfect life partner.') }}</p>
             </div>
 
+            @if ($profile?->status === \App\Enums\ProfileStatus::Active)
+                {{-- R-M02-4: editing a live profile. --}}
+                <x-ui.alert type="info">
+                    {{ __('You are editing your live profile. Changes to names and “about” texts are shown to others after a quick review; everything else updates straight away.') }}
+                    @if ($pendingFields !== [])
+                        <span class="d-block mt-1"><strong>{{ __('Waiting for review:') }}</strong> {{ implode(', ', $pendingFields) }}</span>
+                    @endif
+                </x-ui.alert>
+            @endif
+
             @if ($profile?->status === \App\Enums\ProfileStatus::Rejected)
                 {{-- R-M02-5: the moderator's reason + "Edit & resubmit" (the wizard itself). --}}
                 <x-ui.alert type="warning">
@@ -117,7 +127,11 @@
                                         {{-- Last step: submit for review (R-M02-2). --}}
                                         <button type="submit" class="view-btn" wire:loading.attr="disabled" wire:target="submit">
                                             <span class="ui-spinner" wire:loading wire:target="submit" aria-hidden="true"></span>
-                                            {{ __('Submit for review') }} <i class="fa fa-check" aria-hidden="true"></i>
+                                            @if ($profile?->status === \App\Enums\ProfileStatus::Active)
+                                                {{ __('Save changes') }} <i class="fa fa-check" aria-hidden="true"></i>
+                                            @else
+                                                {{ __('Submit for review') }} <i class="fa fa-check" aria-hidden="true"></i>
+                                            @endif
                                         </button>
                                     @endif
                                 </div>

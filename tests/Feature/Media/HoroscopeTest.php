@@ -39,6 +39,7 @@ function memberWithHoroscope(HoroscopeVisibility $visibility = HoroscopeVisibili
     app(UploadHoroscope::class)->handle($user, $user->profile()->firstOrFail(), UploadedFile::fake()->createWithContent('jathakam.pdf', TEST_PDF));
     $privacy = App\Models\PrivacySetting::query()->whereKey($user->profile->id)->first() ?? new App\Models\PrivacySetting;
     $privacy->forceFill(['profile_id' => $user->profile->id, 'horoscope_visibility' => $visibility])->save();
+    $user->profile->forceFill(['status' => App\Enums\ProfileStatus::Active, 'published_at' => now()])->save();
 
     return $user->refresh();
 }
@@ -89,7 +90,7 @@ it('refuses an unsigned, tampered or expired link', function (Closure $mangle): 
 it('applies horoscope_visibility: all members get a link, "accepted only" gives no link and a 404 on a borrowed one', function (): void {
     $open = memberWithHoroscope(HoroscopeVisibility::AllMembers);
     $closed = memberWithHoroscope(HoroscopeVisibility::AcceptedOnly);
-    $viewer = memberWithPhone('+919800000011');
+    $viewer = groom('+919800000011');
 
     expect(horoscopeLinkFor($open, $viewer))->not->toBeNull()
         ->and(horoscopeLinkFor($closed, $viewer))->toBeNull();

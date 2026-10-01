@@ -6,6 +6,7 @@ namespace App\Actions\Profile;
 
 use App\Actions\Profile\Concerns\GuardsWizardStep;
 use App\Data\Profile\BasicDetailsData;
+use App\Domain\Profile\PendingTextEdits;
 use App\Domain\Profile\ProfileRules;
 use App\Enums\MaritalStatus;
 use App\Models\HoroscopeDetail;
@@ -20,6 +21,7 @@ use Illuminate\Validation\ValidationException;
  * star, rasi, doshams. Profile columns + horoscope_details, in one transaction.
  * Children are always 0 for NEVER_MARRIED. Gender, DOB, religion and marital status are locked
  * after first publish, gender also when "profile for" implies it (R-M02-1, ProfileRules::lockedFields).
+ * On a live profile, changed names wait for review (R-M02-4, PendingTextEdits).
  */
 final class SaveBasicDetails
 {
@@ -39,7 +41,7 @@ final class SaveBasicDetails
         $neverMarried = ($values['marital_status'] ?? null) === MaritalStatus::NeverMarried->value;
 
         $this->persist($profile, function () use ($profile, $values, $neverMarried): void {
-            $profile->forceFill([
+            $attributes = app(PendingTextEdits::class)->hold($profile, 'profiles', [
                 'first_name' => trim((string) $values['first_name']),
                 'last_name' => self::trimOrNull($values['last_name'] ?? null),
                 'gender' => $values['gender'],
@@ -56,7 +58,9 @@ final class SaveBasicDetails
                 'mother_tongue_id' => $values['mother_tongue_id'] ?? null,
                 'star_id' => $values['star_id'] ?? null,
                 'rasi_id' => $values['rasi_id'] ?? null,
-            ])->save();
+            ], $profile->getAttributes());
+
+            $profile->forceFill($attributes)->save();
 
             $horoscope = HoroscopeDetail::query()->whereKey($profile->id)->first() ?? new HoroscopeDetail;
             $horoscope->forceFill([

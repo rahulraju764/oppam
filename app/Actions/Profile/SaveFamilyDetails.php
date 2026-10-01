@@ -6,6 +6,7 @@ namespace App\Actions\Profile;
 
 use App\Actions\Profile\Concerns\GuardsWizardStep;
 use App\Data\Profile\FamilyDetailsData;
+use App\Domain\Profile\PendingTextEdits;
 use App\Domain\Profile\ProfileRules;
 use App\Models\FamilyDetail;
 use App\Models\Profile;
@@ -39,6 +40,7 @@ final class SaveFamilyDetails
 
         $this->persist($profile, function () use ($profile, $attributes): void {
             $family = FamilyDetail::query()->whereKey($profile->id)->first() ?? new FamilyDetail;
+            $attributes = app(PendingTextEdits::class)->hold($profile, 'family_details', $attributes, $family->getAttributes());
             $family->forceFill(['profile_id' => $profile->id, ...$attributes])->save();
         });
     }

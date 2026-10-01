@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 1 — Identity & profiles (Phase 0 built; P0.4–P0.6 commits await owner review)
-**Next session:** P1.5 — Profile view, own & others (M03)
+**Next session:** P1.6 — Moderation queues (A04)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -27,7 +27,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.2 Wizard steps 1–3 (M02) — 2026-10-01 (reviewer READY after 2 Majors fixed: missing-profile redirect loop, search-district decision recorded)
 - [x] P1.3 Wizard steps 4–6, completeness, submit (M02) — 2026-10-01 (reviewer READY after 1 Major fixed: hobbies text blocked submit)
 - [x] P1.4 Photos & media privacy (M11) — 2026-10-01 (reviewer READY after 1 Blocker fixed: clear photo derivable from blurred URL → HMAC conversion names; media ULID keys)
-- [ ] P1.5 Profile view, own & others (M03)
+- [x] P1.5 Profile view, own & others (M03) — 2026-10-01 (reviewer READY after 1 Major fixed: an earlier contact reveal outlived HIDDEN / contact filter)
 - [ ] P1.6 Moderation queues (A04)
 - [ ] P1.7 Member management (A03)
 - [ ] P1.8 Master data management (A11)
@@ -92,7 +92,12 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.4 → P1.6: photo queue uses `moderation_items` PHOTO rows (subject_id = media uuid) and `media.phash` for duplicates.
 - P1.4 → P2.x: `PhotoUrls` queries per profile; add a batch `forViewers()` (eager-loaded) before search/list cards use it.
 - P1.4 → P9.5: S3 public bucket with listing disabled; `media-library:regenerate` after an APP_KEY rotation (conversion names are keyed).
-- P1.4 → P1.5: PhotoAccess / HoroscopeAccess must also refuse non-ACTIVE owners and blocked pairs.
+- P1.5 → P1.6: A04 applies / drops PROFILE_EDIT `fields` (R-M02-4) and PHOTO items; approve sets published_at.
+- P1.5 → P2.x: list pages call `ProfileBrowseList::remember(codes)` for Prev/Next; use `BlockList::hiddenFrom()` in search.
+- P1.5 → P2.1: rate-limit profile-view recording with search; batch the similar-profile cards (one media + block query).
+- P1.5 → P7: a managing broker may see its managed profiles' photos (R-M03-3) — PhotoUrls currently returns [] to non-members.
+- P1.5 → P3.x: Like / Interest / Chat buttons on the profile page are disabled placeholders; name masking and
+  ACCEPTED_ONLY contact / photo rules unlock with accepted interests (P3.4); ProfileViewed listener in P3.1.
 - P1.4 → P3.4: `PhotoAccess::isConnected()` / `HoroscopeAccess` ON_REQUEST + ACCEPTED_ONLY plug into accepted interests.
 - P1.3 → P1.5: R-M02-4 edited-fields queue (moderation_items PROFILE_EDIT) with the own-profile edit screen.
 - P1.3 → P3.1: admin-domain /broadcasting/auth + Echo listener for `admin.queues` (channel + event already exist).

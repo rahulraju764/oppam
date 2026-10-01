@@ -151,13 +151,12 @@ it('refuses to save another member\'s profile', function (): void {
         ->toThrow(AuthorizationException::class);
 });
 
-it('refuses wizard edits of a live, pending or suspended profile, and by a suspended member', function (Closure $arrange): void {
+it('refuses wizard edits of a pending or suspended profile, and by a suspended member (a live profile may edit, R-M02-4)', function (Closure $arrange): void {
     $user = memberThroughStep(1);
     $arrange($user);
 
     expect(fn () => saveBasic($user->refresh()))->toThrow(AuthorizationException::class);
 })->with([
-    'ACTIVE profile' => fn (User $u) => $u->profile->forceFill(['status' => ProfileStatus::Active])->save(),
     'PENDING_REVIEW profile' => fn (User $u) => $u->profile->forceFill(['status' => ProfileStatus::PendingReview])->save(),
     'SUSPENDED profile' => fn (User $u) => $u->profile->forceFill(['status' => ProfileStatus::Suspended])->save(),
     'suspended member' => fn (User $u) => $u->forceFill(['status' => UserStatus::Suspended])->save(),

@@ -137,8 +137,15 @@ it('security matrix: refuses submit by another member, a suspended member, or fo
 })->with([
     'another member' => fn (User $u) => memberThroughStep(6),
     'suspended member' => fn (User $u) => tap($u)->forceFill(['status' => UserStatus::Suspended])->save() ? null : null,
-    'ACTIVE profile' => fn (User $u) => $u->profile->forceFill(['status' => ProfileStatus::Active])->save() ? null : null,
 ]);
+
+it('a live profile has nothing to submit: the attempt is refused and no item is created', function (): void {
+    $user = memberThroughStep(6);
+    $user->profile->forceFill(['status' => ProfileStatus::Active, 'published_at' => now()])->save();
+
+    expect(fn () => submitProfile($user->refresh()))->toThrow(ProfileNotSubmittable::class, 'already been submitted')
+        ->and(ModerationItem::query()->ofType(ModerationItemType::ProfileNew)->count())->toBe(0);
+});
 
 // ---- R-M02-1: identity fields locked after first publish ---------------------------------------
 

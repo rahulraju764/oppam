@@ -30,9 +30,48 @@ final class CompletenessCalculator
 
     public function percent(Profile $profile): int
     {
+        $done = $this->done($profile);
+
+        return array_sum(array_map(
+            fn (string $part): int => $done[$part] ? self::WEIGHTS[$part] : 0,
+            array_keys(self::WEIGHTS),
+        ));
+    }
+
+    /**
+     * The parts still missing, with what each adds and the wizard step that fills it — for
+     * "add X to reach 100 %" on My Profile (M03).
+     *
+     * @return list<array{part: string, label: string, points: int, step: WizardStep}>
+     */
+    public function missing(Profile $profile): array
+    {
+        $labels = [
+            'basic' => [__('basic details'), WizardStep::Basic],
+            'career' => [__('education & career'), WizardStep::Career],
+            'family' => [__('family details'), WizardStep::Family],
+            'preferences' => [__('partner preferences'), WizardStep::Preferences],
+            'contact' => [__('contact details'), WizardStep::Contact],
+            'photo' => [__('a photo'), WizardStep::Photos],
+            'about' => [__('about me'), WizardStep::Photos],
+        ];
+
+        $missing = [];
+        foreach ($this->done($profile) as $part => $isDone) {
+            if (! $isDone) {
+                $missing[] = ['part' => $part, 'label' => $labels[$part][0], 'points' => self::WEIGHTS[$part], 'step' => $labels[$part][1]];
+            }
+        }
+
+        return $missing;
+    }
+
+    /** @return array<string, bool> part => done */
+    private function done(Profile $profile): array
+    {
         $progress = new WizardProgress($profile);
 
-        $done = [
+        return [
             'basic' => $progress->isComplete(WizardStep::Basic),
             'career' => $progress->isComplete(WizardStep::Career),
             'family' => $progress->isComplete(WizardStep::Family),
@@ -41,10 +80,5 @@ final class CompletenessCalculator
             'photo' => $progress->hasPhoto(),
             'about' => $progress->hasAbout(),
         ];
-
-        return array_sum(array_map(
-            fn (string $part): int => $done[$part] ? self::WEIGHTS[$part] : 0,
-            array_keys(self::WEIGHTS),
-        ));
     }
 }
