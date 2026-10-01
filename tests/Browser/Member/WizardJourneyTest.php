@@ -77,3 +77,48 @@ it('shows errors under the fields when Continue is pressed with missing details'
             ->assertPathIs('/onboarding/1');
     });
 });
+
+/** Steps 1–3 for the throwaway Dusk member, through the real Actions (the browser part is P1.2's test). */
+function duskCompleteFirstSteps(): void
+{
+    $user = App\Models\User::query()->where('phone', DUSK_MEMBER_PHONE)->firstOrFail();
+    $profile = $user->profile()->firstOrFail();
+
+    app(App\Actions\Profile\SaveBasicDetails::class)->handle($user, $profile, basicData(['first_name' => 'Dusk', 'last_name' => 'Bride']));
+    app(App\Actions\Profile\SaveCareerDetails::class)->handle($user, $profile->refresh(), careerData());
+    app(App\Actions\Profile\SaveFamilyDetails::class)->handle($user, $profile->refresh(), familyData());
+}
+
+it('P1.3: completes steps 4–6 and submits for review, landing on the "under review" page', function (): void {
+    $this->browse(function (Browser $browser): void {
+        duskRegisterAndVerify($browser);
+        duskCompleteFirstSteps();
+
+        // Step 4: the age range and religion are suggested; Continue saves them.
+        $browser->visit('/onboarding/4')
+            ->waitUntilMissing('#preloader', 10)
+            ->assertSourceHas('Religious Preference')
+            ->assertAttribute('button[wire\:key^="preference-religion_ids-"].active', 'aria-pressed', 'true')
+            ->click('.register-right button[type="submit"]')
+            ->waitForLocation('/onboarding/5');
+
+        // Step 5: the verified mobile is read-only; email and city are needed.
+        $browser->waitUntilMissing('#preloader', 10)
+            ->assertAttribute('#contact-mobile', 'readonly', 'true')
+            ->type('#contact-contact_email', 'dusk.family@example.com')
+            ->type('#contact-city', 'Kochi')
+            ->click('.register-right button[type="submit"]')
+            ->waitForLocation('/onboarding/6');
+
+        // Step 6: a too-short about-me is flagged; a proper one submits.
+        $browser->waitUntilMissing('#preloader', 10)
+            ->type('#about-about', 'Too short')
+            ->click('.register-right button[type="submit"]')
+            ->waitFor('#about-about-error')
+            ->type('#about-about', 'I teach mathematics in Kochi and love Carnatic music, books and long drives with family.')
+            ->type('#about-hobbies', 'Music, Reading, Travel')
+            ->click('.register-right button[type="submit"]')
+            ->waitForLocation('/onboarding/submitted')
+            ->assertSee('under review');
+    });
+});

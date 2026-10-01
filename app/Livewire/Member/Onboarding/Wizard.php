@@ -4,25 +4,33 @@ declare(strict_types=1);
 
 namespace App\Livewire\Member\Onboarding;
 
+use App\Actions\Profile\SaveAboutDetails;
 use App\Actions\Profile\SaveBasicDetails;
 use App\Actions\Profile\SaveCareerDetails;
+use App\Actions\Profile\SaveContactDetails;
 use App\Actions\Profile\SaveFamilyDetails;
+use App\Actions\Profile\SavePartnerPreferences;
+use App\Actions\Profile\SubmitProfile;
 use App\Data\Content\SeoData;
+use App\Domain\Profile\ProfileRules;
 use App\Domain\Profile\WizardProgress;
-use App\Enums\Dosham;
-use App\Enums\EmployerType;
+use App\Enums\Gender;
 use App\Enums\MaritalStatus;
-use App\Enums\PhysicalStatus;
+use App\Enums\ProfileStatus;
 use App\Enums\UserRole;
 use App\Enums\WizardStep;
+use App\Exceptions\Profile\ProfileNotSubmittable;
+use App\Livewire\Forms\Wizard\AboutForm;
 use App\Livewire\Forms\Wizard\BasicForm;
 use App\Livewire\Forms\Wizard\CareerForm;
+use App\Livewire\Forms\Wizard\ContactForm;
 use App\Livewire\Forms\Wizard\FamilyForm;
+use App\Livewire\Forms\Wizard\PreferenceForm;
+use App\Models\ModerationItem;
+use App\Models\Profile;
 use App\Models\User;
 use App\Services\Masters\Masters;
 use App\Support\Navigation\MemberLanding;
-use App\ValueObjects\HeightCm;
-use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -30,12 +38,12 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * /onboarding/{step} — the profile wizard (M02, template profile-creation.php … family.php).
+ * /onboarding/{step} — the profile wizard (M02, template profile-creation.php … profile-photos.php).
  * One component, one Form Object per step, each step saved by its own Action (which authorizes
- * and re-validates). Saves on "Continue" and autosaves after 20 s without typing (Alpine →
- * autosave(), partial rules). Religion → caste and country → state → district are reactive.
- * The profile is always the signed-in member's own — never taken from the request.
- * Steps 4–6 arrive in P1.3 / P1.4.
+ * and re-validates). Saves on Continue/Back and autosaves after 20 s without typing (Alpine →
+ * autosave(), partial rules). Dependent lists are reactive. Step 6 submits for review
+ * (SubmitProfile, R-M02-2). The profile is always the signed-in member's own. Option lists are
+ * built by WizardOptions.
  */
 final class Wizard extends Component
 {
@@ -49,6 +57,12 @@ final class Wizard extends Component
     public CareerForm $career;
 
     public FamilyForm $family;
+
+    public PreferenceForm $preference;
+
+    public ContactForm $contact;
+
+    public AboutForm $about;
 
     /** Last successful autosave (IST "h:i A"), shown as "Saved at …". */
     public ?string $savedAt = null;
@@ -76,47 +90,44 @@ final class Wizard extends Component
         }
 
         $this->step = $requested->value;
-        $this->basic->load($profile);
-        $this->career->load($profile);
-        $this->family->load($profile);
+        foreach ([$this->basic, $this->career, $this->family, $this->preference, $this->contact, $this->about] as $form) {
+            $form->load($profile);
+        }
 
         return null;
     }
 
-    // ---- Dependent selects ----------------------------------------------------------------------
+    // ---- Dependent fields -----------------------------------------------------------------------
 
-    public function updatedBasicReligionId(): void
+    public function updated(string $property, mixed $value): void
     {
-        $this->basic->caste_id = '';
+        match ($property) {
+            'basic.religion_id' => $this->basic->caste_id = '',
+            'basic.marital_status' => $value === MaritalStatus::NeverMarried->value ? $this->basic->children_count = '0' : null,
+            'career.current_country_id' => [$this->career->current_state_id, $this->career->current_district_id] = ['', ''],
+            'career.current_state_id' => $this->career->current_district_id = '',
+            'career.permanent_country_id' => [$this->career->permanent_state_id, $this->career->permanent_district_id] = ['', ''],
+            'career.permanent_state_id' => $this->career->permanent_district_id = '',
+            'contact.country_id' => $this->contact->countryChanged(),
+            'contact.state_id' => $this->contact->stateChanged(),
+            default => null,
+        };
     }
 
-    public function updatedBasicMaritalStatus(string $value): void
+    /** Partner-preference option buttons (multi-select). The list name is allow-listed by the form. */
+    public function toggleChoice(string $list, string $value, Masters $masters): void
     {
-        if ($value === MaritalStatus::NeverMarried->value) {
-            $this->basic->children_count = '0';
+        $this->preference->toggle($list, $value);
+        $this->preference->keepCastesOfReligions($masters);
+    }
+
+    public function clearChoice(string $list): void
+    {
+        $this->preference->clear($list);
+
+        if ($list === 'religion_ids') {
+            $this->preference->clear('caste_ids');
         }
-    }
-
-    public function updatedCareerCurrentCountryId(): void
-    {
-        $this->career->current_state_id = '';
-        $this->career->current_district_id = '';
-    }
-
-    public function updatedCareerCurrentStateId(): void
-    {
-        $this->career->current_district_id = '';
-    }
-
-    public function updatedCareerPermanentCountryId(): void
-    {
-        $this->career->permanent_state_id = '';
-        $this->career->permanent_district_id = '';
-    }
-
-    public function updatedCareerPermanentStateId(): void
-    {
-        $this->career->permanent_district_id = '';
     }
 
     // ---- Saving -------------------------------------------------------------------------------
@@ -168,76 +179,79 @@ final class Wizard extends Component
         $this->savedAt = now()->timezone((string) config('oppam.display_timezone'))->format('g:i A');
     }
 
+    /** Step 6 "Submit for review": save the step, then DRAFT/REJECTED → PENDING_REVIEW (R-M02-2). */
+    public function submit(SubmitProfile $submit): mixed
+    {
+        $this->save(partial: false);
+        $user = $this->member();
+
+        try {
+            $submit->handle($user, $user->profile ?? abort(404));
+        } catch (ProfileNotSubmittable $e) {
+            if ($e->step === null) {
+                return $this->redirectRoute('member.onboarding.submitted', navigate: true);
+            }
+
+            $this->addError('submit', $e->getMessage());
+
+            return null;
+        }
+
+        return $this->redirectRoute('member.onboarding.submitted', navigate: true);
+    }
+
     private function save(bool $partial): void
     {
         $user = $this->member();
         $profile = $user->profile ?? abort(404);
 
-        match (WizardStep::from($this->step)) {
-            WizardStep::Basic => $this->saveStep($partial, $this->basic, fn () => app(SaveBasicDetails::class)->handle($user, $profile, $this->basic->toData(), $partial)),
-            WizardStep::Career => $this->saveStep($partial, $this->career, fn () => app(SaveCareerDetails::class)->handle($user, $profile, $this->career->toData(), $partial)),
-            WizardStep::Family => $this->saveStep($partial, $this->family, fn () => app(SaveFamilyDetails::class)->handle($user, $profile, $this->family->toData(), $partial)),
-            default => null,   // steps 4–6: P1.3 / P1.4
-        };
-    }
+        $step = WizardStep::from($this->step);
 
-    /** Full saves validate the form first so errors appear under the fields. */
-    private function saveStep(bool $partial, BasicForm|CareerForm|FamilyForm $form, Closure $action): void
-    {
+        // Full saves validate the form first so errors appear under the fields.
         if (! $partial) {
-            $form->validate();
+            match ($step) {
+                WizardStep::Basic => $this->basic->validate(),
+                WizardStep::Career => $this->career->validate(),
+                WizardStep::Family => $this->family->validate(),
+                WizardStep::Preferences => $this->preference->validate($this->preference->rulesFor($profile->gender)),
+                WizardStep::Contact => $this->contact->validate(),
+                WizardStep::Photos => $this->about->validate(),
+            };
         }
 
-        $action();
+        match ($step) {
+            WizardStep::Basic => app(SaveBasicDetails::class)->handle($user, $profile, $this->basic->toData(), $partial),
+            WizardStep::Career => app(SaveCareerDetails::class)->handle($user, $profile, $this->career->toData(), $partial),
+            WizardStep::Family => app(SaveFamilyDetails::class)->handle($user, $profile, $this->family->toData(), $partial),
+            WizardStep::Preferences => app(SavePartnerPreferences::class)->handle($user, $profile, $this->preference->toData(), $partial),
+            WizardStep::Contact => app(SaveContactDetails::class)->handle($user, $profile, $this->contact->toData(), $partial),
+            WizardStep::Photos => app(SaveAboutDetails::class)->handle($user, $profile, $this->about->toData(), $partial),
+        };
     }
 
     // ---- View ---------------------------------------------------------------------------------
 
-    public function render(Masters $masters): View
+    public function render(WizardOptions $options): View
     {
         $profile = $this->member()->profile;
-        $progress = $profile !== null ? new WizardProgress($profile) : null;
-        $religionId = is_numeric($this->basic->religion_id) ? (int) $this->basic->religion_id : null;
+        $current = WizardStep::from($this->step);
 
         return view('livewire.member.onboarding.wizard', [
-            'current' => WizardStep::from($this->step),
+            'current' => $current,
             'steps' => WizardStep::cases(),
-            'progress' => $progress,
+            'progress' => $profile !== null ? new WizardProgress($profile) : null,
             'profile' => $profile,
-            'heights' => HeightCm::options(),
-            'maritalStatuses' => MaritalStatus::options(),
-            'physicalStatuses' => PhysicalStatus::options(),
-            'doshams' => Dosham::options(),
-            'employerTypes' => EmployerType::options(),
-            'religions' => Masters::forSelect($masters->religions()),
-            'castes' => $religionId !== null ? Masters::forSelect($masters->castesForReligion($religionId)) : [],
-            'motherTongues' => Masters::forSelect($masters->motherTongues()),
-            'stars' => Masters::forSelect($masters->stars()),
-            'rasis' => Masters::forSelect($masters->rasis()),
-            'education' => Masters::forSelect($masters->education()),
-            'occupations' => Masters::forSelect($masters->occupations()),
-            'incomeBands' => Masters::forSelect($masters->incomeBands()),
-            'countries' => Masters::forSelect($masters->countries()),
-            'currentStates' => $this->statesFor($masters, $this->career->current_country_id),
-            'currentDistricts' => $this->districtsFor($masters, $this->career->current_state_id),
-            'permanentStates' => $this->statesFor($masters, $this->career->permanent_country_id),
-            'permanentDistricts' => $this->districtsFor($masters, $this->career->permanent_state_id),
-            'familyStatuses' => Masters::forSelect($masters->options('family_status')),
-            'familyTypes' => Masters::forSelect($masters->options('family_type')),
-            'familyValues' => Masters::forSelect($masters->options('family_values')),
+            'locked' => $profile !== null ? ProfileRules::lockedFields($profile) : [],
+            'rejectionNote' => $this->rejectionNote($profile),
+            'phone' => $this->member()->phone,
+            ...$options->forStep($current, $profile->gender ?? Gender::Female, $this->basic, $this->career, $this->preference, $this->contact),
         ])->layout('layouts::member', ['seo' => SeoData::private('Create your profile | Oppam Matrimony')]);
     }
 
-    /** @return array<int, string> */
-    private function statesFor(Masters $masters, string $countryId): array
+    /** The moderator's note for a rejected profile (R-M02-5), or null. */
+    private function rejectionNote(?Profile $profile): ?string
     {
-        return is_numeric($countryId) ? Masters::forSelect($masters->statesForCountry((int) $countryId)) : [];
-    }
-
-    /** @return array<int, string> */
-    private function districtsFor(Masters $masters, string $stateId): array
-    {
-        return is_numeric($stateId) ? Masters::forSelect($masters->districtsForState((int) $stateId)) : [];
+        return $profile?->status === ProfileStatus::Rejected ? ModerationItem::latestDecisionNote($profile) : null;
     }
 
     private function member(): User

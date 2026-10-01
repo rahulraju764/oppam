@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Data\Profile\AboutDetailsData;
 use App\Data\Profile\BasicDetailsData;
 use App\Data\Profile\CareerDetailsData;
+use App\Data\Profile\ContactDetailsData;
 use App\Data\Profile\FamilyDetailsData;
+use App\Data\Profile\PartnerPreferenceData;
 use App\Enums\EmployerType;
 use App\Enums\Gender;
 use App\Enums\MaritalStatus;
+use App\Enums\PhotoVisibility;
 use App\Enums\PhysicalStatus;
 use App\Enums\ProfileStatus;
 use App\Models\Masters\Caste;
@@ -137,7 +141,60 @@ function familyData(array $overrides = []): FamilyDetailsData
     ], $overrides));
 }
 
-/** A DRAFT member who has finished steps 1–3 through the real Actions. */
+function preferenceData(array $overrides = []): PartnerPreferenceData
+{
+    return new PartnerPreferenceData(...array_merge([
+        'age_min' => 25,
+        'age_max' => 32,
+        'height_min_cm' => 160,
+        'height_max_cm' => 185,
+        'marital_statuses' => [MaritalStatus::NeverMarried->value],
+        'physical_statuses' => [],
+        'religion_ids' => [masterId(Religion::class, 'HINDU')],
+        'caste_ids' => [],
+        'mother_tongue_ids' => [masterId(MotherTongue::class, 'MALAYALAM')],
+        'star_ids' => [],
+        'education_ids' => [],
+        'occupation_ids' => [],
+        'min_income_band_id' => null,
+        'country_ids' => [],
+        'district_ids' => [keralaDistrictId()],
+        'diet_option_ids' => [],
+        'about_partner' => null,
+    ], $overrides));
+}
+
+function contactData(array $overrides = []): ContactDetailsData
+{
+    $india = masterId(Country::class, 'IN');
+
+    return new ContactDetailsData(...array_merge([
+        'contact_email' => 'family@example.com',
+        'alternate_phone' => null,
+        'contact_person' => 'Gopalan Nair',
+        'contact_relation' => 'Father',
+        'convenient_time' => '6 pm – 9 pm',
+        'country_id' => $india,
+        'state_id' => masterId(State::class, 'KL', ['country_id' => $india]),
+        'district_id' => keralaDistrictId(),
+        'city' => 'Kochi',
+        'address_line' => null,
+    ], $overrides));
+}
+
+function aboutData(array $overrides = []): AboutDetailsData
+{
+    return new AboutDetailsData(...array_merge([
+        'about' => 'I am a software engineer in Kochi who loves music, travel and time with family.',
+        'diet_option_id' => optionId('diet', 'VEG'),
+        'smoking_option_id' => null,
+        'drinking_option_id' => null,
+        'hobbies' => ['Music', 'Travel'],
+        'photo_visibility' => PhotoVisibility::AllMembers->value,
+    ], $overrides));
+}
+
+/** A DRAFT member who has finished steps 1–$lastStep through the real Actions. */
 function memberThroughStep(int $lastStep, Gender $gender = Gender::Female): User
 {
     $user = draftMember($gender);
@@ -151,6 +208,15 @@ function memberThroughStep(int $lastStep, Gender $gender = Gender::Female): User
     }
     if ($lastStep >= 3) {
         app(App\Actions\Profile\SaveFamilyDetails::class)->handle($user, $profile->refresh(), familyData());
+    }
+    if ($lastStep >= 4) {
+        app(App\Actions\Profile\SavePartnerPreferences::class)->handle($user, $profile->refresh(), preferenceData());
+    }
+    if ($lastStep >= 5) {
+        app(App\Actions\Profile\SaveContactDetails::class)->handle($user, $profile->refresh(), contactData());
+    }
+    if ($lastStep >= 6) {
+        app(App\Actions\Profile\SaveAboutDetails::class)->handle($user, $profile->refresh(), aboutData());
     }
 
     return $user->refresh();

@@ -40,10 +40,10 @@ it('lets a verified member with a DRAFT profile reach the wizard', function (): 
         ->assertSee($user->profile->code);
 });
 
-it('keeps a submitted profile out of the wizard', function (): void {
+it('keeps a submitted profile out of the wizard: it waits on the "under review" page (R-M02-2)', function (): void {
     $user = memberWithPhone(status: ProfileStatus::PendingReview);
 
-    signedIn($this, $user)->get(memberUrl('/onboarding/1'))->assertRedirect(route('home'));
+    signedIn($this, $user)->get(memberUrl('/onboarding/1'))->assertRedirect(route('member.onboarding.submitted'));
 });
 
 it('verified.phone: an unverified account is signed out, never let through', function (): void {

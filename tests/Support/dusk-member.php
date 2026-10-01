@@ -28,7 +28,10 @@ function duskMemberCleanup(string $e164 = DUSK_MEMBER_PHONE): void
     foreach (['otp:gap:', 'otp:phone15:', 'otp:phoneday:'] as $prefix) {
         RateLimiter::clear($prefix.$number);
     }
-    RateLimiter::clear('register:ip:127.0.0.1');
+    // The dev server sees the browser as IPv4 or IPv6 loopback, depending on how localhost resolves.
+    foreach (['127.0.0.1', '::1'] as $ip) {
+        RateLimiter::clear('register:ip:'.$ip);
+    }
 }
 
 /** The last code the local SMS log shows for a masked number such as "+91 99•••••001". */

@@ -12,14 +12,14 @@ use App\Models\HoroscopeDetail;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Wizard step 1 (M02): name, DOB (18 F / 21 M — MinimumMarriageAge), height, weight, marital
  * status, physical status, religion → caste (caste must belong to religion), mother tongue,
  * star, rasi, doshams. Profile columns + horoscope_details, in one transaction.
- * Children are always 0 for NEVER_MARRIED.
+ * Children are always 0 for NEVER_MARRIED. Gender, DOB, religion and marital status are locked
+ * after first publish, gender also when "profile for" implies it (R-M02-1, ProfileRules::lockedFields).
  */
 final class SaveBasicDetails
 {
@@ -34,9 +34,11 @@ final class SaveBasicDetails
         $partial = $this->isPartial($profile, $partial);
         $values = $this->authorizeAndValidate($actor, $profile, $data->toArray(), ProfileRules::basic($data->toArray(), $partial));
 
+        $this->assertUnchanged($profile, $values, ProfileRules::lockedFields($profile));
+
         $neverMarried = ($values['marital_status'] ?? null) === MaritalStatus::NeverMarried->value;
 
-        DB::transaction(function () use ($profile, $values, $neverMarried): void {
+        $this->persist($profile, function () use ($profile, $values, $neverMarried): void {
             $profile->forceFill([
                 'first_name' => trim((string) $values['first_name']),
                 'last_name' => self::trimOrNull($values['last_name'] ?? null),

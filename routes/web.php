@@ -6,6 +6,7 @@ use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
 use App\Livewire\Member\Auth\VerifyOtp;
+use App\Livewire\Member\Onboarding\Submitted;
 use App\Livewire\Member\Onboarding\Wizard;
 use App\Livewire\Public\About;
 use App\Livewire\Public\Branches;
@@ -45,6 +46,7 @@ Route::middleware('guest')->group(function (): void {
 // Member area. Pages after onboarding also get `profile.onboarded` (PRD §13); the wizard can't.
 Route::middleware(['auth', 'verified.phone'])->group(function (): void {
     Route::get('/onboarding/{step}', Wizard::class)->whereNumber('step')->name('member.onboarding');
+    Route::get('/onboarding/submitted', Submitted::class)->name('member.onboarding.submitted');
 });
 
 // Living styleguide for visual checks (P0.2). Local only: never registered in testing/production.

@@ -11,7 +11,6 @@ use App\Models\EducationCareer;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -39,7 +38,7 @@ final class SaveCareerDetails
             $attributes[$field] = is_string($value) && trim($value) === '' ? null : (is_string($value) ? trim($value) : $value);
         }
 
-        DB::transaction(function () use ($profile, $attributes): void {
+        $this->persist($profile, function () use ($profile, $attributes): void {
             $career = EducationCareer::query()->whereKey($profile->id)->first() ?? new EducationCareer;
             $career->forceFill(['profile_id' => $profile->id, ...$attributes])->save();
 

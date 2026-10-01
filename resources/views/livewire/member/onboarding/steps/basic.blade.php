@@ -1,4 +1,12 @@
-{{-- Step 1 — basic details (template profile-creation.php; ➕ fields from PRD M02). --}}
+{{-- Step 1 — basic details (template profile-creation.php; ➕ fields from PRD M02).
+     $locked: fields the member can no longer change (R-M02-1) — shown disabled with the reason. --}}
+@if ($locked !== [])
+    <p class="form-text" id="basic-locked-hint">
+        <i class="fa fa-lock" aria-hidden="true"></i>
+        {{ __('Some details can’t be changed here once set. Please contact support if one of them is wrong.') }}
+    </p>
+@endif
+
 <div class="row">
     <div class="col-lg-6 col-md-6 col-sm-6 col-12">
         <x-wizard.input :label="__('First Name')" model="basic.first_name" required maxlength="60" autocomplete="given-name" :placeholder="__('Enter First Name')" />
@@ -9,9 +17,9 @@
 </div>
 
 <x-wizard.option-buttons :label="__('Gender')" model="basic.gender" :selected="$basic->gender" required
-    :options="\App\Enums\Gender::options()" />
+    :options="\App\Enums\Gender::options()" :disabled="in_array('gender', $locked, true)" />
 
-<x-wizard.input :label="__('Date Of Birth')" model="basic.dob" type="date" required
+<x-wizard.input :label="__('Date Of Birth')" model="basic.dob" type="date" required :disabled="in_array('dob', $locked, true)"
     :hint="__('Brides must be at least 18 and grooms at least 21.')" />
 
 <div class="row">
@@ -24,7 +32,7 @@
 </div>
 
 <x-wizard.option-buttons :label="__('Marital Status')" model="basic.marital_status" :selected="$basic->marital_status" required
-    :options="$maritalStatuses" />
+    :options="$maritalStatuses" :disabled="in_array('marital_status', $locked, true)" />
 
 @if ($basic->marital_status !== '' && $basic->marital_status !== \App\Enums\MaritalStatus::NeverMarried->value)
     <x-wizard.input :label="__('Number of Children')" model="basic.children_count" type="number" min="0" max="10" inputmode="numeric" />
@@ -34,7 +42,7 @@
     :options="$physicalStatuses" />
 
 <x-wizard.option-buttons :label="__('Religion')" model="basic.religion_id" :selected="$basic->religion_id" required
-    :options="$religions" />
+    :options="$religions" :disabled="in_array('religion_id', $locked, true)" />
 
 <x-wizard.select :label="__('Caste')" model="basic.caste_id" :options="$castes"
     :placeholder="$basic->religion_id === '' ? __('Choose a religion first') : __('Select Caste')" />

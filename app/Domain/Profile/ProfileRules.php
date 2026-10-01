@@ -8,7 +8,9 @@ use App\Enums\Dosham;
 use App\Enums\EmployerType;
 use App\Enums\Gender;
 use App\Enums\MaritalStatus;
+use App\Enums\PhotoVisibility;
 use App\Enums\PhysicalStatus;
+use App\Enums\SettingKey;
 use App\Models\Masters\Country;
 use App\Models\Masters\District;
 use App\Models\Masters\Education;
@@ -20,10 +22,14 @@ use App\Models\Masters\Rasi;
 use App\Models\Masters\Religion;
 use App\Models\Masters\Star;
 use App\Models\Masters\State;
+use App\Models\Profile;
 use App\Rules\ActiveMaster;
 use App\Rules\CasteBelongsToReligion;
+use App\Rules\CastesBelongToReligions;
 use App\Rules\MinimumMarriageAge;
+use App\Rules\MobileNumberInput;
 use App\Services\Masters\Masters;
+use App\Services\Settings\SettingsRepository;
 use App\ValueObjects\HeightCm;
 use Illuminate\Validation\Rule;
 
@@ -40,6 +46,20 @@ final class ProfileRules
 {
     /** Letters (any script, incl. Malayalam), spaces, dots, apostrophes and hyphens. */
     public const NAME_REGEX = "regex:/^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u";
+
+    /** About me must say at least this much (M02 step 6). */
+    public const ABOUT_MIN = 50;
+
+    /** Hobbies (M02 step 6): how many, and how long each may be. */
+    public const HOBBIES_MAX = 10;
+
+    public const HOBBY_MAX_LENGTH = 40;
+
+    /** Oldest partner age a preference can ask for (M02 step 4). */
+    public const PARTNER_AGE_MAX = 70;
+
+    /** Step-1 identity fields editable only until first publish; then via support (R-M02-1). */
+    public const LOCKED_AFTER_PUBLISH = ['gender', 'dob', 'religion_id', 'marital_status'];
 
     /**
      * Step 1 — basic details (profiles + horoscope_details).
@@ -138,6 +158,124 @@ final class ProfileRules
     }
 
     /**
+     * Step-1 fields the member may no longer change (R-M02-1): gender, DOB, religion and marital
+     * status once the profile has been published, and gender whenever "profile for" implies it
+     * (Son → male, Daughter → female …, M01).
+     *
+     * @return list<string>
+     */
+    public static function lockedFields(Profile $profile): array
+    {
+        $locked = $profile->published_at !== null ? self::LOCKED_AFTER_PUBLISH : [];
+
+        if ($profile->user?->created_for->derivedGender() !== null) {
+            $locked[] = 'gender';
+        }
+
+        return array_values(array_unique($locked));
+    }
+
+    /**
+     * Step 4 — partner preferences (partner_preferences). Ages start at the legal minimum for the
+     * partner's gender (A15 settings). Empty lists mean "any"; at least one religion is required.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, list<mixed>>
+     */
+    public static function preferences(array $input, Gender $ownGender, bool $partial = false): array
+    {
+        $req = self::required($partial);
+        $ages = 'between:'.self::partnerMinimumAge($ownGender).','.self::PARTNER_AGE_MAX;
+        $heights = 'between:'.HeightCm::MIN.','.HeightCm::MAX;
+        $religionIds = array_values(array_map(intval(...), array_filter(is_array($input['religion_ids'] ?? null) ? $input['religion_ids'] : [], is_numeric(...))));
+
+        return [
+            'age_min' => [...$req, 'nullable', 'integer', $ages],
+            'age_max' => [...$req, 'nullable', 'integer', $ages, ...(is_numeric($input['age_min'] ?? null) ? ['gte:age_min'] : [])],
+            'height_min_cm' => ['nullable', 'integer', $heights],
+            'height_max_cm' => ['nullable', 'integer', $heights, ...(is_numeric($input['height_min_cm'] ?? null) ? ['gte:height_min_cm'] : [])],
+            'marital_statuses' => ['array', 'max:10'],
+            'marital_statuses.*' => ['distinct', Rule::enum(MaritalStatus::class)],
+            'physical_statuses' => ['array', 'max:5'],
+            'physical_statuses.*' => ['distinct', Rule::enum(PhysicalStatus::class)],
+            'religion_ids' => [...$req, 'array', 'max:20'],
+            'religion_ids.*' => ['distinct', new ActiveMaster(Religion::class)],
+            'caste_ids' => ['array', 'max:100', new CastesBelongToReligions($religionIds)],
+            'mother_tongue_ids' => ['array', 'max:30'],
+            'mother_tongue_ids.*' => ['distinct', new ActiveMaster(MotherTongue::class)],
+            'star_ids' => ['array', 'max:30'],
+            'star_ids.*' => ['distinct', new ActiveMaster(Star::class)],
+            'education_ids' => ['array', 'max:50'],
+            'education_ids.*' => ['distinct', new ActiveMaster(Education::class)],
+            'occupation_ids' => ['array', 'max:50'],
+            'occupation_ids.*' => ['distinct', new ActiveMaster(Occupation::class)],
+            'min_income_band_id' => ['nullable', new ActiveMaster(IncomeBand::class)],
+            'country_ids' => ['array', 'max:50'],
+            'country_ids.*' => ['distinct', new ActiveMaster(Country::class)],
+            'district_ids' => ['array', 'max:50'],
+            'district_ids.*' => ['distinct', new ActiveMaster(District::class)],
+            'diet_option_ids' => ['array', 'max:10'],
+            'diet_option_ids.*' => ['distinct', new ActiveMaster(MasterOption::class, ['group' => 'diet'])],
+            'about_partner' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    /** The youngest partner a member may ask for: the legal minimum for the partner's gender (A15). */
+    public static function partnerMinimumAge(Gender $ownGender): int
+    {
+        $partnerIsFemale = $ownGender !== Gender::Female;
+
+        return app(SettingsRepository::class)->int($partnerIsFemale ? SettingKey::MinAgeFemale : SettingKey::MinAgeMale);
+    }
+
+    /**
+     * Step 5 — contact (contact_details). The verified primary mobile is users.phone and is not
+     * part of this step. State and district are required when the country has states (India).
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, list<mixed>>
+     */
+    public static function contact(array $input, bool $partial = false): array
+    {
+        $req = self::required($partial);
+        $country = self::intOrNull($input['country_id'] ?? null);
+        $hasStates = ! $partial && self::countryHasStates($country);
+
+        return [
+            'contact_email' => [...$req, 'nullable', 'string', 'email:rfc', 'max:255'],
+            'alternate_phone' => ['nullable', 'string', 'max:20', new MobileNumberInput],
+            'contact_person' => ['nullable', 'string', 'max:100', self::NAME_REGEX],
+            'contact_relation' => ['nullable', 'string', 'max:40'],
+            'convenient_time' => ['nullable', 'string', 'max:80'],
+            'country_id' => [...$req, 'nullable', new ActiveMaster(Country::class)],
+            'state_id' => [$hasStates ? 'required' : 'nullable', 'nullable', new ActiveMaster(State::class, ['country_id' => $country])],
+            'district_id' => [$hasStates ? 'required' : 'nullable', 'nullable', new ActiveMaster(District::class, ['state_id' => self::intOrNull($input['state_id'] ?? null)])],
+            'city' => [...$req, 'nullable', 'string', 'max:80'],
+            'address_line' => ['nullable', 'string', 'max:255'],
+        ];
+    }
+
+    /**
+     * Step 6 (non-photo part) — about me (min ABOUT_MIN characters), lifestyle, photo visibility.
+     *
+     * @return array<string, list<mixed>>
+     */
+    public static function about(bool $partial = false): array
+    {
+        $req = self::required($partial);
+
+        return [
+            'about' => [...$req, 'nullable', 'string', 'min:'.self::ABOUT_MIN, 'max:1000'],
+            'diet_option_id' => ['nullable', new ActiveMaster(MasterOption::class, ['group' => 'diet'])],
+            'smoking_option_id' => ['nullable', new ActiveMaster(MasterOption::class, ['group' => 'smoking'])],
+            'drinking_option_id' => ['nullable', new ActiveMaster(MasterOption::class, ['group' => 'drinking'])],
+            'hobbies' => ['array', 'max:'.self::HOBBIES_MAX],
+            'hobbies.*' => ['string', 'max:'.self::HOBBY_MAX_LENGTH],
+            'photo_visibility' => ['required', Rule::enum(PhotoVisibility::class)],
+        ];
+    }
+
+    /**
      * Friendly field names for error messages ("The date of birth field is required", not "dob").
      *
      * @return array<string, string>
@@ -189,7 +327,41 @@ final class ProfileRules
             'family_values_option_id' => __('family values'),
             'native_place' => __('native place'),
             'about_family' => __('about family'),
+            'age_min' => __('minimum age'),
+            'age_max' => __('maximum age'),
+            'height_min_cm' => __('minimum height'),
+            'height_max_cm' => __('maximum height'),
+            'marital_statuses' => __('marital status'),
+            'physical_statuses' => __('physical status'),
+            'religion_ids' => __('religion'),
+            'caste_ids' => __('caste'),
+            'mother_tongue_ids' => __('mother tongue'),
+            'star_ids' => __('star'),
+            'education_ids' => __('education'),
+            'occupation_ids' => __('occupation'),
+            'min_income_band_id' => __('minimum income'),
+            'country_ids' => __('country'),
+            'district_ids' => __('district'),
+            'diet_option_ids' => __('diet'),
+            'about_partner' => __('about your partner'),
+            'contact_email' => __('email address'),
+            'alternate_phone' => __('alternate mobile number'),
+            'contact_person' => __('contact person'),
+            'contact_relation' => __('relationship'),
+            'convenient_time' => __('convenient time to call'),
+            'country_id' => __('country'),
+            'state_id' => __('state'),
+            'district_id' => __('district'),
+            'city' => __('city'),
+            'address_line' => __('address'),
+            'about' => __('about me'),
+            'diet_option_id' => __('diet'),
+            'smoking_option_id' => __('smoking'),
+            'drinking_option_id' => __('drinking'),
+            'hobbies' => __('hobbies'),
+            'photo_visibility' => __('photo visibility'),
         ];
+
     }
 
     /** @return list<string> */

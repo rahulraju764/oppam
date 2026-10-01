@@ -156,12 +156,15 @@ it('opens steps only in order: a deep link to a later step goes back to the firs
     wizardAs(memberThroughStep(2), 3)->assertOk()->assertSee('Father');
 });
 
-it('sends members with a submitted or live profile away from the wizard', function (ProfileStatus $status): void {
+it('sends members with a submitted or live profile away from the wizard', function (ProfileStatus $status, string $route): void {
     $user = memberThroughStep(3);
     $user->profile->forceFill(['status' => $status, 'published_at' => now()])->save();
 
-    wizardAs($user->refresh())->assertRedirect(route('home'));
-})->with([ProfileStatus::PendingReview, ProfileStatus::Active]);
+    wizardAs($user->refresh())->assertRedirect(route($route));
+})->with([
+    'pending review → under-review page' => [ProfileStatus::PendingReview, 'member.onboarding.submitted'],
+    'live → home (dashboard from P2.3)' => [ProfileStatus::Active, 'home'],
+]);
 
 it('lets a REJECTED profile back in to edit and resubmit (R-M02-5)', function (): void {
     $user = memberThroughStep(3);
@@ -201,4 +204,173 @@ it('words errors with friendly field names, not column names', function (): void
         ->assertHasErrors(['basic.dob'])
         ->assertSee('The date of birth field is required.')
         ->assertDontSee('The dob field');
+});
+
+// ---- P1.3: steps 4–6, submit -----------------------------------------------------------------
+
+it('step 4 suggests an age range around the member and their own religion on first visit', function (): void {
+    $user = memberThroughStep(3);
+
+    wizardAs($user, 4)
+        ->assertOk()
+        ->assertSee('Partner Preference')
+        ->assertSet('preference.religion_ids', [(string) $user->profile->religion_id])
+        ->assertSet('preference.age_min', (string) $user->profile->age());
+});
+
+it('step 4 option buttons toggle a list, "Any" clears it, and unknown lists are ignored', function (): void {
+    $wizard = wizardAs(memberThroughStep(3), 4)
+        ->call('toggleChoice', 'marital_statuses', 'DIVORCED')
+        ->assertSet('preference.marital_statuses', ['DIVORCED'])
+        ->call('toggleChoice', 'marital_statuses', 'DIVORCED')
+        ->assertSet('preference.marital_statuses', [])
+        ->call('toggleChoice', 'marital_statuses', 'WIDOWED')
+        ->call('clearChoice', 'marital_statuses')
+        ->assertSet('preference.marital_statuses', []);
+
+    // An attacker naming another property gets nothing.
+    $wizard->call('toggleChoice', 'savedAt', 'x')->assertSet('savedAt', null);
+});
+
+it('step 4: deselecting a religion drops its castes from the partner caste list', function (): void {
+    $user = memberThroughStep(3);
+    $hindu = (string) masterId(Religion::class, 'HINDU');
+    $caste = (string) Caste::query()->where('religion_id', (int) $hindu)->value('id');
+
+    wizardAs($user, 4)
+        ->set('preference.caste_ids', [$caste])
+        ->call('toggleChoice', 'religion_ids', $hindu)
+        ->assertSet('preference.religion_ids', [])
+        ->assertSet('preference.caste_ids', []);
+});
+
+it('step 4 Continue saves preferences and opens step 5', function (): void {
+    $user = memberThroughStep(3);
+
+    wizardAs($user, 4)
+        ->set('preference.age_max', '30')
+        ->call('next')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('member.onboarding', ['step' => 5]));
+
+    expect($user->profile()->firstOrFail()->partnerPreference?->age_max)->toBe(30);
+});
+
+it('step 5 shows the verified mobile read-only and starts from the account email and native address', function (): void {
+    $user = memberThroughStep(4);
+    $user->forceFill(['email' => 'me@example.com'])->save();
+
+    wizardAs($user->refresh(), 5)
+        ->assertSeeHtml('id="contact-mobile"')
+        ->assertSeeHtml('readonly')
+        ->assertSet('contact.contact_email', 'me@example.com')
+        ->assertSet('contact.district_id', (string) keralaDistrictId());
+});
+
+it('step 5: changing the country clears state and district', function (): void {
+    wizardAs(memberThroughStep(4), 5)
+        ->set('contact.country_id', (string) Country::query()->where('code', '!=', 'IN')->value('id'))
+        ->assertSet('contact.state_id', '')
+        ->assertSet('contact.district_id', '');
+});
+
+it('step 6 submits for review and lands on the "under review" page (R-M02-2)', function (): void {
+    $user = memberThroughStep(5);
+
+    wizardAs($user, 6)
+        ->assertSee('Submit for review')
+        ->set('about.about', 'I am a software engineer in Kochi who loves music, travel and time with family.')
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('member.onboarding.submitted'));
+
+    expect(statusOf($user))->toBe(ProfileStatus::PendingReview);
+});
+
+it('step 6 shows the error under About Me and does not submit when it is too short', function (): void {
+    $user = memberThroughStep(5);
+
+    wizardAs($user, 6)
+        ->set('about.about', 'Too short')
+        ->call('submit')
+        ->assertHasErrors(['about.about']);
+
+    expect(statusOf($user))->toBe(ProfileStatus::Draft);
+});
+
+it('R-M02-5: a rejected profile shows the reviewer\'s note in the wizard', function (): void {
+    $user = memberThroughStep(6);
+    $user->profile->forceFill(['status' => ProfileStatus::Rejected])->save();
+    App\Models\ModerationItem::factory()->rejected('Please add a clearer about-me.')->create(['profile_id' => $user->profile->id]);
+
+    wizardAs($user->refresh(), 1)->assertSee('Please add a clearer about-me.');
+});
+
+it('R-M02-1: after first publish the locked fields render disabled with an explanation', function (): void {
+    $user = memberThroughStep(6);
+    $user->profile->forceFill(['status' => ProfileStatus::Rejected, 'published_at' => now()->subMonth()])->save();
+
+    wizardAs($user->refresh(), 1)
+        ->assertSeeHtml('id="basic-locked-hint"')
+        ->assertSeeHtml('id="basic-dob"');
+});
+
+it('the "under review" page shows only for a pending profile and sends others on', function (): void {
+    $user = memberThroughStep(6);
+    test()->actingAs($user, 'web');
+    Livewire::test(App\Livewire\Member\Onboarding\Submitted::class)->assertRedirect(route('member.onboarding', ['step' => 1]));
+
+    app(App\Actions\Profile\SubmitProfile::class)->handle($user, $user->profile()->firstOrFail());
+    test()->actingAs($user->refresh(), 'web');   // a new request loads the profile afresh
+
+    Livewire::test(App\Livewire\Member\Onboarding\Submitted::class)
+        ->assertOk()
+        ->assertSee($user->profile->code)
+        ->assertSee('under review');
+});
+
+it('signing in lands a pending member on "under review" and a rejected member back in the wizard', function (): void {
+    $landing = app(App\Support\Navigation\MemberLanding::class);
+    $user = memberThroughStep(6);
+
+    $user->profile->forceFill(['status' => ProfileStatus::PendingReview])->save();
+    expect($landing->url($user->refresh()))->toBe(route('member.onboarding.submitted'));
+
+    $user->profile->forceFill(['status' => ProfileStatus::Rejected])->save();
+    expect($landing->url($user->refresh()))->toBe(route('member.onboarding', ['step' => 1]));
+});
+
+it('step 6 submits with hobbies typed as comma-separated text (review Major)', function (): void {
+    $user = memberThroughStep(5);
+
+    wizardAs($user, 6)
+        ->set('about.about', 'I am a software engineer in Kochi who loves music, travel and time with family.')
+        ->set('about.hobbies', 'Music, Travel, Cooking')
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('member.onboarding.submitted'));
+
+    expect($user->profile()->firstOrFail()->lifestyleDetail->hobbies)->toBe(['Music', 'Travel', 'Cooking']);
+});
+
+it('step 6 explains too many or too long hobbies under the field', function (string $hobbies): void {
+    wizardAs(memberThroughStep(5), 6)
+        ->set('about.about', 'I am a software engineer in Kochi who loves music, travel and time with family.')
+        ->set('about.hobbies', $hobbies)
+        ->call('submit')
+        ->assertHasErrors(['about.hobbies']);
+})->with([
+    'eleven hobbies' => [implode(', ', array_map(fn (int $i): string => 'Hobby '.$i, range(1, 11)))],
+    'one too long' => [str_repeat('a', 41)],
+]);
+
+it('step 4 never suggests or offers a partner age below the legal minimum (bride aged 19 → grooms from 21)', function (): void {
+    $user = memberThroughStep(3);
+    $user->profile->forceFill(['dob' => now(config('oppam.display_timezone'))->subYears(19)->format('Y-m-d')])->save();
+
+    wizardAs($user->refresh(), 4)
+        ->assertSet('preference.age_min', '21')
+        ->assertDontSeeHtml('<option value="20"')
+        ->call('next')
+        ->assertHasNoErrors(['preference.age_min']);
 });

@@ -68,7 +68,8 @@ final class ProfileFactory extends Factory
 
     public function draft(): static
     {
-        return $this->state(['status' => ProfileStatus::Draft, 'published_at' => null, 'completeness' => 25]);
+        // Registration collects no about-me (wizard step 6 does).
+        return $this->state(['status' => ProfileStatus::Draft, 'published_at' => null, 'completeness' => 25, 'about' => null]);
     }
 
     public function rejected(): static

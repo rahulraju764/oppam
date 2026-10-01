@@ -1,4 +1,4 @@
-{{-- /onboarding/{step} — profile wizard (M02). Template profile-creation.php … family.php markup:
+{{-- /onboarding/{step} — profile wizard (M02). Template profile-creation.php … profile-photos.php markup:
      .register-wrapper with the step rail (left) and the step form (right). --}}
 <div>
     <h1 class="visually-hidden">{{ __('Create Your Profile') }}</h1>
@@ -11,7 +11,14 @@
             </div>
 
             @if ($profile?->status === \App\Enums\ProfileStatus::Rejected)
-                <x-ui.alert type="warning">{{ __('Your profile needs changes before it can go live. Update the details and submit again.') }}</x-ui.alert>
+                {{-- R-M02-5: the moderator's reason + "Edit & resubmit" (the wizard itself). --}}
+                <x-ui.alert type="warning">
+                    <strong>{{ __('Your profile needs changes before it can go live.') }}</strong>
+                    @if ($rejectionNote)
+                        <span class="d-block">{{ __('Reviewer’s note: :note', ['note' => $rejectionNote]) }}</span>
+                    @endif
+                    <span class="d-block">{{ __('Edit the details below and submit again from the last step.') }}</span>
+                </x-ui.alert>
             @endif
 
             <div class="register-wrapper">
@@ -57,7 +64,7 @@
 
                 {{-- Right: the step form. Continue = validate + save + next; 20 s idle = autosave. --}}
                 <div class="register-right">
-                    <form wire:submit="next" novalidate
+                    <form wire:submit="{{ $current->next() ? 'next' : 'submit' }}" novalidate
                           x-data="wizardAutosave(20000)" x-on:input="touch()" x-on:change="touch()">
 
                         @switch($current)
@@ -70,9 +77,20 @@
                             @case(\App\Enums\WizardStep::Family)
                                 @include('livewire.member.onboarding.steps.family')
                                 @break
-                            @default
-                                <x-ui.alert type="info">{{ __('Your details so far are saved. This step opens very soon.') }}</x-ui.alert>
+                            @case(\App\Enums\WizardStep::Preferences)
+                                @include('livewire.member.onboarding.steps.partner')
+                                @break
+                            @case(\App\Enums\WizardStep::Contact)
+                                @include('livewire.member.onboarding.steps.contact')
+                                @break
+                            @case(\App\Enums\WizardStep::Photos)
+                                @include('livewire.member.onboarding.steps.photos')
+                                @break
                         @endswitch
+
+                        @error('submit')
+                            <x-ui.alert type="danger">{{ $message }}</x-ui.alert>
+                        @enderror
 
                         <div class="wizard-actions">
                             <p class="form-text mb-0" aria-live="polite">
@@ -90,10 +108,16 @@
                                             <i class="fa fa-arrow-left" aria-hidden="true"></i> {{ __('Back') }}
                                         </button>
                                     @endif
-                                    @if ($current->value <= \App\Enums\WizardStep::Family->value)
+                                    @if ($current->next())
                                         <button type="submit" class="view-btn" wire:loading.attr="disabled" wire:target="next">
                                             <span class="ui-spinner" wire:loading wire:target="next" aria-hidden="true"></span>
                                             {{ __('continue') }} <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                                        </button>
+                                    @else
+                                        {{-- Last step: submit for review (R-M02-2). --}}
+                                        <button type="submit" class="view-btn" wire:loading.attr="disabled" wire:target="submit">
+                                            <span class="ui-spinner" wire:loading wire:target="submit" aria-hidden="true"></span>
+                                            {{ __('Submit for review') }} <i class="fa fa-check" aria-hidden="true"></i>
                                         </button>
                                     @endif
                                 </div>

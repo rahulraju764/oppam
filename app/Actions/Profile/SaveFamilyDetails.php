@@ -37,7 +37,9 @@ final class SaveFamilyDetails
             $attributes[$count] = (int) ($attributes[$count] ?? 0);
         }
 
-        $family = FamilyDetail::query()->whereKey($profile->id)->first() ?? new FamilyDetail;
-        $family->forceFill(['profile_id' => $profile->id, ...$attributes])->save();
+        $this->persist($profile, function () use ($profile, $attributes): void {
+            $family = FamilyDetail::query()->whereKey($profile->id)->first() ?? new FamilyDetail;
+            $family->forceFill(['profile_id' => $profile->id, ...$attributes])->save();
+        });
     }
 }

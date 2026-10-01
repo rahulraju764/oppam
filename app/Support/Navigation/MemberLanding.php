@@ -10,8 +10,9 @@ use App\Models\User;
 use Illuminate\Routing\Router;
 
 /**
- * Where a member goes after signing in (M01): the wizard while the profile is a DRAFT (R-M02-2),
- * otherwise the dashboard — or the home page until the dashboard is built (P2.3). Brokers land
+ * Where a member goes after signing in (M01): the wizard while the profile is a DRAFT or was
+ * REJECTED ("Edit & resubmit", R-M02-5), the "under review" page while PENDING_REVIEW
+ * (R-M02-2), otherwise the dashboard — or the home page until the dashboard is built (P2.3). Brokers land
  * on the home page until the broker portal exists (P7.1).
  */
 final class MemberLanding
@@ -26,8 +27,12 @@ final class MemberLanding
 
         $status = $user->profile?->status;
 
-        if ($status === null || $status === ProfileStatus::Draft) {
+        if ($status === null || $status === ProfileStatus::Draft || $status === ProfileStatus::Rejected) {
             return route('member.onboarding', ['step' => 1]);
+        }
+
+        if ($status === ProfileStatus::PendingReview) {
+            return route('member.onboarding.submitted');
         }
 
         return $this->router->has('member.dashboard') ? route('member.dashboard') : route('home');

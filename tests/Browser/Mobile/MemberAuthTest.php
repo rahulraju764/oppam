@@ -108,3 +108,37 @@ it('P1.2: the wizard has no horizontal scroll at 375 px', function (): void {
         assertNoHorizontalScroll($browser);
     });
 });
+
+it('P1.3: wizard steps 4–6 have no horizontal scroll at 375 px', function (int $step): void {
+    $this->browse(function (Browser $browser) use ($step): void {
+        $browser->visit('/register')
+            ->waitUntilMissing('#preloader', 10)
+            ->select('#profileFor', 'DAUGHTER')
+            ->waitForText('Set from')
+            ->type('#regName', 'Dusk Bride')
+            ->type('#regMobile', '9999900001')
+            ->type('#regPassword', 'kerala2026')
+            ->check('#regTerms')
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/verify-otp')
+            ->type('#otpCode', (string) duskLatestOtp('+91 99•••••001'))
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/onboarding/1');
+
+        $user = App\Models\User::query()->where('phone', DUSK_MEMBER_PHONE)->firstOrFail();
+        $profile = $user->profile()->firstOrFail();
+        app(App\Actions\Profile\SaveBasicDetails::class)->handle($user, $profile, basicData(['first_name' => 'Dusk', 'last_name' => 'Bride']));
+        app(App\Actions\Profile\SaveCareerDetails::class)->handle($user, $profile->refresh(), careerData());
+        app(App\Actions\Profile\SaveFamilyDetails::class)->handle($user, $profile->refresh(), familyData());
+        if ($step >= 5) {
+            app(App\Actions\Profile\SavePartnerPreferences::class)->handle($user, $profile->refresh(), preferenceData());
+        }
+        if ($step >= 6) {
+            app(App\Actions\Profile\SaveContactDetails::class)->handle($user, $profile->refresh(), contactData());
+        }
+
+        $browser->visit('/onboarding/'.$step)->waitUntilMissing('#preloader', 10);
+
+        assertNoHorizontalScroll($browser);
+    });
+})->with([4, 5, 6]);

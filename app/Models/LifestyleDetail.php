@@ -8,7 +8,14 @@ use App\Models\Concerns\KeyedByProfile;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-/** Lifestyle (M02 step 6, v5 addition). */
+/**
+ * Lifestyle (M02 step 6, v5 addition).
+ *
+ * @property int|null $diet_option_id
+ * @property int|null $smoking_option_id
+ * @property int|null $drinking_option_id
+ * @property list<string>|null $hobbies
+ */
 final class LifestyleDetail extends Model
 {
     /** @use HasFactory<\Database\Factories\LifestyleDetailFactory> */
