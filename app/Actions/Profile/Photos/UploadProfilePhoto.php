@@ -6,6 +6,7 @@ namespace App\Actions\Profile\Photos;
 
 use App\Actions\Profile\Photos\Concerns\ManagesOwnPhotos;
 use App\Domain\Media\PerceptualHash;
+use App\Domain\Moderation\ModerationFlags;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
 use App\Enums\PhotoStatus;
@@ -111,11 +112,16 @@ final class UploadProfilePhoto
             'caption' => $caption === '' ? null : $caption,
         ])->save();
 
+        // The duplicate-photo check is a scan over all photo hashes: run it once here, not on every
+        // render of the A04 grid.
+        $flags = array_map(fn ($flag): array => ['code' => $flag->code, 'message' => $flag->message], app(ModerationFlags::class)->forPhoto($media));
+
         $item = new ModerationItem;
         $item->forceFill([
             'type' => ModerationItemType::Photo,
             'profile_id' => $locked->id,
             'subject_id' => $media->uuid,
+            'fields' => $flags === [] ? null : ['flags' => $flags],
             'status' => ModerationStatus::Open,
             'is_priority' => $locked->is_premium,
             'submitted_at' => now(),

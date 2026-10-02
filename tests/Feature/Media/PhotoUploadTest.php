@@ -207,7 +207,8 @@ it('a new caption on an APPROVED photo goes back to review; on a pending photo i
 
     $caption($approved, 'Call me on 98470 12345');
     expect($items())->toBe($before + 1)
-        ->and(ModerationItem::query()->latest('submitted_at')->latest('id')->first()?->fields)->toBe(['caption' => 'Call me on 98470 12345'])
+        ->and(ModerationItem::query()->latest('submitted_at')->latest('id')->first()?->fields['caption'] ?? null)->toBe('Call me on 98470 12345')
+        ->and(array_column(ModerationItem::query()->latest('submitted_at')->latest('id')->first()?->fields['flags'] ?? [], 'code'))->toContain('contact_info')
         ->and($approved->refresh()->caption)->toBe('Call me on 98470 12345');
 
     expect(fn () => $caption($pending, str_repeat('x', 101)))->toThrow(ValidationException::class);

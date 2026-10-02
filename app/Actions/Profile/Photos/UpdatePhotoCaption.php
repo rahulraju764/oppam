@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Profile\Photos;
 
 use App\Actions\Profile\Photos\Concerns\ManagesOwnPhotos;
+use App\Domain\Moderation\ModerationFlags;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
 use App\Enums\PhotoStatus;
@@ -57,7 +58,10 @@ final class UpdatePhotoCaption
                 'type' => ModerationItemType::Photo,
                 'profile_id' => $profile->id,
                 'subject_id' => $photo->uuid,
-                'fields' => ['caption' => $caption],
+                'fields' => ['caption' => $caption, 'flags' => array_map(
+                    fn ($flag): array => ['code' => $flag->code, 'message' => $flag->message],
+                    app(ModerationFlags::class)->forTexts([__('caption') => $caption]),
+                )],
                 'status' => ModerationStatus::Open,
                 'is_priority' => $profile->is_premium,
                 'submitted_at' => now(),

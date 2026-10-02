@@ -262,3 +262,62 @@ body.is-admin {
 }
 
 .admin-search { max-width: 360px; }
+
+/* ---- Moderation (A04) --------------------------------------------------------------------- */
+/* Photos are blurred until a moderator chooses to look (moderator wellbeing). */
+.mod-photo-grid,
+.mod-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mod-photo-grid img,
+.mod-grid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.mod-photo-grid img.is-blurred,
+.mod-tile:not(.is-revealed) img { filter: blur(18px); }
+
+.mod-tile {
+  padding: var(--space-2);
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-default);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.mod-tile:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+.mod-tile.is-approve { border-color: var(--color-success); }
+.mod-tile.is-reject { border-color: var(--color-primary-dark); }
+.mod-tile__meta { margin-top: var(--space-2); font-size: var(--text-sm); }
+.mod-tile__mark { display: block; font-weight: 600; }
+
+.mod-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: var(--space-2) var(--space-4); margin: 0; }
+.mod-facts dt { font-weight: 400; color: var(--color-gr-dark); font-size: var(--text-sm); }
+.mod-facts dd { margin: 0; }
+
+.mod-decision { position: sticky; top: var(--space-4); }
+
+.mod-diff { display: grid; grid-template-columns: 1fr; gap: var(--space-2); }
+
+@media (min-width: 768px) {
+  .mod-diff { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+}
+.mod-diff del { color: var(--color-gr-dark); }
+.mod-diff ins { text-decoration: none; background: var(--bg-warning); }
+
+.mod-esc-thumb { border-radius: var(--radius-xs); vertical-align: middle; filter: blur(6px); }
+.mod-esc-thumb:hover,
+.mod-esc-thumb:focus { filter: none; }

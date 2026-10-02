@@ -48,6 +48,7 @@ final class MyProfile extends Component
             'sections' => $facts->sections($profile, $user),
             'pendingText' => $profile->status === ProfileStatus::Active ? $pending->pending($profile) : [],
             'rejectionNote' => $profile->status === ProfileStatus::Rejected ? ModerationItem::latestDecisionNote($profile) : null,
+            'fixStep' => ModerationItem::latestDecisionStep($profile),
             'viewsThisWeek' => (int) ProfileView::query()->where('viewed_profile_id', $profile->id)->where('view_date', '>=', $weekStart)->count(),
             'plan' => $entitlements->plan($profile),
             'canEdit' => $user->can('editWizard', $profile),

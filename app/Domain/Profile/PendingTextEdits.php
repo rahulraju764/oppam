@@ -94,13 +94,14 @@ final class PendingTextEdits
 
         $item ??= new ModerationItem;
         $isNew = ! $item->exists;
+        // An existing item keeps its status: a member's edit never pulls an ESCALATED item back
+        // into the ordinary queue.
         $item->forceFill([
             'type' => ModerationItemType::ProfileEdit,
             'profile_id' => $profile->id,
             'fields' => $fields,
-            'status' => ModerationStatus::Open,
             'is_priority' => $profile->is_premium,
-            'submitted_at' => $isNew ? now() : $item->submitted_at,
+            ...($isNew ? ['status' => ModerationStatus::Open, 'submitted_at' => now()] : []),
         ])->save();
 
         if ($isNew) {

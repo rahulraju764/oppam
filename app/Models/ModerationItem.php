@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
+use App\Enums\RejectReason;
+use App\Enums\WizardStep;
 use Database\Factories\ModerationItemFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -73,22 +75,70 @@ final class ModerationItem extends Model
         return self::query()->ofType($type)->pending()->count();
     }
 
-    /** The moderator's note on the profile's latest reject / request-changes decision (R-M02-5). */
+    /**
+     * What the member reads about their latest reject / request-changes decision (R-M02-5): the
+     * category's member message, then the moderator's note.
+     */
     public static function latestDecisionNote(Profile $profile): ?string
     {
-        $note = self::query()
+        $item = self::latestDecision($profile);
+
+        if ($item === null) {
+            return null;
+        }
+
+        $parts = array_filter([
+            $item->reason_category !== null ? RejectReason::tryFrom($item->reason_category)?->memberMessage() : null,
+            $item->reason_note,
+        ], fn (?string $part): bool => $part !== null && $part !== '');
+
+        return $parts === [] ? null : implode(' ', $parts);
+    }
+
+    /** The wizard step the moderator asked the member to fix (deep link), default step 1. */
+    public static function latestDecisionStep(Profile $profile): WizardStep
+    {
+        $step = self::latestDecision($profile)?->fields['step'] ?? null;
+
+        return WizardStep::tryFrom(is_numeric($step) ? (int) $step : 1) ?? WizardStep::Basic;
+    }
+
+    private static function latestDecision(Profile $profile): ?self
+    {
+        return self::query()
             ->where('profile_id', $profile->id)
             ->ofType(ModerationItemType::ProfileNew)
             ->whereIn('status', [ModerationStatus::Rejected, ModerationStatus::ChangesRequested])
             ->latest('decided_at')
-            ->value('reason_note');
-
-        return is_string($note) && $note !== '' ? $note : null;
+            ->first();
     }
 
     /** @return BelongsTo<Profile, $this> */
     public function profile(): BelongsTo
     {
         return $this->belongsTo(Profile::class);
+    }
+
+    /** @return BelongsTo<AdminUser, $this> */
+    public function claimedBy(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'claimed_by_admin_id');
+    }
+
+    /** Someone else holds a live claim on this item. */
+    public function isClaimedByOther(AdminUser $admin): bool
+    {
+        return $this->claimed_by_admin_id !== null
+            && $this->claimed_by_admin_id !== $admin->id
+            && $this->claimed_until?->isFuture() === true;
+    }
+
+    /**
+     * A short hash of the held content (`fields`). The screen sends back the hash of what the
+     * moderator saw, so a decision never covers content that changed after it was shown.
+     */
+    public function fieldsFingerprint(): string
+    {
+        return hash('sha256', (string) json_encode($this->fields));
     }
 }

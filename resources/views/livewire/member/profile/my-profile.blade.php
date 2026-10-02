@@ -15,7 +15,7 @@
                     <x-ui.alert type="warning">
                         <strong>{{ __('Your profile needs changes before it can go live.') }}</strong>
                         @if ($rejectionNote)<span class="d-block">{{ __('Reviewer’s note: :note', ['note' => $rejectionNote]) }}</span>@endif
-                        <a href="{{ route('member.onboarding', ['step' => 1]) }}" wire:navigate>{{ __('Edit & resubmit') }}</a>
+                        <a href="{{ route('member.onboarding', ['step' => $fixStep->value]) }}" wire:navigate>{{ __('Edit & resubmit') }}</a>
                     </x-ui.alert>
                     @break
                 @case(\App\Enums\ProfileStatus::Hidden)

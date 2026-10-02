@@ -5,4 +5,6 @@
 
 import * as bootstrap from 'bootstrap';
 
+import './alpine/photo-moderation';
+
 window.bootstrap = bootstrap;

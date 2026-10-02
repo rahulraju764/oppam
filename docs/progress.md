@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 1 — Identity & profiles (Phase 0 built; P0.4–P0.6 commits await owner review)
-**Next session:** P1.6 — Moderation queues (A04)
+**Current phase:** 1 — Identity & profiles
+**Next session:** P1.7 — Member management (A03), split into P1.7a (members) + P1.7b (impersonation, held — rule 5)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -28,8 +28,9 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.3 Wizard steps 4–6, completeness, submit (M02) — 2026-10-01 (reviewer READY after 1 Major fixed: hobbies text blocked submit)
 - [x] P1.4 Photos & media privacy (M11) — 2026-10-01 (reviewer READY after 1 Blocker fixed: clear photo derivable from blurred URL → HMAC conversion names; media ULID keys)
 - [x] P1.5 Profile view, own & others (M03) — 2026-10-01 (reviewer READY after 1 Major fixed: an earlier contact reveal outlived HIDDEN / contact filter)
-- [ ] P1.6 Moderation queues (A04)
-- [ ] P1.7 Member management (A03)
+- [x] P1.6 Moderation queues (A04) — 2026-10-02 (reviewer READY in round 2 after 1 Major fixed: an edit approval could cover text the moderator never saw → fingerprint of the shown text)
+- [ ] P1.7a Member management (A03): list, detail tabs, suspend / hide / delete / purge, notes, export, complimentary plan
+- [ ] P1.7b Impersonation, admin password reset, resend OTP (A01/A03 — held for owner review, rule 5)
 - [ ] P1.8 Master data management (A11)
 
 ## Phase 2 — Discovery
@@ -92,7 +93,14 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.4 → P1.6: photo queue uses `moderation_items` PHOTO rows (subject_id = media uuid) and `media.phash` for duplicates.
 - P1.4 → P2.x: `PhotoUrls` queries per profile; add a batch `forViewers()` (eager-loaded) before search/list cards use it.
 - P1.4 → P9.5: S3 public bucket with listing disabled; `media-library:regenerate` after an APP_KEY rotation (conversion names are keyed).
-- P1.5 → P1.6: A04 applies / drops PROFILE_EDIT `fields` (R-M02-4) and PHOTO items; approve sets published_at.
+- P1.6 → P3.2: moderation outcomes are mail-only (ProfileApproved / ProfileNeedsChanges / ProfileContentRejected); add in-app + live channels.
+- P1.6 → P3.5: admin sidebar badges listen to `admin.queues` (AdminQueueCountChanged); moderator quality metrics with reports (P9.1).
+- P1.6 → P2.4: match generation when a profile is approved (A04 "approve → match generation").
+- P1.6 → P3.5: live "being reviewed by …" broadcast on claim; income/occupation-mismatch pre-flag (A04) later with matching data.
+- P1.6 → P1.7: deleting / suspending a member closes their open moderation items.
+- P1.6 review Minors carried into P1.7a: photo grid keeps A/D marks when the server refuses a batch; EditedFieldsQueue toasts an AuthorizationException; DecidePhoto re-reads the photo row locked. Later: an `escalated_at` column (Escalations shows updated_at).
+- P1.6 → P2.x: move the upload-time duplicate-photo scan (UploadProfilePhoto → ModerationFlags::forPhoto) to a job on the `media` queue as the media table grows.
+- P1.6 → P7: broker provenance flags ("Added by broker BRK…", import batch filter) on the A04 screens.
 - P1.5 → P2.x: list pages call `ProfileBrowseList::remember(codes)` for Prev/Next; use `BlockList::hiddenFrom()` in search.
 - P1.5 → P2.1: rate-limit profile-view recording with search; batch the similar-profile cards (one media + block query).
 - P1.5 → P7: a managing broker may see its managed profiles' photos (R-M03-3) — PhotoUrls currently returns [] to non-members.

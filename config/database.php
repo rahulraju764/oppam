@@ -58,6 +58,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Session time zone = UTC, like the app (CLAUDE.md "stored UTC"). Without it, values the
+            // database fills in itself (CURRENT_TIMESTAMP defaults: audit_logs.created_at, …) are
+            // written in the server's zone and read back as UTC — 5.5 h off on an IST machine.
+            'timezone' => '+00:00',
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
@@ -78,6 +82,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Session time zone = UTC, like the app (CLAUDE.md "stored UTC"). Without it, values the
+            // database fills in itself (CURRENT_TIMESTAMP defaults: audit_logs.created_at, …) are
+            // written in the server's zone and read back as UTC — 5.5 h off on an IST machine.
+            'timezone' => '+00:00',
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),

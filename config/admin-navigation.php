@@ -22,6 +22,8 @@ return [
     'Moderation' => [
         ['admin.moderation.profiles', 'Profile queue', 'fa-check-square-o', 'moderation.view'],
         ['admin.moderation.photos', 'Photo queue', 'fa-picture-o', 'moderation.view'],
+        ['admin.moderation.edits', 'Edited fields', 'fa-pencil-square-o', 'moderation.view'],
+        ['admin.moderation.escalations', 'Escalations', 'fa-level-up', 'moderation.view'],
     ],
     'Verification' => [
         ['admin.verification.index', 'ID verification', 'fa-id-card-o', 'verification.queue.view'],

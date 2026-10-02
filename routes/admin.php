@@ -7,6 +7,11 @@ use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
 use App\Livewire\Admin\Dashboard;
+use App\Livewire\Admin\Moderation\EditedFieldsQueue;
+use App\Livewire\Admin\Moderation\Escalations;
+use App\Livewire\Admin\Moderation\PhotoQueueGrid;
+use App\Livewire\Admin\Moderation\ProfileQueue;
+use App\Livewire\Admin\Moderation\ProfileReview;
 use App\Livewire\Admin\Roles\Editor as RolesEditor;
 use App\Livewire\Admin\Sessions\Index as SessionsIndex;
 use App\Livewire\Admin\Staff\Index as StaffIndex;
@@ -35,6 +40,15 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
     Route::get('/staff', StaffIndex::class)->middleware('can:staff.view')->name('staff.index');
     Route::get('/roles', RolesEditor::class)->middleware('can:roles.view')->name('roles.edit');
     Route::get('/sessions', SessionsIndex::class)->name('sessions.index');
+
+    // Moderation (A04). Viewing needs moderation.view; every decision re-checks moderation.act.
+    Route::middleware('can:moderation.view')->prefix('moderation')->name('moderation.')->group(function (): void {
+        Route::get('/profiles', ProfileQueue::class)->name('profiles');
+        Route::get('/profiles/{profile}', ProfileReview::class)->where('profile', 'OPM[0-9]+')->name('profiles.review');
+        Route::get('/photos', PhotoQueueGrid::class)->name('photos');
+        Route::get('/edits', EditedFieldsQueue::class)->name('edits');
+        Route::get('/escalations', Escalations::class)->name('escalations');
+    });
 });
 
 Route::fallback(fn () => abort(404))->name('fallback');
