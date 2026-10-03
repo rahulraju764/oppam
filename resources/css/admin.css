@@ -321,3 +321,34 @@ body.is-admin {
 .mod-esc-thumb { border-radius: var(--radius-xs); vertical-align: middle; filter: blur(6px); }
 .mod-esc-thumb:hover,
 .mod-esc-thumb:focus { filter: none; }
+
+/* ---- Members (A03) ------------------------------------------------------------------------ */
+/* Tabs scroll sideways inside their own strip on phones — the page itself never does. */
+.admin-tabs {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  border-bottom: var(--border-hair);
+  scrollbar-width: thin;
+}
+
+.admin-tab {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--color-gr-dark);
+  font-weight: 500;
+}
+
+.admin-tab:hover,
+.admin-tab:focus-visible { color: var(--color-secondary-dark); }
+.admin-tab.active { border-bottom-color: var(--color-primary); color: var(--color-secondary-dark); font-weight: 600; }
+
+.admin-bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+.admin-filters > summary { min-height: 44px; display: inline-flex; align-items: center; cursor: pointer; color: var(--color-secondary-dark); font-weight: 500; }
+
+.admin-notes > li { padding: var(--space-3) 0; border-top: var(--border-hair); }

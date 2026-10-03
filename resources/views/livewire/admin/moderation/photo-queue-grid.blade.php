@@ -1,4 +1,4 @@
-<div x-data="photoModeration" x-on:keydown="key($event)">
+<div x-data="photoModeration" x-on:keydown="key($event)" x-on:photo-batch-applied.window="applied()">
     <div class="admin-page-head">
         <div>
             <h1>{{ __('Photo queue') }}</h1>

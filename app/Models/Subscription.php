@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property SubscriptionSource $source
  * @property Carbon $starts_at
  * @property Carbon $ends_at
+ * @property Carbon|null $paused_at paused while the member is suspended (A03)
  */
 final class Subscription extends Model
 {
@@ -42,6 +43,7 @@ final class Subscription extends Model
             'source' => SubscriptionSource::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'paused_at' => 'datetime',
         ];
     }
 
@@ -53,6 +55,7 @@ final class Subscription extends Model
     public function scopeCurrentAt(Builder $query, Carbon $at): void
     {
         $query->where('status', SubscriptionStatus::Active->value)
+            ->whereNull('paused_at')                      // paused while the member is suspended (A03)
             ->where('starts_at', '<=', $at)
             ->where('ends_at', '>', $at);
     }

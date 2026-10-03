@@ -10,4 +10,13 @@ enum SubscriptionStatus: string
     case Active = 'ACTIVE';
     case Expired = 'EXPIRED';
     case Cancelled = 'CANCELLED';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Active => __('Active'),
+            self::Expired => __('Expired'),
+            self::Cancelled => __('Cancelled'),
+        };
+    }
 }

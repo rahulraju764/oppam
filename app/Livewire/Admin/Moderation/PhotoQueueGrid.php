@@ -91,6 +91,7 @@ final class PhotoQueueGrid extends Component
 
         $this->note = '';
         $this->loadBatch($queue, $claim);
+        $this->dispatch('photo-batch-applied');
         $this->dispatch('toast', type: $skipped > 0 ? 'error' : 'success',
             message: trans_choice(':count photo decided.|:count photos decided.', $done).($skipped > 0 ? ' '.__(':n skipped (taken or already decided).', ['n' => $skipped]) : ''));
     }

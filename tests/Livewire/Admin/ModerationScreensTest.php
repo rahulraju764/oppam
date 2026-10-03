@@ -292,3 +292,29 @@ it('the review page shows duplicate-photo flags only for photos still waiting', 
 it('every moderation page sends a guest to the admin sign-in', function (string $path): void {
     $this->get(adminUrl($path))->assertRedirect(route('admin.login'));
 })->with(['/moderation/profiles', '/moderation/profiles/OPM12370', '/moderation/photos', '/moderation/edits', '/moderation/escalations']);
+
+it('P1.6 carry-over: the grid tells the browser a batch was applied (marks are cleared only then)', function (): void {
+    $user = memberThroughStep(5);
+    addTestPhoto($user);
+    $item = ModerationItem::query()->ofType(ModerationItemType::Photo)->sole();
+    asAdmin(adminWithRole('moderator'));
+
+    Livewire::test(PhotoQueueGrid::class)
+        ->set('reason', 'OTHER')->call('decide', [$item->id => 'reject'])->assertNotDispatched('photo-batch-applied')
+        ->set('note', 'Please upload a clearer photo.')->call('decide', [$item->id => 'reject'])->assertDispatched('photo-batch-applied');
+});
+
+it('P1.6 carry-over: an edit escalated meanwhile gives the moderator a toast, not an error page', function (): void {
+    $user = memberThroughStep(6);
+    $user->profile->forceFill(['status' => ProfileStatus::Active, 'published_at' => now()])->save();
+    app(App\Actions\Profile\SaveAboutDetails::class)->handle($user->refresh(), $user->profile()->firstOrFail(),
+        aboutData(['about' => 'An about me text escalated while on screen, longer than fifty characters.']));
+    $item = ModerationItem::query()->ofType(ModerationItemType::ProfileEdit)->sole();
+    asAdmin(adminWithRole('moderator'));
+    $queue = Livewire::test(EditedFieldsQueue::class);
+
+    $item->forceFill(['status' => ModerationStatus::Escalated])->save();
+
+    $queue->call('approve', $item->id, $item->fieldsFingerprint())->assertDispatched('toast', type: 'error');
+    expect($item->refresh()->status)->toBe(ModerationStatus::Escalated);
+});

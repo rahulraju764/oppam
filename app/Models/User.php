@@ -30,6 +30,10 @@ use Illuminate\Notifications\Notifiable;
  * @property \Illuminate\Support\Carbon|null $last_seen_at
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property int $session_epoch bumped by "log out other devices" / password reset (P1.1)
+ * @property \Illuminate\Support\Carbon|null $suspended_at an admin suspension is in force (A03)
+ * @property \Illuminate\Support\Carbon|null $anonymised_at deletion stage two ran (A03 purge)
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
  */
 final class User extends Authenticatable
 {
@@ -65,6 +69,8 @@ final class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'last_seen_at' => 'datetime',
+            'suspended_at' => 'datetime',
+            'anonymised_at' => 'datetime',
             'session_epoch' => 'integer',
             'password' => 'hashed',
         ];
@@ -86,6 +92,18 @@ final class User extends Authenticatable
     public function loginEvents(): HasMany
     {
         return $this->hasMany(LoginEvent::class);
+    }
+
+    /** @return HasMany<MemberNote, $this> */
+    public function memberNotes(): HasMany
+    {
+        return $this->hasMany(MemberNote::class);
+    }
+
+    /** Has a verified email we may send account mail to (never an unverified address). */
+    public function canReceiveAccountMail(): bool
+    {
+        return $this->email !== null && $this->email_verified_at !== null;
     }
 
     public function isActive(): bool

@@ -9,4 +9,12 @@ enum SubscriptionSource: string
 {
     case Paid = 'PAID';
     case Complimentary = 'COMPLIMENTARY';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Paid => __('Paid'),
+            self::Complimentary => __('Complimentary'),
+        };
+    }
 }

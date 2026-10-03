@@ -55,9 +55,15 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
  * @property int|null $rasi_id
  * @property int|null $district_id
  * @property ProfileStatus $status
+ * @property ProfileStatus|null $previous_status before an admin suspended / hid / deleted it (A03)
  * @property bool $is_verified
  * @property bool $is_premium
  * @property int $completeness
+ * @property string|null $about
+ * @property string|null $sub_caste
+ * @property \Illuminate\Support\Carbon|null $published_at
+ * @property \Illuminate\Support\Carbon|null $last_active_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 final class Profile extends Model implements HasMedia
 {
@@ -100,6 +106,7 @@ final class Profile extends Model implements HasMedia
             'marital_status' => MaritalStatus::class,
             'physical_status' => PhysicalStatus::class,
             'status' => ProfileStatus::class,
+            'previous_status' => ProfileStatus::class,
             'caste_no_bar' => 'boolean',
             'is_verified' => 'boolean',
             'is_premium' => 'boolean',

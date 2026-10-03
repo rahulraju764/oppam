@@ -152,6 +152,18 @@ it('releases a number held by an account that never verified it (no squatting)',
         ->and($owner->profile->first_name)->toBe('Anjali');
 });
 
+it('P1.7a: still releases a never-verified registration that an admin wrote a note on', function (): void {
+    $squatter = register(['firstName' => 'Squatter', 'email' => 'squat@example.com']);
+    App\Models\MemberNote::factory()->create(['user_id' => $squatter->id]);
+    $this->travel(31)->seconds();
+
+    $owner = register(['email' => 'owner@example.com']);
+
+    expect(User::withTrashed()->find($squatter->id))->toBeNull()
+        ->and(App\Models\MemberNote::query()->where('user_id', $squatter->id)->exists())->toBeFalse()
+        ->and($owner->phone)->toBe('+919876543210');
+});
+
 it('frees an email held by an unverified account', function (): void {
     $stale = register(['phone' => PhoneNumber::fromParts('91', '9000000001')]);
 

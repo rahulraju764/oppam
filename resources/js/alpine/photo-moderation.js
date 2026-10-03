@@ -75,10 +75,14 @@ document.addEventListener('alpine:init', () => {
             if (Object.keys(this.marks).length === 0) {
                 return;
             }
-            const decisions = { ...this.marks };
+            // Marks are cleared only when the server confirms (photo-batch-applied): if it refuses
+            // the batch (e.g. "Other" without a note), the moderator keeps every mark.
+            this.$wire.decide({ ...this.marks });
+        },
+
+        applied() {
             this.marks = {};
             this.focus = 0;
-            this.$wire.decide(decisions);
         },
     }));
 });

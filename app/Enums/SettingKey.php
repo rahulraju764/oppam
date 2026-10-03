@@ -28,6 +28,7 @@ enum SettingKey: string
     case MinAgeFemale = 'profile.min_age_female';
     case MinAgeMale = 'profile.min_age_male';
     case ProfileAutoHideInactiveDays = 'profile.auto_hide_inactive_days';
+    case MembersPurgeAfterDays = 'members.purge_after_days';
     case InterestExpiryDays = 'interest.expiry_days';
     case InterestResendCooldownDays = 'interest.resend_cooldown_days';
     case ChatUnsendWindowMinutes = 'chat.unsend_window_minutes';
@@ -71,6 +72,7 @@ enum SettingKey: string
             self::MinAgeFemale => 18,
             self::MinAgeMale => 21,
             self::ProfileAutoHideInactiveDays => 180,
+            self::MembersPurgeAfterDays => 30,   // A03: 30-day restore window, then anonymise
             self::InterestExpiryDays => 30,
             self::InterestResendCooldownDays => 90,
             self::ChatUnsendWindowMinutes => 60,
@@ -108,6 +110,7 @@ enum SettingKey: string
             self::MinAgeFemale => ['required', 'integer', 'min:18', 'max:40'],
             self::MinAgeMale => ['required', 'integer', 'min:21', 'max:40'],
             self::ProfileAutoHideInactiveDays => ['required', 'integer', 'min:30', 'max:730'],
+            self::MembersPurgeAfterDays => ['required', 'integer', 'min:30', 'max:365'],
             self::InterestExpiryDays => ['required', 'integer', 'min:1', 'max:365'],
             self::InterestResendCooldownDays => ['required', 'integer', 'min:0', 'max:365'],
             self::ChatUnsendWindowMinutes => ['required', 'integer', 'min:0', 'max:1440'],

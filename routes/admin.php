@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\MemberExportController;
 use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
 use App\Livewire\Admin\Dashboard;
+use App\Livewire\Admin\Members\Index as MembersIndex;
+use App\Livewire\Admin\Members\Show as MembersShow;
 use App\Livewire\Admin\Moderation\EditedFieldsQueue;
 use App\Livewire\Admin\Moderation\Escalations;
 use App\Livewire\Admin\Moderation\PhotoQueueGrid;
@@ -40,6 +43,14 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
     Route::get('/staff', StaffIndex::class)->middleware('can:staff.view')->name('staff.index');
     Route::get('/roles', RolesEditor::class)->middleware('can:roles.view')->name('roles.edit');
     Route::get('/sessions', SessionsIndex::class)->name('sessions.index');
+
+    // Members (A03). Viewing needs members.view; every action re-checks its own permission.
+    Route::middleware('can:members.view')->prefix('members')->name('members.')->group(function (): void {
+        Route::get('/', MembersIndex::class)->name('index');
+        // CSV download: a short-lived signed link built by the list (ExportMembers checks members.export).
+        Route::get('/export', MemberExportController::class)->middleware('signed')->name('export');
+        Route::get('/{profile}', MembersShow::class)->where('profile', 'OPM[0-9]+')->name('show');
+    });
 
     // Moderation (A04). Viewing needs moderation.view; every decision re-checks moderation.act.
     Route::middleware('can:moderation.view')->prefix('moderation')->name('moderation.')->group(function (): void {

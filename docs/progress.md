@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 1 — Identity & profiles
-**Next session:** P1.7 — Member management (A03), split into P1.7a (members) + P1.7b (impersonation, held — rule 5)
+**Next session:** P1.7b — Impersonation, admin password reset, resend OTP (held for owner review — rule 5), then P1.8
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -29,7 +29,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.4 Photos & media privacy (M11) — 2026-10-01 (reviewer READY after 1 Blocker fixed: clear photo derivable from blurred URL → HMAC conversion names; media ULID keys)
 - [x] P1.5 Profile view, own & others (M03) — 2026-10-01 (reviewer READY after 1 Major fixed: an earlier contact reveal outlived HIDDEN / contact filter)
 - [x] P1.6 Moderation queues (A04) — 2026-10-02 (reviewer READY in round 2 after 1 Major fixed: an edit approval could cover text the moderator never saw → fingerprint of the shown text)
-- [ ] P1.7a Member management (A03): list, detail tabs, suspend / hide / delete / purge, notes, export, complimentary plan
+- [x] P1.7a Member management (A03) — 2026-10-03 (reviewer READY in round 2 after 4 Majors fixed: broker ids in bulk, export N+1, purge left OTP/session rows, plan grant on an unverified number; owner accepted the session / plan side-effects)
 - [ ] P1.7b Impersonation, admin password reset, resend OTP (A01/A03 — held for owner review, rule 5)
 - [ ] P1.8 Master data management (A11)
 
@@ -93,6 +93,14 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.4 → P1.6: photo queue uses `moderation_items` PHOTO rows (subject_id = media uuid) and `media.phash` for duplicates.
 - P1.4 → P2.x: `PhotoUrls` queries per profile; add a batch `forViewers()` (eager-loaded) before search/list cards use it.
 - P1.4 → P9.5: S3 public bucket with listing disabled; `media-library:regenerate` after an APP_KEY rotation (conversion names are keyed).
+- P1.7a → every later module that stores member data (likes, favourites, interests, messages, reports, verification
+  documents, broker links…): extend `PurgeDeletedMember` to wipe or anonymise it, and add a test.
+- P1.7a → P3.1: live `ForceLogout` on suspend / delete (today: signed out on the next request); P4: freeze conversations.
+- P1.7a → P3.2: in-app + live copies of AccountSuspended / AccountReactivated / AdminMessage (mail only now).
+- P1.7a → P5.2: expiry sweep clears `profiles.is_premium` when a complimentary (or paid) plan ends; P5.3: Orders tab + refunds.
+- P1.7a → P3.3/P3.4, P4, P6, P7: Engagement, Conversations, Verification, Reports tabs; open-reports, broker and owner-type facets.
+- P1.7a → P5.1: A03 search by order number; P6.1: A03 "force re-verification" quick action (needs the verification module).
+- P1.7a → P9.4: member phone search uses a leading-wildcard LIKE — fine at launch scale, revisit with the load test.
 - P1.6 → P3.2: moderation outcomes are mail-only (ProfileApproved / ProfileNeedsChanges / ProfileContentRejected); add in-app + live channels.
 - P1.6 → P3.5: admin sidebar badges listen to `admin.queues` (AdminQueueCountChanged); moderator quality metrics with reports (P9.1).
 - P1.6 → P2.4: match generation when a profile is approved (A04 "approve → match generation").

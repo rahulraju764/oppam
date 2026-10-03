@@ -12,6 +12,7 @@ use App\Exceptions\Moderation\ModerationItemUnavailable;
 use App\Models\AdminUser;
 use App\Models\ModerationItem;
 use App\Queries\Moderation\ModerationQueue;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -83,7 +84,7 @@ final class EditedFieldsQueue extends Component
             $decide->handle($this->admin(), $item, $seen, $approve, RejectReason::tryFrom($this->reason), $this->note);
             $this->dispatch('toast', type: 'success', message: $approve ? __('Changes approved.') : __('Changes rejected.'));
             $this->note = '';
-        } catch (ModerationItemUnavailable $e) {
+        } catch (ModerationItemUnavailable|AuthorizationException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
         }
 

@@ -78,6 +78,19 @@ final class Masters
         return $this->remember("districts:{$stateId}", fn () => District::query()->forState($stateId));
     }
 
+    /** @return list<MasterItem> every active district of every active state, state by state */
+    public function allDistricts(): array
+    {
+        $districts = [];
+        foreach ($this->countries() as $country) {
+            foreach ($this->statesForCountry($country->id) as $state) {
+                array_push($districts, ...$this->districtsForState($state->id));
+            }
+        }
+
+        return $districts;
+    }
+
     /** @return list<MasterItem> */
     public function education(): array
     {

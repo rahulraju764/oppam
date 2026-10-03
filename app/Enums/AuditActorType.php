@@ -10,4 +10,13 @@ enum AuditActorType: string
     case Admin = 'ADMIN';
     case User = 'USER';
     case System = 'SYSTEM';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Admin => __('Admin'),
+            self::User => __('Member'),
+            self::System => __('System'),
+        };
+    }
 }

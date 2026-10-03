@@ -37,6 +37,17 @@ enum ProfileStatus: string
         return $this === self::Active;
     }
 
+    /** <x-ui.badge> variant (the badge text says the status; colour is never the only signal). */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Active => 'success',
+            self::PendingReview => 'warning',
+            self::Suspended, self::Rejected => 'warning',
+            default => 'muted',
+        };
+    }
+
     /** @return array<string, string> value => label, for selects */
     public static function options(): array
     {

@@ -50,10 +50,12 @@ final class DecidePhoto
         $reason ??= RejectReason::Inappropriate;
         $note = $this->validatedNote($note, $approve ? null : $reason);
         $isCaption = is_array($item->fields) && array_key_exists('caption', $item->fields);
-        $photo = Media::query()->where('uuid', $item->subject_id)->where('collection_name', Profile::PHOTOS)->first();
 
-        DB::transaction(function () use ($admin, $item, $approve, $reason, $note, $isCaption, $photo): void {
+        $photoExists = DB::transaction(function () use ($admin, $item, $approve, $reason, $note, $isCaption): bool {
             $this->holdClaim($admin, $item);
+
+            // Read the photo under lock inside the decision, so the caption check sees its current value.
+            $photo = Media::query()->where('uuid', $item->subject_id)->where('collection_name', Profile::PHOTOS)->lockForUpdate()->first();
 
             if ($photo !== null && $isCaption && ! $approve) {
                 // Only the caption this item is about: a newer one has its own item.
@@ -74,11 +76,13 @@ final class DecidePhoto
             $this->audit->record($approve ? 'moderation.photo_approved' : 'moderation.photo_rejected', $item,
                 after: ['photo' => $item->subject_id, 'caption_only' => $isCaption, 'reason' => $approve ? null : $reason->value],
                 reason: $note, actor: $admin, subjectLabel: is_string($profileCode) ? $profileCode : null);
+
+            return $photo !== null;
         });
 
         ModerationQueueChanged::dispatch(ModerationItemType::Photo);
 
-        if (! $approve && $photo !== null) {
+        if (! $approve && $photoExists) {
             Profile::query()->whereKey($item->profile_id)->with('user')->first()?->user
                 ?->notify(new ProfileContentRejected($isCaption ? __('photo caption') : __('photo'), $reason, $note));
         }

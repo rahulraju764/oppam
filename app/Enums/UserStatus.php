@@ -22,6 +22,16 @@ enum UserStatus: string
         };
     }
 
+    /** <x-ui.badge> variant (the badge text says the status; colour is never the only signal). */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Active => 'success',
+            self::Suspended => 'warning',
+            self::Banned, self::Deleted => 'muted',
+        };
+    }
+
     /** @return array<string, string> value => label, for selects */
     public static function options(): array
     {
