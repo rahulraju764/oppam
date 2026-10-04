@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
 use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
 use App\Livewire\Admin\Dashboard;
+use App\Livewire\Admin\Masters\Index as MastersIndex;
+use App\Livewire\Admin\Masters\ListEditor as MastersListEditor;
 use App\Livewire\Admin\Members\Index as MembersIndex;
 use App\Livewire\Admin\Members\Show as MembersShow;
 use App\Livewire\Admin\Moderation\EditedFieldsQueue;
@@ -50,6 +53,13 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         // CSV download: a short-lived signed link built by the list (ExportMembers checks members.export).
         Route::get('/export', MemberExportController::class)->middleware('signed')->name('export');
         Route::get('/{profile}', MembersShow::class)->where('profile', 'OPM[0-9]+')->name('show');
+    });
+
+    // Master data (A11). Viewing needs masters.view; every change re-checks masters.edit.
+    Route::middleware('can:masters.view')->prefix('masters')->name('masters.')->group(function (): void {
+        Route::get('/', MastersIndex::class)->name('index');
+        Route::get('/{list}', MastersListEditor::class)->where('list', '[a-z0-9-]+')->name('edit');
+        Route::get('/{list}/export', MasterExportController::class)->where('list', '[a-z0-9-]+')->name('export');
     });
 
     // Moderation (A04). Viewing needs moderation.view; every decision re-checks moderation.act.

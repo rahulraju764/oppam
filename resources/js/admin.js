@@ -5,6 +5,7 @@
 
 import * as bootstrap from 'bootstrap';
 
+import './alpine/master-sort';
 import './alpine/photo-moderation';
 
 window.bootstrap = bootstrap;

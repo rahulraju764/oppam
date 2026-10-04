@@ -352,3 +352,9 @@ body.is-admin {
 .admin-filters > summary { min-height: 44px; display: inline-flex; align-items: center; cursor: pointer; color: var(--color-secondary-dark); font-weight: 500; }
 
 .admin-notes > li { padding: var(--space-3) 0; border-top: var(--border-hair); }
+
+/* ---- Master data (A11) -------------------------------------------------------------------- */
+.admin-master-lists > li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) 0; border-top: var(--border-hair); }
+.admin-master-lists > li:first-child { border-top: 0; }
+.admin-drag-handle { cursor: grab; color: var(--color-gr-dark); padding: 0 var(--space-1); }
+tr[draggable="true"] { cursor: grab; }

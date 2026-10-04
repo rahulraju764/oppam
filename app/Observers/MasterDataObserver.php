@@ -6,12 +6,13 @@ namespace App\Observers;
 
 use App\Models\Masters\MasterRecord;
 use App\Services\Masters\Masters;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
 /**
  * Any write to a master table invalidates every cached master list, so wizard and search
  * dropdowns reflect an A11 edit within seconds (PRD A11). Registered in AppServiceProvider.
  */
-final class MasterDataObserver
+final class MasterDataObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(private readonly Masters $masters) {}
 

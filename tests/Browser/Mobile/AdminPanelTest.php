@@ -25,7 +25,7 @@ it('opens the admin menu from the top bar and never scrolls sideways at 375px', 
         $browser->driver->getKeyboard()->sendKeys(Facebook\WebDriver\WebDriverKeys::ESCAPE);
         $browser->waitUntilMissing('#admin-sidebar.is-open');
 
-        foreach (['/staff', '/roles', '/sessions', '/members', '/moderation/profiles', '/moderation/photos', '/moderation/edits', '/moderation/escalations'] as $path) {
+        foreach (['/staff', '/roles', '/sessions', '/members', '/masters', '/masters/castes', '/masters/profanity-ml', '/moderation/profiles', '/moderation/photos', '/moderation/edits', '/moderation/escalations'] as $path) {
             $browser->visit(adminDuskUrl($path))
                 ->waitFor('.admin-page-head')
                 ->assertScript('document.scrollingElement.scrollWidth <= document.documentElement.clientWidth');

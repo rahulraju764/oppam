@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\Moderation;
 
 use App\Data\Moderation\ModerationFlag;
+use App\Domain\Masters\MasterLists;
 use App\Enums\Gender;
 use App\Enums\SettingKey;
 use App\Models\Media;
 use App\Models\Profile;
+use App\Services\Masters\Masters;
 use App\Services\Settings\SettingsRepository;
 
 /**
@@ -25,7 +27,10 @@ final class ModerationFlags
 
     private const HANDLES = '/\b(whats\s?app|telegram|insta(gram)?|facebook|fb\.com|signal|call\s+me|wa\.me)\b/iu';
 
-    public function __construct(private readonly SettingsRepository $settings) {}
+    public function __construct(
+        private readonly SettingsRepository $settings,
+        private readonly Masters $masters,
+    ) {}
 
     /**
      * Flags for a profile's own text and identity.
@@ -140,11 +145,10 @@ final class ModerationFlags
     private function profanity(string $text): ?string
     {
         $lower = mb_strtolower($text);
-        /** @var array<string, list<string>> $lists */
-        $lists = (array) config('moderation.profanity');
 
-        foreach ($lists as $words) {
-            foreach ($words as $word) {
+        // The A11 word lists (active words only, cached by Masters, flushed on every edit).
+        foreach (array_keys(MasterLists::WORD_LISTS) as $group) {
+            foreach (array_map(fn ($item): string => $item->label, $this->masters->options($group)) as $word) {
                 // Whole words only (Unicode-aware), so "Scunthorpe"-style substrings don't trip it.
                 if (preg_match('/(?<![\p{L}\p{M}])'.preg_quote(mb_strtolower($word), '/').'(?![\p{L}\p{M}])/u', $lower) === 1) {
                     return $word;

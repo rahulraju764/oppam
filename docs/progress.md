@@ -31,7 +31,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.6 Moderation queues (A04) — 2026-10-02 (reviewer READY in round 2 after 1 Major fixed: an edit approval could cover text the moderator never saw → fingerprint of the shown text)
 - [x] P1.7a Member management (A03) — 2026-10-03 (reviewer READY in round 2 after 4 Majors fixed: broker ids in bulk, export N+1, purge left OTP/session rows, plan grant on an unverified number; owner accepted the session / plan side-effects)
 - [ ] P1.7b Impersonation, admin password reset, resend OTP (A01/A03 — held for owner review, rule 5)
-- [ ] P1.8 Master data management (A11)
+- [x] P1.8 Master data management (A11) — 2026-10-04 (reviewer READY in round 2 after 1 Blocker + 1 Major fixed: districts editor (states as parents), diet preference usage)
 
 ## Phase 2 — Discovery
 - [ ] P2.1 Search service & search page (M04)
@@ -101,6 +101,10 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.7a → P3.3/P3.4, P4, P6, P7: Engagement, Conversations, Verification, Reports tabs; open-reports, broker and owner-type facets.
 - P1.7a → P5.1: A03 search by order number; P6.1: A03 "force re-verification" quick action (needs the verification module).
 - P1.7a → P9.4: member phone search uses a leading-wildcard LIKE — fine at launch scale, revisit with the load test.
+- P1.8 → P9.5 (deploy): run `php artisan db:seed --class=MastersSeeder` once on production to add the profanity word lists
+  (the seeder only adds missing codes; it never overwrites labels edited in A11 — but it does re-add a seeded row that
+  was deleted in A11, so deactivate seeded rows rather than deleting them).
+- P1.8 → P6.2 / P3.4: report reasons and icebreaker templates become A11 lists with their modules; P5: income-band amounts editor if needed.
 - P1.6 → P3.2: moderation outcomes are mail-only (ProfileApproved / ProfileNeedsChanges / ProfileContentRejected); add in-app + live channels.
 - P1.6 → P3.5: admin sidebar badges listen to `admin.queues` (AdminQueueCountChanged); moderator quality metrics with reports (P9.1).
 - P1.6 → P2.4: match generation when a profile is approved (A04 "approve → match generation").

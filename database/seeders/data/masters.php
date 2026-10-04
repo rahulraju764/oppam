@@ -210,6 +210,19 @@ return [
         'family_type' => ['NUCLEAR' => 'Nuclear family', 'JOINT' => 'Joint family'],
         'family_status' => ['MIDDLE_CLASS' => 'Middle class', 'UPPER_MIDDLE' => 'Upper middle class', 'RICH' => 'Rich', 'AFFLUENT' => 'Affluent'],
         'family_values' => ['TRADITIONAL' => 'Traditional', 'MODERATE' => 'Moderate', 'LIBERAL' => 'Liberal'],
+
+        // Word lists for the A04 automatic profanity pre-flag (whole words, any case). Short seeds:
+        // moderators extend them in A11 (P1.8). Codes are opaque (the word is the label).
+        'profanity_en' => [
+            'W01' => 'fuck', 'W02' => 'shit', 'W03' => 'bitch', 'W04' => 'bastard', 'W05' => 'asshole',
+            'W06' => 'slut', 'W07' => 'whore', 'W08' => 'dick', 'W09' => 'pussy', 'W10' => 'cunt',
+        ],
+        'profanity_ml' => [
+            'W01' => 'പട്ടി', 'W02' => 'തെണ്ടി', 'W03' => 'പൂറി', 'W04' => 'മൈര്', 'W05' => 'കഴുവേറി', 'W06' => 'പന്നി',
+        ],
+        'profanity_manglish' => [
+            'W01' => 'myre', 'W02' => 'myr', 'W03' => 'poori', 'W04' => 'thendi', 'W05' => 'kazhuveri', 'W06' => 'patti',
+        ],
     ],
 
 ];
