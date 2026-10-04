@@ -6,6 +6,7 @@ namespace App\Livewire\Member\Auth;
 
 use App\Actions\Auth\LogoutMember;
 use App\Actions\Auth\LogoutOtherDevices;
+use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -33,7 +34,13 @@ final class LogoutButton extends Component
             abort(403);
         }
 
-        $logoutOthers->handle($user, request());
+        try {
+            $logoutOthers->handle($user, request());
+        } catch (ImpersonationRestricted $restricted) {
+            $this->notice = $restricted->getMessage();
+
+            return;
+        }
 
         // Shown inline (role="status"): the member toast stack arrives with notifications (P3.2).
         $this->notice = __('You have been logged out on all other devices.');

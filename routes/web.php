@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Member\HoroscopeController;
+use App\Http\Controllers\Member\ImpersonationController;
 use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
@@ -45,6 +46,14 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/login', Login::class)->name('login');
     Route::get('/forgot-password', ForgotPassword::class)->name('password.forgot');
 });
+
+// Admin impersonation (A01 / A03, P1.7b): the admin panel hands the browser over with a single-use
+// token (60 s, same IP); "End session" in the banner closes it. Not behind `guest`: an existing
+// member session in that browser is ended by the handoff (this device only).
+Route::get('/impersonate/{token}', [ImpersonationController::class, 'enter'])
+    ->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:10,1')->name('impersonation.enter');
+Route::post('/impersonation/end', [ImpersonationController::class, 'end'])->middleware('auth')->name('impersonation.end');
+Route::view('/impersonation/ended', 'pages.impersonation-ended')->name('impersonation.ended');
 
 // Member area. Pages after onboarding also get `profile.onboarded` (PRD §13); the wizard can't.
 Route::middleware(['auth', 'verified.phone'])->group(function (): void {

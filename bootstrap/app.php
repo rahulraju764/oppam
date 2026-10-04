@@ -7,6 +7,7 @@ use App\Http\Middleware\ConfigureAdminSession;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
+use App\Http\Middleware\EnsureImpersonationIsValid;
 use App\Http\Middleware\EnsureLivewireComponentHost;
 use App\Http\Middleware\EnsureMemberSessionIsValid;
 use App\Http\Middleware\EnsurePhoneIsVerified;
@@ -70,6 +71,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // is signed out on its next request, pages and Livewire updates alike (M01, R-M01-5).
         // ?ref=BRK… sets the 30-day first-touch referral cookie (R-M13-9).
         $middleware->web(append: [EnsureMemberSessionIsValid::class, CaptureReferralCode::class]);
+
+        // Admin impersonation (A01 / A03): a support session ends at its 30-minute limit, on the
+        // next page or Livewire request.
+        $middleware->web(append: [EnsureImpersonationIsValid::class]);
 
         $middleware->alias([
             'admin.session' => EnsureAdminSessionIsValid::class,

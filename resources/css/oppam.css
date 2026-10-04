@@ -81,3 +81,23 @@
   width: 100%;
   border: 0;
 }
+
+/* Admin impersonation banner (A01 / P1.7b): the first thing on every member page while a
+   support session runs (not sticky — the header already is). White on --color-secondary-dark
+   meets AA. */
+.impersonation-banner {
+  padding: var(--space-2) 0;
+  background: var(--color-secondary-dark);
+  color: var(--color-default);
+  font-size: var(--text-sm);
+}
+
+.impersonation-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.impersonation-banner .btn { min-height: 44px; }

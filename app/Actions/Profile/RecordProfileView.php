@@ -9,6 +9,7 @@ use App\Events\Profile\ProfileViewed;
 use App\Models\Profile;
 use App\Models\ProfileView;
 use App\Models\User;
+use App\Services\Admin\Impersonation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -20,7 +21,9 @@ use Illuminate\Support\Str;
  */
 final class RecordProfileView
 {
-    public function __construct(private readonly ProfileVisibility $visibility) {}
+    public function __construct(private readonly ProfileVisibility $visibility,
+        private readonly Impersonation $impersonation,
+    ) {}
 
     public function handle(User $viewer, Profile $target): void
     {
@@ -31,6 +34,11 @@ final class RecordProfileView
         }
 
         if ($own->privacySetting?->incognito === true) {
+            return;
+        }
+
+        // An admin looking around as the member must not show up in others' "who viewed me".
+        if ($this->impersonation->isActive()) {
             return;
         }
 

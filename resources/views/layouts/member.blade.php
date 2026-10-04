@@ -22,6 +22,7 @@
 <body class="is-member">
     @include('layouts.partials.preloader')
     @include('layouts.partials.header', ['member' => $member, 'pageNav' => $resolvedPageNav])
+    <x-impersonation-banner />
 
     <main id="main" tabindex="-1">
         {{ $slot }}

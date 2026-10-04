@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Models\User;
+use App\Services\Admin\Impersonation;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
@@ -26,10 +28,14 @@ final class LogoutOtherDevices
     public function __construct(
         private readonly Session $session,
         private readonly AuthFactory $auth,
+        private readonly Impersonation $impersonation,
     ) {}
 
+    /** @throws ImpersonationRestricted an admin impersonating the member (A01: sessions are the member's) */
     public function handle(User $user, Request $request): void
     {
+        $this->impersonation->assertAllowed();
+
         $epoch = DB::transaction(function () use ($user): int {
             $fresh = User::query()->lockForUpdate()->findOrFail($user->id);
             $fresh->forceFill([

@@ -15,6 +15,7 @@ use App\Domain\Profile\ProfileCards;
 use App\Domain\Profile\ProfileNames;
 use App\Domain\Profile\ProfileVisibility;
 use App\Enums\UserRole;
+use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Profile\ContactNotAvailable;
 use App\Models\Profile;
 use App\Models\User;
@@ -68,7 +69,7 @@ final class Show extends Component
         try {
             $card = $view->handle($this->viewer(), $this->target());
             $this->contact = (array) $card;
-        } catch (ContactNotAvailable $e) {
+        } catch (ContactNotAvailable|ImpersonationRestricted $e) {
             $this->contactError = $e->getMessage();
         }
 

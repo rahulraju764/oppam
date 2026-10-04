@@ -67,6 +67,13 @@ return [
 
     // Photos & media (M11). Originals and horoscopes on the private disk (served only through
     // signed, audited routes); photo conversions on the public disk under unguessable uuid paths.
+    // A01 / A03 time-boxed impersonation (PRD A01: 30 min). The admin panel hands the browser to
+    // the member site with a single-use token valid for handoff_seconds, from the same IP only.
+    'impersonation' => [
+        'minutes' => 30,
+        'handoff_seconds' => 60,
+    ],
+
     'media' => [
         'private_disk' => env('MEDIA_PRIVATE_DISK', 'local'),      // production: s3-private
         'public_disk' => env('MEDIA_PUBLIC_DISK', 'public'),       // production: s3 (public bucket)

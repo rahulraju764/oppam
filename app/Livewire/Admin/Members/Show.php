@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Members;
 
+use App\Actions\Admin\Impersonation\StartImpersonation;
 use App\Actions\Admin\Members\DeleteMember;
 use App\Actions\Admin\Members\GrantComplimentaryPlan;
 use App\Actions\Admin\Members\ReactivateMember;
+use App\Actions\Admin\Members\ResendRegistrationOtp;
+use App\Actions\Admin\Members\ResetMemberPassword;
 use App\Actions\Admin\Members\RestoreMember;
 use App\Actions\Admin\Members\SetMemberProfileHidden;
 use App\Actions\Admin\Members\SuspendMember;
@@ -115,6 +118,39 @@ final class Show extends Component
             'grant', __('Complimentary plan granted.'));
     }
 
+    /**
+     * Start a time-boxed impersonation (A01 / A03) and hand this browser to the member site with
+     * the single-use token. Held for owner review (CLAUDE.md rule 5).
+     */
+    public function impersonate(StartImpersonation $action): mixed
+    {
+        $this->authorize('members.impersonate');
+
+        try {
+            $token = $action->handle($this->admin(), $this->member(), $this->reason, request()->ip());
+        } catch (MemberStateConflict $conflict) {
+            $this->dispatch('toast', type: 'error', message: $conflict->getMessage());
+
+            return null;
+        }
+
+        return $this->redirect(route('impersonation.enter', ['token' => $token]));
+    }
+
+    public function resetPassword(ResetMemberPassword $action): void
+    {
+        $this->authorize('members.edit');
+        $this->run(fn () => $action->handle($this->admin(), $this->member(), $this->reason), 'reset-password',
+            __('Password reset. The member has been signed out everywhere and will set a new password with “Forgot password”.'));
+    }
+
+    public function resendOtp(ResendRegistrationOtp $action): void
+    {
+        $this->authorize('members.edit');
+        $this->run(fn () => $action->handle($this->admin(), $this->member(), $this->reason, (string) request()->ip()), 'resend-otp',
+            __('A new verification code was sent to the member\'s mobile.'));
+    }
+
     public function render(): View
     {
         $member = $this->member();
@@ -126,6 +162,7 @@ final class Show extends Component
             'isDeleted' => $member->trashed(),
             'isSuspended' => ! $member->trashed() && $member->status === UserStatus::Suspended,
             'isActive' => ! $member->trashed() && $member->status === UserStatus::Active,
+            'phoneVerified' => $member->hasVerifiedPhone(),
             'canHide' => ! $member->trashed() && $profile->status === ProfileStatus::Active,
             'canUnhide' => ! $member->trashed() && $profile->status === ProfileStatus::Hidden,
             'restorableUntil' => $member->trashed() && $member->anonymised_at === null

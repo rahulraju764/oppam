@@ -26,6 +26,7 @@ use App\Models\Masters\Religion;
 use App\Models\Masters\Star;
 use App\Models\Masters\State;
 use App\Observers\MasterDataObserver;
+use App\Services\Admin\Impersonation;
 use App\Services\Entitlements\EntitlementService;
 use App\Services\Settings\FeatureFlags;
 use App\Services\Settings\SettingsRepository;
@@ -68,6 +69,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(SettingsRepository::class);
         $this->app->scoped(FeatureFlags::class);
         $this->app->scoped(EntitlementService::class);
+        $this->app->scoped(Impersonation::class);
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
 
         $this->app->singleton(SmsGateway::class, function (): SmsGateway {

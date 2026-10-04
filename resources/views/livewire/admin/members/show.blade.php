@@ -72,6 +72,19 @@
                                 <x-ui.button size="sm" variant="outline" type="button" icon="fa-eye" x-on:click="$dispatch('open-modal', { name: 'member-unhide' })">{{ __('Unhide profile') }}</x-ui.button>
                             @endif
                         @endcan
+                        @can('members.edit')
+                            @if (! $isDeleted && $phoneVerified)
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-key" x-on:click="$dispatch('open-modal', { name: 'member-reset-password' })">{{ __('Reset password') }}</x-ui.button>
+                            @endif
+                            @if ($isActive && ! $phoneVerified)
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-mobile" x-on:click="$dispatch('open-modal', { name: 'member-resend-otp' })">{{ __('Resend verification code') }}</x-ui.button>
+                            @endif
+                        @endcan
+                        @can('members.impersonate')
+                            @if ($isActive && $phoneVerified)
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-user-secret" x-on:click="$dispatch('open-modal', { name: 'member-impersonate' })">{{ __('View as member') }}</x-ui.button>
+                            @endif
+                        @endcan
                         @can('billing.force_activate')
                             @if ($isActive && $member->hasVerifiedPhone())
                                 <x-ui.button size="sm" variant="outline" type="button" icon="fa-gift" x-on:click="$dispatch('open-modal', { name: 'member-grant' })">{{ __('Grant complimentary plan') }}</x-ui.button>
@@ -104,6 +117,19 @@
             <p>{{ __('The profile leaves search and profile pages. The member can still sign in.') }}</p>
         </x-admin.confirm-modal>
         <x-admin.confirm-modal name="member-unhide" :title="__('Unhide :code', ['code' => $profile->code])" action="unhide" :confirmLabel="__('Unhide profile')" :danger="false" />
+        @endcan
+        @can('members.edit')
+        <x-admin.confirm-modal name="member-reset-password" :title="__('Reset the password of :code', ['code' => $profile->code])" action="resetPassword" :confirmLabel="__('Reset password')">
+            <p>{{ __('The current password stops working and the member is signed out everywhere. They set a new one themselves with “Forgot password” (a code to their mobile). You never see a password.') }}</p>
+        </x-admin.confirm-modal>
+        <x-admin.confirm-modal name="member-resend-otp" :title="__('Resend the verification code')" action="resendOtp" :confirmLabel="__('Send code')" :danger="false">
+            <p>{{ __('A new code goes by SMS to the member\'s own number (the usual sending limits apply). You never see the code.') }}</p>
+        </x-admin.confirm-modal>
+        @endcan
+        @can('members.impersonate')
+        <x-admin.confirm-modal name="member-impersonate" :title="__('View the site as :code', ['code' => $profile->code])" action="impersonate" :confirmLabel="__('Start (30 minutes)')">
+            <p>{{ __('This browser signs in to the member site as this member for at most 30 minutes. The member is emailed. You can\'t change their password, email or payments, reveal contacts, or reach other members. Start and end are audited.') }}</p>
+        </x-admin.confirm-modal>
         @endcan
         @can('members.delete')
         <x-admin.confirm-modal name="member-delete" :title="__('Delete :code', ['code' => $profile->code])" action="delete" :confirmLabel="__('Delete member')">

@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 1 — Identity & profiles
-**Next session:** P1.7b — Impersonation, admin password reset, resend OTP (held for owner review — rule 5), then P1.8
+**Current phase:** 1 — Identity & profiles (all sessions built; P1.7b awaits the owner's review before its commit)
+**Next session:** owner review + commit of P1.7b (uncommitted in the working tree), then P2.1 — Search service & search page (M04)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -30,7 +30,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.5 Profile view, own & others (M03) — 2026-10-01 (reviewer READY after 1 Major fixed: an earlier contact reveal outlived HIDDEN / contact filter)
 - [x] P1.6 Moderation queues (A04) — 2026-10-02 (reviewer READY in round 2 after 1 Major fixed: an edit approval could cover text the moderator never saw → fingerprint of the shown text)
 - [x] P1.7a Member management (A03) — 2026-10-03 (reviewer READY in round 2 after 4 Majors fixed: broker ids in bulk, export N+1, purge left OTP/session rows, plan grant on an unverified number; owner accepted the session / plan side-effects)
-- [ ] P1.7b Impersonation, admin password reset, resend OTP (A01/A03 — held for owner review, rule 5)
+- [ ] P1.7b Impersonation, admin password reset, resend OTP (A01/A03) — built 2026-10-03, reviewer READY in round 3 (after 5 + 1 Majors fixed); **held uncommitted for owner review (rule 5)**
 - [x] P1.8 Master data management (A11) — 2026-10-04 (reviewer READY in round 2 after 1 Blocker + 1 Major fixed: districts editor (states as parents), diet preference usage)
 
 ## Phase 2 — Discovery
@@ -93,6 +93,14 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.4 → P1.6: photo queue uses `moderation_items` PHOTO rows (subject_id = media uuid) and `media.phash` for duplicates.
 - P1.4 → P2.x: `PhotoUrls` queries per profile; add a batch `forViewers()` (eager-loaded) before search/list cards use it.
 - P1.4 → P9.5: S3 public bucket with listing disabled; `media-library:regenerate` after an APP_KEY rotation (conversion names are keyed).
+- P1.7b → M14 (password / email change), P5 (checkout, payments), P3.3/P3.4 (likes, favourites, interests), P4 (messages):
+  each such Action calls `Impersonation::assertAllowed()` (blocked while an admin is impersonating — decisions 2026-10-03).
+- P1.7b → M14: once emails are verified, members start receiving the impersonation / password-reset / suspension emails (verified-only by design).
+- P1.7b → P3.1: ForceLogout broadcast when an impersonation ends; channel callbacks refuse an ended impersonation.
+- P1.7b → any future Ban / member self-delete / "change password" action: end sessions through `ChangesMemberState::revokeSessions()` (epoch + remember token) and test it — the member-session middleware and "Log out" no longer rotate the remember token (decisions 2026-10-03).
+- P1.7b → every later module: a side effect in a GET / `mount()` (e.g. mark-as-read) is not in the impersonation action audit — call
+  `Impersonation::assertAllowed()` or audit it there. P3.1: consider leaving `/broadcasting/auth` POSTs out of `impersonation.action`.
+- P1.7b → P9.5: production must keep oppam.in and admin.oppam.in on one registrable domain (the SameSite=Strict admin cookie).
 - P1.7a → every later module that stores member data (likes, favourites, interests, messages, reports, verification
   documents, broker links…): extend `PurgeDeletedMember` to wipe or anonymise it, and add a test.
 - P1.7a → P3.1: live `ForceLogout` on suspend / delete (today: signed out on the next request); P4: freeze conversations.

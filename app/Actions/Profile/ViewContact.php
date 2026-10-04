@@ -9,11 +9,13 @@ use App\Domain\Profile\ContactAccessPolicy;
 use App\Domain\Profile\ProfileVisibility;
 use App\Enums\ContactAccess;
 use App\Enums\Entitlement;
+use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Billing\QuotaExceeded;
 use App\Exceptions\Profile\ContactNotAvailable;
 use App\Models\ContactView;
 use App\Models\Profile;
 use App\Models\User;
+use App\Services\Admin\Impersonation;
 use App\Services\Entitlements\EntitlementService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -31,14 +33,19 @@ final class ViewContact
         private readonly ProfileVisibility $visibility,
         private readonly ContactAccessPolicy $policy,
         private readonly EntitlementService $entitlements,
+        private readonly Impersonation $impersonation,
     ) {}
 
     /**
      * @throws NotFoundHttpException the viewer may not see this profile
      * @throws ContactNotAvailable with the reason (plan, quota, privacy, filter)
+     * @throws ImpersonationRestricted an admin impersonating the viewer
      */
     public function handle(User $viewer, Profile $target): ContactCardData
     {
+        // Spends the member's contact-view quota: never on their behalf (owner decision 2026-10-02).
+        $this->impersonation->assertAllowed();
+
         $own = $viewer->profile;
 
         if ($own === null || $this->visibility->isOwner($target, $viewer) || ! $this->visibility->canView($target, $viewer)) {
