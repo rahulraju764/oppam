@@ -38,6 +38,26 @@ final class ProfileVisitors
             ->orderByDesc('profiles.id');
     }
 
+    /**
+     * "Profiles I viewed" (M15, all plans): distinct visible profiles the member opened in the last
+     * `days` days, most recent first (`last_viewed_at`).
+     *
+     * @return Builder<Profile>
+     */
+    public function viewedBy(Profile $me, int $days = self::WINDOW_DAYS): Builder
+    {
+        return $this->search->query($me, new SearchCriteria)
+            ->whereExists(fn (QueryBuilder $q) => $q->selectRaw('1')->from('profile_views')
+                ->whereColumn('profile_views.viewed_profile_id', 'profiles.id')
+                ->where('profile_views.viewer_profile_id', $me->id)
+                ->where('profile_views.updated_at', '>=', now()->subDays($days)))
+            ->selectSub(fn (QueryBuilder $q) => $q->selectRaw('MAX(profile_views.updated_at)')->from('profile_views')
+                ->whereColumn('profile_views.viewed_profile_id', 'profiles.id')
+                ->where('profile_views.viewer_profile_id', $me->id), 'last_viewed_at')
+            ->orderByDesc('last_viewed_at')
+            ->orderByDesc('profiles.id');
+    }
+
     public function count(Profile $me, int $days = self::WINDOW_DAYS): int
     {
         return $this->search->query($me, new SearchCriteria)

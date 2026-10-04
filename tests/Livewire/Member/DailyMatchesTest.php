@@ -2,145 +2,100 @@
 
 declare(strict_types=1);
 
-namespace Tests\Livewire\Member;
-
-use App\Enums\UserRole;
 use App\Livewire\Member\Matches\Daily;
+use App\Models\Block;
 use App\Models\DailyMatch;
 use App\Models\Profile;
 use App\Models\User;
-use Carbon\CarbonImmutable;
 use Database\Seeders\PlansSeeder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
-use Tests\TestCase;
 
-final class DailyMatchesTest extends TestCase
+/*
+| P2.4 — /matches/daily (M05 / F06): today's batch only, best first, read-only on load, with the
+| expiry countdown; "Not interested" by profile code within the member's own batch.
+*/
+
+beforeEach(function (): void {
+    seedMasters();
+});
+
+/** @return array{0: User, 1: Profile, 2: Profile} */
+function dailySetup(): array
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(PlansSeeder::class);
+    $me = groom();
+    $best = Profile::factory()->female()->active()->create();
+    $next = Profile::factory()->female()->active()->create();
+    foreach ([[$best, 95], [$next, 70]] as [$p, $score]) {
+        DailyMatch::factory()->create(['profile_id' => $me->profile->id, 'matched_profile_id' => $p->id, 'score' => $score]);
     }
 
-    public function test_guest_is_redirected_from_daily_matches(): void
-    {
-        $this->get(route('member.matches.daily'))
-            ->assertRedirect(route('login'));
-
-        $this->get(route('member.daily-matches'))
-            ->assertRedirect(route('login'));
-    }
-
-    public function test_onboarded_member_can_view_daily_matches(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-            'first_name' => 'Kavya',
-        ]);
-
-        $candidate = Profile::factory()->active()->female()->create([
-            'first_name' => 'Meera',
-        ]);
-
-        $today = CarbonImmutable::now('Asia/Kolkata')->toDateString();
-
-        DailyMatch::factory()->create([
-            'profile_id' => $profile->id,
-            'matched_profile_id' => $candidate->id,
-            'match_date' => $today,
-            'score' => 88,
-            'is_viewed' => false,
-            'is_interacted' => false,
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(Daily::class)
-            ->assertOk()
-            ->assertSee('Daily Matches')
-            ->assertSee('88% Match')
-            ->assertSee('Meera')
-            ->assertSee('Batch expires in:');
-
-        // Check that match was marked as viewed
-        $match = DailyMatch::query()->where('profile_id', $profile->id)->where('matched_profile_id', $candidate->id)->first();
-        expect($match?->is_viewed)->toBeTrue();
-    }
-
-    public function test_member_can_dismiss_a_daily_match(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-        ]);
-
-        $candidate = Profile::factory()->active()->female()->create([
-            'first_name' => 'Divya',
-        ]);
-
-        $today = CarbonImmutable::now('Asia/Kolkata')->toDateString();
-
-        $dailyMatch = DailyMatch::factory()->create([
-            'profile_id' => $profile->id,
-            'matched_profile_id' => $candidate->id,
-            'match_date' => $today,
-            'is_interacted' => false,
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(Daily::class)
-            ->call('dismissMatch', $dailyMatch->id)
-            ->assertDontSee('Divya');
-
-        expect($dailyMatch->fresh()?->is_interacted)->toBeTrue();
-    }
-
-    public function test_empty_state_shown_when_no_daily_matches_available(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(Daily::class)
-            ->assertOk()
-            ->assertSee('No daily matches available today')
-            ->assertSee('Edit Partner Preferences');
-    }
-
-    public function test_daily_matches_renders_without_n_plus_one_with_prevent_lazy_loading(): void
-    {
-        Model::preventLazyLoading(true);
-
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-        ]);
-
-        $today = CarbonImmutable::now('Asia/Kolkata')->toDateString();
-
-        $candidates = Profile::factory()->count(3)->active()->female()->create();
-        foreach ($candidates as $cand) {
-            DailyMatch::factory()->create([
-                'profile_id' => $profile->id,
-                'matched_profile_id' => $cand->id,
-                'match_date' => $today,
-            ]);
-        }
-
-        $this->actingAs($user);
-
-        Livewire::test(Daily::class)
-            ->assertOk();
-
-        Model::preventLazyLoading(false);
-    }
+    return [$me, $best, $next];
 }
+
+it('needs a signed-in, onboarded member; /daily-matches redirects to /matches/daily', function (): void {
+    $this->get(memberUrl('/matches/daily'))->assertRedirect(route('login'));
+    $this->get(memberUrl('/daily-matches'))->assertRedirect('/matches/daily')->assertStatus(301);
+
+    $this->seed(PlansSeeder::class);
+    $this->actingAs(groom(), 'web')->get(memberUrl('/matches/daily'))->assertOk()->assertSee('Daily Matches');
+});
+
+it('shows today\'s batch best first with the expiry countdown, and writes nothing on load', function (): void {
+    [$me, $best, $next] = dailySetup();
+    $yesterday = Profile::factory()->female()->active()->create();
+    DailyMatch::factory()->create(['profile_id' => $me->profile->id, 'matched_profile_id' => $yesterday->id, 'match_date' => now('Asia/Kolkata')->subDay()->toDateString()]);
+    $this->actingAs($me, 'web');
+
+    DB::enableQueryLog();
+    $html = Livewire::test(Daily::class)->assertSee('expire in')->html();
+    $writes = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $q): bool => preg_match('/^\s*(insert|update|delete)/i', $q) === 1);
+
+    expect(strpos($html, $best->code))->toBeLessThan(strpos($html, $next->code))
+        ->and($html)->not->toContain($yesterday->code)
+        ->and($writes)->toBeEmpty();
+});
+
+it('"Not interested" removes the profile from today\'s list by its code', function (): void {
+    [$me, $best] = dailySetup();
+    $this->actingAs($me, 'web');
+
+    Livewire::test(Daily::class)->call('dismiss', $best->code)->assertDontSee($best->code)->assertSee('Removed from today');
+    expect(DailyMatch::query()->where('matched_profile_id', $best->id)->value('is_interacted'))->toBeTrue();
+});
+
+it('IDOR: a code outside the member\'s own batch, or a junk code, changes nothing', function (): void {
+    [$me, $best] = dailySetup();
+    $someoneElse = bride();
+    DailyMatch::factory()->create(['profile_id' => $someoneElse->profile->id, 'matched_profile_id' => $best->id]);
+    $this->actingAs($me, 'web');
+
+    Livewire::test(Daily::class)->call('dismiss', 'OPM99999999')->call('dismiss', "OPM1' OR 1=1");
+    $this->actingAs($someoneElse, 'web');
+    Livewire::test(Daily::class)->call('dismiss', $me->profile->code);
+
+    expect(DailyMatch::query()->where('is_interacted', true)->count())->toBe(0);
+});
+
+it('R-M03-1: a profile that blocked the member after 05:00 drops out at once', function (): void {
+    [$me, $best] = dailySetup();
+    Block::factory()->create(['blocker_profile_id' => $best->id, 'blocked_profile_id' => $me->profile->id]);
+    $this->actingAs($me, 'web');
+
+    Livewire::test(Daily::class)->assertDontSee($best->code);
+});
+
+it('shows the empty state before the first batch', function (): void {
+    $this->actingAs(groom(), 'web');
+
+    Livewire::test(Daily::class)->assertSee('No daily matches right now')->assertSee('every morning at 5 AM');
+});
+
+it('P1.7b: an admin impersonating the member cannot dismiss a match', function (): void {
+    [$me, $best] = dailySetup();
+    $this->actingAs($me, 'web');
+    session([App\Services\Admin\Impersonation::SESSION_KEY => 'imp-1']);
+
+    Livewire::test(Daily::class)->call('dismiss', $best->code)->assertSee($best->code);
+    expect(DailyMatch::query()->where('is_interacted', true)->exists())->toBeFalse();
+});

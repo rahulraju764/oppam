@@ -41,7 +41,9 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            // Must exceed the longest job timeout (900 s, PurgeDeletedMembers / daily-match chunks),
+            // or a worker re-reserves a job that is still running and it runs twice (P2.4 review).
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 960),
             'after_commit' => false,
         ],
 
@@ -69,7 +71,9 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Must exceed the longest job timeout (900 s, PurgeDeletedMembers / daily-match chunks),
+            // or a worker re-reserves a job that is still running and it runs twice (P2.4 review).
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 960),
             'block_for' => null,
             // Jobs queued inside a DB transaction (e.g. photo conversions, M11) run only after it
             // commits, so a worker never looks for a row that isn't visible yet.

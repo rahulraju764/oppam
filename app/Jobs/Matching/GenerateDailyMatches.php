@@ -4,203 +4,55 @@ declare(strict_types=1);
 
 namespace App\Jobs\Matching;
 
-use App\Domain\Matching\MatchScorer;
-use App\Domain\Safety\BlockList;
-use App\Enums\Gender;
+use App\Actions\Matching\BuildDailyMatches;
+use App\Domain\Matching\DailyBatch;
 use App\Enums\ProfileStatus;
-use App\Enums\SettingKey;
 use App\Models\DailyMatch;
 use App\Models\Profile;
-use App\Services\Settings\SettingsRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 
 /**
- * Daily matches generator (PRD §10 M05, §12 F06).
- * Runs at 05:00 IST on the `matching` queue, chunked per 1,000 members.
- * Filters candidates by hard partner preferences, scores with MatchScorer,
- * enforces district diversity (max 3 per district), and stores top 10 matches.
+ * Daily matches fan-out (F06), scheduled at 05:00 IST: walks the ACTIVE members in id order (never
+ * all ids in memory) and queues one GenerateDailyMatchesChunk per CHUNK members on the `matching`
+ * queue. Also prunes batches older than BuildDailyMatches::REPEAT_DAYS (kept until then so a
+ * profile isn't shown again within that window).
  */
-final class GenerateDailyMatches implements ShouldQueue
+final class GenerateDailyMatches implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable;
 
-    public int $tries = 2;
+    public const CHUNK = 1000;
 
-    public int $timeout = 600;
+    public const PRUNE_BATCH = 5000;
 
-    /**
-     * @param  list<string>|null  $profileIds
-     */
-    public function __construct(
-        public readonly ?array $profileIds = null,
-        public readonly ?string $forDate = null
-    ) {
+    public int $timeout = 300;
+
+    public function __construct(public readonly ?string $forDate = null)
+    {
         $this->onQueue('matching');
     }
 
-    public function handle(
-        MatchScorer $scorer,
-        BlockList $blockList,
-        SettingsRepository $settings
-    ): void {
-        $today = $this->forDate ?? CarbonImmutable::now('Asia/Kolkata')->toDateString();
+    public function handle(): void
+    {
+        $date = $this->forDate ?? DailyBatch::today();
 
-        if ($this->profileIds === null) {
-            /** @var list<string> $allIds */
-            $allIds = Profile::query()
-                ->where('status', ProfileStatus::Active->value)
-                ->whereNotNull('published_at')
-                ->pluck('id')
-                ->all();
+        // Batches the repeat window no longer needs, PRUNE_BATCH rows at a time (match_date index).
+        $cutoff = CarbonImmutable::parse($date)->subDays(BuildDailyMatches::REPEAT_DAYS + 1)->toDateString();
+        do {
+            $deleted = DailyMatch::query()->where('match_date', '<', $cutoff)->limit(self::PRUNE_BATCH)->delete();
+        } while ($deleted === self::PRUNE_BATCH);
 
-            if (count($allIds) > 1000) {
-                foreach (array_chunk($allIds, 1000) as $chunk) {
-                    self::dispatch($chunk, $today);
-                }
-
-                return;
-            }
-
-            $profileIds = $allIds;
-        } else {
-            $profileIds = $this->profileIds;
-        }
-
-        /** @var int $matchLimit */
-        $matchLimit = $settings->get(SettingKey::DailyMatchCount);
-        if ($matchLimit <= 0) {
-            $matchLimit = 10;
-        }
-
-        foreach ($profileIds as $profileId) {
-            $this->processProfile($profileId, $today, $matchLimit, $scorer, $blockList);
-        }
-    }
-
-    private function processProfile(
-        string $profileId,
-        string $today,
-        int $matchLimit,
-        MatchScorer $scorer,
-        BlockList $blockList
-    ): void {
-        $source = Profile::query()
-            ->with(['partnerPreference', 'educationCareer'])
-            ->find($profileId);
-
-        if ($source === null || $source->status !== ProfileStatus::Active || $source->published_at === null) {
-            return;
-        }
-
-        $oppositeGender = $source->gender === Gender::Male ? Gender::Female : Gender::Male;
-        $blockedIds = $blockList->hiddenFrom($source);
-        $pref = $source->partnerPreference;
-
-        $candidateQuery = Profile::query()
-            ->with(['partnerPreference', 'educationCareer', 'media'])
+        Profile::query()
             ->where('status', ProfileStatus::Active->value)
             ->whereNotNull('published_at')
-            ->where('gender', $oppositeGender->value)
-            ->where('id', '!=', $source->id)
-            ->whereNotExists(fn (QueryBuilder $q) => $q->selectRaw('1')->from('privacy_settings')
-                ->whereColumn('privacy_settings.profile_id', 'profiles.id')
-                ->where('privacy_settings.incognito', true))
-            ->whereNotExists(fn (QueryBuilder $q) => $q->selectRaw('1')->from('ignores')
-                ->whereColumn('ignores.ignored_profile_id', 'profiles.id')
-                ->where('ignores.ignorer_profile_id', $source->id));
-
-        if ($blockedIds !== []) {
-            $candidateQuery->whereNotIn('id', $blockedIds);
-        }
-
-        // Hard preference constraints when preferences are defined
-        if ($pref !== null) {
-            if ($pref->age_min !== null) {
-                $maxDob = CarbonImmutable::now()->subYears($pref->age_min);
-                $candidateQuery->where('dob', '<=', $maxDob);
-            }
-
-            if ($pref->age_max !== null) {
-                $minDob = CarbonImmutable::now()->subYears($pref->age_max + 1)->addDay();
-                $candidateQuery->where('dob', '>=', $minDob);
-            }
-
-            if (! empty($pref->religion_ids)) {
-                $candidateQuery->whereIn('religion_id', $pref->religion_ids);
-            }
-
-            if (! empty($pref->marital_statuses)) {
-                $candidateQuery->whereIn('marital_status', $pref->marital_statuses);
-            }
-        }
-
-        // Take up to 200 candidates to score
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Profile> $candidates */
-        $candidates = $candidateQuery->limit(200)->get();
-
-        if ($candidates->isEmpty()) {
-            return;
-        }
-
-        // Score candidates
-        /** @var list<array{profile: Profile, score: int}> $scored */
-        $scored = [];
-        foreach ($candidates as $candidate) {
-            $scoreData = $scorer->calculate($source, $candidate);
-            $scored[] = [
-                'profile' => $candidate,
-                'score' => $scoreData->totalScore,
-            ];
-        }
-
-        // Sort descending by score
-        usort($scored, fn (array $a, array $b): int => $b['score'] <=> $a['score']);
-
-        // Diversity cap: max 3 from any single district (PRD §10 M05)
-        /** @var array<int|string, int> $districtCounts */
-        $districtCounts = [];
-        /** @var list<array{profile: Profile, score: int}> $selected */
-        $selected = [];
-
-        foreach ($scored as $item) {
-            /** @var Profile $cand */
-            $cand = $item['profile'];
-            $districtKey = $cand->district_id !== null ? (string) $cand->district_id : 'none';
-            $currentDistrictCount = $districtCounts[$districtKey] ?? 0;
-
-            if ($districtKey !== 'none' && $currentDistrictCount >= 3) {
-                continue; // Skip: diversity cap reached for this district
-            }
-
-            $districtCounts[$districtKey] = $currentDistrictCount + 1;
-            $selected[] = $item;
-
-            if (count($selected) >= $matchLimit) {
-                break;
-            }
-        }
-
-        // Persist daily matches in a transaction
-        DB::transaction(function () use ($source, $today, $selected): void {
-            foreach ($selected as $match) {
-                DailyMatch::query()->updateOrCreate(
-                    [
-                        'profile_id' => $source->id,
-                        'matched_profile_id' => $match['profile']->id,
-                        'match_date' => $today,
-                    ],
-                    [
-                        'score' => $match['score'],
-                    ]
-                );
-            }
-        });
+            ->select('id')
+            ->chunkById(self::CHUNK, function ($profiles) use ($date): void {
+                GenerateDailyMatchesChunk::dispatch($profiles->pluck('id')->map(fn (mixed $id): string => (string) $id)->values()->all(), $date);
+            });
     }
 }

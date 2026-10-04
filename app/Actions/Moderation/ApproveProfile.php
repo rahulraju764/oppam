@@ -11,6 +11,7 @@ use App\Enums\ModerationStatus;
 use App\Enums\ProfileStatus;
 use App\Events\Admin\ModerationQueueChanged;
 use App\Exceptions\Moderation\ModerationItemUnavailable;
+use App\Jobs\Matching\GenerateDailyMatchesChunk;
 use App\Models\AdminUser;
 use App\Models\ModerationItem;
 use App\Models\Profile;
@@ -72,5 +73,8 @@ final class ApproveProfile
 
         ModerationQueueChanged::dispatch(ModerationItemType::ProfileNew);
         $profile->load('user')->user?->notify(new ProfileApproved($profile->code));
+
+        // A04 "approve → match generation": the member's first daily matches, without waiting for 05:00.
+        GenerateDailyMatchesChunk::dispatch([$profile->id]);
     }
 }

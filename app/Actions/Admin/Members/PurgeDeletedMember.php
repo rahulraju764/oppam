@@ -8,11 +8,14 @@ use App\Enums\SettingKey;
 use App\Enums\UserRole;
 use App\Models\ContactDetail;
 use App\Models\ContactView;
+use App\Models\DailyMatch;
 use App\Models\EducationCareer;
 use App\Models\FamilyDetail;
 use App\Models\HoroscopeDetail;
+use App\Models\Ignore;
 use App\Models\LifestyleDetail;
 use App\Models\LoginEvent;
+use App\Models\MatchScore;
 use App\Models\Media;
 use App\Models\ModerationItem;
 use App\Models\NotificationPreference;
@@ -21,6 +24,7 @@ use App\Models\PartnerPreference;
 use App\Models\PrivacySetting;
 use App\Models\Profile;
 use App\Models\ProfileView;
+use App\Models\SavedSearch;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Support\Facades\Settings;
@@ -103,13 +107,18 @@ final class PurgeDeletedMember
     private function anonymiseProfile(Profile $profile): void
     {
         foreach ([ContactDetail::class, FamilyDetail::class, PartnerPreference::class, EducationCareer::class,
-            HoroscopeDetail::class, LifestyleDetail::class, PrivacySetting::class] as $model) {
+            HoroscopeDetail::class, LifestyleDetail::class, PrivacySetting::class, SavedSearch::class] as $model) {
             $model::query()->where('profile_id', $profile->id)->delete();
         }
 
         foreach ([ProfileView::class, ContactView::class] as $model) {
             $model::query()->where('viewer_profile_id', $profile->id)->orWhere('viewed_profile_id', $profile->id)->delete();
         }
+
+        // Phase 2 matching data, both directions (P2.4).
+        DailyMatch::query()->where('profile_id', $profile->id)->orWhere('matched_profile_id', $profile->id)->delete();
+        MatchScore::query()->where('source_profile_id', $profile->id)->orWhere('target_profile_id', $profile->id)->delete();
+        Ignore::query()->where('ignorer_profile_id', $profile->id)->orWhere('ignored_profile_id', $profile->id)->delete();
 
         ModerationItem::query()->where('profile_id', $profile->id)->update(['fields' => null, 'reason_note' => null]);
 

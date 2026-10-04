@@ -383,6 +383,25 @@ it('P1.7a review Major: the purge also removes OTP challenges (real phone + IP) 
         ->and(DB::table('sessions')->where('user_id', $member->id)->exists())->toBeFalse();
 });
 
+it('P2.4: the purge also removes saved searches, daily matches, match scores and ignores, both directions', function (): void {
+    $member = a03Member('+919811100095');
+    $other = Profile::factory()->female()->active()->create();
+    App\Models\SavedSearch::factory()->create(['profile_id' => $member->profile->id]);
+    App\Models\DailyMatch::factory()->create(['profile_id' => $member->profile->id, 'matched_profile_id' => $other->id]);
+    App\Models\DailyMatch::factory()->create(['profile_id' => $other->id, 'matched_profile_id' => $member->profile->id]);
+    App\Models\MatchScore::factory()->create(['source_profile_id' => $other->id, 'target_profile_id' => $member->profile->id]);
+    App\Models\Ignore::factory()->create(['ignorer_profile_id' => $other->id, 'ignored_profile_id' => $member->profile->id]);
+    app(DeleteMember::class)->handle(adminWithRole(), $member, $member->profile->code, 'Member asked us to delete it.');
+    $this->travel(31)->days();
+
+    app(PurgeDeletedMember::class)->handle(User::withTrashed()->findOrFail($member->id));
+
+    expect(App\Models\SavedSearch::query()->count())->toBe(0)
+        ->and(App\Models\DailyMatch::query()->count())->toBe(0)
+        ->and(App\Models\MatchScore::query()->count())->toBe(0)
+        ->and(App\Models\Ignore::query()->count())->toBe(0);
+});
+
 it('the purge job anonymises every due member in one run', function (): void {
     $members = [a03Member('+919811100092'), a03Member('+919811100093'), a03Member('+919811100094')];
     foreach ($members as $m) {

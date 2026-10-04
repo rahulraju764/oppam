@@ -1,221 +1,79 @@
+{{--
+    /visitors (M15): two tabs — "Who viewed me" (cards with the last visit for plans with
+    see_who_viewed_me; otherwise the number, a data-free blurred teaser and an upgrade link) and
+    "Profiles I viewed" (all plans). 90 days, distinct members, 20 per page. 3/6/3-style row:
+    results col-9, ad rail col-3, like Daily Matches.
+--}}
 <div>
-    <main id="main" tabindex="-1">
-        <h1 class="visually-hidden">{{ __('Profile Visitors') }}</h1>
+    <section class="daily-section bg-coloring">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="d-head daily-head">
+                        <h1>{{ __('Visitors') }}</h1>
+                        <p class="daily-head__expiry">{{ __('Activity from the last 90 days') }}</p>
+                    </div>
+                </div>
 
-        <section class="visitors-section bg-coloring py-4">
-            <div class="container">
-                <div class="row">
-
-                    {{-- Page Header --}}
-                    <div class="col-12 mb-4">
-                        <h1 class="h2 fw-bold text-dark mb-1">{{ __('Profile Visitors & Views') }}</h1>
-                        <p class="text-muted mb-0">
-                            {{ __('Track who viewed your profile and browse your 90-day viewing history.') }}
-                        </p>
+                <div class="col-lg-9 col-md-12 col-sm-12 col-12">
+                    <div class="visitor-tabs" role="group" aria-label="{{ __('Visitors') }}">
+                        <button type="button" class="visitor-tab" wire:click="show('visitors')" aria-pressed="{{ $tab === 'visitors' ? 'true' : 'false' }}">
+                            {{ __('Who viewed me') }} <span class="nav-count">{{ number_format($visitorCount) }}</span>
+                        </button>
+                        <button type="button" class="visitor-tab" wire:click="show('viewed')" aria-pressed="{{ $tab === 'viewed' ? 'true' : 'false' }}">
+                            {{ __('Profiles I viewed') }} <span class="nav-count">{{ number_format($viewedCount) }}</span>
+                        </button>
                     </div>
 
-                    {{-- Main Content Column (9 cols) --}}
-                    <div class="col-lg-9 col-md-12 col-sm-12 col-12">
-                        {{-- Tabs Navigation --}}
-                        <div class="d-flex align-items-center gap-2 mb-4 border-bottom pb-2">
-                            <button type="button"
-                                    wire:click="setTab('who_viewed_me')"
-                                    class="btn {{ $tab === 'who_viewed_me' ? 'btn-primary' : 'btn-outline-secondary' }} rounded-pill px-4 py-2 d-flex align-items-center gap-2">
-                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                <span>{{ __('Who Viewed Me') }}</span>
-                                <span class="badge {{ $tab === 'who_viewed_me' ? 'bg-white text-primary' : 'bg-secondary text-white' }} rounded-pill">
-                                    {{ number_format($whoViewedCount) }}
-                                </span>
-                            </button>
+                    <div wire:loading.flex wire:target="show" class="search-loading" aria-hidden="true">
+                        <x-ui.skeleton shape="row" :count="3" class="w-100" />
+                    </div>
 
-                            <button type="button"
-                                    wire:click="setTab('viewed_by_me')"
-                                    class="btn {{ $tab === 'viewed_by_me' ? 'btn-primary' : 'btn-outline-secondary' }} rounded-pill px-4 py-2 d-flex align-items-center gap-2">
-                                <i class="fa fa-history" aria-hidden="true"></i>
-                                <span>{{ __('Profiles I Viewed') }}</span>
-                                <span class="badge {{ $tab === 'viewed_by_me' ? 'bg-white text-primary' : 'bg-secondary text-white' }} rounded-pill">
-                                    {{ number_format($viewedByMeCount) }}
-                                </span>
-                            </button>
-                        </div>
-
-                        {{-- Tab 1: Who Viewed Me --}}
-                        @if ($tab === 'who_viewed_me')
-                            @if ($canSeeVisitors)
-                                {{-- Gold/Diamond Plan: Full Unlocked List --}}
-                                @if (count($items) > 0)
-                                    <div class="profile-grid">
-                                        @foreach ($items as $item)
-                                            @php
-                                                $view = $item['view'];
-                                                $card = $item['card'];
-                                            @endphp
-                                            <div wire:key="viewer-{{ $view->id }}">
-                                                <x-profile.row :profile="$card">
-                                                    <x-slot:actions>
-                                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100">
-                                                            <span class="small text-muted">
-                                                                <i class="fa fa-clock-o text-primary" aria-hidden="true"></i>
-                                                                {{ __('Viewed :time', ['time' => $view->updated_at->diffForHumans()]) }}
-                                                                @if ($view->count > 1)
-                                                                    <span class="badge bg-light text-secondary ms-1">
-                                                                        {{ __(':count times', ['count' => $view->count]) }}
-                                                                    </span>
-                                                                @endif
-                                                            </span>
-                                                            <a href="{{ route('member.profile.show', $card->code) }}"
-                                                               class="btn btn-sm btn-primary"
-                                                               wire:navigate>
-                                                                {{ __('View Profile') }}
-                                                            </a>
-                                                        </div>
-                                                    </x-slot:actions>
-                                                </x-profile.row>
-                                            </div>
-                                        @endforeach
-                                    </div>
-
-                                    @if ($paginator && $paginator->hasPages())
-                                        <div class="mt-4">
-                                            {{ $paginator->links() }}
+                    <div wire:loading.remove wire:target="show">
+                        @if ($locked && $visitorCount === 0)
+                            <x-ui.empty-state icon="fa-eye" :title="__('No visitors yet')" :message="__('A complete profile with photos gets more visits.')" />
+                        @elseif ($locked)
+                            <div class="dashboard-content">
+                                <section class="home-content">
+                                    <div class="visitor-teaser">
+                                        <div class="visitor-teaser__blur" aria-hidden="true">
+                                            @for ($i = 0; $i < 3; $i++)<span class="visitor-teaser__tile"></span>@endfor
                                         </div>
-                                    @endif
-                                @else
-                                    <div class="bg-white rounded-3 border p-5 text-center shadow-sm">
-                                        <i class="fa fa-eye fa-3x text-muted mb-3" aria-hidden="true"></i>
-                                        <h3 class="h5 fw-bold text-dark mb-2">{{ __('No visitors recorded yet') }}</h3>
-                                        <p class="text-muted mb-4">
-                                            {{ __('Your profile has not been visited recently. Updating your photos and preferences will help you get noticed!') }}
-                                        </p>
-                                        <a href="{{ route('member.profiles') }}" class="btn btn-primary" wire:navigate>
-                                            {{ __('Explore Profiles') }}
-                                        </a>
-                                    </div>
-                                @endif
-                            @else
-                                {{-- Free / Silver Plan: Count + Blurred Teaser + Upgrade Banner (PRD §10 M15) --}}
-                                <div class="bg-white rounded-3 border p-4 shadow-sm mb-4">
-                                    {{-- Banner & Upgrade CTA --}}
-                                    <div class="text-center py-4 px-3 bg-light rounded-3 border mb-4">
-                                        <div class="mb-3">
-                                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning-subtle text-warning p-3" style="width: 64px; height: 64px;">
-                                                <i class="fa fa-lock fa-2x" aria-hidden="true"></i>
-                                            </span>
-                                        </div>
-                                        <h3 class="h4 fw-bold text-dark mb-2">
-                                            {{ __(':count Members Viewed Your Profile', ['count' => number_format($whoViewedCount)]) }}
-                                        </h3>
-                                        <p class="text-muted mx-auto mb-4" style="max-width: 520px;">
-                                            {{ __('Members with Gold or Diamond membership can see exactly who viewed them, including full profiles, photos, and visit timestamps.') }}
-                                        </p>
-                                        <a href="{{ route('plans') }}" class="btn btn-warning btn-lg fw-bold px-4" wire:navigate>
-                                            <i class="fa fa-diamond me-2" aria-hidden="true"></i> {{ __('Upgrade to Gold to See Visitors') }}
-                                        </a>
-                                    </div>
-
-                                    {{-- Blurred Teasers --}}
-                                    <div class="teaser-container position-relative">
-                                        <h4 class="h6 fw-bold text-muted text-uppercase mb-3">
-                                            {{ __('Recent Visitors (Preview)') }}
-                                        </h4>
-
-                                        <div class="d-flex flex-column gap-3" style="filter: blur(4px); pointer-events: none; user-select: none; opacity: 0.6;">
-                                            @for ($i = 0; $i < min(max($whoViewedCount, 3), 4); $i++)
-                                                <div class="d-flex align-items-center p-3 bg-light rounded-3 border">
-                                                    <div class="rounded-circle bg-secondary me-3" style="width: 50px; height: 50px;"></div>
-                                                    <div class="flex-grow-1">
-                                                        <div class="h6 mb-1 fw-bold text-dark">Member OPM100{{ $i + 1 }} ••••</div>
-                                                        <div class="small text-muted">26 yrs, 5'4" • Engineer • Ernakulam</div>
-                                                    </div>
-                                                    <div class="small text-muted">{{ __('Viewed recently') }}</div>
-                                                </div>
-                                            @endfor
+                                        <div class="visitor-teaser__body">
+                                            <p class="visitor-teaser__count">{{ trans_choice(':count member viewed your profile|:count members viewed your profile', $visitorCount, ['count' => number_format($visitorCount)]) }}</p>
+                                            <p class="mb-0">{{ __('Upgrade to Gold or Diamond to see who they are and when they visited.') }}</p>
+                                            <x-ui.button :href="route('plans')" wire:navigate>{{ __('See plans') }}</x-ui.button>
                                         </div>
                                     </div>
-                                </div>
-                            @endif
-
-                        {{-- Tab 2: Profiles I Viewed --}}
+                                </section>
+                            </div>
                         @else
-                            @if (count($items) > 0)
-                                <div class="profile-grid">
-                                    @foreach ($items as $item)
-                                        @php
-                                            $view = $item['view'];
-                                            $card = $item['card'];
-                                        @endphp
-                                        <div wire:key="viewed-{{ $view->id }}">
-                                            <x-profile.row :profile="$card">
-                                                <x-slot:actions>
-                                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100">
-                                                        <span class="small text-muted">
-                                                            <i class="fa fa-history text-secondary" aria-hidden="true"></i>
-                                                            {{ __('You visited :time', ['time' => $view->updated_at->diffForHumans()]) }}
-                                                        </span>
-                                                        <a href="{{ route('member.profile.show', $card->code) }}"
-                                                           class="btn btn-sm btn-primary"
-                                                           wire:navigate>
-                                                            {{ __('View Profile Again') }}
-                                                        </a>
-                                                    </div>
-                                                </x-slot:actions>
-                                            </x-profile.row>
-                                        </div>
-                                    @endforeach
-                                </div>
-
-                                @if ($paginator && $paginator->hasPages())
-                                    <div class="mt-4">
-                                        {{ $paginator->links() }}
-                                    </div>
-                                @endif
-                            @else
-                                <div class="bg-white rounded-3 border p-5 text-center shadow-sm">
-                                    <i class="fa fa-history fa-3x text-muted mb-3" aria-hidden="true"></i>
-                                    <h3 class="h5 fw-bold text-dark mb-2">{{ __('No profile views in the last 90 days') }}</h3>
-                                    <p class="text-muted mb-4">
-                                        {{ __('When you inspect member profiles, your 90-day history will appear here for easy reference.') }}
-                                    </p>
-                                    <a href="{{ route('member.profiles') }}" class="btn btn-primary" wire:navigate>
-                                        {{ __('Browse Profiles') }}
-                                    </a>
-                                </div>
+                            <div class="profile-grid">
+                                @forelse ($rows as $row)
+                                    <x-profile.row :profile="$row['card']" wire:key="visit-{{ $tab }}-{{ $row['card']->code }}">
+                                        <x-slot:actions>
+                                            <span class="visit-time"><i class="fa fa-clock-o" aria-hidden="true"></i>
+                                                {{ $tab === 'viewed' ? __('You viewed :when', ['when' => $row['when']]) : __('Viewed you :when', ['when' => $row['when']]) }}</span>
+                                        </x-slot:actions>
+                                    </x-profile.row>
+                                @empty
+                                    <x-ui.empty-state icon="fa-eye" :title="$tab === 'viewed' ? __('You haven’t viewed any profiles yet') : __('No visitors yet')"
+                                                      :message="$tab === 'viewed' ? __('Profiles you open appear here for 90 days.') : __('A complete profile with photos gets more visits.')">
+                                        <x-ui.button :href="route('member.matches')" wire:navigate>{{ __('See my matches') }}</x-ui.button>
+                                    </x-ui.empty-state>
+                                @endforelse
+                            </div>
+                            @if ($page)
+                                <x-ui.pagination :paginator="$page" :label="__('Visitors pages')" />
                             @endif
                         @endif
                     </div>
+                </div>
 
-                    {{-- Sidebar Column (3 cols) --}}
-                    <div class="col-lg-3 col-md-12 col-sm-12 col-12">
-                        <div class="rail-stack d-flex flex-column gap-3">
-                            {{-- Info Widget --}}
-                            <div class="bg-white rounded-3 border p-3 shadow-sm">
-                                <h4 class="h6 fw-bold mb-3 d-flex align-items-center gap-2">
-                                    <i class="fa fa-shield text-primary" aria-hidden="true"></i>
-                                    {{ __('Privacy & Visitors') }}
-                                </h4>
-                                <ul class="list-unstyled small text-muted mb-0 d-flex flex-column gap-2">
-                                    <li class="d-flex align-items-start gap-2">
-                                        <i class="fa fa-check text-success mt-1" aria-hidden="true"></i>
-                                        <span>{{ __('Incognito viewers do not leave records in visitor logs.') }}</span>
-                                    </li>
-                                    <li class="d-flex align-items-start gap-2">
-                                        <i class="fa fa-check text-success mt-1" aria-hidden="true"></i>
-                                        <span>{{ __('Viewing history is kept for 90 days.') }}</span>
-                                    </li>
-                                    <li class="d-flex align-items-start gap-2">
-                                        <i class="fa fa-check text-success mt-1" aria-hidden="true"></i>
-                                        <span>{{ __('Gold & Diamond members enjoy unlimited visibility of who viewed them.') }}</span>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            {{-- Ads / Promo --}}
-                            <x-ads.rail />
-                        </div>
-                    </div>
-
+                <div class="col-lg-3 col-md-12 col-sm-12 col-12">
+                    <x-ads.rail />
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </section>
 </div>

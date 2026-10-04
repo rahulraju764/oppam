@@ -92,6 +92,30 @@ final class ProfileSearch
         return $this->query($searcher, $criteria)->count();
     }
 
+    /**
+     * The ids of the best `$limit` profiles by relevance (the daily-matches candidate pool, F06):
+     * ranked in SQL, so the pool is the closest fits, not the first rows by id.
+     *
+     * @param  list<string>  $excludeIds
+     * @return list<string>
+     */
+    public function topIds(Profile $searcher, SearchCriteria $criteria, int $limit, array $excludeIds = []): array
+    {
+        [$keySql, $keyBindings] = $this->relevance($searcher);
+
+        return $this->query($searcher, $criteria)
+            ->when($excludeIds !== [], fn (Builder $q) => $q->whereNotIn('profiles.id', $excludeIds))
+            ->select('profiles.id')
+            ->orderByRaw("{$keySql} DESC", $keyBindings)
+            ->orderByDesc('profiles.last_active_at')
+            ->orderByDesc('profiles.id')
+            ->limit($limit)
+            ->toBase()
+            ->pluck('id')
+            ->map(fn (mixed $id): string => (string) $id)
+            ->all();
+    }
+
     public function page(Profile $searcher, SearchCriteria $criteria, ?string $cursor = null): SearchPage
     {
         // The sort key as an SQL expression (with its bindings); published_at then id break ties.

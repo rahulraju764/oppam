@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 2 — Discovery (P2.2–P2.4 reopened after review, 2026-10-04)
-**Next session:** P2.4 — Daily matches job & visitors fix (M05, M15)
+**Current phase:** 3 — Real-time core & engagement (Phase 2 complete, 2026-10-04)
+**Next session:** P3.1 — Reverb, Echo, channels & presence
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -38,7 +38,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P2.1b Search follow-ups — 2026-10-04 (reviewer READY in round 1; Prev / Next from search results via ProfileBrowseList in Search & AllProfiles, profile-view rate limit profile_views.max_per_minute, A15)
 - [x] P2.2 All profiles & saved searches (M04) — 2026-10-04 (reopened after an unreviewed first pass; reviewer READY in round 1: normalised saved filters, token unsubscribe with GET confirm + RFC 8058 POST, owner-only management, /profiles, phone sheet, Dusk desktop + 375px)
 - [x] P2.3 Dashboard & my matches (M05) — 2026-10-04 (reopened after an unreviewed first pass; reviewer READY in round 1: MatchFunnel tabs (All = meets my prefs, Mutual = also accepts me), cached counts, lazy bundled dashboard strips from daily_matches, /matches, scorer fixes, Dusk desktop + 375px)
-- [ ] P2.4 Daily matches job & visitors (M05, M15) — **reopened 2026-10-04**: first pass (21f8c71) not reviewed; Visitors shows blocked / suspended members (Blocker), daily job repeats yesterday's batch and scores the first 200 by id, generation inside render(), counts rows not visitors, no "ready" email, approve → generate (P1.6 carry-over)
+- [x] P2.4 Daily matches job & visitors (M05, M15) — 2026-10-04 (reopened after an unreviewed first pass that listed blocked members; reviewer READY in round 2 after 3 Majors fixed: retry_after > job timeouts + per-member lock, 05:00 IST end-to-end + schedule tests, indexed batched prune)
 
 ## Phase 3 — Real-time core & engagement
 - [ ] P3.1 Reverb, Echo, channels & presence
@@ -110,6 +110,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.7a → P3.3/P3.4, P4, P6, P7: Engagement, Conversations, Verification, Reports tabs; open-reports, broker and owner-type facets.
 - P1.7a → P5.1: A03 search by order number; P6.1: A03 "force re-verification" quick action (needs the verification module).
 - P1.7a → P9.4: member phone search uses a leading-wildcard LIKE — fine at launch scale, revisit with the load test.
+- P2.4 → P9.4: measure daily-match generation throughput on the 100k bench data (per-member build time × members ÷ heavy-queue workers) so every batch lands by 06:00 IST (M05 acceptance); P3.3 / P3.4: add the liked / interest-sent exclusions to BuildDailyMatches.
 - P2.1 → P9.5: size the production InnoDB buffer pool to hold the profiles + search tables (search p95 depends on it); re-run
   `profiles:search-benchmark` on staging. P3.4: add the "already sent interest" exclusion and disable Send Interest for
   profiles whose contact filter excludes the searcher (PreferenceMatcher::meetsAll). P6.2: Ignore / Unignore buttons (table exists).
@@ -123,7 +124,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.6 → P3.5: live "being reviewed by …" broadcast on claim; income/occupation-mismatch pre-flag (A04) later with matching data.
 - P1.6 → P1.7: deleting / suspending a member closes their open moderation items.
 - P1.6 review Minors carried into P1.7a: photo grid keeps A/D marks when the server refuses a batch; EditedFieldsQueue toasts an AuthorizationException; DecidePhoto re-reads the photo row locked. Later: an `escalated_at` column (Escalations shows updated_at).
-- P1.6 → P2.x: move the upload-time duplicate-photo scan (UploadProfilePhoto → ModerationFlags::forPhoto) to a job on the `media` queue as the media table grows.
+- P1.6 → P9.4 (moved out of Phase 2, 2026-10-04): move the upload-time duplicate-photo scan (UploadProfilePhoto → ModerationFlags::forPhoto) to a job on the `media` queue as the media table grows.
 - P1.6 → P7: broker provenance flags ("Added by broker BRK…", import batch filter) on the A04 screens.
 - P1.5 → P2.x: list pages call `ProfileBrowseList::remember(codes)` for Prev/Next; use `BlockList::hiddenFrom()` in search.
 - P1.5 → P2.1: rate-limit profile-view recording with search; batch the similar-profile cards (one media + block query).

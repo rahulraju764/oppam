@@ -2,162 +2,114 @@
 
 declare(strict_types=1);
 
-namespace Tests\Livewire\Member;
-
 use App\Enums\PlanCode;
-use App\Enums\UserRole;
+use App\Enums\ProfileStatus;
 use App\Livewire\Member\Activity\Visitors;
-use App\Models\Plan;
+use App\Models\Block;
 use App\Models\Profile;
 use App\Models\ProfileView;
-use App\Models\Subscription;
 use App\Models\User;
-use Carbon\CarbonImmutable;
 use Database\Seeders\PlansSeeder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Tests\TestCase;
 
-final class VisitorsTest extends TestCase
+/*
+| P2.4 — /visitors (M15): "who viewed me" in full for Gold / Diamond, a count + data-free teaser for
+| others; "profiles I viewed" for everyone; 90 days, distinct members; blocked / suspended never.
+*/
+
+beforeEach(function (): void {
+    seedMasters();
+    $this->seed(PlansSeeder::class);
+});
+
+function visitorOf(User $me, array $state = [], int $daysAgo = 1): Profile
 {
-    use RefreshDatabase;
+    $visitor = Profile::factory()->female()->active()->create($state);
+    ProfileView::factory()->create(['viewer_profile_id' => $visitor->id, 'viewed_profile_id' => $me->profile->id,
+        'view_date' => now()->subDays($daysAgo)->toDateString(), 'updated_at' => now()->subDays($daysAgo)]);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(PlansSeeder::class);
-    }
-
-    public function test_guest_is_redirected_from_visitors(): void
-    {
-        $this->get(route('member.visitors'))
-            ->assertRedirect(route('login'));
-    }
-
-    public function test_free_member_sees_visitor_count_and_upgrade_teaser(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-        ]);
-
-        $viewer = Profile::factory()->active()->female()->create([
-            'first_name' => 'Aparna',
-        ]);
-
-        ProfileView::factory()->create([
-            'viewer_profile_id' => $viewer->id,
-            'viewed_profile_id' => $profile->id,
-            'view_date' => CarbonImmutable::now('Asia/Kolkata')->toDateString(),
-            'count' => 2,
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(Visitors::class)
-            ->assertOk()
-            ->assertSee('Who Viewed Me')
-            ->assertSee('1 Members Viewed Your Profile')
-            ->assertSee('Upgrade to Gold to See Visitors')
-            ->assertDontSee('Aparna');
-    }
-
-    public function test_gold_member_can_see_full_viewer_cards_with_timestamps(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-        ]);
-
-        // Grant Gold subscription
-        $goldPlan = Plan::query()->where('code', PlanCode::Gold->value)->sole();
-        Subscription::factory()->create([
-            'profile_id' => $profile->id,
-            'plan_id' => $goldPlan->id,
-        ]);
-
-        $viewer = Profile::factory()->active()->female()->create([
-            'first_name' => 'Deepika',
-        ]);
-
-        ProfileView::factory()->create([
-            'viewer_profile_id' => $viewer->id,
-            'viewed_profile_id' => $profile->id,
-            'view_date' => CarbonImmutable::now('Asia/Kolkata')->toDateString(),
-            'count' => 3,
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(Visitors::class)
-            ->assertOk()
-            ->assertSee('Deepika')
-            ->assertSee('Viewed')
-            ->assertSee('3 times')
-            ->assertDontSee('Upgrade to Gold to See Visitors');
-    }
-
-    public function test_all_members_can_view_profiles_they_viewed_within_90_days(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-        ]);
-
-        $recentlyViewed = Profile::factory()->active()->female()->create([
-            'first_name' => 'Anjali',
-        ]);
-
-        ProfileView::factory()->create([
-            'viewer_profile_id' => $profile->id,
-            'viewed_profile_id' => $recentlyViewed->id,
-            'view_date' => CarbonImmutable::now('Asia/Kolkata')->toDateString(),
-            'updated_at' => now()->subDays(5),
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(Visitors::class)
-            ->set('tab', 'viewed_by_me')
-            ->assertOk()
-            ->assertSee('Anjali')
-            ->assertSee('You visited');
-    }
-
-    public function test_visitors_renders_without_n_plus_one_with_prevent_lazy_loading(): void
-    {
-        Model::preventLazyLoading(true);
-
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->active()->male()->create([
-            'user_id' => $user->id,
-        ]);
-
-        $goldPlan = Plan::query()->where('code', PlanCode::Gold->value)->sole();
-        Subscription::factory()->create([
-            'profile_id' => $profile->id,
-            'plan_id' => $goldPlan->id,
-        ]);
-
-        $viewers = Profile::factory()->count(3)->active()->female()->create();
-        foreach ($viewers as $viewer) {
-            ProfileView::factory()->create([
-                'viewer_profile_id' => $viewer->id,
-                'viewed_profile_id' => $profile->id,
-                'view_date' => CarbonImmutable::now('Asia/Kolkata')->toDateString(),
-            ]);
-        }
-
-        $this->actingAs($user);
-
-        Livewire::test(Visitors::class)
-            ->assertOk();
-
-        Livewire::test(Visitors::class)
-            ->set('tab', 'viewed_by_me')
-            ->assertOk();
-
-        Model::preventLazyLoading(false);
-    }
+    return $visitor;
 }
+
+function makeGold(User $me): void
+{
+    App\Models\Subscription::factory()->create([
+        'profile_id' => $me->profile->id,
+        'plan_id' => App\Models\Plan::query()->where('code', PlanCode::Gold->value)->sole()->id,
+    ]);
+    app(App\Services\Entitlements\EntitlementService::class)->forget($me->profile);
+}
+
+it('needs a signed-in, onboarded member', function (): void {
+    $this->get(memberUrl('/visitors'))->assertRedirect(route('login'));
+    $this->actingAs(groom(), 'web')->get(memberUrl('/visitors'))->assertOk()->assertSee('Who viewed me');
+});
+
+it('M15: a Free member sees only the number and an upgrade link — no visitor data', function (): void {
+    $me = groom();
+    $visitor = visitorOf($me);
+    $this->actingAs($me, 'web');
+
+    Livewire::test(Visitors::class)
+        ->assertSee('1 member viewed your profile')->assertSee('See plans')
+        ->assertDontSee($visitor->code)->assertDontSee($visitor->first_name);
+});
+
+it('M15: Gold sees each visitor once, newest visit first, with when', function (): void {
+    $me = groom();
+    $older = visitorOf($me, daysAgo: 5);
+    $newer = visitorOf($me, daysAgo: 1);
+    ProfileView::factory()->create(['viewer_profile_id' => $older->id, 'viewed_profile_id' => $me->profile->id,
+        'view_date' => now()->subDays(3)->toDateString(), 'updated_at' => now()->subDays(3)]);   // second day, same visitor
+    makeGold($me);
+    $this->actingAs($me->refresh(), 'web');
+
+    $html = Livewire::test(Visitors::class)->assertSee('2 ')->assertSee('Viewed you')->html();
+
+    expect(substr_count($html, 'profile/'.$older->code))->toBe(substr_count($html, 'profile/'.$newer->code))
+        ->and(strpos($html, $newer->code))->toBeLessThan(strpos($html, $older->code));
+});
+
+it('blocked (either way), suspended and incognito visitors and visits older than 90 days are never listed nor counted', function (): void {
+    $me = groom();
+    $blocked = visitorOf($me);
+    $blocker = visitorOf($me);
+    $suspended = visitorOf($me, ['status' => ProfileStatus::Suspended]);
+    $old = visitorOf($me, daysAgo: 100);
+    $incognito = visitorOf($me);
+    (App\Models\PrivacySetting::query()->whereKey($incognito->id)->first() ?? new App\Models\PrivacySetting)
+        ->forceFill(['profile_id' => $incognito->id, 'incognito' => true])->save();
+    $ok = visitorOf($me);
+    Block::factory()->create(['blocker_profile_id' => $me->profile->id, 'blocked_profile_id' => $blocked->id]);
+    Block::factory()->create(['blocker_profile_id' => $blocker->id, 'blocked_profile_id' => $me->profile->id]);
+    makeGold($me);
+    $this->actingAs($me->refresh(), 'web');
+
+    Livewire::test(Visitors::class)
+        ->assertSee($ok->code)
+        ->assertDontSee($blocked->code)->assertDontSee($blocker->code)->assertDontSee($suspended->code)->assertDontSee($old->code)->assertDontSee($incognito->code)
+        ->assertViewHas('visitorCount', 1);
+});
+
+it('M15: "Profiles I viewed" is open to every plan', function (): void {
+    $me = groom();
+    $seen = Profile::factory()->female()->active()->create();
+    ProfileView::factory()->create(['viewer_profile_id' => $me->profile->id, 'viewed_profile_id' => $seen->id]);
+    $this->actingAs($me, 'web');
+
+    Livewire::test(Visitors::class)->call('show', 'viewed')->assertSet('tab', 'viewed')
+        ->assertSee($seen->code)->assertSee('You viewed');
+});
+
+it('an unknown tab falls back to visitors; empty states', function (): void {
+    $this->actingAs(groom(), 'web');
+
+    Livewire::test(Visitors::class)->call('show', 'everything')->assertSet('tab', 'visitors');
+    Livewire::test(Visitors::class)->call('show', 'viewed')->assertSee('You haven’t viewed any profiles yet');
+});
+
+it('a Free member with no visitors gets the empty state, not "0 members"', function (): void {
+    $this->actingAs(groom(), 'web');
+
+    Livewire::test(Visitors::class)->assertSee('No visitors yet')->assertDontSee('0 members viewed');
+});

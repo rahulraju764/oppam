@@ -35,7 +35,6 @@ return [
     'member.profiles' => ['title' => 'All Profiles', 'back' => ['member.dashboard', 'Dashboard'], 'next' => ['member.matches', 'My Matches']],
     'member.matches' => ['title' => 'My Matches', 'back' => ['member.dashboard', 'Dashboard'], 'prev' => ['member.profiles', 'All Profiles'], 'next' => ['member.matches.daily', 'Daily Matches']],
     'member.matches.daily' => ['title' => 'Daily Matches', 'back' => ['member.dashboard', 'Dashboard'], 'prev' => ['member.matches', 'My Matches']],
-    'member.daily-matches' => ['title' => 'Daily Matches', 'back' => ['member.dashboard', 'Dashboard'], 'prev' => ['member.matches', 'My Matches']],
     'member.visitors' => ['title' => 'Visitors', 'back' => ['member.dashboard', 'Dashboard']],
     'member.profile.show' => ['title' => 'Member Profile', 'back' => ['member.profiles', 'All Profiles']],
     'member.search' => ['title' => 'Search', 'back' => ['member.dashboard', 'Dashboard']],
