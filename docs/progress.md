@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 1 — Identity & profiles (all sessions built; P1.7b awaits the owner's review before its commit)
-**Next session:** owner review + commit of P1.7b (uncommitted in the working tree), then P2.1 — Search service & search page (M04)
+**Current phase:** 2 — Discovery (Phase 1 complete)
+**Next session:** P2.1 — Search service & search page (M04)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -30,7 +30,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.5 Profile view, own & others (M03) — 2026-10-01 (reviewer READY after 1 Major fixed: an earlier contact reveal outlived HIDDEN / contact filter)
 - [x] P1.6 Moderation queues (A04) — 2026-10-02 (reviewer READY in round 2 after 1 Major fixed: an edit approval could cover text the moderator never saw → fingerprint of the shown text)
 - [x] P1.7a Member management (A03) — 2026-10-03 (reviewer READY in round 2 after 4 Majors fixed: broker ids in bulk, export N+1, purge left OTP/session rows, plan grant on an unverified number; owner accepted the session / plan side-effects)
-- [ ] P1.7b Impersonation, admin password reset, resend OTP (A01/A03) — built 2026-10-03, reviewer READY in round 3 (after 5 + 1 Majors fixed); **held uncommitted for owner review (rule 5)**
+- [x] P1.7b Impersonation, admin password reset, resend OTP (A01/A03) — 2026-10-04 (reviewer READY in round 3 after 5 + 1 Majors fixed; owner reviewed and approved the commit — rule 5)
 - [x] P1.8 Master data management (A11) — 2026-10-04 (reviewer READY in round 2 after 1 Blocker + 1 Major fixed: districts editor (states as parents), diet preference usage)
 
 ## Phase 2 — Discovery
