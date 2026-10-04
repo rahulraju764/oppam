@@ -9,7 +9,13 @@ use App\Models\Concerns\KeyedByProfile;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-/** Wizard step 2 — education & career (M02). */
+/**
+ * Wizard step 2 — education & career (M02).
+ *
+ * @property int|null $education_id
+ * @property int|null $occupation_id
+ * @property int|null $income_band_id
+ */
 final class EducationCareer extends Model
 {
     /** @use HasFactory<\Database\Factories\EducationCareerFactory> */

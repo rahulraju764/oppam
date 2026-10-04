@@ -5,22 +5,26 @@ declare(strict_types=1);
 namespace App\Livewire\Member\Search;
 
 use App\Actions\Search\FindProfileById;
+use App\Actions\Search\SaveSearch;
 use App\Actions\Search\SearchProfiles;
 use App\Data\Content\SeoData;
 use App\Data\Profile\ProfileCardData;
 use App\Data\Search\SearchCriteria;
 use App\Domain\Profile\ProfileCards;
+use App\Enums\AlertFrequency;
 use App\Enums\EmployerType;
 use App\Enums\Gender;
 use App\Enums\MaritalStatus;
 use App\Enums\PhysicalStatus;
 use App\Enums\SearchSort;
+use App\Exceptions\Search\SavedSearchLimitReached;
 use App\Exceptions\Search\SearchThrottled;
 use App\Models\Profile;
 use App\Models\User;
 use App\Services\Masters\Masters;
 use App\ValueObjects\HeightCm;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -53,6 +57,58 @@ final class Search extends Component
 
     #[Locked]
     public int $total = 0;
+
+    public bool $showSaveModal = false;
+
+    public string $saveName = '';
+
+    public string $saveFrequency = 'DAILY';
+
+    public ?string $saveError = null;
+
+    public ?string $saveSuccess = null;
+
+    public function openSaveModal(): void
+    {
+        $this->saveName = __('Search - :date', ['date' => now()->format('d M')]);
+        $this->saveFrequency = 'DAILY';
+        $this->saveError = null;
+        $this->saveSuccess = null;
+        $this->showSaveModal = true;
+    }
+
+    public function closeSaveModal(): void
+    {
+        $this->showSaveModal = false;
+        $this->saveError = null;
+    }
+
+    public function saveSearch(SaveSearch $action): void
+    {
+        $profile = $this->member()->profile;
+
+        if ($profile === null) {
+            return;
+        }
+
+        $frequency = AlertFrequency::tryFrom($this->saveFrequency) ?? AlertFrequency::Daily;
+
+        try {
+            $action->handle(
+                profile: $profile,
+                name: $this->saveName,
+                filters: $this->filters,
+                frequency: $frequency,
+            );
+
+            $this->saveSuccess = __('Search saved successfully.');
+            $this->showSaveModal = false;
+        } catch (SavedSearchLimitReached $e) {
+            $this->saveError = $e->getMessage();
+        } catch (ValidationException $e) {
+            $this->saveError = $e->validator->errors()->first();
+        }
+    }
 
     public function mount(): void
     {

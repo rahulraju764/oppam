@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Image\Enums\Fit;
@@ -264,5 +265,11 @@ final class Profile extends Model implements HasMedia
     public function privacySetting(): HasOne
     {
         return $this->hasOne(PrivacySetting::class);
+    }
+
+    /** @return HasMany<SavedSearch, $this> */
+    public function savedSearches(): HasMany
+    {
+        return $this->hasMany(SavedSearch::class);
     }
 }

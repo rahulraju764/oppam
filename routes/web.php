@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Member\HoroscopeController;
 use App\Http\Controllers\Member\ImpersonationController;
+use App\Http\Controllers\Member\UnsubscribeSavedSearchController;
 use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
 use App\Livewire\Member\Auth\VerifyOtp;
+use App\Livewire\Member\Browse\AllProfiles;
+use App\Livewire\Member\Dashboard\Dashboard;
+use App\Livewire\Member\Matches\MyMatches;
 use App\Livewire\Member\Onboarding\Submitted;
 use App\Livewire\Member\Onboarding\Wizard;
 use App\Livewire\Member\Profile\MyProfile;
@@ -63,8 +67,11 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
 
     // Profiles (M03): own (/me) and others' (/profile/OPM…). Onboarded members only.
     Route::middleware('profile.onboarded')->group(function (): void {
+        Route::get('/dashboard', Dashboard::class)->name('member.dashboard');
         Route::get('/me', MyProfile::class)->name('member.profile.me');
+        Route::get('/my-matches', MyMatches::class)->name('member.my-matches');
         Route::get('/search', Search::class)->name('member.search');
+        Route::get('/all-profiles', AllProfiles::class)->name('member.all-profiles');
         Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');
     });
 
@@ -72,6 +79,10 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
     Route::get('/media/horoscope/{profile}', HoroscopeController::class)
         ->middleware('signed')->where('profile', 'OPM[0-9]+')->name('member.horoscope');
 });
+
+// Saved search 1-click unsubscribe (M04): signed URL, can be clicked directly from email.
+Route::get('/saved-searches/{savedSearch}/unsubscribe', UnsubscribeSavedSearchController::class)
+    ->middleware('signed')->name('saved-searches.unsubscribe');
 
 // Living styleguide for visual checks (P0.2). Local only: never registered in testing/production.
 if (app()->environment('local')) {

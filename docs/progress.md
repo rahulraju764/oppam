@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 2 — Discovery (Phase 1 complete)
-**Next session:** P2.2 — All profiles & saved searches (M04)
+**Current phase:** 2 — Discovery
+**Next session:** P2.4 — Daily matches job & visitors (M05, M15)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -35,8 +35,8 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Phase 2 — Discovery
 - [x] P2.1 Search service & search page (M04)
-- [ ] P2.2 All profiles & saved searches (M04)
-- [ ] P2.3 Dashboard & my matches (M05)
+- [x] P2.2 All profiles & saved searches (M04) — 2026-10-04 (SavedSearch CRUD max 10, SendSavedSearchAlerts job, AllProfiles 3/6/3 directory, signed unsubscribe)
+- [x] P2.3 Dashboard & my matches (M05) — 2026-10-04 (canonical 3/6/3 layout, MatchScorer 60/25/10/5 breakdown with score caching, MyMatches 2x2 funnel counter bar + tabs)
 - [ ] P2.4 Daily matches job & visitors (M05, M15)
 
 ## Phase 3 — Real-time core & engagement
