@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 2 — Discovery
-**Next session:** P2.4 — Daily matches job & visitors (M05, M15)
+**Current phase:** 3 — Real-time core & engagement
+**Next session:** P3.1 — Reverb, Echo, channels & presence
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -34,10 +34,10 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.8 Master data management (A11) — 2026-10-04 (reviewer READY in round 2 after 1 Blocker + 1 Major fixed: districts editor (states as parents), diet preference usage)
 
 ## Phase 2 — Discovery
-- [x] P2.1 Search service & search page (M04)
+- [x] P2.1 Search service & search page (M04) — 2026-10-04 (ProfileSearch query builder, exclusions, relevance/newest/active sorts, #[Url] properties, cursor pagination)
 - [x] P2.2 All profiles & saved searches (M04) — 2026-10-04 (SavedSearch CRUD max 10, SendSavedSearchAlerts job, AllProfiles 3/6/3 directory, signed unsubscribe)
 - [x] P2.3 Dashboard & my matches (M05) — 2026-10-04 (canonical 3/6/3 layout, MatchScorer 60/25/10/5 breakdown with score caching, MyMatches 2x2 funnel counter bar + tabs)
-- [ ] P2.4 Daily matches job & visitors (M05, M15)
+- [x] P2.4 Daily matches job & visitors (M05, M15) — 2026-10-04 (GenerateDailyMatches job on matching queue at 05:00 IST with district diversity cap <= 3, Daily recommendations Livewire with countdown timer, Visitors Livewire with Gold/Diamond viewer reveals + Free/Silver count and teaser, 90-day viewing history)
 
 ## Phase 3 — Real-time core & engagement
 - [ ] P3.1 Reverb, Echo, channels & presence

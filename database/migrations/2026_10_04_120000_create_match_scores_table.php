@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('reverse_fit')->default(0);
             $table->unsignedTinyInteger('activity_score')->default(0);
             $table->unsignedTinyInteger('completeness_score')->default(0);
-            $table->timestamp('calculated_at');
+            $table->timestamp('calculated_at')->useCurrent();
             $table->timestamps();
 
             $table->unique(['source_profile_id', 'target_profile_id']);

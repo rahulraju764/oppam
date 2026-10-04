@@ -187,5 +187,6 @@ it('drops links to unbuilt routes and only renders footer widgets that have link
 
     $this->get('/_layout/member')
         ->assertSee('<h3>Help &amp; Support</h3>', false)   // about, plans, terms… exist since P0.3
-        ->assertDontSee('>Dashboard</a>', false);            // member.dashboard arrives in P2.3
+        ->assertSee('>Dashboard</a>', false)               // member.dashboard arrived in P2.3
+        ->assertDontSee('>Interests</a>', false);           // member.interests arrives in P3.4
 });

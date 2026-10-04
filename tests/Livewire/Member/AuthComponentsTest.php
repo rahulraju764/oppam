@@ -285,7 +285,7 @@ it('signs in with the OTP', function (): void {
 
     $component->set('code', $this->sms->lastCodeFor('+919876543210', OtpPurpose::Login))
         ->call('loginWithOtp')
-        ->assertRedirect(route('home'));   // ACTIVE profile, dashboard not built yet (P2.3)
+        ->assertRedirect(route('member.dashboard'));   // ACTIVE profile lands on dashboard (P2.3)
 
     expect(auth('web')->id())->toBe($user->id);
 });
@@ -321,7 +321,7 @@ it('resets the password with the code and signs in', function (): void {
         ->set('password_confirmation', 'newpass2026')
         ->call('resetPassword')
         ->assertHasNoErrors()
-        ->assertRedirect(route('home'));
+        ->assertRedirect(route('member.dashboard'));
 
     expect(auth('web')->id())->toBe($user->id);
 });

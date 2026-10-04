@@ -272,4 +272,10 @@ final class Profile extends Model implements HasMedia
     {
         return $this->hasMany(SavedSearch::class);
     }
+
+    /** @return HasMany<DailyMatch, $this> */
+    public function dailyMatches(): HasMany
+    {
+        return $this->hasMany(DailyMatch::class, 'profile_id');
+    }
 }
