@@ -12,6 +12,7 @@ use App\Livewire\Member\Onboarding\Submitted;
 use App\Livewire\Member\Onboarding\Wizard;
 use App\Livewire\Member\Profile\MyProfile;
 use App\Livewire\Member\Profile\Show;
+use App\Livewire\Member\Search\Search;
 use App\Livewire\Public\About;
 use App\Livewire\Public\Branches;
 use App\Livewire\Public\Contact;
@@ -63,6 +64,7 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
     // Profiles (M03): own (/me) and others' (/profile/OPM…). Onboarded members only.
     Route::middleware('profile.onboarded')->group(function (): void {
         Route::get('/me', MyProfile::class)->name('member.profile.me');
+        Route::get('/search', Search::class)->name('member.search');
         Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');
     });
 

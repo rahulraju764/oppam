@@ -106,7 +106,7 @@ final class Show extends Component
             'contactAccess' => ! $isOwner && $own !== null ? $contactPolicy->decide($target, $own) : null,
             'horoscopeLink' => $horoscope->link($target, $viewer),
             'similar' => ! $isOwner && $own !== null
-                ? $similar->for($target, $own)->map(fn (Profile $p) => $cards->forViewer($p, $viewer))->all()
+                ? $cards->forViewers($similar->for($target, $own), $viewer)   // one photo + one block query for the strip
                 : [],
             'neighbours' => $browse->neighbours($target->code),
             'plansUrl' => $nav->url('plans'),

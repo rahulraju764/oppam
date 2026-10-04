@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 2 — Discovery (Phase 1 complete)
-**Next session:** P2.1 — Search service & search page (M04)
+**Next session:** P2.2 — All profiles & saved searches (M04)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -34,7 +34,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P1.8 Master data management (A11) — 2026-10-04 (reviewer READY in round 2 after 1 Blocker + 1 Major fixed: districts editor (states as parents), diet preference usage)
 
 ## Phase 2 — Discovery
-- [ ] P2.1 Search service & search page (M04)
+- [x] P2.1 Search service & search page (M04)
 - [ ] P2.2 All profiles & saved searches (M04)
 - [ ] P2.3 Dashboard & my matches (M05)
 - [ ] P2.4 Daily matches job & visitors (M05, M15)
@@ -109,6 +109,9 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.7a → P3.3/P3.4, P4, P6, P7: Engagement, Conversations, Verification, Reports tabs; open-reports, broker and owner-type facets.
 - P1.7a → P5.1: A03 search by order number; P6.1: A03 "force re-verification" quick action (needs the verification module).
 - P1.7a → P9.4: member phone search uses a leading-wildcard LIKE — fine at launch scale, revisit with the load test.
+- P2.1 → P9.5: size the production InnoDB buffer pool to hold the profiles + search tables (search p95 depends on it); re-run
+  `profiles:search-benchmark` on staging. P3.4: add the "already sent interest" exclusion and disable Send Interest for
+  profiles whose contact filter excludes the searcher (PreferenceMatcher::meetsAll). P6.2: Ignore / Unignore buttons (table exists).
 - P1.8 → P9.5 (deploy): run `php artisan db:seed --class=MastersSeeder` once on production to add the profanity word lists
   (the seeder only adds missing codes; it never overwrites labels edited in A11 — but it does re-add a seeded row that
   was deleted in A11, so deactivate seeded rows rather than deleting them).

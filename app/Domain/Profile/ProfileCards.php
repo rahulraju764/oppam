@@ -18,6 +18,9 @@ use App\ValueObjects\HeightCm;
  */
 final class ProfileCards
 {
+    /** "Newly joined" ribbon: published within this many days (M04 "newly joined (7 days)"). */
+    public const NEW_DAYS = 7;
+
     public function __construct(
         private readonly PhotoUrls $photos,
         private readonly ProfileNames $names,
@@ -37,6 +40,33 @@ final class ProfileCards
             height: $profile->height_cm !== null ? HeightCm::of($profile->height_cm)->label() : null,
             place: $district,
         );
+    }
+
+    /**
+     * forViewer() for a whole page of profiles (search, lists): photo URLs in one batch
+     * (PhotoUrls::primaryCardUrls), district labels from the cached master list — no query per
+     * card. Pass profiles with privacySetting loaded.
+     *
+     * @param  iterable<Profile>  $profiles
+     * @return list<ProfileCardData>
+     */
+    public function forViewers(iterable $profiles, User $viewer): array
+    {
+        $profiles = collect($profiles);
+        $urls = $this->photos->primaryCardUrls($profiles, $viewer);
+        $districts = Masters::forSelect($this->masters->allDistricts());
+        $newSince = now()->subDays(self::NEW_DAYS);
+
+        return $profiles->map(fn (Profile $profile): ProfileCardData => new ProfileCardData(
+            code: $profile->code,
+            name: $this->names->forViewer($profile, $viewer),
+            photoUrl: $urls[(string) $profile->id] ?? PhotoUrls::PLACEHOLDER,
+            url: route('member.profile.show', ['profile' => $profile->code]),
+            age: $profile->age() !== null ? __(':age yrs', ['age' => $profile->age()]) : null,
+            height: $profile->height_cm !== null ? HeightCm::of($profile->height_cm)->label() : null,
+            place: $profile->district_id !== null ? ($districts[$profile->district_id] ?? null) : null,
+            isNew: $profile->published_at?->greaterThan($newSince) === true,
+        ))->values()->all();
     }
 
     private function districtLabel(int $id): ?string

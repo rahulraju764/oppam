@@ -6,6 +6,7 @@ namespace App\Domain\Media;
 
 use App\Data\Media\PhotoView;
 use App\Domain\Profile\ProfileVisibility;
+use App\Domain\Safety\BlockList;
 use App\Enums\PhotoVisibility;
 use App\Enums\ProfileStatus;
 use App\Models\Media;
@@ -29,6 +30,7 @@ final class PhotoUrls
     public function __construct(
         private readonly PhotoAccess $access,
         private readonly ProfileVisibility $visibility,
+        private readonly BlockList $blocks,
     ) {}
 
     /** @return list<PhotoView> in display order (first = primary) */
@@ -68,6 +70,47 @@ final class PhotoUrls
     public function primaryCardUrl(Profile $owner, ?User $viewer): ?string
     {
         return ($this->forViewer($owner, $viewer)[0] ?? null)?->cardUrl;
+    }
+
+    /**
+     * primaryCardUrl() for a whole list of profiles at once (search, lists): one block lookup and
+     * one media query for the page instead of two queries per card. Same rules as forViewer():
+     * nothing for a profile the viewer may not open (not ACTIVE, same gender, blocked pair, viewer
+     * may not browse); approved photos only; clear only where PhotoAccess allows. Load the owners'
+     * privacySetting first to avoid one query per card.
+     *
+     * @param  iterable<Profile>  $owners
+     * @return array<string, string|null> profile id => card URL (null = no visible photo)
+     */
+    public function primaryCardUrls(iterable $owners, User $viewer): array
+    {
+        $owners = collect($owners);
+        $own = $viewer->profile;
+        $mayBrowse = $this->visibility->canBrowse($viewer);
+        $hidden = $own !== null ? array_flip($this->blocks->hiddenFrom($own)) : [];
+
+        $visible = $owners->filter(fn (Profile $owner): bool => $this->access->isOwner($owner, $viewer)
+            || ($mayBrowse && $owner->status === ProfileStatus::Active && $owner->gender !== $own?->gender && ! isset($hidden[(string) $owner->id])));
+
+        $primary = $visible->isEmpty() ? collect() : Media::query()
+            ->where('model_type', (new Profile)->getMorphClass())
+            ->whereIn('model_id', $visible->map(fn (Profile $p): string => (string) $p->id)->all())
+            ->where('collection_name', Profile::PHOTOS)
+            ->approved()
+            ->orderBy('order_column')
+            ->get()
+            ->groupBy('model_id')
+            ->map(fn (Collection $photos): ?Media => $photos->first());
+
+        $urls = [];
+        foreach ($owners as $owner) {
+            $media = $primary->get((string) $owner->id);
+            $urls[(string) $owner->id] = $media instanceof Media
+                ? $this->view($media, $this->access->canSeeClearly($owner, $viewer), false)->cardUrl
+                : null;
+        }
+
+        return $urls;
     }
 
     /** @return Collection<int, Media> */

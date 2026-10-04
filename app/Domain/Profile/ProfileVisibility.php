@@ -33,13 +33,26 @@ final class ProfileVisibility
 
         $own = $viewer->profile;
 
-        return $viewer->role === UserRole::Member
-            && $viewer->isActive()
-            && $own !== null
-            && $own->status !== ProfileStatus::Suspended
+        return $own !== null
+            && $this->canBrowse($viewer)
             && $target->status === ProfileStatus::Active
             && $target->gender !== $own->gender
             && ! $this->blocks->isBlocked($own, $target);
+    }
+
+    /**
+     * May this member look at other members at all (profile pages, search, lists)? An active
+     * member account whose own profile isn't SUSPENDED (owner decision 2026-10-01).
+     */
+    public function canBrowse(?User $viewer): bool
+    {
+        $own = $viewer?->profile;
+
+        return $viewer !== null
+            && $viewer->role === UserRole::Member
+            && $viewer->isActive()
+            && $own !== null
+            && $own->status !== ProfileStatus::Suspended;
     }
 
     public function isOwner(Profile $target, ?User $viewer): bool

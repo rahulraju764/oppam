@@ -92,6 +92,25 @@ return [
             ]) : [],
         ],
 
+        // P2.1 performance tests only (profiles:seed-bulk / profiles:search-benchmark, local): the
+        // same server as the app's connection, its own database, so 100k fake profiles never mix
+        // with local dev data. Never used by the application itself.
+        'bench' => [
+            'driver' => env('DB_CONNECTION', 'mariadb') === 'mysql' ? 'mysql' : 'mariadb',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_BENCH_DATABASE', 'oppam_bench'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'timezone' => '+00:00',
+            'engine' => null,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),

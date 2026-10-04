@@ -36,6 +36,7 @@ enum SettingKey: string
     case PhotosMaxAdditional = 'photos.max_additional';
     case PhotosMaxUploadMb = 'photos.max_upload_mb';
     case LikesSpamThresholdPerHour = 'likes.spam_threshold_per_hour';
+    case SearchMaxPerMinute = 'search.max_per_minute';
     case BrokerStaffSeatsDefault = 'broker.staff_seats_default';
     case BrokerImportRowsPerFile = 'broker.import_rows_per_file';
     case BrokerImportRowsPerDay = 'broker.import_rows_per_day';
@@ -80,6 +81,7 @@ enum SettingKey: string
             self::PhotosMaxAdditional => 9,
             self::PhotosMaxUploadMb => 8,
             self::LikesSpamThresholdPerHour => 30,
+            self::SearchMaxPerMinute => 60,   // M04 / CLAUDE.md rule 10: searches (incl. "load more") per member
             self::BrokerStaffSeatsDefault => 5,
             self::BrokerImportRowsPerFile => 500,
             self::BrokerImportRowsPerDay => 1000,
@@ -118,6 +120,7 @@ enum SettingKey: string
             self::PhotosMaxAdditional => ['required', 'integer', 'min:0', 'max:20'],
             self::PhotosMaxUploadMb => ['required', 'integer', 'min:1', 'max:20'],
             self::LikesSpamThresholdPerHour => ['required', 'integer', 'min:5', 'max:500'],
+            self::SearchMaxPerMinute => ['required', 'integer', 'min:10', 'max:600'],
             self::BrokerStaffSeatsDefault => ['required', 'integer', 'min:1', 'max:100'],
             self::BrokerImportRowsPerFile => ['required', 'integer', 'min:1', 'max:5000'],
             self::BrokerImportRowsPerDay, self::BrokerImportRowsPerDayNew => ['required', 'integer', 'min:1', 'max:20000'],

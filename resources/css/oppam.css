@@ -101,3 +101,78 @@
 }
 
 .impersonation-banner .btn { min-height: 44px; }
+
+/* ---- Search (M04, P2.1) ---------------------------------------------------------------------
+   Phones / tablets: the filter card is a bottom sheet opened by the "Filters" button (Alpine
+   `sheet`). 992px+: back to the template's left rail. Built in the component, not mobile-rail.js,
+   because that script moves DOM out of the Livewire root. */
+.search-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: calc(var(--z-dropdown) + 2);   /* a dialog on phones (the tab bar is hidden while it is open) */
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--color-default);
+  box-shadow: var(--shadow-card);
+  transform: translateY(105%);
+  visibility: hidden;
+  transition: transform var(--transition), visibility var(--transition);
+}
+
+.search-sheet.is-open { transform: translateY(0); visibility: visible; }
+
+.search-sheet__head { display: flex; align-items: center; justify-content: space-between; }
+
+.search-sheet__close {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--color-gr-dark);
+}
+
+.search-sheet__foot {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-3) 0;
+  background: var(--color-default);
+}
+
+.search-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-dropdown) + 1);
+  background: rgba(0, 0, 0, .4);
+}
+
+.search-results__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-2); }
+.search-sort { min-width: 10rem; }
+.search-multi { min-height: 6rem; }
+.search-checks .form-check { min-height: 32px; }
+.search-loading { flex-direction: column; gap: var(--space-3); }
+
+@media (min-width: 992px) {
+  .search-sheet {
+    position: sticky;                 /* the template's .filter-card rail behaviour */
+    top: var(--offset-sticky);
+    z-index: auto;                    /* never above the header's menus on desktop */
+    /* With "More filters" open the card is taller than the screen: let it scroll inside so its
+       end stays reachable while it is pinned. */
+    max-height: calc(100vh - var(--offset-sticky) - var(--space-4));
+    overflow-y: auto;
+    border-radius: var(--radius-card);
+    transform: none;
+    visibility: visible;
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-sheet { transition: none; }
+}
+
+/* While the search filter sheet is open (a modal on phones), the bottom tab bar steps aside so the
+   sheet's "Show N profiles" button is reachable — the sheet can't stack above it (different
+   stacking contexts). */
+body.search-sheet-open .mobile-footer { display: none; }
