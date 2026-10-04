@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Actions\Profile;
 
 use App\Domain\Profile\ProfileVisibility;
+use App\Enums\SettingKey;
 use App\Events\Profile\ProfileViewed;
 use App\Models\Profile;
 use App\Models\ProfileView;
 use App\Models\User;
 use App\Services\Admin\Impersonation;
+use App\Support\Facades\Settings;
+use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,11 +21,13 @@ use Illuminate\Support\Str;
  * count bumped on repeat visits. Nothing is recorded for the owner, for a viewer who may not
  * see the profile, or for an incognito viewer (privacy_settings.incognito). The viewed member
  * gets a live ProfileViewed with today's distinct-viewer count, once per viewer per day.
+ * At most `profile_views.max_per_minute` views per viewer are recorded (A15).
  */
 final class RecordProfileView
 {
     public function __construct(private readonly ProfileVisibility $visibility,
         private readonly Impersonation $impersonation,
+        private readonly RateLimiter $limiter,
     ) {}
 
     public function handle(User $viewer, Profile $target): void
@@ -41,6 +46,14 @@ final class RecordProfileView
         if ($this->impersonation->isActive()) {
             return;
         }
+
+        // A script flipping through profiles must not flood profile_views or the targets' "viewed
+        // you" events: past `profile_views.max_per_minute` the page still opens, uncounted.
+        $key = 'profile-view:'.$viewer->id;
+        if ($this->limiter->tooManyAttempts($key, Settings::int(SettingKey::ProfileViewsMaxPerMinute))) {
+            return;
+        }
+        $this->limiter->hit($key, 60);
 
         $today = now((string) config('oppam.display_timezone'))->toDateString();
 

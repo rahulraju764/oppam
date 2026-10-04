@@ -10,6 +10,7 @@ use App\Livewire\Member\Browse\AllProfiles;
 use App\Models\Profile;
 use App\Models\SavedSearch;
 use App\Models\User;
+use App\Support\Navigation\ProfileBrowseList;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -86,5 +87,28 @@ final class AllProfilesTest extends TestCase
             ->call('deleteSavedSearch', $saved->id);
 
         $this->assertDatabaseMissing('saved_searches', ['id' => $saved->id]);
+    }
+
+    public function test_m03_all_profiles_remembers_codes_for_prev_next_navigation(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Member]);
+        Profile::factory()->male()->create([
+            'user_id' => $user->id,
+            'status' => ProfileStatus::Active,
+        ]);
+
+        Profile::factory()->female()->create(['status' => ProfileStatus::Active, 'published_at' => now()->subMinute()]);
+        Profile::factory()->female()->create(['status' => ProfileStatus::Active, 'published_at' => now()]);
+
+        $this->actingAs($user);
+
+        $component = Livewire::test(AllProfiles::class);
+        $codes = array_column($component->get('results'), 'code');
+
+        expect($codes)->toHaveCount(2);
+
+        $browse = app(ProfileBrowseList::class);
+        expect($browse->neighbours($codes[0]))->toBe(['previous' => null, 'next' => $codes[1]])
+            ->and($browse->neighbours($codes[1]))->toBe(['previous' => $codes[0], 'next' => null]);
     }
 }

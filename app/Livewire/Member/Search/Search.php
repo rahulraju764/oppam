@@ -22,6 +22,7 @@ use App\Exceptions\Search\SearchThrottled;
 use App\Models\Profile;
 use App\Models\User;
 use App\Services\Masters\Masters;
+use App\Support\Navigation\ProfileBrowseList;
 use App\ValueObjects\HeightCm;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -223,6 +224,9 @@ final class Search extends Component
         if ($result->total !== null) {
             $this->total = $result->total;
         }
+
+        // Prev / Next on a profile opened from these results (M03) walk the list in this order.
+        app(ProfileBrowseList::class)->remember(array_column($this->results, 'code'));
     }
 
     private function member(): User

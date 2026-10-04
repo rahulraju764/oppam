@@ -18,6 +18,7 @@ use App\Exceptions\Search\SavedSearchLimitReached;
 use App\Exceptions\Search\SearchThrottled;
 use App\Models\SavedSearch;
 use App\Models\User;
+use App\Support\Navigation\ProfileBrowseList;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -190,6 +191,9 @@ final class AllProfiles extends Component
         if ($result->total !== null) {
             $this->total = $result->total;
         }
+
+        // Prev / Next on a profile opened from these results (M03) walk the list in this order.
+        app(ProfileBrowseList::class)->remember(array_column($this->results, 'code'));
     }
 
     private function member(): User

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Livewire\Member\Search\Search;
 use App\Models\Block;
 use App\Models\Profile;
+use App\Support\Navigation\ProfileBrowseList;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
@@ -67,6 +68,25 @@ it('loads 20 at a time and appends the next page', function (): void {
 
     $component = Livewire::test(Search::class)->assertCount('results', 20)->assertSee('Load more');
     $component->call('loadMore')->assertCount('results', 25)->assertDontSee('Load more');
+});
+
+it('P2.1 follow-up: Prev / Next on a profile opened from search walk the shown results, load more included', function (): void {
+    $me = groom('+919888800010');
+    foreach (range(1, 22) as $i) {
+        searchBride();
+    }
+    $this->actingAs($me, 'web');
+
+    $component = Livewire::test(Search::class);
+    $codes = array_column($component->get('results'), 'code');
+    $browse = app(ProfileBrowseList::class);
+
+    expect($browse->neighbours($codes[1]))->toBe(['previous' => $codes[0], 'next' => $codes[2]])
+        ->and($browse->neighbours($codes[19])['next'])->toBeNull();
+
+    $codes = array_column($component->call('loadMore')->get('results'), 'code');
+    expect($codes)->toHaveCount(22)
+        ->and($browse->neighbours($codes[19]))->toBe(['previous' => $codes[18], 'next' => $codes[20]]);
 });
 
 it('find by ID opens a visible profile and gives one message for a missing or hidden one', function (): void {

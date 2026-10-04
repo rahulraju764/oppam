@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use App\Actions\Profile\RecordProfileView;
 use App\Enums\ProfileStatus;
+use App\Enums\SettingKey;
 use App\Events\Profile\ProfileViewed;
 use App\Models\Block;
 use App\Models\PrivacySetting;
 use App\Models\ProfileView;
+use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\PlansSeeder;
 use Illuminate\Support\Facades\Event;
@@ -126,6 +128,25 @@ it('records nothing for the owner, an incognito viewer or a blocked pair', funct
 
     expect(ProfileView::query()->count())->toBe(0);
 })->with(['owner', 'incognito', 'blocked']);
+
+it('P2.1 follow-up: past profile_views.max_per_minute a viewer\'s views are not recorded and fire no event (A15)', function (): void {
+    Event::fake([ProfileViewed::class]);
+    Setting::factory()->keyed(SettingKey::ProfileViewsMaxPerMinute, 5)->create();
+    $groom = groom();
+    $brides = collect(range(1, 6))->map(fn (int $i): User => bride('+91980000020'.$i));
+
+    $brides->each(fn (User $bride) => app(RecordProfileView::class)->handle($groom, $bride->profile));
+
+    expect(ProfileView::query()->count())->toBe(5)
+        ->and(ProfileView::query()->where('viewed_profile_id', $brides->last()->profile->id)->exists())->toBeFalse();
+    Event::assertDispatchedTimes(ProfileViewed::class, 5);
+
+    // The page itself still opens; the window resets after a minute.
+    $this->actingAs($groom, 'web')->get(profileUrl($brides->last()))->assertOk();
+    $this->travel(61)->seconds();
+    app(RecordProfileView::class)->handle($groom, $brides->last()->profile);
+    expect(ProfileView::query()->count())->toBe(6);
+});
 
 it('opening the page records the view', function (): void {
     $bride = bride();
