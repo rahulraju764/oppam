@@ -34,10 +34,9 @@ function funnelGroom(): User
     ])->save();
     PartnerPreference::query()->where('profile_id', $groom->profile->id)->delete();
     $pref = PartnerPreference::factory()->make([
-        'age_min' => 24, 'age_max' => 28, 'religion_ids' => [masterId(Religion::class, 'HINDU')],
+        'profile_id' => $groom->profile->id, 'age_min' => 24, 'age_max' => 28, 'religion_ids' => [masterId(Religion::class, 'HINDU')],
         'marital_statuses' => null, 'caste_ids' => null, 'mother_tongue_ids' => null, 'district_ids' => null,
     ]);
-    $pref->profile_id = $groom->profile->id;
     $pref->save();
 
     return $groom->refresh();
@@ -51,9 +50,8 @@ function funnelBride(int $age = 26, string $religion = 'HINDU', ?array $wants = 
     ]);
     PartnerPreference::query()->where('profile_id', $bride->id)->delete();
     if ($wants !== null) {
-        $pref = PartnerPreference::factory()->make(['age_min' => null, 'age_max' => null, 'religion_ids' => null,
+        $pref = PartnerPreference::factory()->make(['profile_id' => $bride->id, 'age_min' => null, 'age_max' => null, 'religion_ids' => null,
             'marital_statuses' => null, ...$wants]);
-        $pref->profile_id = $bride->id;
         $pref->save();
     }
 

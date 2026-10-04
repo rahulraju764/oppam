@@ -23,7 +23,8 @@ use Livewire\WithPagination;
  * days with their last visit, for plans with see_who_viewed_me (Gold / Diamond); others see only
  * the number, a data-free blurred teaser and an upgrade link — and "Profiles I viewed" (all plans,
  * 90 days). Both read through ProfileVisitors, so blocked, ignored, incognito and non-ACTIVE
- * members are never listed nor counted. The live ".profile.viewed" update comes with P3.1.
+ * members are never listed nor counted. A new visit (".profile.viewed") or a socket reconnect
+ * re-reads the page (P3.1).
  */
 final class Visitors extends Component
 {
@@ -33,6 +34,20 @@ final class Visitors extends Component
 
     #[Url]
     public string $tab = 'visitors';
+
+    /**
+     * A new visit refreshes the page (M15 live: counter bump, Gold+ new row) — the event only says
+     * "something changed"; the list itself is read again through the normal, authorised query.
+     *
+     * @return array<string, string>
+     */
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:App.Models.User.'.$this->member()->id.',.profile.viewed' => '$refresh',
+            'realtime-reconnected' => '$refresh',   // back-fill anything missed while offline (PRD §9.7)
+        ];
+    }
 
     public function show(string $tab): void
     {

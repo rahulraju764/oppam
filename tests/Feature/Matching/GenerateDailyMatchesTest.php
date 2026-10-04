@@ -110,9 +110,8 @@ it('F06 exclusions: blocked (both ways), ignored, incognito, already viewed and 
 
 it('F06: the member\'s partner preferences decide the candidates', function (): void {
     $groom = dailyGroom();
-    $pref = PartnerPreference::factory()->make(['age_min' => 24, 'age_max' => 28, 'religion_ids' => null, 'marital_statuses' => null,
+    $pref = PartnerPreference::factory()->make(['profile_id' => $groom->profile->id, 'age_min' => 24, 'age_max' => 28, 'religion_ids' => null, 'marital_statuses' => null,
         'caste_ids' => null, 'mother_tongue_ids' => null, 'district_ids' => null]);
-    $pref->profile_id = $groom->profile->id;
     $pref->save();
     $fits = dailyBride(['dob' => now()->subYears(26)->subMonth()]);
     dailyBride(['dob' => now()->subYears(35)]);

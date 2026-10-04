@@ -25,6 +25,7 @@ use App\Livewire\Public\Contact;
 use App\Livewire\Public\Home;
 use App\Livewire\Public\Plans;
 use App\Livewire\Public\SuccessStories;
+use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -83,6 +84,9 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         Route::get('/profiles', AllProfiles::class)->name('member.profiles');
         Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');
     });
+
+    // WebSocket channel sign-in for the member site (PRD §9): routes/channels.php decides per channel.
+    Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate'])->name('broadcasting.auth');
 
     // Horoscope file (M11): short-lived signed link from HoroscopeAccess; checked + audited again.
     Route::get('/media/horoscope/{profile}', HoroscopeController::class)

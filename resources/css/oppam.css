@@ -102,6 +102,30 @@
 
 .impersonation-banner .btn { min-height: 44px; }
 
+/* "Reconnecting…" bar (PRD §9.7, P3.1): a polite status at the bottom while the socket recovers. */
+.realtime-status {
+  position: fixed;
+  inset: auto var(--space-4) var(--space-4) auto;
+  z-index: calc(var(--z-dropdown) + 3);   /* above the tab bar and the search sheet */
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-secondary-dark);
+  color: var(--color-default);
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .realtime-status .fa-spin { animation: none; }
+}
+
+@media (max-width: 991.98px) {
+  .realtime-status { inset: auto var(--space-4) calc(var(--space-11) + var(--space-4)) var(--space-4); justify-content: center; }
+}
+
 /* ---- Search (M04, P2.1) ---------------------------------------------------------------------
    Phones / tablets: the filter card is a bottom sheet opened by the "Filters" button (Alpine
    `sheet`). 992px+: back to the template's left rail. Built in the component, not mobile-rail.js,

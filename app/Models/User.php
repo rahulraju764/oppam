@@ -115,4 +115,16 @@ final class User extends Authenticatable
     {
         return $this->phone_verified_at !== null;
     }
+
+    /**
+     * The id other subscribers see in a presence channel's member list (Pusher `user_id`). Never
+     * the ULID (CLAUDE.md security rule 6, PRD §9.3): the member's profile code, which the roster
+     * already carries — or, for an account without a profile, an opaque per-user hash.
+     */
+    public function getAuthIdentifierForBroadcasting(): string
+    {
+        $code = Profile::query()->where('user_id', $this->id)->value('code');
+
+        return is_string($code) ? $code : 'u-'.substr(hash_hmac('sha256', (string) $this->id, (string) config('app.key')), 0, 24);
+    }
 }

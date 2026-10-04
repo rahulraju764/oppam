@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 3 — Real-time core & engagement (Phase 2 complete, 2026-10-04)
-**Next session:** P3.1 — Reverb, Echo, channels & presence
+**Next session:** P3.2 — Notifications system (M08)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -41,7 +41,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P2.4 Daily matches job & visitors (M05, M15) — 2026-10-04 (reopened after an unreviewed first pass that listed blocked members; reviewer READY in round 2 after 3 Majors fixed: retry_after > job timeouts + per-member lock, 05:00 IST end-to-end + schedule tests, indexed batched prune)
 
 ## Phase 3 — Real-time core & engagement
-- [ ] P3.1 Reverb, Echo, channels & presence
+- [x] P3.1 Reverb, Echo, channels & presence — 2026-10-05 (reviewer READY in round 2 after 1 Blocker + 3 Majors fixed: user ULID in presence rosters → profile code, best-effort ForceLogout (LiveSignal), flaky live-logout Dusk test, HTTP impersonation/security tests; owner review of the commit — rule 5)
 - [ ] P3.2 Notifications system (M08)
 - [ ] P3.3 Likes & favorites (M06)
 - [ ] P3.4 Interests & requests (M06)

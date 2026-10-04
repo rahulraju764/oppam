@@ -16,7 +16,7 @@
             {{-- alt="" — the name is in the <h4> directly below. --}}
             <img src="{{ $profile->photoUrl }}" alt="" width="600" height="600" loading="lazy" decoding="async">
             <div class="card-details">
-                <h4>{{ $profile->name }}</h4>
+                <h4>{{ $profile->name }} <x-ui.online-dot :code="$profile->code" /></h4>
                 <p>{{ collect([$profile->age, $profile->height])->filter()->implode(', ') }}</p>
             </div>
         </div>

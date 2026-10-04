@@ -19,6 +19,8 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     @include('layouts.partials.head', ['seo' => $seo])
+    {{-- A signed-in member browsing a public page keeps the socket (wire:navigate never re-runs scripts). --}}
+    @include('layouts.partials.realtime-meta')
 </head>
 <body>
     @include('layouts.partials.preloader')

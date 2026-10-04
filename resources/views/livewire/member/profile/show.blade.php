@@ -36,7 +36,7 @@
                             @endif
                         </div>
                         <div class="profile-tittle">
-                            <h2 class="pf-tt">{{ $name }}</h2>
+                            <h2 class="pf-tt">{{ $name }} <x-ui.online-dot :code="$profile->code" /></h2>
                             <h3 class="pf-dt-n">{{ $profile->code }}</h3>
                             <div class="profile-badges">
                                 @if ($profile->is_verified)

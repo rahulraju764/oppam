@@ -21,6 +21,7 @@ use App\Livewire\Admin\Moderation\ProfileReview;
 use App\Livewire\Admin\Roles\Editor as RolesEditor;
 use App\Livewire\Admin\Sessions\Index as SessionsIndex;
 use App\Livewire\Admin\Staff\Index as StaffIndex;
+use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +44,8 @@ Route::middleware('guest:admin')->group(function (): void {
 // The panel: signed in, live registered session, active account, 2FA passed (PRD §11.0).
 Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed'])->group(function (): void {
     Route::get('/', Dashboard::class)->name('dashboard');
+    // WebSocket channel sign-in for the panel (admin guard; e.g. admin.queues), PRD §9.3.
+    Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate'])->name('broadcasting.auth');
     Route::get('/staff', StaffIndex::class)->middleware('can:staff.view')->name('staff.index');
     Route::get('/roles', RolesEditor::class)->middleware('can:roles.view')->name('roles.edit');
     Route::get('/sessions', SessionsIndex::class)->name('sessions.index');

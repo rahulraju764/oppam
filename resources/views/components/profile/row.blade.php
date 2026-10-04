@@ -33,6 +33,7 @@
             @else
                 {{ $profile->name }}
             @endif
+            <x-ui.online-dot :code="$profile->code" />
         </h2>
 
         <h3 class="pf-dt-m">

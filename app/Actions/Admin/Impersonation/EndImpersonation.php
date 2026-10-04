@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Actions\Admin\Impersonation;
 
 use App\Enums\ImpersonationEndReason;
+use App\Events\Account\ForceLogout;
 use App\Models\AdminUser;
 use App\Models\ImpersonationSession;
 use App\Models\Profile;
 use App\Services\Audit\AuditLogger;
+use App\Support\Realtime\LiveSignal;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -32,6 +34,9 @@ final class EndImpersonation
 
             $locked->forceFill(['ended_at' => now(), 'end_reason' => $reason, 'token_hash' => null])->save();
             $session->setRawAttributes($locked->getAttributes(), true);
+
+            // The support tab (only that one — never the member's own) leaves at once (P3.1).
+            LiveSignal::afterCommit(new ForceLogout((string) $locked->user_id, ForceLogout::IMPERSONATION));
 
             $this->audit->record('impersonation.ended', $locked->user, after: [
                 'impersonation' => $locked->id,

@@ -113,3 +113,13 @@ it('a Free member with no visitors gets the empty state, not "0 members"', funct
 
     Livewire::test(Visitors::class)->assertSee('No visitors yet')->assertDontSee('0 members viewed');
 });
+
+it('P3.1: listens for its own live ".profile.viewed" signal and re-reads after a reconnect', function (): void {
+    $me = groom();
+    $this->actingAs($me, 'web');
+
+    $listeners = Livewire::test(Visitors::class)->instance()->getListeners();
+
+    expect($listeners)->toHaveKey('echo-private:App.Models.User.'.$me->id.',.profile.viewed')
+        ->and($listeners)->toHaveKey('realtime-reconnected');
+});

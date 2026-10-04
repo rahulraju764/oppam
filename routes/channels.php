@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use App\Broadcasting\AdminQueuesChannel;
+use App\Broadcasting\ChatChannel;
+use App\Broadcasting\InboxChannel;
+use App\Broadcasting\OnlinePresenceChannel;
+use App\Broadcasting\PresenceChatChannel;
+use App\Broadcasting\UserChannel;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -10,11 +15,23 @@ use Illuminate\Support\Facades\Broadcast;
 | Broadcast channels (PRD §9.3, §11A B.15)
 |--------------------------------------------------------------------------
 | Every callback must re-check the database (participant, not blocked, active staff,
-| admin permission). A channel is never protected by its name alone.
+| admin permission). A channel is never protected by its name alone. Member channels use the
+| `web` guard (the member site's /broadcasting/auth), admin channels the `admin` guard.
+| Broker channels arrive with the broker module (P7), admin.dashboard with P3.5.
 */
 
-// Laravel notifications for one user. Users get ULID keys in P0.4, so compare as strings.
-Broadcast::channel('App.Models.User.{id}', fn ($user, string $id): bool => (string) $user->id === $id);
+// Notifications, signals and forced logout for one member.
+Broadcast::channel('App.Models.User.{id}', UserChannel::class, ['guards' => ['web']]);
+
+// Conversation list order + unread counts for the profile's owner.
+Broadcast::channel('inbox.{profile}', InboxChannel::class, ['guards' => ['web']]);
+
+// A chat thread: participants only, not CLOSED, no block between the pair.
+Broadcast::channel('chat.{conversation}', ChatChannel::class, ['guards' => ['web']]);
+Broadcast::channel('presence-chat.{conversation}', PresenceChatChannel::class, ['guards' => ['web']]);
+
+// Site-wide online roster (green dots): codes only; see OnlinePresenceChannel for who may join.
+Broadcast::channel('presence.online', OnlinePresenceChannel::class, ['guards' => ['web']]);
 
 // Live moderation / verification queue counts for admins (PRD §9.3, A04). Admin guard only;
 // AdminQueuesChannel re-checks status, 2FA and permission against the database.

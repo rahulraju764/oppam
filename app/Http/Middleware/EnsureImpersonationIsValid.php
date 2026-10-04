@@ -78,7 +78,9 @@ final class EnsureImpersonationIsValid
     /** The audit trail of what the admin did as the member: structure only, never submitted values. */
     private function recordAction(Request $request, ImpersonationSession $row, AdminUser $admin): void
     {
-        if ($request->isMethodSafe() || $request->routeIs('impersonation.end')) {
+        // A channel subscription changes nothing (and presence is refused while impersonating):
+        // auditing every socket (re)connect would only bury the real actions (P3.1).
+        if ($request->isMethodSafe() || $request->routeIs('impersonation.end', 'broadcasting.auth')) {
             return;
         }
 

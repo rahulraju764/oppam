@@ -54,8 +54,8 @@ it('runs no match query itself and renders without lazy loading', function (): v
 
 it('the daily strip shows today\'s batch, best first, without dismissed or now-blocked profiles', function (): void {
     $me = groom();
-    $top = dashBride();
-    $second = dashBride();
+    $top = dashBride(['first_name' => 'Topfirst']);
+    $second = dashBride(['first_name' => 'Secondnext']);
     $dismissed = dashBride();
     $blocked = dashBride();
     $yesterday = dashBride();

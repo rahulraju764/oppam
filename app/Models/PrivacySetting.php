@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property HoroscopeVisibility $horoscope_visibility
  * @property bool $incognito
  * @property bool $contact_filter_enabled
+ * @property bool $show_online_status
+ * @property bool $show_last_seen
+ * @property bool $read_receipts
  */
 final class PrivacySetting extends Model
 {

@@ -10,11 +10,13 @@ use App\Enums\ModerationStatus;
 use App\Enums\ProfileStatus;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
+use App\Events\Account\ForceLogout;
 use App\Events\Admin\ModerationQueueChanged;
 use App\Models\ModerationItem;
 use App\Models\Profile;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\Realtime\LiveSignal;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -65,6 +67,9 @@ trait ChangesMemberState
             'session_epoch' => $member->session_epoch + 1,
             'remember_token' => Str::random(60),
         ]);
+
+        // Open tabs leave at once (P3.1), after the transaction that revoked the sessions commits.
+        LiveSignal::afterCommit(new ForceLogout((string) $member->id));
     }
 
     /** Remember the status an admin action is about to replace (only the first one counts). */

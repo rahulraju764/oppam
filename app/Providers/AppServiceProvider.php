@@ -99,6 +99,10 @@ final class AppServiceProvider extends ServiceProvider
         // everywhere except production (oppam-code-standards: Eloquent rules).
         Model::shouldBeStrict(! $this->app->isProduction());
 
+        // Broadcast channels (PRD §9.3). Here, not in bootstrap/app.php `channels:` (see there), so they
+        // are registered on every boot — including with cached routes.
+        require base_path('routes/channels.php');
+
         // $paginator->links() renders the template's pagination bar (x-ui.pagination).
         Paginator::defaultView('vendor.pagination.oppam');
 

@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsureMemberSessionIsValid;
 use App\Http\Middleware\EnsurePhoneIsVerified;
 use App\Http\Middleware\EnsureProfileOnboarded;
 use App\Http\Middleware\EnsureTwoFactorConfirmed;
+use App\Http\Middleware\RecordMemberActivity;
 use App\Support\Navigation\MemberLanding;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -55,9 +56,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Uptime probe for load balancers / monitors — deliberately host-agnostic (probed by IP).
             Route::get('/up', fn () => response('OK'))->name('health');
+
+            // routes/channels.php is loaded by AppServiceProvider::boot(), not `channels:` — that would
+            // also register a host-less /broadcasting/auth with only `web`. Each surface has its own,
+            // domain-pinned auth route behind its own middleware (routes/web.php, routes/admin.php).
         },
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Before StartSession: the admin domain gets its own session cookie (PRD §8.1).
@@ -75,6 +79,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Admin impersonation (A01 / A03): a support session ends at its 30-minute limit, on the
         // next page or Livewire request.
         $middleware->web(append: [EnsureImpersonationIsValid::class]);
+
+        // "Last seen" / "last active" for members (PRD §9.6), debounced to one write per 5 minutes.
+        $middleware->web(append: [RecordMemberActivity::class]);
 
         // RFC 8058 one-click unsubscribe: mail clients POST without a CSRF token; the route's
         // 48-character random token is the credential and the POST only turns alerts off (M04).

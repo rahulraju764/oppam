@@ -1,7 +1,8 @@
 {{--
     Member layout: every signed-in member page (3/6/3 dashboard pages, wizard, chat…).
     Adds the mobile tab bar and forces noindex (member pages name real people).
-    Livewire pages: #[Layout('layouts::member')]. Real-time (Echo) is switched on here in P3.1.
+    Livewire pages: #[Layout('layouts::member')]. Real-time (Echo, presence, forced logout,
+    "Reconnecting…" bar) is switched on here by the realtime-meta tags (P3.1).
 
     member  App\Data\Profile\MemberChromeData — the signed-in member (from P1.1)
 --}}
@@ -18,11 +19,16 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     @include('layouts.partials.head', ['seo' => $seo])
+    @include('layouts.partials.realtime-meta')
 </head>
 <body class="is-member">
     @include('layouts.partials.preloader')
     @include('layouts.partials.header', ['member' => $member, 'pageNav' => $resolvedPageNav])
     <x-impersonation-banner />
+    {{-- PRD §9.7: shown while the live connection is being re-established (resources/js/realtime.js). --}}
+    <div class="realtime-status" role="status" x-data x-show="$store.realtime && $store.realtime.status === 'reconnecting'" x-cloak>
+        <i class="fa fa-refresh fa-spin" aria-hidden="true"></i> {{ __('Reconnecting… live updates will resume shortly.') }}
+    </div>
 
     <main id="main" tabindex="-1">
         {{ $slot }}
