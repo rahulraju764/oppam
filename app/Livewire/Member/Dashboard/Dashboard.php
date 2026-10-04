@@ -5,88 +5,64 @@ declare(strict_types=1);
 namespace App\Livewire\Member\Dashboard;
 
 use App\Data\Content\SeoData;
-use App\Data\Search\SearchCriteria;
 use App\Domain\Media\PhotoUrls;
-use App\Domain\Profile\ProfileCards;
 use App\Enums\PlanCode;
-use App\Enums\SearchSort;
-use App\Enums\UserRole;
 use App\Models\Profile;
-use App\Models\ProfileView;
 use App\Models\User;
 use App\Services\Entitlements\EntitlementService;
-use App\Services\Profile\ProfileSearch;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Routing\Router;
 use Livewire\Component;
 
 /**
- * Member Dashboard (M05, template dashboard.php).
- * Canonical 3/6/3 split:
- * - Left rail: profile card, upgrade CTA, member navigation
- * - Centre: daily recommendations (Swiper + countdown), new matches, mutual matches, premium members
- * - Right rail: shared ads rail + promos
+ * Member dashboard (M05, template dashboard.php, 3/6/3): left rail = own profile card (photo,
+ * name, code, plan, completeness), upgrade box for Free members and the member menu (only pages
+ * that exist yet); centre = the sliders, each a #[Lazy] Strip; right = the ad rail. The page
+ * itself runs no match query — the strips load after it. "Liked you" arrives with likes (P3.3),
+ * live counters with real-time (P3.1).
  */
 final class Dashboard extends Component
 {
-    public function render(
-        ProfileSearch $search,
-        ProfileCards $cards,
-        PhotoUrls $photos,
-        EntitlementService $entitlements,
-    ): View {
-        $user = $this->member();
-        $profile = $user->profile ?? abort(404);
-        $profile->loadMissing(['partnerPreference', 'privacySetting']);
-
-        $tz = (string) config('oppam.display_timezone');
-        $now = CarbonImmutable::now($tz);
-        $secondsUntilMidnight = $now->endOfDay()->diffInSeconds($now);
-
+    public function render(PhotoUrls $photos, EntitlementService $entitlements, Router $router): View
+    {
+        $member = $this->member();
+        $profile = $member->profile ?? abort(404);
         $plan = $entitlements->plan($profile);
-        $isGoldOrDiamond = in_array($plan->code, [PlanCode::Gold, PlanCode::Diamond], true);
-
-        // Daily Recommendations (Relevance sort, top 8)
-        $dailyResults = $search->page($profile, new SearchCriteria(sort: SearchSort::Relevance));
-        $dailyCards = $cards->forViewers($dailyResults->profiles->take(8), $user);
-
-        // New Matches (Newest sort, top 6)
-        $newResults = $search->page($profile, new SearchCriteria(newlyJoined: true, sort: SearchSort::Newest));
-        $newCards = $cards->forViewers($newResults->profiles->take(6), $user);
-
-        // Premium Members (top 6)
-        $premiumResults = $search->page($profile, new SearchCriteria(premiumOnly: true, sort: SearchSort::Relevance));
-        $premiumCards = $cards->forViewers($premiumResults->profiles->take(6), $user);
-
-        // Visitor counts
-        $visitorsCount = ProfileView::query()->where('viewed_profile_id', $profile->id)->count();
-
-        // Own photo URL
-        $ownPhotoUrl = $photos->primaryCardUrl($profile, $user) ?? PhotoUrls::PLACEHOLDER;
 
         return view('livewire.member.dashboard.dashboard', [
             'profile' => $profile,
-            'plan' => $plan,
-            'ownPhotoUrl' => $ownPhotoUrl,
-            'dailyCards' => $dailyCards,
-            'newCards' => $newCards,
-            'premiumCards' => $premiumCards,
-            'visitorsCount' => $visitorsCount,
-            'isGoldOrDiamond' => $isGoldOrDiamond,
-            'secondsUntilMidnight' => (int) $secondsUntilMidnight,
+            'planLabel' => $plan->name,
+            'isFree' => $plan->code === PlanCode::Free,
+            'photoUrl' => $photos->primaryCardUrl($profile, $member) ?? PhotoUrls::PLACEHOLDER,
+            'menu' => array_values(array_filter($this->menu(), fn (array $item): bool => $router->has($item[0]))),
+            'strips' => Strip::KINDS,
         ])->layout('layouts::member', [
             'seo' => SeoData::private('Dashboard | Oppam Matrimony'),
         ]);
     }
 
+    /** @return list<array{0: string, 1: string, 2: string, 3?: array<string, string>, 4?: string}> route, label, icon, params, fragment */
+    private function menu(): array
+    {
+        return [
+            ['member.profile.me', __('My Profile'), 'fa-user-o'],
+            ['member.profile.me', __('Partner Preferences'), 'fa-sliders', [], 'partner-preferences'],
+            ['member.matches', __('My Matches'), 'fa-heart-o'],
+            ['member.profiles', __('All Profiles'), 'fa-users'],
+            ['member.matches.daily', __('Daily Matches'), 'fa-bolt'],
+            ['member.likes', __('Likes'), 'fa-thumbs-o-up'],
+            ['member.favorites', __('Favorites'), 'fa-star-o'],
+            ['member.interests', __('Interests'), 'fa-paper-plane-o'],
+            ['member.messages', __('Messages'), 'fa-envelope-o'],
+            ['member.visitors', __('Visitors'), 'fa-eye'],
+            ['member.verify', __('Verify Profile'), 'fa-check-circle-o'],
+            ['member.settings', __('Settings'), 'fa-cog'],
+        ];
+    }
+
     private function member(): User
     {
-        $user = auth('web')->user();
-
-        if (! $user instanceof User || $user->role !== UserRole::Member || ! $user->profile instanceof Profile) {
-            abort(404);
-        }
-
-        return $user;
+        /** @var User */
+        return auth('web')->user();
     }
 }

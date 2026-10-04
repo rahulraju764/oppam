@@ -9,6 +9,7 @@ use App\Enums\EmployerType;
 use App\Enums\MaritalStatus;
 use App\Enums\PhysicalStatus;
 use App\Enums\SearchSort;
+use App\Models\PartnerPreference;
 use App\ValueObjects\HeightCm;
 
 /**
@@ -34,6 +35,7 @@ final readonly class SearchCriteria
      * @param  list<int>  $starIds
      * @param  list<int>  $districtIds
      * @param  list<int>  $occupationIds
+     * @param  list<int>  $religionIds
      */
     public function __construct(
         public ?int $ageMin = null,
@@ -74,7 +76,49 @@ final readonly class SearchCriteria
         public bool $newlyJoined = false,
         public bool $hideViewed = false,
         public SearchSort $sort = SearchSort::Relevance,
+        // Built by the server only (My Matches / dashboard, M05) — never from input, never in a URL.
+        public array $religionIds = [],
+        public bool $mutualOnly = false,
+        public bool $viewedOnly = false,
     ) {}
+
+    /**
+     * The member's partner preferences as search criteria (M05 "matches"): the hard ones —
+     * age, religion, marital status (F06) — plus caste (with "caste no bar"), mother tongue and
+     * district when the member set them. No preferences = no filter.
+     */
+    public static function fromPreferences(?PartnerPreference $pref, SearchSort $sort = SearchSort::Relevance): self
+    {
+        if ($pref === null) {
+            return new self(sort: $sort);
+        }
+
+        $ints = fn (?array $ids): array => array_values(array_unique(array_filter(array_map(
+            fn (mixed $id): int => is_numeric($id) ? (int) $id : 0, array_slice($ids ?? [], 0, self::MAX_LIST)), fn (int $id): bool => $id > 0)));
+
+        return new self(
+            ageMin: $pref->age_min,
+            ageMax: $pref->age_max,
+            maritalStatuses: array_values(array_filter(array_map(
+                fn (string $s): ?MaritalStatus => MaritalStatus::tryFrom($s), $pref->marital_statuses ?? []))),
+            motherTongueIds: $ints($pref->mother_tongue_ids),
+            casteIds: $ints($pref->caste_ids),
+            includeCasteNoBar: false,   // their "caste no bar" is about whom THEY accept, not my caste preference
+            districtIds: $ints($pref->district_ids),
+            sort: $sort,
+            religionIds: $ints($pref->religion_ids),
+        );
+    }
+
+    /**
+     * A copy with some values changed (named like the constructor's parameters).
+     *
+     * @param  array<string, mixed>  $changes
+     */
+    public function with(array $changes): self
+    {
+        return new self(...[...get_object_vars($this), ...$changes]);
+    }
 
     /** @param  array<string, mixed>  $in */
     public static function fromInput(array $in): self

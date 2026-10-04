@@ -4,163 +4,130 @@ declare(strict_types=1);
 
 namespace App\Livewire\Member\Matches;
 
+use App\Actions\Search\SearchProfiles;
 use App\Data\Content\SeoData;
 use App\Data\Profile\ProfileCardData;
-use App\Data\Search\SearchCriteria;
+use App\Domain\Matching\MatchFunnel;
 use App\Domain\Profile\ProfileCards;
-use App\Enums\SearchSort;
-use App\Enums\UserRole;
+use App\Enums\MatchTab;
+use App\Exceptions\Search\SearchThrottled;
 use App\Models\Profile;
-use App\Models\ProfileView;
 use App\Models\User;
-use App\Services\Profile\ProfileSearch;
+use App\Support\Navigation\ProfileBrowseList;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * My Matches personal funnel (M05, template my-matches.php).
- * Canonical 3/6/3 split:
- * - Left rail: funnel categories + live counts
- * - Centre: 2x2 funnel counter bar + recommended profiles (<x-profile.row>)
- * - Right rail: shared ads rail + promos
+ * My Matches (M05, template my-matches.php): the member's match funnel — 2 × 2 counters (All,
+ * Yet to be viewed, Viewed, Mutual) and every tab in the left rail (a bottom sheet on phones).
+ * The tabs' rules and cached counts live in MatchFunnel; results are a ProfileSearch through
+ * SearchProfiles (rate limit, may-browse check), 20 at a time.
  */
 final class MyMatches extends Component
 {
     #[Url]
     public string $tab = 'all';
 
-    /** @var list<array<string, mixed>> */
+    /** @var list<array<string, mixed>> the cards shown so far (display data only — codes, never ids) */
     #[Locked]
     public array $results = [];
 
     #[Locked]
     public ?string $cursor = null;
 
-    #[Locked]
-    public int $total = 0;
+    public ?string $notice = null;
 
-    public function mount(ProfileSearch $search, ProfileCards $cards): void
+    public function mount(): void
     {
-        $this->loadProfiles($search, $cards, append: false);
+        $this->tab = $this->current()->value;
+        $this->load(append: false);
     }
 
-    public function updatedTab(ProfileSearch $search, ProfileCards $cards): void
+    public function show(string $tab): void
     {
+        $this->tab = (MatchTab::tryFrom($tab) ?? MatchTab::All)->value;
         $this->cursor = null;
-        $this->loadProfiles($search, $cards, append: false);
+        $this->load(append: false);
     }
 
-    public function loadMore(ProfileSearch $search, ProfileCards $cards): void
+    public function updatedTab(): void
+    {
+        $this->show($this->tab);
+    }
+
+    public function loadMore(): void
     {
         if ($this->cursor !== null) {
-            $this->loadProfiles($search, $cards, append: true);
+            $this->load(append: true);
         }
     }
 
-    public function render(ProfileSearch $search): View
+    public function render(MatchFunnel $funnel): View
     {
-        $user = $this->member();
-        $profile = $user->profile ?? abort(404);
-
-        $counts = $this->calculateFunnelCounts($profile, $search);
-
-        $funnelTabs = [
-            'all' => ['label' => __('All Matches'), 'count' => $counts['all']],
-            'new' => ['label' => __('Newly Joined'), 'count' => $counts['new']],
-            'unviewed' => ['label' => __('Yet to be Viewed'), 'count' => $counts['unviewed']],
-            'viewed' => ['label' => __('Viewed'), 'count' => $counts['viewed']],
-            'near_me' => ['label' => __('Near Me'), 'count' => $counts['near_me']],
-            'premium' => ['label' => __('Premium'), 'count' => $counts['premium']],
-        ];
+        $counts = $funnel->counts($this->profile());
 
         return view('livewire.member.matches.my-matches', [
             'cards' => array_map(fn (array $c): ProfileCardData => new ProfileCardData(...$c), $this->results),
-            'funnelTabs' => $funnelTabs,
+            'current' => $this->current(),
             'counts' => $counts,
+            'total' => $counts[$this->current()->value] ?? 0,
+            'funnel' => MatchTab::funnel(),
+            'tabs' => MatchTab::cases(),
         ])->layout('layouts::member', [
             'seo' => SeoData::private('My Matches | Oppam Matrimony'),
         ]);
     }
 
-    private function loadProfiles(ProfileSearch $search, ProfileCards $cards, bool $append): void
+    private function load(bool $append): void
     {
-        $user = $this->member();
-        $profile = $user->profile ?? abort(404);
+        $this->notice = null;
+        $member = $this->member();
+        $criteria = app(MatchFunnel::class)->criteria($this->profile(), $this->current());
 
-        $criteria = match ($this->tab) {
-            'new' => new SearchCriteria(newlyJoined: true, sort: SearchSort::Newest),
-            'unviewed' => new SearchCriteria(hideViewed: true, sort: SearchSort::Relevance),
-            'near_me' => new SearchCriteria(districtIds: $profile->district_id !== null ? [$profile->district_id] : [], sort: SearchSort::Relevance),
-            'premium' => new SearchCriteria(premiumOnly: true, sort: SearchSort::Relevance),
-            default => new SearchCriteria(sort: SearchSort::Relevance),
-        };
-
-        if ($this->tab === 'viewed') {
-            // Viewed profiles specifically
-            $viewedIds = ProfileView::query()
-                ->where('viewer_profile_id', $profile->id)
-                ->pluck('viewed_profile_id')
-                ->all();
-
-            $query = $search->query($profile, new SearchCriteria(sort: SearchSort::Relevance))
-                ->whereIn('profiles.id', $viewedIds);
-
-            $this->total = $query->count();
-            $profiles = $query->limit(20)->get();
-            $pageCards = array_map(fn (ProfileCardData $c): array => get_object_vars($c), $cards->forViewers($profiles, $user));
-
-            $this->results = $append ? [...$this->results, ...$pageCards] : $pageCards;
+        if ($criteria === null) {
+            $this->results = [];
             $this->cursor = null;
+            $this->notice = __('Add your district to your profile to see members near you.');
 
             return;
         }
 
-        $page = $search->page($profile, $criteria, $this->cursor);
-        $pageCards = array_map(fn (ProfileCardData $c): array => get_object_vars($c), $cards->forViewers($page->profiles, $user));
+        try {
+            $result = app(SearchProfiles::class)->handle($member, $criteria, $append ? $this->cursor : null, withCount: false);
+        } catch (SearchThrottled $throttled) {
+            $this->notice = $throttled->getMessage();
+            if (! $append) {
+                // Never show the previous tab's cards under the new tab's heading.
+                $this->results = [];
+                $this->cursor = null;
+            }
 
-        $this->results = $append ? [...$this->results, ...$pageCards] : $pageCards;
-        $this->cursor = $page->nextCursor;
-
-        if (! $append) {
-            $this->total = $search->count($profile, $criteria);
+            return;
         }
+
+        $page = array_map(fn (ProfileCardData $card): array => get_object_vars($card), app(ProfileCards::class)->forViewers($result->page->profiles, $member));
+        $this->results = $append ? [...$this->results, ...$page] : $page;
+        $this->cursor = $result->page->nextCursor;
+
+        // Prev / Next on a profile opened from these results (M03) walk the list in this order.
+        app(ProfileBrowseList::class)->remember(array_column($this->results, 'code'));
     }
 
-    /** @return array<string, int> */
-    private function calculateFunnelCounts(Profile $profile, ProfileSearch $search): array
+    private function current(): MatchTab
     {
-        $all = $search->count($profile, new SearchCriteria(sort: SearchSort::Relevance));
-        $new = $search->count($profile, new SearchCriteria(newlyJoined: true));
-        $unviewed = $search->count($profile, new SearchCriteria(hideViewed: true));
+        return MatchTab::tryFrom($this->tab) ?? MatchTab::All;
+    }
 
-        $viewed = ProfileView::query()->where('viewer_profile_id', $profile->id)->count();
-
-        $nearMe = $profile->district_id !== null
-            ? $search->count($profile, new SearchCriteria(districtIds: [$profile->district_id]))
-            : 0;
-
-        $premium = $search->count($profile, new SearchCriteria(premiumOnly: true));
-
-        return [
-            'all' => $all,
-            'new' => $new,
-            'unviewed' => $unviewed,
-            'viewed' => $viewed,
-            'near_me' => $nearMe,
-            'premium' => $premium,
-        ];
+    private function profile(): Profile
+    {
+        return $this->member()->profile ?? abort(404);
     }
 
     private function member(): User
     {
-        $user = auth('web')->user();
-
-        if (! $user instanceof User || $user->role !== UserRole::Member || ! $user->profile instanceof Profile) {
-            abort(404);
-        }
-
-        return $user;
+        /** @var User */
+        return auth('web')->user();
     }
 }

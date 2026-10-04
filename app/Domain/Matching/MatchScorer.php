@@ -103,18 +103,17 @@ final class MatchScorer
 
         // Religion (10 pts)
         if (! empty($pref->religion_ids)) {
-            if ($target->religion_id !== null && in_array($target->religion_id, $pref->religion_ids, true)) {
+            if (self::listed($target->religion_id, $pref->religion_ids)) {
                 $points += 10;
             }
         } else {
             $points += 8;
         }
 
-        // Caste (10 pts)
-        if ($target->caste_no_bar) {
-            $points += 10;
-        } elseif (! empty($pref->caste_ids)) {
-            if ($target->caste_id !== null && in_array($target->caste_id, $pref->caste_ids, true)) {
+        // Caste (10 pts). The target's own "caste no bar" is about whom THEY accept, so it earns
+        // nothing here — only the source's caste preference counts.
+        if (! empty($pref->caste_ids)) {
+            if (self::listed($target->caste_id, $pref->caste_ids)) {
                 $points += 10;
             }
         } else {
@@ -123,7 +122,7 @@ final class MatchScorer
 
         // Marital status (8 pts)
         if (! empty($pref->marital_statuses)) {
-            if ($target->marital_status !== null && in_array($target->marital_status->value, $pref->marital_statuses, true)) {
+            if (self::listed($target->marital_status?->value, $pref->marital_statuses)) {
                 $points += 8;
             }
         } else {
@@ -132,7 +131,7 @@ final class MatchScorer
 
         // District / Location (7 pts)
         if (! empty($pref->district_ids)) {
-            if ($target->district_id !== null && in_array($target->district_id, $pref->district_ids, true)) {
+            if (self::listed($target->district_id, $pref->district_ids)) {
                 $points += 7;
             }
         } else {
@@ -141,7 +140,7 @@ final class MatchScorer
 
         // Education / Occupation (5 pts)
         if (! empty($pref->education_ids) && $target->educationCareer?->education_id !== null) {
-            if (in_array($target->educationCareer->education_id, $pref->education_ids, true)) {
+            if (self::listed($target->educationCareer->education_id, $pref->education_ids)) {
                 $points += 5;
             }
         } else {
@@ -149,6 +148,16 @@ final class MatchScorer
         }
 
         return min(60, max(0, $points));
+    }
+
+    /**
+     * Is $value in a preference list? Lists are JSON and may hold ids as numbers or strings.
+     *
+     * @param  array<int, mixed>|null  $list
+     */
+    private static function listed(int|string|null $value, ?array $list): bool
+    {
+        return $value !== null && in_array((string) $value, array_map(fn (mixed $v): string => is_scalar($v) ? (string) $v : '', $list ?? []), true);
     }
 
     /**

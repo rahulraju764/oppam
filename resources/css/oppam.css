@@ -226,6 +226,61 @@
 
 .saved-search__empty { margin: 0; color: var(--color-bltxt); font-size: var(--text-sm); }
 
+/* ---- Dashboard (M05, P2.3) ---- */
+.dashboard-strip { margin-bottom: var(--space-5); }
+.sidebar-profile h1 { margin-bottom: 6px; color: var(--color-bltxt); }
+/* The template's <h4> code line, as a paragraph (no h1 → h4 jump); same look. */
+.sidebar-profile .h4 { margin-bottom: 2px; font-family: var(--font-primary); font-size: var(--text-md); color: var(--color-black); }
+
+.completeness { width: 100%; padding: var(--space-3) var(--space-3) 0; text-align: start; }
+.completeness__label { display: flex; justify-content: space-between; width: 100%; font-size: var(--text-xs); color: var(--color-gr-dark); }
+.completeness__bar { width: 100%; height: 6px; accent-color: var(--color-primary); }
+
+/* "Recently viewed you" for plans without the feature: placeholder tiles, no member data. */
+.visitor-teaser { position: relative; min-height: 160px; }
+.visitor-teaser__blur { display: flex; gap: var(--space-2); filter: blur(6px); opacity: .6; }
+.visitor-teaser__tile { flex: 1; height: 160px; border-radius: var(--radius-md); background: var(--color-back); }
+.visitor-teaser__body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  text-align: center;
+}
+.visitor-teaser__count { margin: 0; font-weight: var(--fw-semibold); color: var(--color-black); }
+
+/* ---- My Matches (M05, P2.3): the template's funnel tiles and rail rows are buttons here ---- */
+.counter-button,
+.nav-link-button {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.nav-link-button { text-align: start; }
+
+.counter-button {
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: inherit;
+}
+
+.counter-button.active { box-shadow: inset 0 0 0 2px var(--color-default); }
+
+.counter-button:focus-visible,
+.nav-link-button:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+
+@media (max-width: 991.98px) {
+  .myhome-section .counter-button { border: var(--border-hair); }
+  .myhome-section .counter-button.active { box-shadow: inset 0 0 0 2px var(--color-primary); }
+}
+
 /* While the search filter sheet is open (a modal on phones), the bottom tab bar steps aside so the
    sheet's "Show N profiles" button is reachable — the sheet can't stack above it (different
    stacking contexts). */

@@ -165,6 +165,7 @@ final class ProfileSearch
     {
         $query
             ->when($c->religionId, fn (Builder $q, int $id) => $q->where('profiles.religion_id', $id))
+            ->when($c->religionIds !== [], fn (Builder $q) => $q->whereIn('profiles.religion_id', $c->religionIds))
             ->when($c->casteIds !== [], fn (Builder $q) => $q->where(fn (Builder $w) => $w
                 ->whereIn('profiles.caste_id', $c->casteIds)
                 ->when($c->includeCasteNoBar, fn (Builder $x) => $x->orWhere('profiles.caste_no_bar', true))))
@@ -255,7 +256,52 @@ final class ProfileSearch
                     fn (QueryBuilder $y) => $y->whereIn('users.created_for', SearchCriteria::familyCreators()))))
             ->when($c->hideViewed, fn (Builder $q) => $q->whereNotExists(fn (QueryBuilder $x) => $x->selectRaw('1')->from('profile_views')
                 ->whereColumn('profile_views.viewed_profile_id', 'profiles.id')
-                ->where('profile_views.viewer_profile_id', $searcher->id)));
+                ->where('profile_views.viewer_profile_id', $searcher->id)))
+            ->when($c->viewedOnly, fn (Builder $q) => $q->whereExists(fn (QueryBuilder $x) => $x->selectRaw('1')->from('profile_views')
+                ->whereColumn('profile_views.viewed_profile_id', 'profiles.id')
+                ->where('profile_views.viewer_profile_id', $searcher->id)))
+            ->when($c->mutualOnly, fn (Builder $q) => $this->acceptsSearcher($q, $searcher));
+    }
+
+    /**
+     * Mutual fit (M05): the profile's own partner preferences accept the searcher on the hard
+     * fields — age, religion, marital status (F06). A preference left empty means "any"; a
+     * profile with no preferences at all accepts everyone. JSON lists may hold ids as numbers or
+     * strings, so both spellings are tried.
+     *
+     * @param  Builder<Profile>  $query
+     */
+    private function acceptsSearcher(Builder $query, Profile $searcher): void
+    {
+        $age = $searcher->age();
+
+        $query->whereNotExists(function (QueryBuilder $pp) use ($searcher, $age): void {
+            $pp->selectRaw('1')->from('partner_preferences', 'pp')
+                ->whereColumn('pp.profile_id', 'profiles.id')
+                ->where(function (QueryBuilder $rejects) use ($searcher, $age): void {
+                    if ($age === null) {
+                        $rejects->whereNotNull('pp.age_min')->orWhereNotNull('pp.age_max');
+                    } else {
+                        $rejects->where('pp.age_min', '>', $age)->orWhere('pp.age_max', '<', $age);
+                    }
+
+                    $this->rejectsValue($rejects, 'pp.religion_ids', $searcher->religion_id);
+                    $this->rejectsValue($rejects, 'pp.marital_statuses', $searcher->marital_status?->value);
+                });
+        });
+    }
+
+    /** OR: the JSON list column is set (non-empty) and does not contain $value. */
+    private function rejectsValue(QueryBuilder $rejects, string $column, int|string|null $value): void
+    {
+        $rejects->orWhere(function (QueryBuilder $q) use ($column, $value): void {
+            $q->whereNotNull($column)->whereRaw("JSON_LENGTH({$column}) > 0");
+
+            if ($value !== null) {
+                $q->whereRaw("NOT JSON_CONTAINS({$column}, ?)", [json_encode($value)])
+                    ->whereRaw("NOT JSON_CONTAINS({$column}, ?)", [json_encode((string) $value)]);
+            }
+        });
     }
 
     /**

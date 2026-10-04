@@ -56,6 +56,7 @@ Route::middleware('guest')->group(function (): void {
 
 // The first Phase 2 pass used /all-profiles; PRD §6.2 says /profiles (decisions 2026-10-04).
 Route::permanentRedirect('/all-profiles', '/profiles');
+Route::permanentRedirect('/my-matches', '/matches');
 
 // Admin impersonation (A01 / A03, P1.7b): the admin panel hands the browser over with a single-use
 // token (60 s, same IP); "End session" in the banner closes it. Not behind `guest`: an existing
@@ -74,7 +75,7 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
     Route::middleware('profile.onboarded')->group(function (): void {
         Route::get('/dashboard', Dashboard::class)->name('member.dashboard');
         Route::get('/me', MyProfile::class)->name('member.profile.me');
-        Route::get('/my-matches', MyMatches::class)->name('member.my-matches');
+        Route::get('/matches', MyMatches::class)->name('member.matches');
         Route::get('/matches/daily', Daily::class)->name('member.matches.daily');
         Route::get('/daily-matches', Daily::class)->name('member.daily-matches');
         Route::get('/visitors', Visitors::class)->name('member.visitors');

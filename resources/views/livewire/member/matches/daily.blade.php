@@ -125,7 +125,7 @@
                             <div class="bg-white rounded-3 border p-3 shadow-sm">
                                 <h4 class="h6 fw-bold mb-2">{{ __('More Ways to Discover') }}</h4>
                                 <div class="d-grid gap-2">
-                                    <a href="{{ route('member.my-matches') }}" class="btn btn-outline-secondary btn-sm text-start" wire:navigate>
+                                    <a href="{{ route('member.matches') }}" class="btn btn-outline-secondary btn-sm text-start" wire:navigate>
                                         <i class="fa fa-heart-o text-danger me-2" aria-hidden="true"></i> {{ __('My Matches') }}
                                     </a>
                                     <a href="{{ route('member.profiles') }}" class="btn btn-outline-secondary btn-sm text-start" wire:navigate>

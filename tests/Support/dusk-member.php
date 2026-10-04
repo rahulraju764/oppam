@@ -131,6 +131,17 @@ function demoGroomCode(): string
         ->orderBy('code')->value('code');
 }
 
+/** Scroll down the dashboard until every lazy slider has replaced its skeleton (P2.3). */
+function duskLoadAllStrips(Laravel\Dusk\Browser $browser): void
+{
+    $browser->waitUsing(20, 200, function () use ($browser): bool {
+        $browser->script('window.scrollBy(0, 600);');
+
+        return (bool) $browser->script("return document.querySelectorAll('.dashboard-strip[aria-busy]').length === 0 && document.body.innerText.includes('Recently Viewed You');")[0];
+    });
+    $browser->script('window.scrollTo(0, 0);');
+}
+
 /** No sideways scrolling at the current (emulated) width. */
 function assertNoHorizontalScroll(Laravel\Dusk\Browser $browser): void
 {
