@@ -4,47 +4,34 @@ declare(strict_types=1);
 
 namespace App\Actions\Search;
 
+use App\Domain\Search\OwnSavedSearch;
+use App\Domain\Search\SavedSearchName;
 use App\Enums\AlertFrequency;
-use App\Models\Profile;
 use App\Models\SavedSearch;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Rename a saved search or change its alert frequency (M04). The search is looked up among the
+ * member's own only — anyone else's id is a 404 (ModelNotFoundException).
+ */
 final class UpdateSavedSearch
 {
-    /**
-     * @throws ValidationException
-     */
-    public function handle(
-        Profile $profile,
-        SavedSearch $savedSearch,
-        ?string $name = null,
-        ?AlertFrequency $frequency = null,
-    ): SavedSearch {
-        if ($savedSearch->profile_id !== $profile->id) {
-            throw (new ModelNotFoundException)->setModel(SavedSearch::class, [$savedSearch->id]);
-        }
-
-        $updates = [];
+    /** @throws ValidationException */
+    public function handle(User $member, string $savedSearchId, ?string $name = null, ?AlertFrequency $frequency = null): SavedSearch
+    {
+        $search = OwnSavedSearch::find($member, $savedSearchId);
 
         if ($name !== null) {
-            $name = trim($name);
-            if ($name === '' || mb_strlen($name) > 60) {
-                throw ValidationException::withMessages([
-                    'name' => __('The search name must be between 1 and 60 characters.'),
-                ]);
-            }
-            $updates['name'] = $name;
+            $search->name = SavedSearchName::validate($name);
         }
 
         if ($frequency !== null) {
-            $updates['alert_frequency'] = $frequency;
+            $search->alert_frequency = $frequency;
         }
 
-        if ($updates !== []) {
-            $savedSearch->update($updates);
-        }
+        $search->save();
 
-        return $savedSearch;
+        return $search;
     }
 }

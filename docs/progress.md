@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 2 — Discovery (P2.2–P2.4 reopened after review, 2026-10-04)
-**Next session:** P2.2 — All profiles & saved searches fix
+**Next session:** P2.3 — Dashboard & my matches fix (M05)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -36,7 +36,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 ## Phase 2 — Discovery
 - [x] P2.1 Search service & search page (M04) — 2026-10-04 (reviewer READY in round 3 after 2 Majors + 1 Major fixed: bench cache isolation, privacy index, desktop filter rail; p95 323 ms at 100k with a sized buffer pool)
 - [x] P2.1b Search follow-ups — 2026-10-04 (reviewer READY in round 1; Prev / Next from search results via ProfileBrowseList in Search & AllProfiles, profile-view rate limit profile_views.max_per_minute, A15)
-- [ ] P2.2 All profiles & saved searches (M04) — **reopened 2026-10-04**: first pass (b3ef47e) was not reviewed; fix raw saved filters, ULID in the unsubscribe URL, `/profiles` route (PRD §6.2), saved-search management
+- [x] P2.2 All profiles & saved searches (M04) — 2026-10-04 (reopened after an unreviewed first pass; reviewer READY in round 1: normalised saved filters, token unsubscribe with GET confirm + RFC 8058 POST, owner-only management, /profiles, phone sheet, Dusk desktop + 375px)
 - [ ] P2.3 Dashboard & my matches (M05) — **reopened 2026-10-04**: first pass (b3ef47e) not reviewed; All = mutual fit + Mutual tab, counts per render, dashboard from daily_matches + #[Lazy], `/matches` route, a11y / inline styles, Dusk
 - [ ] P2.4 Daily matches job & visitors (M05, M15) — **reopened 2026-10-04**: first pass (21f8c71) not reviewed; Visitors shows blocked / suspended members (Blocker), daily job repeats yesterday's batch and scores the first 200 by id, generation inside render(), counts rows not visitors, no "ready" email, approve → generate (P1.6 carry-over)
 

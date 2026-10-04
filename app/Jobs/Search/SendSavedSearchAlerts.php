@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Jobs\Search;
 
+use App\Domain\Profile\ProfileVisibility;
 use App\Enums\AlertFrequency;
-use App\Enums\ProfileStatus;
+use App\Models\NotificationPreference;
 use App\Models\SavedSearch;
+use App\Models\User;
 use App\Notifications\Member\SavedSearchMatchesNotification;
 use App\Services\Profile\ProfileSearch;
 use Carbon\CarbonImmutable;
@@ -17,9 +19,12 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 
 /**
- * Scheduled job to send daily/weekly email alerts for saved searches (PRD §10 M04).
- * Finds new active profiles published strictly after last_alerted_at (or created_at if first run)
- * and notifies the member with the count, search link, and 1-click signed unsubscribe link.
+ * Saved-search alerts (M04), scheduled daily at 08:00 IST: every DAILY search not alerted in the
+ * last 20 hours and every WEEKLY one not alerted in 6 days counts the profiles published since its
+ * last alert (or since it was saved) with the owner's full search rules — blocked, ignored,
+ * incognito and non-ACTIVE profiles never count. Owners who may not browse (suspended account or
+ * profile) get nothing; an email goes only when there is something new and the owner hasn't turned
+ * `saved_search_alert` emails off. The window moves on either way, so nothing is counted twice.
  */
 final class SendSavedSearchAlerts implements ShouldBeUnique, ShouldQueue
 {
@@ -34,53 +39,55 @@ final class SendSavedSearchAlerts implements ShouldBeUnique, ShouldQueue
         $this->onQueue('notifications');
     }
 
-    public function handle(ProfileSearch $search): void
+    public function handle(ProfileSearch $search, ProfileVisibility $visibility): void
     {
         $now = CarbonImmutable::now();
 
-        $query = SavedSearch::query()
-            ->with(['profile.user'])
-            ->where('alert_frequency', '!=', AlertFrequency::Off->value);
+        SavedSearch::query()
+            ->with(['profile.user.notificationPreferences'])
+            ->where('alert_frequency', '!=', AlertFrequency::Off->value)
+            ->when($this->frequency !== null, fn ($q) => $q->where('alert_frequency', $this->frequency?->value))
+            ->lazyById(100)
+            ->each(function (SavedSearch $saved) use ($search, $visibility, $now): void {
+                $profile = $saved->profile;
+                $owner = $profile?->user?->setRelation('profile', $profile);
 
-        if ($this->frequency !== null) {
-            $query->where('alert_frequency', $this->frequency->value);
-        }
+                if ($profile === null || $owner === null || ! $visibility->canBrowse($owner) || ! $this->isDue($saved, $now)) {
+                    return;
+                }
 
-        $query->lazyById(100)->each(function (SavedSearch $savedSearch) use ($search, $now): void {
-            $profile = $savedSearch->profile;
+                $count = $search->query($profile, $saved->criteria())
+                    ->where('profiles.published_at', '>', $saved->last_alerted_at ?? $saved->created_at)
+                    ->where('profiles.published_at', '<=', $now)
+                    ->count();
 
-            if ($profile === null || $profile->status !== ProfileStatus::Active || $profile->user === null) {
-                return;
-            }
+                if ($count > 0 && $this->wantsEmail($owner)) {
+                    $owner->notify(new SavedSearchMatchesNotification($saved, $count));
+                }
 
-            if (! $this->isDue($savedSearch, $now)) {
-                return;
-            }
-
-            $since = $savedSearch->last_alerted_at ?? $savedSearch->created_at;
-
-            $count = $search->query($profile, $savedSearch->criteria())
-                ->where('profiles.published_at', '>', $since)
-                ->count();
-
-            if ($count > 0 && filled($profile->user->email)) {
-                $profile->user->notify(new SavedSearchMatchesNotification($savedSearch, $count));
-            }
-
-            $savedSearch->update(['last_alerted_at' => $now]);
-        });
+                $saved->forceFill(['last_alerted_at' => $now])->save();
+            });
     }
 
-    private function isDue(SavedSearch $savedSearch, CarbonImmutable $now): bool
+    private function isDue(SavedSearch $saved, CarbonImmutable $now): bool
     {
-        if ($savedSearch->last_alerted_at === null) {
+        if ($saved->last_alerted_at === null) {
             return true;
         }
 
-        return match ($savedSearch->alert_frequency) {
-            AlertFrequency::Daily => $savedSearch->last_alerted_at->lte($now->subHours(20)),
-            AlertFrequency::Weekly => $savedSearch->last_alerted_at->lte($now->subDays(6)),
+        return match ($saved->alert_frequency) {
+            AlertFrequency::Daily => $saved->last_alerted_at->lte($now->subHours(20)),
+            AlertFrequency::Weekly => $saved->last_alerted_at->lte($now->subDays(6)),
             AlertFrequency::Off => false,
         };
+    }
+
+    /** On unless the member turned this event's email off (notification_preferences, M08/M14). */
+    private function wantsEmail(User $owner): bool
+    {
+        $preference = $owner->notificationPreferences
+            ->first(fn (NotificationPreference $p): bool => $p->event === SavedSearchMatchesNotification::EVENT);
+
+        return $preference === null || $preference->email;
     }
 }

@@ -76,6 +76,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // next page or Livewire request.
         $middleware->web(append: [EnsureImpersonationIsValid::class]);
 
+        // RFC 8058 one-click unsubscribe: mail clients POST without a CSRF token; the route's
+        // 48-character random token is the credential and the POST only turns alerts off (M04).
+        $middleware->validateCsrfTokens(except: ['saved-searches/unsubscribe/*']);
+
         $middleware->alias([
             'admin.session' => EnsureAdminSessionIsValid::class,
             'admin.active' => EnsureAdminIsActive::class,

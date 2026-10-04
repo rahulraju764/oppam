@@ -59,56 +59,45 @@ final class Search extends Component
     #[Locked]
     public int $total = 0;
 
-    public bool $showSaveModal = false;
-
+    /** "Save this search" dialog (M04): name + alert frequency; the filters are the current ones. */
     public string $saveName = '';
 
     public string $saveFrequency = 'DAILY';
-
-    public ?string $saveError = null;
 
     public ?string $saveSuccess = null;
 
     public function openSaveModal(): void
     {
-        $this->saveName = __('Search - :date', ['date' => now()->format('d M')]);
-        $this->saveFrequency = 'DAILY';
-        $this->saveError = null;
+        $this->resetErrorBag();
+        $this->saveName = __('My search :date', ['date' => now((string) config('oppam.display_timezone'))->format('d M')]);
+        $this->saveFrequency = AlertFrequency::Daily->value;
         $this->saveSuccess = null;
-        $this->showSaveModal = true;
-    }
-
-    public function closeSaveModal(): void
-    {
-        $this->showSaveModal = false;
-        $this->saveError = null;
+        $this->dispatch('open-modal', name: 'save-search');
     }
 
     public function saveSearch(SaveSearch $action): void
     {
-        $profile = $this->member()->profile;
-
-        if ($profile === null) {
-            return;
-        }
-
-        $frequency = AlertFrequency::tryFrom($this->saveFrequency) ?? AlertFrequency::Daily;
+        $this->resetErrorBag();
 
         try {
             $action->handle(
-                profile: $profile,
-                name: $this->saveName,
-                filters: $this->filters,
-                frequency: $frequency,
+                $this->member(),
+                $this->saveName,
+                SearchCriteria::fromInput($this->filters),
+                AlertFrequency::tryFrom($this->saveFrequency) ?? AlertFrequency::Daily,
             );
-
-            $this->saveSuccess = __('Search saved successfully.');
-            $this->showSaveModal = false;
-        } catch (SavedSearchLimitReached $e) {
-            $this->saveError = $e->getMessage();
         } catch (ValidationException $e) {
-            $this->saveError = $e->validator->errors()->first();
+            $this->addError('saveName', (string) $e->validator->errors()->first());
+
+            return;
+        } catch (SavedSearchLimitReached|SearchThrottled $e) {
+            $this->addError('saveName', $e->getMessage());
+
+            return;
         }
+
+        $this->saveSuccess = __('Search saved. Manage your saved searches on the All Profiles page.');
+        $this->dispatch('close-modal', name: 'save-search');
     }
 
     public function mount(): void

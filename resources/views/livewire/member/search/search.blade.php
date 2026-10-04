@@ -199,9 +199,9 @@
                             </div>
 
                             <div class="search-sheet__foot d-lg-none">
-                                <button type="button" class="btn btn-primary w-100" x-on:click="sheet = false">
+                                <x-ui.button type="button" class="w-100" x-on:click="sheet = false">
                                     {{ trans_choice('Show :count profile|Show :count profiles', $total, ['count' => number_format($total)]) }}
-                                </button>
+                                </x-ui.button>
                             </div>
                         </section>
                     </div>
@@ -217,10 +217,7 @@
                                     <p class="mb-0" aria-live="polite">{{ trans_choice(':count profile|:count profiles', $total, ['count' => number_format($total)]) }}</p>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <button type="button" wire:click="openSaveModal" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
-                                        <i class="fa fa-bookmark-o"></i>
-                                        <span>{{ __('Save') }}</span>
-                                    </button>
+                                    <x-ui.button type="button" variant="outline" size="sm" icon="fa-bookmark-o" wire:click="openSaveModal" aria-haspopup="dialog">{{ __('Save search') }}</x-ui.button>
                                     <div class="search-sort mb-0">
                                         <label class="visually-hidden" for="sort">{{ __('Sort by') }}</label>
                                         <select class="form-select profile-select" id="sort" name="sort" wire:model.live="filters.sort">
@@ -230,16 +227,12 @@
                                 </div>
                             </div>
                             @if ($saveSuccess)
-                                <div class="alert alert-success alert-dismissible fade show my-2" role="alert">
-                                    {{ $saveSuccess }}
-                                    <button type="button" class="btn-close" wire:click="$set('saveSuccess', null)" aria-label="{{ __('Close') }}"></button>
-                                </div>
+                                <x-ui.alert type="success">{{ $saveSuccess }}</x-ui.alert>
                             @endif
 
-                            <button type="button" id="open-filters" class="btn btn-outline-primary w-100 mb-3 d-lg-none" x-on:click="sheet = true" aria-controls="search-filters" x-bind:aria-expanded="sheet">
-                                <i class="fa fa-sliders" aria-hidden="true"></i>
+                            <x-ui.button type="button" variant="outline" icon="fa-sliders" id="open-filters" class="w-100 mb-3 d-lg-none" x-on:click="sheet = true" aria-controls="search-filters" x-bind:aria-expanded="sheet">
                                 {{ $activeFilters > 0 ? trans_choice('Filters (:count)|Filters (:count)', $activeFilters, ['count' => $activeFilters]) : __('Filters') }}
-                            </button>
+                            </x-ui.button>
 
                             @if ($notice)
                                 <x-ui.alert type="warning">{{ $notice }}</x-ui.alert>
@@ -280,49 +273,17 @@
 
     <div class="search-sheet__backdrop d-lg-none" x-show="sheet" x-cloak x-on:click="sheet = false"></div>
 
-    {{-- Save Search Modal --}}
-    @if ($showSaveModal)
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" aria-modal="true" role="dialog">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">{{ __('Save this Search') }}</h5>
-                        <button type="button" class="btn-close" wire:click="closeSaveModal" aria-label="{{ __('Close') }}"></button>
-                    </div>
-                    <form wire:submit="saveSearch">
-                        <div class="modal-body">
-                            @if ($saveError)
-                                <div class="alert alert-danger" role="alert">
-                                    {{ $saveError }}
-                                </div>
-                            @endif
-
-                            <div class="mb-3">
-                                <label for="saveName" class="form-label">{{ __('Search Name') }}</label>
-                                <input type="text" id="saveName" wire:model="saveName" class="form-control" maxlength="60" required autofocus>
-                                <div class="form-text">{{ __('Give this search a name to recognize it later.') }}</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="saveFrequency" class="form-label">{{ __('Email Alerts') }}</label>
-                                <select id="saveFrequency" wire:model="saveFrequency" class="form-select">
-                                    @foreach (\App\Enums\AlertFrequency::options() as $val => $lbl)
-                                        <option value="{{ $val }}">{{ $lbl }}</option>
-                                    @endforeach
-                                </select>
-                                <div class="form-text">{{ __('Receive email updates when new profiles match this search.') }}</div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" wire:click="closeSaveModal">{{ __('Cancel') }}</button>
-                            <button type="submit" class="btn btn-primary">
-                                <span wire:loading.remove wire:target="saveSearch">{{ __('Save Search') }}</span>
-                                <span wire:loading wire:target="saveSearch"><i class="fa fa-spinner fa-spin"></i> {{ __('Saving...') }}</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endif
+    {{-- Save this search (M04): name + alert frequency; the current filters are saved. --}}
+    <x-ui.modal name="save-search" :title="__('Save this search')">
+        <form id="save-search-form" wire:submit="saveSearch" novalidate>
+            <x-ui.input :label="__('Name')" name="save_name" id="save-name" wire:model="saveName" maxlength="60" required autofocus
+                        :hint="__('So you can recognise it later.')" />
+            <x-ui.select :label="__('Email alerts')" name="save_frequency" id="save-frequency" wire:model="saveFrequency"
+                         :options="\App\Enums\AlertFrequency::options()" :hint="__('We email you when new profiles match.')" />
+        </form>
+        <x-slot:footer>
+            <x-ui.button type="button" variant="ghost" x-on:click="open = false">{{ __('Cancel') }}</x-ui.button>
+            <x-ui.button form="save-search-form" loading="saveSearch">{{ __('Save search') }}</x-ui.button>
+        </x-slot:footer>
+    </x-ui.modal>
 </div>

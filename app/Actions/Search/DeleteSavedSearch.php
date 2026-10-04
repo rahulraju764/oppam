@@ -4,18 +4,14 @@ declare(strict_types=1);
 
 namespace App\Actions\Search;
 
-use App\Models\Profile;
-use App\Models\SavedSearch;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Domain\Search\OwnSavedSearch;
+use App\Models\User;
 
+/** Delete one of the member's saved searches (M04); anyone else's id is a 404. */
 final class DeleteSavedSearch
 {
-    public function handle(Profile $profile, SavedSearch $savedSearch): void
+    public function handle(User $member, string $savedSearchId): void
     {
-        if ($savedSearch->profile_id !== $profile->id) {
-            throw (new ModelNotFoundException)->setModel(SavedSearch::class, [$savedSearch->id]);
-        }
-
-        $savedSearch->delete();
+        OwnSavedSearch::find($member, $savedSearchId)->delete();
     }
 }

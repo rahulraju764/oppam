@@ -2,113 +2,118 @@
 
 declare(strict_types=1);
 
-namespace Tests\Livewire\Member;
-
-use App\Enums\ProfileStatus;
-use App\Enums\UserRole;
+use App\Enums\AlertFrequency;
 use App\Livewire\Member\Browse\AllProfiles;
 use App\Models\Profile;
 use App\Models\SavedSearch;
-use App\Models\User;
 use App\Support\Navigation\ProfileBrowseList;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Database\Seeders\PlansSeeder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
-use Tests\TestCase;
 
-final class AllProfilesTest extends TestCase
+/*
+| P2.2 — /profiles, All Profiles (M04): every visible profile with the four sorts and load more;
+| the left rail manages the member's own saved searches (run, rename, alert, delete).
+*/
+
+beforeEach(function (): void {
+    seedMasters();
+});
+
+function browseBride(array $attributes = []): Profile
 {
-    use RefreshDatabase;
-
-    public function test_guest_is_redirected_from_all_profiles(): void
-    {
-        $this->get(route('member.all-profiles'))
-            ->assertRedirect(route('login'));
-    }
-
-    public function test_onboarded_member_can_view_all_profiles(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->male()->create([
-            'user_id' => $user->id,
-            'status' => ProfileStatus::Active,
-        ]);
-
-        $candidate = Profile::factory()->female()->create([
-            'status' => ProfileStatus::Active,
-            'first_name' => 'Anjali',
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(AllProfiles::class)
-            ->assertOk()
-            ->assertSee('All Profiles')
-            ->assertSee('Anjali');
-    }
-
-    public function test_member_can_save_a_search_from_modal(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->male()->create([
-            'user_id' => $user->id,
-            'status' => ProfileStatus::Active,
-        ]);
-
-        $this->actingAs($user);
-
-        Livewire::test(AllProfiles::class)
-            ->call('openSaveModal')
-            ->assertSet('showSaveModal', true)
-            ->set('saveName', 'My Favorite Kerala Brides')
-            ->set('saveFrequency', 'DAILY')
-            ->call('saveSearch')
-            ->assertSet('showSaveModal', false)
-            ->assertSee(__('Search saved successfully.'));
-
-        $this->assertDatabaseHas('saved_searches', [
-            'profile_id' => $profile->id,
-            'name' => 'My Favorite Kerala Brides',
-            'alert_frequency' => 'DAILY',
-        ]);
-    }
-
-    public function test_member_can_delete_a_saved_search(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        $profile = Profile::factory()->male()->create([
-            'user_id' => $user->id,
-            'status' => ProfileStatus::Active,
-        ]);
-        $saved = SavedSearch::factory()->create(['profile_id' => $profile->id]);
-
-        $this->actingAs($user);
-
-        Livewire::test(AllProfiles::class)
-            ->call('deleteSavedSearch', $saved->id);
-
-        $this->assertDatabaseMissing('saved_searches', ['id' => $saved->id]);
-    }
-
-    public function test_m03_all_profiles_remembers_codes_for_prev_next_navigation(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::Member]);
-        Profile::factory()->male()->create([
-            'user_id' => $user->id,
-            'status' => ProfileStatus::Active,
-        ]);
-
-        Profile::factory()->female()->create(['status' => ProfileStatus::Active, 'published_at' => now()->subMinute()]);
-        Profile::factory()->female()->create(['status' => ProfileStatus::Active, 'published_at' => now()]);
-
-        $this->actingAs($user);
-
-        $component = Livewire::test(AllProfiles::class);
-        $codes = array_column($component->get('results'), 'code');
-
-        expect($codes)->toHaveCount(2);
-
-        $browse = app(ProfileBrowseList::class);
-        expect($browse->neighbours($codes[0]))->toBe(['previous' => null, 'next' => $codes[1]])
-            ->and($browse->neighbours($codes[1]))->toBe(['previous' => $codes[0], 'next' => null]);
-    }
+    return Profile::factory()->female()->active()->create($attributes);
 }
+
+it('needs a signed-in, onboarded member and lives at /profiles', function (): void {
+    $this->get(memberUrl('/profiles'))->assertRedirect(route('login'));
+
+    $this->seed(PlansSeeder::class);
+    $this->actingAs(groom(), 'web')->get(memberUrl('/profiles'))->assertOk()->assertSee('All Profiles');
+});
+
+it('lists visible profiles with a count; sort changes the order; never shows ids', function (): void {
+    $older = browseBride(['published_at' => now()->subDay()]);
+    $newer = browseBride(['published_at' => now()]);
+    $this->actingAs(groom(), 'web');
+
+    $component = Livewire::test(AllProfiles::class)->assertSee('2 profiles')->assertDontSee((string) $newer->id);
+    $component->set('sort', 'newest');
+
+    expect(array_column($component->get('results'), 'code'))->toBe([$newer->code, $older->code]);
+});
+
+it('loads 20 at a time and remembers the shown codes for Prev / Next (M03)', function (): void {
+    foreach (range(1, 22) as $i) {
+        browseBride();
+    }
+    $this->actingAs(groom(), 'web');
+
+    $component = Livewire::test(AllProfiles::class)->assertCount('results', 20);
+    $codes = array_column($component->call('loadMore')->assertCount('results', 22)->get('results'), 'code');
+
+    expect(app(ProfileBrowseList::class)->neighbours($codes[20]))->toBe(['previous' => $codes[19], 'next' => $codes[21]]);
+});
+
+it('shows the member\'s saved searches with a run link built from normalised filters', function (): void {
+    $member = groom();
+    SavedSearch::factory()->create(['profile_id' => $member->profile->id, 'name' => 'Tall brides', 'filters' => ['height_min' => 170]]);
+    SavedSearch::factory()->create(['profile_id' => bride()->profile->id, 'name' => 'Someone else\'s']);
+    $this->actingAs($member, 'web');
+
+    Livewire::test(AllProfiles::class)
+        ->assertSee('Tall brides')->assertDontSee('Someone else')
+        ->assertSee('(1/10)')
+        ->assertSeeHtml(e(route('member.search', ['f' => ['height_min' => 170]])));
+});
+
+it('changes the alert frequency, renames and deletes the member\'s own saved search', function (): void {
+    $member = groom();
+    $saved = SavedSearch::factory()->create(['profile_id' => $member->profile->id, 'name' => 'Old name']);
+    $this->actingAs($member, 'web');
+
+    $component = Livewire::test(AllProfiles::class)
+        ->call('updateFrequency', $saved->id, 'WEEKLY')->assertSee('Alert setting saved.');
+    expect($saved->refresh()->alert_frequency)->toBe(AlertFrequency::Weekly);
+
+    $component->call('startRename', $saved->id)->assertDispatched('open-modal', name: 'rename-search')
+        ->assertSet('renameTo', 'Old name')
+        ->set('renameTo', '')->call('rename')->assertHasErrors('renameTo')
+        ->set('renameTo', 'New name')->call('rename')->assertHasNoErrors()->assertDispatched('close-modal', name: 'rename-search');
+    expect($saved->refresh()->name)->toBe('New name');
+
+    $component->call('deleteSavedSearch', $saved->id)->assertSee('Saved search deleted.');
+    expect(SavedSearch::query()->count())->toBe(0);
+});
+
+it('IDOR: actions on another member\'s saved search are a 404 and change nothing', function (string $method): void {
+    $theirs = SavedSearch::factory()->create(['profile_id' => bride()->profile->id, 'name' => 'Theirs']);
+    $this->actingAs(groom(), 'web');
+
+    $args = $method === 'updateFrequency' ? [$theirs->id, 'OFF'] : [$theirs->id];
+    expect(fn () => Livewire::test(AllProfiles::class)->call($method, ...$args))->toThrow(ModelNotFoundException::class);
+    expect($theirs->refresh()->name)->toBe('Theirs')->and($theirs->alert_frequency)->toBe(AlertFrequency::Daily);
+})->with(['updateFrequency', 'startRename', 'deleteSavedSearch']);
+
+it('an unknown alert frequency changes nothing', function (): void {
+    $member = groom();
+    $saved = SavedSearch::factory()->create(['profile_id' => $member->profile->id]);
+    $this->actingAs($member, 'web');
+
+    Livewire::test(AllProfiles::class)->call('updateFrequency', $saved->id, 'HOURLY')->assertDontSee('Alert setting saved.');
+    expect($saved->refresh()->alert_frequency)->toBe(AlertFrequency::Daily);
+});
+
+it('the rename target, results, cursor and total can\'t be tampered with', function (string $property): void {
+    $this->actingAs(groom(), 'web');
+
+    expect(fn () => Livewire::test(AllProfiles::class)->set($property, $property === 'total' ? 9 : 'x'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+})->with(['renamingId', 'results', 'cursor', 'total']);
+
+it('shows the empty states', function (): void {
+    $this->actingAs(groom(), 'web');
+
+    Livewire::test(AllProfiles::class)->assertSee('No profiles yet')->assertSee('No saved searches yet');
+});

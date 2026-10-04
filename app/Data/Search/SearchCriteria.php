@@ -168,6 +168,66 @@ final readonly class SearchCriteria
     }
 
     /**
+     * The normalised filters, in the URL's shape (?f[...]): only set values, so
+     * fromInput(toInput()) gives the same criteria. A saved search stores this, never raw input.
+     *
+     * @return array<string, int|string|list<int|string>>
+     */
+    public function toInput(): array
+    {
+        $out = [
+            'age_min' => $this->ageMin,
+            'age_max' => $this->ageMax,
+            'height_min' => $this->heightMin,
+            'height_max' => $this->heightMax,
+            'marital' => array_map(fn (MaritalStatus $s): string => $s->value, $this->maritalStatuses),
+            'no_children' => $this->noChildren,
+            'physical' => $this->physicalStatus?->value,
+            'mother_tongue' => $this->motherTongueIds,
+            'religion' => $this->religionId,
+            'caste' => $this->casteIds,
+            'caste_no_bar' => $this->includeCasteNoBar,
+            'sub_caste' => $this->subCaste,
+            'star' => $this->starIds,
+            'rasi' => $this->rasiId,
+            'no_dosham' => $this->noDosham,
+            'country' => $this->countryId,
+            'state' => $this->stateId,
+            'district' => $this->districtIds,
+            'nri' => $this->nriOnly,
+            'citizenship' => $this->citizenship,
+            'education_min' => $this->educationMinId,
+            'occupation' => $this->occupationIds,
+            'employer' => $this->employerType?->value,
+            'income_min' => $this->incomeMinId,
+            'family_status' => $this->familyStatusId,
+            'family_type' => $this->familyTypeId,
+            'family_values' => $this->familyValuesId,
+            'diet' => $this->dietId,
+            'smoking' => $this->smokingId,
+            'drinking' => $this->drinkingId,
+            'photo' => $this->withPhoto,
+            'verified' => $this->verifiedOnly,
+            'premium' => $this->premiumOnly,
+            'created_by' => $this->createdBy,
+            'active' => $this->activeWithin,
+            'new' => $this->newlyJoined,
+            'hide_viewed' => $this->hideViewed,
+            'sort' => $this->sort === SearchSort::Relevance ? null : $this->sort->value,
+        ];
+
+        $set = [];
+        foreach ($out as $key => $value) {
+            if ($value === null || $value === false || $value === []) {
+                continue;
+            }
+            $set[$key] = $value === true ? '1' : $value;
+        }
+
+        return $set;
+    }
+
+    /**
      * The "created by" values that mean a family member made the profile.
      *
      * @return list<string>

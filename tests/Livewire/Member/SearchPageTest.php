@@ -89,6 +89,25 @@ it('P2.1 follow-up: Prev / Next on a profile opened from search walk the shown r
         ->and($browse->neighbours($codes[19]))->toBe(['previous' => $codes[18], 'next' => $codes[20]]);
 });
 
+it('P2.2: saves the current (normalised) filters from the dialog; errors stay in the dialog', function (): void {
+    $me = groom('+919888800011');
+    $this->actingAs($me, 'web');
+
+    $component = Livewire::withQueryParams(['f' => ['height_min' => '165', 'junk' => 'x']])->test(Search::class)
+        ->call('openSaveModal')->assertDispatched('open-modal', name: 'save-search')
+        ->set('saveName', '')->call('saveSearch')->assertHasErrors('saveName')
+        ->set('saveName', 'Tall brides')->set('saveFrequency', 'WEEKLY')->call('saveSearch')
+        ->assertHasNoErrors()->assertDispatched('close-modal', name: 'save-search')->assertSee('Search saved.');
+
+    $saved = App\Models\SavedSearch::query()->sole();
+    expect($saved->profile_id)->toBe($me->profile->id)
+        ->and($saved->filters)->toBe(['height_min' => 165])
+        ->and($saved->alert_frequency)->toBe(App\Enums\AlertFrequency::Weekly);
+
+    App\Models\SavedSearch::factory()->count(9)->create(['profile_id' => $me->profile->id]);
+    $component->call('openSaveModal')->call('saveSearch')->assertHasErrors('saveName')->assertSee('You can save up to 10 searches');
+});
+
 it('find by ID opens a visible profile and gives one message for a missing or hidden one', function (): void {
     $me = groom('+919888800005');
     $visible = searchBride();

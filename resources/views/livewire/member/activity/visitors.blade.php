@@ -87,7 +87,7 @@
                                         <p class="text-muted mb-4">
                                             {{ __('Your profile has not been visited recently. Updating your photos and preferences will help you get noticed!') }}
                                         </p>
-                                        <a href="{{ route('member.all-profiles') }}" class="btn btn-primary" wire:navigate>
+                                        <a href="{{ route('member.profiles') }}" class="btn btn-primary" wire:navigate>
                                             {{ __('Explore Profiles') }}
                                         </a>
                                     </div>
@@ -176,7 +176,7 @@
                                     <p class="text-muted mb-4">
                                         {{ __('When you inspect member profiles, your 90-day history will appear here for easy reference.') }}
                                     </p>
-                                    <a href="{{ route('member.all-profiles') }}" class="btn btn-primary" wire:navigate>
+                                    <a href="{{ route('member.profiles') }}" class="btn btn-primary" wire:navigate>
                                         {{ __('Browse Profiles') }}
                                     </a>
                                 </div>

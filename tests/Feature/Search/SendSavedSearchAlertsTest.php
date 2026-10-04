@@ -2,140 +2,167 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Search;
-
 use App\Enums\AlertFrequency;
 use App\Enums\ProfileStatus;
-use App\Enums\UserRole;
 use App\Jobs\Search\SendSavedSearchAlerts;
+use App\Models\Block;
 use App\Models\Ignore;
+use App\Models\NotificationPreference;
+use App\Models\PrivacySetting;
 use App\Models\Profile;
 use App\Models\SavedSearch;
 use App\Models\User;
 use App\Notifications\Member\SavedSearchMatchesNotification;
-use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Notification;
-use Tests\TestCase;
 
-final class SendSavedSearchAlertsTest extends TestCase
+/*
+| P2.2 — saved-search alerts (M04): the job counts profiles published since the last alert with the
+| owner's search rules (blocked / ignored / incognito never count), honours DAILY / WEEKLY / OFF,
+| skips owners who may not browse or turned the email off, and the email carries a count and links.
+*/
+
+beforeEach(function (): void {
+    seedMasters();
+    Notification::fake();
+    $this->travelTo(now()->startOfMinute());
+});
+
+function alertOwner(): User
 {
-    use RefreshDatabase;
-
-    public function test_it_alerts_only_for_profiles_published_after_last_alerted_at(): void
-    {
-        Notification::fake();
-
-        $searcherUser = User::factory()->create(['email' => 'searcher@example.com', 'role' => UserRole::Member]);
-        $searcher = Profile::factory()->male()->create(['user_id' => $searcherUser->id, 'status' => ProfileStatus::Active]);
-
-        $checkpoint = CarbonImmutable::parse('2026-10-01 10:00:00');
-
-        $savedSearch = SavedSearch::factory()->create([
-            'profile_id' => $searcher->id,
-            'name' => 'Bride Alert',
-            'filters' => ['age_min' => 22, 'age_max' => 28],
-            'alert_frequency' => AlertFrequency::Daily,
-            'last_alerted_at' => $checkpoint,
-        ]);
-
-        // Old candidate (published before checkpoint) - should NOT count
-        Profile::factory()->female()->create([
-            'status' => ProfileStatus::Active,
-            'published_at' => $checkpoint->subDay(),
-            'dob' => CarbonImmutable::now()->subYears(25),
-        ]);
-
-        // New candidate (published after checkpoint) - SHOULD count
-        Profile::factory()->female()->create([
-            'status' => ProfileStatus::Active,
-            'published_at' => $checkpoint->addHour(),
-            'dob' => CarbonImmutable::now()->subYears(24),
-        ]);
-
-        app(SendSavedSearchAlerts::class)->handle(app(\App\Services\Profile\ProfileSearch::class));
-
-        Notification::assertSentTo(
-            $searcherUser,
-            SavedSearchMatchesNotification::class,
-            function (SavedSearchMatchesNotification $notification): bool {
-                return $notification->newMatchesCount === 1;
-            }
-        );
-
-        $savedSearch->refresh();
-        $this->assertTrue($savedSearch->last_alerted_at->isAfter($checkpoint));
-    }
-
-    public function test_it_does_not_alert_when_frequency_is_off(): void
-    {
-        Notification::fake();
-
-        $searcherUser = User::factory()->create(['email' => 'searcher@example.com', 'role' => UserRole::Member]);
-        $searcher = Profile::factory()->male()->create(['user_id' => $searcherUser->id, 'status' => ProfileStatus::Active]);
-
-        SavedSearch::factory()->create([
-            'profile_id' => $searcher->id,
-            'alert_frequency' => AlertFrequency::Off,
-            'last_alerted_at' => null,
-        ]);
-
-        Profile::factory()->female()->create([
-            'status' => ProfileStatus::Active,
-            'published_at' => now(),
-        ]);
-
-        app(SendSavedSearchAlerts::class)->handle(app(\App\Services\Profile\ProfileSearch::class));
-
-        Notification::assertNothingSent();
-    }
-
-    public function test_it_does_not_alert_when_there_are_zero_new_matches(): void
-    {
-        Notification::fake();
-
-        $searcherUser = User::factory()->create(['email' => 'searcher@example.com', 'role' => UserRole::Member]);
-        $searcher = Profile::factory()->male()->create(['user_id' => $searcherUser->id, 'status' => ProfileStatus::Active]);
-
-        SavedSearch::factory()->create([
-            'profile_id' => $searcher->id,
-            'alert_frequency' => AlertFrequency::Daily,
-            'last_alerted_at' => now()->subDay(),
-        ]);
-
-        app(SendSavedSearchAlerts::class)->handle(app(\App\Services\Profile\ProfileSearch::class));
-
-        Notification::assertNothingSent();
-    }
-
-    public function test_it_excludes_ignored_profiles_from_the_alert_count(): void
-    {
-        Notification::fake();
-
-        $searcherUser = User::factory()->create(['email' => 'searcher@example.com', 'role' => UserRole::Member]);
-        $searcher = Profile::factory()->male()->create(['user_id' => $searcherUser->id, 'status' => ProfileStatus::Active]);
-
-        $checkpoint = CarbonImmutable::parse('2026-10-01 10:00:00');
-
-        SavedSearch::factory()->create([
-            'profile_id' => $searcher->id,
-            'filters' => [],
-            'alert_frequency' => AlertFrequency::Daily,
-            'last_alerted_at' => $checkpoint,
-        ]);
-
-        $ignoredCandidate = Profile::factory()->female()->create([
-            'status' => ProfileStatus::Active,
-            'published_at' => $checkpoint->addHour(),
-        ]);
-
-        Ignore::factory()->create([
-            'ignorer_profile_id' => $searcher->id,
-            'ignored_profile_id' => $ignoredCandidate->id,
-        ]);
-
-        app(SendSavedSearchAlerts::class)->handle(app(\App\Services\Profile\ProfileSearch::class));
-
-        Notification::assertNothingSent();
-    }
+    return groom('+919811100001');
 }
+
+function savedSearchOf(User $owner, array $state = []): SavedSearch
+{
+    return SavedSearch::factory()->create([
+        'profile_id' => $owner->profile->id,
+        'name' => 'Brides',
+        'filters' => [],
+        'alert_frequency' => AlertFrequency::Daily,
+        'last_alerted_at' => now()->subDay(),
+        ...$state,
+    ]);
+}
+
+function newBride(array $state = []): Profile
+{
+    return Profile::factory()->female()->active()->create(['published_at' => now()->subHour(), ...$state]);
+}
+
+function runAlerts(): void
+{
+    app()->call([new SendSavedSearchAlerts, 'handle']);
+}
+
+it('M04: counts only profiles published since the last alert, then moves the window on', function (): void {
+    $owner = alertOwner();
+    $saved = savedSearchOf($owner);
+    newBride(['published_at' => now()->subDays(2)]);   // before the last alert
+    newBride();
+    newBride();
+
+    runAlerts();
+
+    Notification::assertSentTo($owner, SavedSearchMatchesNotification::class, fn (SavedSearchMatchesNotification $n): bool => $n->newMatchesCount === 2);
+    expect($saved->refresh()->last_alerted_at->equalTo(now()))->toBeTrue();
+
+    Notification::fake();
+    $this->travel(21)->hours();
+    runAlerts();   // nothing new since
+    Notification::assertNothingSent();
+});
+
+it('M04: the saved filters apply', function (): void {
+    $owner = alertOwner();
+    savedSearchOf($owner, ['filters' => ['height_min' => 170]]);
+    newBride(['height_cm' => 175]);
+    newBride(['height_cm' => 150]);
+
+    runAlerts();
+
+    Notification::assertSentTo($owner, SavedSearchMatchesNotification::class, fn (SavedSearchMatchesNotification $n): bool => $n->newMatchesCount === 1);
+});
+
+it('blocked (either way), ignored and incognito profiles never count', function (): void {
+    $owner = alertOwner();
+    savedSearchOf($owner);
+    $blocked = newBride();
+    $blocker = newBride();
+    $ignored = newBride();
+    $incognito = newBride();
+    newBride();
+    Block::factory()->create(['blocker_profile_id' => $owner->profile->id, 'blocked_profile_id' => $blocked->id]);
+    Block::factory()->create(['blocker_profile_id' => $blocker->id, 'blocked_profile_id' => $owner->profile->id]);
+    Ignore::factory()->create(['ignorer_profile_id' => $owner->profile->id, 'ignored_profile_id' => $ignored->id]);
+    (PrivacySetting::query()->whereKey($incognito->id)->first() ?? new PrivacySetting)
+        ->forceFill(['profile_id' => $incognito->id, 'incognito' => true])->save();
+
+    runAlerts();
+
+    Notification::assertSentTo($owner, SavedSearchMatchesNotification::class, fn (SavedSearchMatchesNotification $n): bool => $n->newMatchesCount === 1);
+});
+
+it('DAILY waits 20 hours and WEEKLY 6 days between alerts; OFF never alerts', function (): void {
+    $owner = alertOwner();
+    savedSearchOf($owner, ['last_alerted_at' => now()->subHours(19)]);
+    savedSearchOf($owner, ['alert_frequency' => AlertFrequency::Weekly, 'last_alerted_at' => now()->subDays(5)]);
+    savedSearchOf($owner, ['alert_frequency' => AlertFrequency::Off]);
+    newBride(['published_at' => now()->subMinutes(10)]);
+
+    runAlerts();
+    Notification::assertNothingSent();
+
+    $this->travel(2)->days();
+    runAlerts();
+    Notification::assertSentToTimes($owner, SavedSearchMatchesNotification::class, 2);
+});
+
+it('nothing for an owner who may not browse (suspended profile or account)', function (string $case): void {
+    $owner = alertOwner();
+    $saved = savedSearchOf($owner);
+    newBride();
+    $case === 'profile'
+        ? $owner->profile->forceFill(['status' => ProfileStatus::Suspended])->save()
+        : $owner->forceFill(['status' => App\Enums\UserStatus::Suspended])->save();
+
+    runAlerts();
+
+    Notification::assertNothingSent();
+    expect($saved->refresh()->last_alerted_at->lt(now()))->toBeTrue();
+})->with(['profile', 'account']);
+
+it('M08: no email when the owner turned saved_search_alert emails off; the window still moves', function (): void {
+    $owner = alertOwner();
+    $saved = savedSearchOf($owner);
+    $pref = new NotificationPreference(['event' => SavedSearchMatchesNotification::EVENT, 'email' => false]);
+    $pref->user_id = $owner->id;
+    $pref->save();
+    newBride();
+
+    runAlerts();
+
+    Notification::assertNothingSent();
+    expect($saved->refresh()->last_alerted_at->equalTo(now()))->toBeTrue();
+});
+
+it('the email: count, the search link with normalised filters, the token unsubscribe link and one-click headers', function (): void {
+    $owner = alertOwner();
+    $saved = savedSearchOf($owner, ['filters' => ['height_min' => 170, 'junk' => 'x']]);
+
+    $mail = (new SavedSearchMatchesNotification($saved, 3))->toMail($owner);
+    $unsubscribe = route('saved-searches.unsubscribe', ['token' => $saved->alert_token]);
+
+    expect($mail)->toBeInstanceOf(MailMessage::class)
+        ->and($mail->subject)->toContain('3 new profiles')
+        ->and($mail->actionUrl)->toBe(route('member.search', ['f' => ['height_min' => 170]]))
+        ->and(implode(' ', $mail->outroLines))->toContain($unsubscribe)
+        ->and(implode(' ', $mail->outroLines))->not->toContain($saved->id);
+
+    $email = new Symfony\Component\Mime\Email;
+    foreach ($mail->callbacks as $callback) {
+        $callback($email);
+    }
+    expect($email->getHeaders()->get('List-Unsubscribe')?->getBodyAsString())->toBe('<'.$unsubscribe.'>')
+        ->and($email->getHeaders()->get('List-Unsubscribe-Post')?->getBodyAsString())->toBe('List-Unsubscribe=One-Click');
+});

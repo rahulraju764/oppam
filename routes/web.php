@@ -54,6 +54,9 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/forgot-password', ForgotPassword::class)->name('password.forgot');
 });
 
+// The first Phase 2 pass used /all-profiles; PRD §6.2 says /profiles (decisions 2026-10-04).
+Route::permanentRedirect('/all-profiles', '/profiles');
+
 // Admin impersonation (A01 / A03, P1.7b): the admin panel hands the browser over with a single-use
 // token (60 s, same IP); "End session" in the banner closes it. Not behind `guest`: an existing
 // member session in that browser is ended by the handoff (this device only).
@@ -76,7 +79,7 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         Route::get('/daily-matches', Daily::class)->name('member.daily-matches');
         Route::get('/visitors', Visitors::class)->name('member.visitors');
         Route::get('/search', Search::class)->name('member.search');
-        Route::get('/all-profiles', AllProfiles::class)->name('member.all-profiles');
+        Route::get('/profiles', AllProfiles::class)->name('member.profiles');
         Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');
     });
 
@@ -85,9 +88,14 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         ->middleware('signed')->where('profile', 'OPM[0-9]+')->name('member.horoscope');
 });
 
-// Saved search 1-click unsubscribe (M04): signed URL, can be clicked directly from email.
-Route::get('/saved-searches/{savedSearch}/unsubscribe', UnsubscribeSavedSearchController::class)
-    ->middleware('signed')->name('saved-searches.unsubscribe');
+// Saved-search alert unsubscribe (M04): the email's random token, no sign-in. GET confirms, POST
+// (also the RFC 8058 one-click target, CSRF-exempt in bootstrap/app.php) turns the alerts off.
+Route::middleware('throttle:30,1')->group(function (): void {
+    Route::get('/saved-searches/unsubscribe/{token}', [UnsubscribeSavedSearchController::class, 'show'])
+        ->where('token', '[A-Za-z0-9]{48}')->name('saved-searches.unsubscribe');
+    Route::post('/saved-searches/unsubscribe/{token}', [UnsubscribeSavedSearchController::class, 'store'])
+        ->where('token', '[A-Za-z0-9]{48}');
+});
 
 // Living styleguide for visual checks (P0.2). Local only: never registered in testing/production.
 if (app()->environment('local')) {

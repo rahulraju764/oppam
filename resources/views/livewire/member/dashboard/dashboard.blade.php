@@ -54,7 +54,7 @@
                                     {{ __('My Matches') }}
                                 </a>
 
-                                <a href="{{ route('member.all-profiles') }}" wire:navigate>
+                                <a href="{{ route('member.profiles') }}" wire:navigate>
                                     <i class="fa fa-users" aria-hidden="true"></i>
                                     {{ __('All Profiles') }}
                                 </a>
@@ -117,7 +117,7 @@
                                     </div>
 
                                     <div class="content-btn mt-3">
-                                        <a href="{{ route('member.all-profiles') }}" class="view-btn" wire:navigate>
+                                        <a href="{{ route('member.profiles') }}" class="view-btn" wire:navigate>
                                             {{ __('View All Recommendations') }}
                                         </a>
                                     </div>

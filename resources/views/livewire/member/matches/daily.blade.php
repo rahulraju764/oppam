@@ -128,7 +128,7 @@
                                     <a href="{{ route('member.my-matches') }}" class="btn btn-outline-secondary btn-sm text-start" wire:navigate>
                                         <i class="fa fa-heart-o text-danger me-2" aria-hidden="true"></i> {{ __('My Matches') }}
                                     </a>
-                                    <a href="{{ route('member.all-profiles') }}" class="btn btn-outline-secondary btn-sm text-start" wire:navigate>
+                                    <a href="{{ route('member.profiles') }}" class="btn btn-outline-secondary btn-sm text-start" wire:navigate>
                                         <i class="fa fa-users text-primary me-2" aria-hidden="true"></i> {{ __('All Profiles') }}
                                     </a>
                                     <a href="{{ route('member.search') }}" class="btn btn-outline-secondary btn-sm text-start" wire:navigate>

@@ -43,7 +43,7 @@
 
                                 <p class="sidebar-section-title">{{ __('Browse') }}</p>
 
-                                <a href="{{ route('member.all-profiles') }}" class="nav-link-custom" wire:navigate>
+                                <a href="{{ route('member.profiles') }}" class="nav-link-custom" wire:navigate>
                                     <span class="nav-link-label">
                                         <i class="fa fa-users" aria-hidden="true"></i>
                                         {{ __('All Profiles') }}

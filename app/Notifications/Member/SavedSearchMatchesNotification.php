@@ -9,15 +9,23 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\URL;
+use Symfony\Component\Mime\Email;
 
 /**
- * Email alert for new matches matching a member's saved search (PRD §10 M04).
- * Carries the new matches count, a direct link to the search, and a signed 1-click unsubscribe link.
+ * "N new profiles match your saved search" (M04, PRD §10 M08 `saved_search_alert`). Email only for
+ * now — the in-app + live copies come with the notification system (P3.2). Carries a count and
+ * links only: the search (normalised filters) and the token unsubscribe page, which is also the
+ * RFC 8058 one-click target in the List-Unsubscribe headers.
  */
 final class SavedSearchMatchesNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    /** notification_preferences.event (PRD §10 M08). */
+    public const EVENT = 'saved_search_alert';
+
+    /** The search was deleted before the mail went out: drop it instead of failing and retrying. */
+    public bool $deleteWhenMissingModels = true;
 
     public function __construct(
         public readonly SavedSearch $savedSearch,
@@ -34,23 +42,21 @@ final class SavedSearchMatchesNotification extends Notification implements Shoul
 
     public function toMail(object $notifiable): MailMessage
     {
-        $searchUrl = route('member.search', ['f' => $this->savedSearch->filters]);
-        $unsubscribeUrl = URL::signedRoute('saved-searches.unsubscribe', ['savedSearch' => $this->savedSearch->id]);
+        $unsubscribeUrl = route('saved-searches.unsubscribe', ['token' => $this->savedSearch->alert_token]);
+        $replace = ['count' => $this->newMatchesCount, 'name' => $this->savedSearch->name];
 
         return (new MailMessage)
-            ->subject(__(':count new matches for ":name" | Oppam Matrimony', [
-                'count' => $this->newMatchesCount,
-                'name' => $this->savedSearch->name,
-            ]))
+            ->subject(trans_choice(':count new profile for ":name"|:count new profiles for ":name"', $this->newMatchesCount, $replace).' – '.config('oppam.site.name'))
             ->greeting(__('Hello!'))
-            ->line(__('We found :count new profiles matching your saved search ":name".', [
-                'count' => $this->newMatchesCount,
-                'name' => $this->savedSearch->name,
-            ]))
-            ->action(__('View matches'), $searchUrl)
-            ->line(__('You are receiving this email because you enabled :frequency alerts for this search.', [
+            ->line(trans_choice(':count new profile matches your saved search ":name".|:count new profiles match your saved search ":name".', $this->newMatchesCount, $replace))
+            ->action(__('View matches'), $this->savedSearch->searchUrl())
+            ->line(__('You are receiving this email because you turned on :frequency alerts for this search.', [
                 'frequency' => mb_strtolower($this->savedSearch->alert_frequency->label()),
             ]))
-            ->line(__('To stop receiving alerts for this search, [unsubscribe here](:url).', ['url' => $unsubscribeUrl]));
+            ->line(__('To stop these alerts, [turn them off here](:url).', ['url' => $unsubscribeUrl]))
+            ->withSymfonyMessage(function (Email $message) use ($unsubscribeUrl): void {
+                $message->getHeaders()->addTextHeader('List-Unsubscribe', '<'.$unsubscribeUrl.'>');
+                $message->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+            });
     }
 }
