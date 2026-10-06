@@ -28,6 +28,7 @@ use App\Models\SavedSearch;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Support\Facades\Settings;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -38,7 +39,7 @@ use Illuminate\Support\Str;
  * phone, email, password, names (to "Deleted Member"), date of birth (to 1 January of the same
  * year), about text, contact / family / partner / career / horoscope / lifestyle / privacy rows,
  * photos and the horoscope file, sign-in history, OTP challenges, sessions, profile and contact
- * views, and held moderation text. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
+ * views, in-app notifications (theirs, and others' that name them), and held moderation text. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
  * subscriptions, orders (P5) and audit rows keep pointing at something. Idempotent: an
  * anonymised or not-yet-due member is skipped. Run by PurgeDeletedMembers (daily).
  */
@@ -74,6 +75,12 @@ final class PurgeDeletedMember
             }
 
             NotificationPreference::query()->where('user_id', $member->id)->delete();
+            // In-app notifications (P3.2): the member's own, and other members' rows that name
+            // this member as the actor ("… viewed your profile" keeps a name and a code).
+            DatabaseNotification::query()->where('notifiable_type', $member->getMorphClass())->where('notifiable_id', $member->id)->delete();
+            if ($profile !== null) {
+                DatabaseNotification::query()->where('data->actor_code', $profile->code)->delete();
+            }
             LoginEvent::query()->where('user_id', $member->id)->delete();
             // OTP challenges carry the real phone + IP; sessions the IP + browser.
             OtpChallenge::query()->where('user_id', $member->id)->orWhere('phone', $member->phone)->delete();

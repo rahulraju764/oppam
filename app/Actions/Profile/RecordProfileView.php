@@ -10,6 +10,7 @@ use App\Events\Profile\ProfileViewed;
 use App\Models\Profile;
 use App\Models\ProfileView;
 use App\Models\User;
+use App\Notifications\Profile\ProfileViewedNotification;
 use App\Services\Admin\Impersonation;
 use App\Support\Facades\Settings;
 use Illuminate\Cache\RateLimiter;
@@ -83,6 +84,9 @@ final class RecordProfileView
         if ($firstToday && $target->user_id !== null) {
             $countToday = ProfileView::query()->where('viewed_profile_id', $target->id)->where('view_date', $today)->count();
             ProfileViewed::dispatch($target->user_id, $countToday);
+
+            // The bell (M08 `profile_viewed`): one per viewer per day — this branch runs once a day per pair.
+            User::query()->find($target->user_id)?->notify(new ProfileViewedNotification($own->id));
         }
     }
 }

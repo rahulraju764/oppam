@@ -223,18 +223,25 @@ it('A03 bulk: at most 200 members, a reason, and the action\'s own permission', 
     expect($member->refresh()->status)->toBe(UserStatus::Active);
 });
 
-it('A03 bulk message: emailed only to active members with a verified email', function (): void {
+// P3.2 (carry-over "P1.7a → P3.2: in-app copy of AdminMessage"): until P3.2 the message was mail-only,
+// so a member without a verified email was skipped. Now every ACTIVE member gets it in-app; the
+// email copy still goes only to a verified address.
+it('A03 bulk message: in-app to every active member, emailed only to a verified address; inactive members skipped', function (): void {
     Notification::fake();
     $verified = a03Verified('+919822200009');
     $unverified = memberWithPhone('+919822200010');
     $unverified->forceFill(['email' => 'x@example.com', 'email_verified_at' => null])->save();
+    $suspended = a03Verified('+919822200019');
+    $suspended->forceFill(['status' => UserStatus::Suspended])->save();
 
-    $result = app(BulkMemberAction::class)->handle(adminWithRole('support'), MemberBulkAction::Notify, [$verified->id, $unverified->id],
+    $result = app(BulkMemberAction::class)->handle(adminWithRole('support'), MemberBulkAction::Notify, [$verified->id, $unverified->id, $suspended->id],
         'Festival offer announcement.', 'Onam greetings', 'Wishing you a happy Onam from the Oppam team.');
 
-    expect($result->done)->toBe(1)->and($result->skipped)->toBe(1);
-    Notification::assertSentTo($verified, AdminMessage::class);
-    Notification::assertNotSentTo($unverified, AdminMessage::class);
+    expect($result->done)->toBe(2)->and($result->skipped)->toBe(1);
+    $inApp = App\Notifications\Support\InAppChannel::class;
+    Notification::assertSentTo($verified, AdminMessage::class, fn (AdminMessage $n, array $channels): bool => $channels === [$inApp, 'mail']);
+    Notification::assertSentTo($unverified, AdminMessage::class, fn (AdminMessage $n, array $channels): bool => $channels === [$inApp]);
+    Notification::assertNotSentTo($suspended, AdminMessage::class);
 });
 
 // ---- CSV export ----------------------------------------------------------------------------------

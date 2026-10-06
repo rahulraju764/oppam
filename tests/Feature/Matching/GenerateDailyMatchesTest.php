@@ -144,15 +144,16 @@ it('nothing for a member who is not live, and no email when there is nothing to 
     Notification::assertNothingSent();
 });
 
-it('M08: no email when the member turned daily_matches_ready emails off; the batch is still made', function (): void {
+it('M08: with daily_matches_ready email off, no email — but the in-app notification still comes', function (): void {
     $groom = dailyGroom();
-    $pref = new NotificationPreference(['event' => DailyMatchesReady::EVENT, 'email' => false]);
+    $pref = new NotificationPreference(['event' => App\Enums\NotificationEvent::DailyMatchesReady->value, 'email' => false]);
     $pref->user_id = $groom->id;
     $pref->save();
     dailyBride();
 
     expect(buildFor($groom))->toBe(1);
-    Notification::assertNothingSent();
+    Notification::assertSentTo($groom, DailyMatchesReady::class,
+        fn (DailyMatchesReady $n, array $channels): bool => ! in_array('mail', $channels, true) && in_array(App\Notifications\Support\InAppChannel::class, $channels, true));
 });
 
 it('F06 fan-out: one chunk job per 1,000 live members on the matching queue; old batches pruned', function (): void {

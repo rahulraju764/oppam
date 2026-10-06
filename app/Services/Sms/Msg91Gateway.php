@@ -29,6 +29,8 @@ final class Msg91Gateway implements SmsGateway
         private readonly string $authKey,
         private readonly string $otpTemplateId,
         private readonly string $accountExistsTemplateId = '',
+        /** @var array<string, string> notification event => DLT template id (config services.msg91.notice_templates) */
+        private readonly array $noticeTemplates = [],
     ) {}
 
     public function sendOtp(PhoneNumber $to, string $code, OtpPurpose $purpose): void
@@ -49,6 +51,39 @@ final class Msg91Gateway implements SmsGateway
                 ]));
         } catch (ConnectionException) {
             // Never $e->getMessage(): Guzzle appends the full request URI (code + number).
+            throw SmsDeliveryFailed::because('MSG91 unreachable (connection error or timeout).');
+        }
+
+        if ($response->failed() || $response->json('type') !== 'success') {
+            throw SmsDeliveryFailed::because('MSG91 refused the request (HTTP '.$response->status().').');
+        }
+    }
+
+    /**
+     * Flow API with the DLT template registered for this notification; variables as var1, var2…
+     * An event without a registered template is refused (an unapproved text must never go out).
+     *
+     * @param  list<string>  $variables
+     */
+    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables): void
+    {
+        $templateId = $this->noticeTemplates[$templateKey] ?? '';
+        if ($this->authKey === '' || $templateId === '') {
+            throw SmsDeliveryFailed::because("No MSG91 DLT template registered for [{$templateKey}].");
+        }
+
+        $recipient = ['mobiles' => ltrim($to->e164(), '+')];
+        foreach ($variables as $i => $value) {
+            $recipient['var'.($i + 1)] = $value;
+        }
+
+        try {
+            $response = $this->http
+                ->timeout(10)
+                ->withHeaders(['authkey' => $this->authKey])
+                ->acceptJson()
+                ->post(self::FLOW_ENDPOINT, ['template_id' => $templateId, 'recipients' => [$recipient]]);
+        } catch (ConnectionException) {
             throw SmsDeliveryFailed::because('MSG91 unreachable (connection error or timeout).');
         }
 

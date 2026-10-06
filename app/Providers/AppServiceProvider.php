@@ -86,6 +86,7 @@ final class AppServiceProvider extends ServiceProvider
                     (string) config('services.msg91.auth_key'),
                     (string) config('services.msg91.otp_template_id'),
                     (string) config('services.msg91.account_exists_template_id'),
+                    array_filter((array) config('services.msg91.notice_templates', []), 'is_string'),
                 ),
                 'log' => $this->app->make(LogSmsGateway::class),
                 default => throw new RuntimeException("Unknown SMS_DRIVER [{$driver}]."),

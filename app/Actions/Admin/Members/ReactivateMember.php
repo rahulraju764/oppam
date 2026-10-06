@@ -72,8 +72,6 @@ final class ReactivateMember
             return $member;
         });
 
-        if ($reactivated->canReceiveAccountMail()) {
-            $reactivated->notify(new AccountReactivated);
-        }
+        $reactivated->notify(new AccountReactivated);   // in-app always; email only to a verified address (NotificationRouter)
     }
 }

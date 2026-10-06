@@ -154,6 +154,9 @@
   --scrim: rgba(0, 0, 0, .45);        /* modal backdrop */
   --tap-min: 44px;                    /* minimum tap target (oppam-ui-standards) */
   --tap-compact: 36px;                /* small buttons inside dense rows only */
+  --flyout-width: 360px;              /* header dropdown panels and the toast stack */
+  --accent-bar: 4px;                  /* the coloured edge of a toast / callout */
+  --tracking-caps: .04em;             /* small uppercase labels */
 
   /* Admin panel skin (PRD §11.0: same tokens, neutral admin skin). */
   --admin-sidebar-bg: #1f2428;

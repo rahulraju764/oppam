@@ -383,6 +383,25 @@ it('P1.7a review Major: the purge also removes OTP challenges (real phone + IP) 
         ->and(DB::table('sessions')->where('user_id', $member->id)->exists())->toBeFalse();
 });
 
+it('P3.2: the purge also removes the member\'s in-app notifications and others\' notifications that name them', function (): void {
+    $member = a03Member('+919811100096');
+    $other = memberWithPhone('+919811100097');
+    $member->notify(new App\Notifications\Member\DailyMatchesReady(2));
+    $other->notify(new App\Notifications\Member\DailyMatchesReady(3));
+    // "<name> viewed your profile" as a Gold member gets it: the payload names the viewer.
+    $other->notifications()->create(['id' => (string) Illuminate\Support\Str::uuid(), 'type' => 'profile_viewed',
+        'data' => ['type' => 'profile_viewed', 'actor_code' => $member->profile->code, 'actor_name' => 'Named Viewer', 'title' => 'Named Viewer viewed your profile']]);
+    app(DeleteMember::class)->handle(adminWithRole(), $member, $member->profile->code, 'Member asked us to delete it.');
+    $this->travel(31)->days();
+
+    app(PurgeDeletedMember::class)->handle(User::withTrashed()->findOrFail($member->id));
+
+    $left = Illuminate\Notifications\DatabaseNotification::query()->get();
+    expect($left)->toHaveCount(1)
+        ->and($left->first()->notifiable_id)->toBe($other->id)
+        ->and($left->first()->type)->toBe('daily_matches_ready');
+});
+
 it('P2.4: the purge also removes saved searches, daily matches, match scores and ignores, both directions', function (): void {
     $member = a03Member('+919811100095');
     $other = Profile::factory()->female()->active()->create();

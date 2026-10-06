@@ -334,3 +334,78 @@
    sheet's "Show N profiles" button is reachable — the sheet can't stack above it (different
    stacking contexts). */
 body.search-sheet-open .mobile-footer { display: none; }
+
+/* ---- Notifications (M08, P3.2): the header bell's dropdown and the toast stack ---- */
+.nt-bell { position: relative; }
+
+.nt-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: var(--z-dropdown);
+  width: min(var(--flyout-width), calc(100vw - var(--space-8)));
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-default);
+  box-shadow: var(--shadow-md);
+}
+
+.nt-dropdown__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.nt-dropdown__empty { margin: var(--space-4) 0; text-align: center; color: var(--color-bltxt); font-size: var(--text-sm); }
+.nt-dropdown__loading { display: flex; flex-direction: column; gap: var(--space-2); }
+.nt-dropdown__all { display: block; margin-top: var(--space-2); padding-top: var(--space-2); border-top: var(--border-hair); text-align: center; font-size: var(--text-sm); }
+.nt-list--compact { max-height: 60vh; overflow-y: auto; }
+
+.toast-stack {
+  position: fixed;
+  inset: auto var(--space-4) var(--space-4) auto;
+  z-index: calc(var(--z-dropdown) + 4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(var(--flyout-width), calc(100vw - var(--space-8)));
+  pointer-events: none;
+}
+
+.toast-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-left: var(--accent-bar) solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-default);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: toast-in var(--transition) both;
+}
+
+.toast-card--success { border-left-color: var(--color-success); }
+.toast-card--danger { border-left-color: var(--color-primary-dark); }
+.toast-card__icon { color: var(--color-primary); }
+.toast-card__text { flex: 1; min-width: 0; }
+.toast-card__title { display: block; margin: 0; padding: 0; border: 0; background: none; font-weight: var(--fw-semibold); font-size: var(--text-sm); color: var(--color-black); text-align: start; }
+.toast-card__link { cursor: pointer; text-decoration: underline; text-underline-offset: var(--space-1); }
+.toast-card__body { margin: 0; font-size: var(--text-xs); color: var(--color-bltxt); }
+.toast-card__close { min-width: var(--tap-min); min-height: var(--tap-min); border: 0; background: none; color: var(--color-gr-dark); }
+.toast-card__close:focus-visible, .toast-card__link:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+
+@keyframes toast-in { from { opacity: 0; transform: translateY(var(--space-2)); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-card { animation: none; }
+}
+
+@media (max-width: 991.98px) {
+  .toast-stack { inset: auto var(--space-4) calc(var(--space-11) + var(--space-4)) var(--space-4); width: auto; }
+}
+
+/* /notifications list extras (template .nt-* covers the rows) */
+.nt-day { margin: var(--space-4) 0 var(--space-2); font-size: var(--text-xs); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--color-gr-dark); }
+.nt-text-body { display: block; font-size: var(--text-xs); color: var(--color-bltxt); }
+.nt-actions { display: flex; gap: var(--space-1); margin-left: auto; }
+.nt-action { min-width: var(--tap-min); min-height: var(--tap-min); border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-gr-dark); }
+.nt-action:hover, .nt-action:focus-visible { color: var(--color-primary); background: var(--color-back); }
+.nt-action:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.nt-unread-only { padding: 0 var(--space-4); }
+.nt-bell__inner { position: relative; display: flex; align-items: center; }

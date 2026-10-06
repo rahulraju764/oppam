@@ -4,40 +4,40 @@ declare(strict_types=1);
 
 namespace App\Notifications\Member;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Data\Notifications\NotificationContentData;
+use App\Enums\NotificationEvent;
+use App\Notifications\Support\MemberNotification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
- * "Your N new matches are ready" (F06, PRD §10 M08 `daily_matches_ready`). Email only for now —
- * the in-app + live copies come with the notification system (P3.2). A count and a link only.
+ * "Your N new matches are ready" (F06, PRD §10 M08 `daily_matches_ready`): in-app, live and by
+ * email per the member's preferences. A count and a link only.
  */
-final class DailyMatchesReady extends Notification implements ShouldQueue
+final class DailyMatchesReady extends MemberNotification
 {
-    use Queueable;
+    public function __construct(public readonly int $count) {}
 
-    /** notification_preferences.event (PRD §10 M08). */
-    public const EVENT = 'daily_matches_ready';
-
-    public function __construct(public readonly int $count)
+    public function event(): NotificationEvent
     {
-        $this->onQueue('mail');
+        return NotificationEvent::DailyMatchesReady;
     }
 
-    /** @return list<string> */
-    public function via(object $notifiable): array
+    public function content(object $notifiable): NotificationContentData
     {
-        return filled($notifiable->email ?? null) ? ['mail'] : [];
+        return new NotificationContentData(
+            title: trans_choice('Your :count new match is ready|Your :count new matches are ready', $this->count, ['count' => $this->count]),
+            body: __('Today’s hand-picked matches are available until midnight.'),
+            url: route('member.matches.daily'),
+        );
     }
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return $this->withPreferencesLink((new MailMessage)
             ->subject(trans_choice('Your :count new match is ready|Your :count new matches are ready', $this->count, ['count' => $this->count]).' – '.config('oppam.site.name'))
             ->greeting(__('Good morning!'))
             ->line(trans_choice('We picked :count new profile for you today.|We picked :count new profiles for you today.', $this->count, ['count' => $this->count]))
             ->action(__('See today’s matches'), route('member.matches.daily'))
-            ->line(__('Today’s matches are available until midnight.'));
+            ->line(__('Today’s matches are available until midnight.')));
     }
 }

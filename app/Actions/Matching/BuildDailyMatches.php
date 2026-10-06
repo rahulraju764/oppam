@@ -11,7 +11,6 @@ use App\Enums\MatchTab;
 use App\Enums\ProfileStatus;
 use App\Enums\SettingKey;
 use App\Models\DailyMatch;
-use App\Models\NotificationPreference;
 use App\Models\Profile;
 use App\Notifications\Member\DailyMatchesReady;
 use App\Services\Profile\ProfileSearch;
@@ -28,8 +27,8 @@ use Illuminate\Support\Str;
  *     viewed and anyone in their batches of the last REPEAT_DAYS days;
  *  2. the best POOL of those by relevance (in SQL), scored with MatchScorer (60 / 25 / 10 / 5);
  *  3. diversity: at most MAX_PER_DISTRICT from one district;
- *  4. the top `matching.daily_match_count` are stored, then a "matches ready" email (respecting
- *     the member's `daily_matches_ready` email preference; in-app / live copies come in P3.2).
+ *  4. the top `matching.daily_match_count` are stored, then "matches ready" (in-app, live and email
+ *     per the member's `daily_matches_ready` preferences — NotificationRouter).
  * Idempotent: a member who already has a batch for that date is skipped.
  */
 final class BuildDailyMatches
@@ -110,7 +109,7 @@ final class BuildDailyMatches
         ], $picked)));
 
         // Only rows this run really added are announced — a partial earlier run sends no second email.
-        if ($inserted > 0 && $this->wantsEmail($me)) {
+        if ($inserted > 0) {
             $me->user->notify(new DailyMatchesReady($inserted));
         }
 
@@ -143,13 +142,5 @@ final class BuildDailyMatches
         }
 
         return $picked;
-    }
-
-    private function wantsEmail(Profile $me): bool
-    {
-        $email = NotificationPreference::query()->where('user_id', $me->user_id)
-            ->where('event', DailyMatchesReady::EVENT)->value('email');
-
-        return $email === null || (bool) $email;
     }
 }

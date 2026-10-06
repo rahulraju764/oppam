@@ -13,6 +13,8 @@
      realtime-fallback    — no socket within 10 s and the realtime.polling_fallback flag is on:
                             components may switch to wire:poll (P3.2 bell, P4 chat).
 
+   New notifications on the member's own channel become toasts (<x-ui.toast-stack>).
+
    The member's own channel carries `.session.revoked` (ForceLogout): the session is already
    revoked on the server, so reloading lets the session middleware sign the tab out. An
    IMPERSONATION-scoped one is obeyed only by a support-session tab.
@@ -111,6 +113,12 @@ function listenForLogout(echo) {
         .listen('.session.revoked', (event) => {
             const forThisTab = event?.scope !== 'IMPERSONATION' || meta('oppam-impersonating') === 'on';
             if (forThisTab) window.location.reload();
+        })
+        // A new notification (M08): a toast; the bell re-reads its own count (Livewire listener).
+        .notification((notification) => {
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: { title: notification?.title, body: notification?.body, url: notification?.url, icon: notification?.icon },
+            }));
         });
 }
 

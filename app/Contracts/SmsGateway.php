@@ -28,4 +28,15 @@ interface SmsGateway
      * @throws SmsDeliveryFailed
      */
     public function sendAccountExistsNotice(PhoneNumber $to): void;
+
+    /**
+     * A member notification by SMS (PRD M08: interest received / accepted, profile approved…) with
+     * the DLT template registered for $templateKey (the notification event, e.g. "profile_approved")
+     * and its variables in template order. Never logs message content beyond the masked number.
+     *
+     * @param  list<string>  $variables
+     *
+     * @throws SmsDeliveryFailed when no DLT template is registered for the key, or the provider refuses
+     */
+    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables): void;
 }

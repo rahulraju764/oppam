@@ -6,9 +6,7 @@ namespace App\Jobs\Search;
 
 use App\Domain\Profile\ProfileVisibility;
 use App\Enums\AlertFrequency;
-use App\Models\NotificationPreference;
 use App\Models\SavedSearch;
-use App\Models\User;
 use App\Notifications\Member\SavedSearchMatchesNotification;
 use App\Services\Profile\ProfileSearch;
 use Carbon\CarbonImmutable;
@@ -61,7 +59,7 @@ final class SendSavedSearchAlerts implements ShouldBeUnique, ShouldQueue
                     ->where('profiles.published_at', '<=', $now)
                     ->count();
 
-                if ($count > 0 && $this->wantsEmail($owner)) {
+                if ($count > 0) {
                     $owner->notify(new SavedSearchMatchesNotification($saved, $count));
                 }
 
@@ -80,14 +78,5 @@ final class SendSavedSearchAlerts implements ShouldBeUnique, ShouldQueue
             AlertFrequency::Weekly => $saved->last_alerted_at->lte($now->subDays(6)),
             AlertFrequency::Off => false,
         };
-    }
-
-    /** On unless the member turned this event's email off (notification_preferences, M08/M14). */
-    private function wantsEmail(User $owner): bool
-    {
-        $preference = $owner->notificationPreferences
-            ->first(fn (NotificationPreference $p): bool => $p->event === SavedSearchMatchesNotification::EVENT);
-
-        return $preference === null || $preference->email;
     }
 }

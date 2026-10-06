@@ -37,6 +37,20 @@ return [
         'otp_template_id' => env('MSG91_OTP_TEMPLATE_ID'),
         // DLT template: "You already have an Oppam Matrimony account. Log in instead." (M01)
         'account_exists_template_id' => env('MSG91_ACCOUNT_EXISTS_TEMPLATE_ID'),
+        // DLT templates for member notifications (M08), keyed by notification event. An event
+        // without an approved template is never sent by SMS (SmsChannel reports and skips it).
+        'notice_templates' => array_filter([
+            'profile_approved' => env('MSG91_TPL_PROFILE_APPROVED'),
+            'profile_rejected' => env('MSG91_TPL_PROFILE_REJECTED'),
+            'interest_received' => env('MSG91_TPL_INTEREST_RECEIVED'),
+            'interest_accepted' => env('MSG91_TPL_INTEREST_ACCEPTED'),
+            'verification_approved' => env('MSG91_TPL_VERIFICATION_APPROVED'),
+            'verification_rejected' => env('MSG91_TPL_VERIFICATION_REJECTED'),
+            'payment_success' => env('MSG91_TPL_PAYMENT_SUCCESS'),
+            'plan_expiring' => env('MSG91_TPL_PLAN_EXPIRING'),
+            'plan_expired' => env('MSG91_TPL_PLAN_EXPIRED'),
+            'safety_warning' => env('MSG91_TPL_SAFETY_WARNING'),
+        ]),
     ],
 
     'slack' => [

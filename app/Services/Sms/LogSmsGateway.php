@@ -22,6 +22,12 @@ final class LogSmsGateway implements SmsGateway
         $this->log->channel('sms')->info("[{$purpose->value}] OTP for {$to->masked()}: {$code}");
     }
 
+    /** @param  list<string>  $variables */
+    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables): void
+    {
+        $this->log->channel('sms')->info("[NOTICE {$templateKey}] for {$to->masked()}");
+    }
+
     public function sendAccountExistsNotice(PhoneNumber $to): void
     {
         $this->log->channel('sms')->info("[ACCOUNT_EXISTS] notice for {$to->masked()}: you already have an Oppam account — log in instead");

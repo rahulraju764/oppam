@@ -4,32 +4,33 @@ declare(strict_types=1);
 
 namespace App\Notifications\Account;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Data\Notifications\NotificationContentData;
+use App\Enums\NotificationEvent;
+use App\Notifications\Support\MemberNotification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-/** "Your account is active again" (A03), after an admin lifts a suspension. Verified email only. */
-final class AccountReactivated extends Notification implements ShouldQueue
+/** "Your account is active again" (A03), after an admin lifts a suspension (M08 `account_status`, mandatory). */
+final class AccountReactivated extends MemberNotification
 {
-    use Queueable;
-
-    public function __construct()
+    public function event(): NotificationEvent
     {
-        $this->onQueue('mail');
+        return NotificationEvent::AccountStatus;
     }
 
-    /** @return list<string> */
-    public function via(object $notifiable): array
+    public function content(object $notifiable): NotificationContentData
     {
-        return ['mail'];
+        return new NotificationContentData(
+            title: __('Your account is active again'),
+            body: __('Your account has been reactivated. Welcome back!'),
+            url: route('member.dashboard'),
+        );
     }
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        return $this->withPreferencesLink((new MailMessage)
             ->subject(__('Your Oppam Matrimony account is active again'))
             ->line(__('Good news — your account has been reactivated. You can log in again.'))
-            ->action(__('Log in'), route('login'));
+            ->action(__('Log in'), route('login')));
     }
 }

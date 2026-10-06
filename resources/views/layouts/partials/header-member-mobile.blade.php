@@ -33,10 +33,10 @@
             </a>
         @endif
 
-        @if ($notificationsUrl)
-            @php($onNotifications = $nav->isActive('member.notifications'))
-            <a href="{{ $notificationsUrl }}" @class(['mobile-bell', 'is-current' => $onNotifications]) @if ($onNotifications) aria-current="page" @endif
-               aria-label="{{ trans_choice('Notifications (:count unread)', $member->unreadNotifications, ['count' => $member->unreadNotifications]) }}" wire:navigate>
+        @if ($notificationsUrl && auth('web')->user() instanceof \App\Models\User)
+            <livewire:shared.notification-bell variant="mobile" :key="'bell-mobile'" />
+        @elseif ($notificationsUrl)
+            <a href="{{ $notificationsUrl }}" class="mobile-bell" aria-label="{{ trans_choice('Notifications (:count unread)', $member->unreadNotifications, ['count' => $member->unreadNotifications]) }}" wire:navigate>
                 <i class="fa fa-bell-o" aria-hidden="true"></i>
                 @if ($member->unreadNotifications > 0)
                     <span class="mobile-bell-count" aria-hidden="true">{{ $member->unreadNotifications }}</span>

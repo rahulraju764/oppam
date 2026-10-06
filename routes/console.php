@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Jobs\Matching\GenerateDailyMatches;
 use App\Jobs\Members\PurgeDeletedMembers;
+use App\Jobs\Notifications\PruneOldNotifications;
 use App\Jobs\Search\SendSavedSearchAlerts;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -22,3 +23,6 @@ Schedule::job(new GenerateDailyMatches)->timezone('Asia/Kolkata')->dailyAt('05:0
 
 // M04: Saved search daily alerts sent at 08:00 IST.
 Schedule::job(new SendSavedSearchAlerts)->timezone('Asia/Kolkata')->dailyAt('08:00')->onOneServer()->withoutOverlapping();
+
+// R-M08-4: in-app notifications older than 180 days. 21:45 UTC = 03:15 IST.
+Schedule::job(new PruneOldNotifications)->dailyAt('21:45')->onOneServer()->withoutOverlapping();

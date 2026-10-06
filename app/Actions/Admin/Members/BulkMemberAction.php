@@ -75,7 +75,7 @@ final class BulkMemberAction
                 };
                 $done++;
             } catch (MemberStateConflict) {
-                // Wrong state for this action (already suspended, no verified email…): skipped.
+                // Wrong state for this action (already suspended, not active…): skipped.
             }
         }
 
@@ -91,10 +91,15 @@ final class BulkMemberAction
         return new BulkResult($done, count($userIds) - $done);
     }
 
-    /** @throws MemberStateConflict an inactive account or one without a verified email (skipped) */
+    /**
+     * In-app (and live) to every active member; the email copy only to a verified address
+     * (NotificationRouter decides the channels).
+     *
+     * @throws MemberStateConflict an inactive account (skipped)
+     */
     private function message(AdminUser $admin, User $member, string $subject, string $message, string $reason): void
     {
-        if (! $member->isActive() || ! $member->canReceiveAccountMail()) {
+        if (! $member->isActive()) {
             throw MemberStateConflict::notActive();
         }
 

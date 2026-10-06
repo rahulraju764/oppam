@@ -53,13 +53,19 @@
     @endif
 @endforeach
 
-{{-- Desktop bell (the mobile one lives in .mobile-header). Live in P3.2. --}}
+{{-- Desktop bell (the mobile one lives in .mobile-header): live count + lazy dropdown (P3.2, M08). --}}
 @php($notificationsUrl = $nav->url('member.notifications'))
-@if ($notificationsUrl)
-    @php($active = $nav->isActive('member.notifications'))
+@if ($notificationsUrl && auth('web')->user() instanceof \App\Models\User)
+    {{-- The dropdown's open/closed state lives here, outside the component, so Livewire's
+         re-renders of the bell never reset it. --}}
+    <li class="nav-item d-none d-lg-flex nt-bell" x-data="{ open: false }"
+        x-on:keydown.escape="if (open) { open = false; $el.querySelector('.nav-bell')?.focus() }" x-on:click.outside="open = false">
+        <livewire:shared.notification-bell variant="desktop" :key="'bell-desktop'" />
+    </li>
+@elseif ($notificationsUrl)
+    {{-- No signed-in member (style guide, previews): the static bell from the chrome data. --}}
     <li class="nav-item d-none d-lg-flex">
-        <a href="{{ $notificationsUrl }}" @class(['nav-bell', 'is-current' => $active]) @if ($active) aria-current="page" @endif
-           aria-label="{{ trans_choice('Notifications (:count unread)', $member->unreadNotifications, ['count' => $member->unreadNotifications]) }}" wire:navigate>
+        <a href="{{ $notificationsUrl }}" class="nav-bell" aria-label="{{ trans_choice('Notifications (:count unread)', $member->unreadNotifications, ['count' => $member->unreadNotifications]) }}" wire:navigate>
             <i class="fa fa-bell-o" aria-hidden="true"></i>
             @if ($member->unreadNotifications > 0)
                 <span class="nav-bell-count" aria-hidden="true">{{ $member->unreadNotifications }}</span>

@@ -146,7 +146,7 @@ final class Index extends Component
         $this->dispatch('close-modal', name: 'bulk-action');
         $this->dispatch('toast', type: $result->skipped > 0 ? 'warning' : 'success', message: trans_choice(
             ':count member updated.|:count members updated.', $result->done,
-        ).($result->skipped > 0 ? ' '.__(':n skipped (not in the right state, or no verified email).', ['n' => $result->skipped]) : ''));
+        ).($result->skipped > 0 ? ' '.__(':n skipped (not in the right state).', ['n' => $result->skipped]) : ''));
         unset($this->members);
     }
 

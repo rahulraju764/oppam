@@ -24,6 +24,7 @@ import './alpine/wizard-autosave';
 import './alpine/photo-cropper';
 import './alpine/carousel';
 import './alpine/countdown';
+import './alpine/toasts';
 
 window.bootstrap = bootstrap;
 

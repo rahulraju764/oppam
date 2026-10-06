@@ -4,32 +4,36 @@ declare(strict_types=1);
 
 namespace App\Notifications\Profile;
 
+use App\Data\Notifications\NotificationContentData;
+use App\Enums\NotificationEvent;
 use App\Enums\RejectReason;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Notifications\Support\MemberNotification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
- * A photo, caption or edited text was not approved (A04 photo / edited-fields queues). The
- * profile itself stays live. Mail for now (P3.2 adds in-app + live).
+ * A photo, caption or edited text was not approved (A04 photo / edited-fields queues). The profile
+ * itself stays live (M08 `profile_rejected`, mandatory).
  */
-final class ProfileContentRejected extends Notification implements ShouldQueue
+final class ProfileContentRejected extends MemberNotification
 {
-    use Queueable;
-
     public function __construct(
         public readonly string $what,
         public readonly RejectReason $reason,
         public readonly ?string $note,
-    ) {
-        $this->onQueue('mail');
+    ) {}
+
+    public function event(): NotificationEvent
+    {
+        return NotificationEvent::ProfileRejected;
     }
 
-    /** @return list<string> */
-    public function via(object $notifiable): array
+    public function content(object $notifiable): NotificationContentData
     {
-        return filled($notifiable->email ?? null) ? ['mail'] : [];
+        return new NotificationContentData(
+            title: __('Your :what was not approved', ['what' => $this->what]),
+            body: $this->reason->memberMessage(),
+            url: route('member.profile.me'),
+        );
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -43,6 +47,6 @@ final class ProfileContentRejected extends Notification implements ShouldQueue
             $mail->line(__('Reviewer’s note: :note', ['note' => $this->note]));
         }
 
-        return $mail->action(__('View my profile'), route('member.profile.me'));
+        return $this->withPreferencesLink($mail->action(__('View my profile'), route('member.profile.me')));
     }
 }

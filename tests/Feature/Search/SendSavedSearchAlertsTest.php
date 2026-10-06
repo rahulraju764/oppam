@@ -132,17 +132,18 @@ it('nothing for an owner who may not browse (suspended profile or account)', fun
     expect($saved->refresh()->last_alerted_at->lt(now()))->toBeTrue();
 })->with(['profile', 'account']);
 
-it('M08: no email when the owner turned saved_search_alert emails off; the window still moves', function (): void {
+it('M08: with saved_search_alert email off, no email — in-app only; the window still moves', function (): void {
     $owner = alertOwner();
     $saved = savedSearchOf($owner);
-    $pref = new NotificationPreference(['event' => SavedSearchMatchesNotification::EVENT, 'email' => false]);
+    $pref = new NotificationPreference(['event' => App\Enums\NotificationEvent::SavedSearchAlert->value, 'email' => false]);
     $pref->user_id = $owner->id;
     $pref->save();
     newBride();
 
     runAlerts();
 
-    Notification::assertNothingSent();
+    Notification::assertSentTo($owner, SavedSearchMatchesNotification::class,
+        fn (SavedSearchMatchesNotification $n, array $channels): bool => ! in_array('mail', $channels, true) && in_array(App\Notifications\Support\InAppChannel::class, $channels, true));
     expect($saved->refresh()->last_alerted_at->equalTo(now()))->toBeTrue();
 });
 
