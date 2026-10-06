@@ -108,6 +108,18 @@ it('F06 exclusions: blocked (both ways), ignored, incognito, already viewed and 
     expect($today)->toBe(collect([$fresh->id, $shownLongAgo->id])->sort()->values()->all());
 });
 
+it('F06 exclusions (P3.3): a profile the member already liked is not recommended again', function (): void {
+    $groom = dailyGroom();
+    $liked = dailyBride();
+    $fresh = dailyBride();
+    App\Models\Like::factory()->between($groom->profile, $liked)->create();
+    App\Models\Like::factory()->between(dailyBride(), $groom->profile)->create();   // being liked excludes nobody
+
+    expect(buildFor($groom))->toBe(2)
+        ->and(DailyMatch::query()->where('profile_id', $groom->profile->id)->pluck('matched_profile_id')->all())
+        ->toContain($fresh->id)->not->toContain($liked->id);
+});
+
 it('F06: the member\'s partner preferences decide the candidates', function (): void {
     $groom = dailyGroom();
     $pref = PartnerPreference::factory()->make(['profile_id' => $groom->profile->id, 'age_min' => 24, 'age_max' => 28, 'religion_ids' => null, 'marital_statuses' => null,

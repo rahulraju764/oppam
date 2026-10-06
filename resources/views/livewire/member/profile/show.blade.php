@@ -54,15 +54,15 @@
                                 </ul>
 
                                 @unless ($isOwner)
-                                    {{-- Engagement actions arrive in P3.3 / P3.4 / P4.1 — shown, disabled, with the reason. --}}
+                                    {{-- Like and Favorite are live (P3.3); interest and chat arrive in P3.4 / P4.1 — shown, disabled, with the reason. --}}
                                     <div class="intst-parent">
                                         <div class="intst-button profile-actions">
-                                            <button type="button" class="send-int" disabled aria-describedby="actions-soon"><i class="fa fa-heart" aria-hidden="true"></i>{{ __('Like') }}</button>
-                                            <button type="button" class="send-int" disabled aria-describedby="actions-soon"><i class="fa fa-star" aria-hidden="true"></i>{{ __('Favorite') }}</button>
+                                            <livewire:shared.like-button :profile-code="$profile->code" :name="$name" variant="page" :key="'like-page-'.$profile->code" />
+                                            <livewire:shared.favorite-button :profile-code="$profile->code" :name="$name" variant="page" :key="'fav-page-'.$profile->code" />
                                             <button type="button" class="send-int" disabled aria-describedby="actions-soon"><i class="fa fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}</button>
                                             <button type="button" class="send-int" disabled aria-describedby="actions-soon"><i class="fa fa-comments" aria-hidden="true"></i>{{ __('Chat') }}</button>
                                         </div>
-                                        <p class="form-text mb-0" id="actions-soon">{{ __('Likes, favorites, interests and chat are opening soon.') }}</p>
+                                        <p class="form-text mb-0" id="actions-soon">{{ __('Interests and chat are opening soon.') }}</p>
                                     </div>
                                 @endunless
                             </div>

@@ -25,6 +25,7 @@ import './alpine/photo-cropper';
 import './alpine/carousel';
 import './alpine/countdown';
 import './alpine/toasts';
+import './alpine/engagement';
 
 window.bootstrap = bootstrap;
 

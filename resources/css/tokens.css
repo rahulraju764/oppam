@@ -136,6 +136,7 @@
   --transition-slow: .5s ease;
 
   /* ---------- LAYERS ---------- */
+  --z-raised: 2;                      /* a control above its card's stretched link */
   --z-sticky: 999;                    /* sticky navbar */
   --z-dropdown: 9999;                 /* profile menu, mobile tab bar */
   --z-preloader: 10000;               /* the load curtain — above everything, incl. the tab bar */

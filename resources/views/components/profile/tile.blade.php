@@ -25,4 +25,9 @@
     @else
         </div>
     @endif
+    {{-- Outside the link (no button inside an <a>), placed over the tile's corner. --}}
+    @if ($profile->liked !== null)
+        <livewire:shared.like-button :profile-code="$profile->code" :liked="$profile->liked" :name="$profile->name"
+                                     variant="tile" :key="'like-'.$profile->code" />
+    @endif
 </div>

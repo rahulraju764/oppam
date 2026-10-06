@@ -383,6 +383,30 @@ it('P1.7a review Major: the purge also removes OTP challenges (real phone + IP) 
         ->and(DB::table('sessions')->where('user_id', $member->id)->exists())->toBeFalse();
 });
 
+it('P3.3: the purge also removes likes, favourites and abuse signals, both directions — and gives others their favourite slot back', function (): void {
+    $member = a03Member('+919811100098');
+    $other = memberWithPhone('+919811100099');
+    $other->profile->forceFill(['gender' => App\Enums\Gender::Female])->save();
+    $member->profile->forceFill(['gender' => App\Enums\Gender::Male])->save();
+    app(App\Actions\Engagement\ToggleLike::class)->handle($member->refresh(), $other->profile, true);
+    app(App\Actions\Engagement\ToggleLike::class)->handle($other->refresh(), $member->profile, true);
+    app(App\Actions\Engagement\ToggleFavorite::class)->handle($member, $other->profile, true);
+    app(App\Actions\Engagement\ToggleFavorite::class)->handle($other, $member->profile, true);
+    $signal = new App\Models\EngagementSignal;
+    $signal->forceFill(['profile_id' => $member->profile->id, 'type' => App\Enums\EngagementSignalType::LikeSpam])->save();
+    $entitlements = app(EntitlementService::class);
+    expect($entitlements->used($other->profile, App\Enums\Entitlement::FavoritesTotal))->toBe(1);
+
+    app(DeleteMember::class)->handle(adminWithRole(), $member, $member->profile->code, 'Member asked us to delete it.');
+    $this->travel(31)->days();
+    app(PurgeDeletedMember::class)->handle(User::withTrashed()->findOrFail($member->id));
+
+    expect(App\Models\Like::query()->count())->toBe(0)
+        ->and(App\Models\Favorite::query()->count())->toBe(0)
+        ->and(App\Models\EngagementSignal::query()->count())->toBe(0)
+        ->and($entitlements->used($other->profile, App\Enums\Entitlement::FavoritesTotal))->toBe(0);
+});
+
 it('P3.2: the purge also removes the member\'s in-app notifications and others\' notifications that name them', function (): void {
     $member = a03Member('+919811100096');
     $other = memberWithPhone('+919811100097');

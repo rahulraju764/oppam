@@ -409,3 +409,62 @@ body.search-sheet-open .mobile-footer { display: none; }
 .nt-action:focus-visible { outline: none; box-shadow: var(--ring-focus); }
 .nt-unread-only { padding: 0 var(--space-4); }
 .nt-bell__inner { position: relative; display: flex; align-items: center; }
+
+/* ---- Likes & favourites (M06, P3.3) ---- */
+.engage { display: inline-flex; }
+
+/* Row / tile Like button: the template's Decline (off) and Accept (on) pills. */
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  position: relative;          /* above the row's stretched-link */
+  z-index: var(--z-raised);
+  min-height: var(--tap-compact);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-hair);
+  border-color: var(--color-gr);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-gr-dark);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.like-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.like-btn.is-on { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-default); }
+.like-btn.is-on:hover { background: var(--color-primary-dark); color: var(--color-default); }
+.like-btn:focus-visible, .fav-btn:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.like-btn.is-busy, .fav-btn.is-busy { cursor: progress; }
+
+/* Profile page: both buttons keep the template's filled .send-int look; "on" is the darker fill. */
+.profile-actions .like-btn.send-int, .profile-actions .fav-btn.send-int { min-height: var(--tap-min); border: 0; background: var(--color-primary); color: var(--color-default); }
+.profile-actions .like-btn.send-int.is-on, .profile-actions .fav-btn.send-int.is-on { background: var(--color-primary-dark); }
+.profile-actions .fav-btn .short-icon i { color: inherit; }
+/* All four profile actions share the template's pill (its .intst-button links were pills; these are buttons). */
+.profile-actions .send-int { min-height: var(--tap-min); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); font-size: var(--text-sm); }
+
+/* The bookmark on a row's photo (.short-list): a full tap target; filled star = saved. */
+.fav-btn.short-list { align-items: center; justify-content: center; min-width: var(--tap-min); min-height: var(--tap-min); }
+
+/* Slider tile: an icon button over the tile's corner, outside its link. */
+.match-slider .swiper-slide { position: relative; }
+.engage--tile { position: absolute; top: var(--space-2); right: var(--space-2); z-index: var(--z-raised); }
+.engage--tile .like-btn { justify-content: center; min-width: var(--tap-min); min-height: var(--tap-min); padding: 0; border-color: transparent; border-radius: var(--radius-circle); background: var(--color-default); box-shadow: var(--shadow-md); color: var(--color-primary); }
+.engage--tile .like-btn.is-on { background: var(--color-primary); color: var(--color-default); }
+
+/* /favorites: selection bar and the per-row note */
+.fav-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-4); }
+.fav-toolbar__count { font-size: var(--text-sm); color: var(--color-gr-dark); }
+.fav-row { position: relative; z-index: var(--z-raised); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); flex: 1 1 auto; min-width: 0; }
+.fav-row__pick { display: flex; align-items: center; gap: var(--space-2); min-height: var(--tap-min); margin: 0; }
+.fav-row__note { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); flex: 1 1 auto; min-width: 0; }
+.fav-row__note .form-control { flex: 1 1 var(--space-11); min-width: 0; min-height: var(--tap-compact); }
+.profiles .intst-button .visit-time { position: relative; z-index: var(--z-raised); display: inline-flex; align-items: center; gap: var(--space-1); }
+
+/* "It's a match!" dialog */
+.match-dialog { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
+.match-dialog__photo { width: var(--space-11); height: var(--space-11); border-radius: var(--radius-circle); object-fit: cover; }
+.match-dialog__name { margin: 0; font-size: var(--text-lg); font-weight: var(--fw-semibold); color: var(--color-black); }

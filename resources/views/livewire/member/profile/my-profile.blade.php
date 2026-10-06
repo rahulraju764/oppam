@@ -93,6 +93,7 @@
                         </div>
                         <dl class="info-grid">
                             <div class="info-pair"><dt>{{ __('Profile views') }}</dt><dd>{{ $viewsThisWeek }}</dd></div>
+                            <div class="info-pair"><dt>{{ __('Likes received') }}</dt><dd><a href="{{ route('member.likes') }}" wire:navigate>{{ $likesThisWeek }}</a></dd></div>
                         </dl>
                     </div>
 

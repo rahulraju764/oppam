@@ -11,6 +11,7 @@ use App\Enums\MatchTab;
 use App\Enums\ProfileStatus;
 use App\Enums\SettingKey;
 use App\Models\DailyMatch;
+use App\Models\Like;
 use App\Models\Profile;
 use App\Notifications\Member\DailyMatchesReady;
 use App\Services\Profile\ProfileSearch;
@@ -84,7 +85,10 @@ final class BuildDailyMatches
             ->where('match_date', '>=', CarbonImmutable::parse($date)->subDays(self::REPEAT_DAYS)->toDateString())
             ->pluck('matched_profile_id')->map(fn (mixed $id): string => (string) $id)->unique()->values()->all();
 
-        $poolIds = $this->search->topIds($me, $criteria, self::POOL, $recent);
+        // "Exclude … interacted" (M05): profiles the member already liked are not recommended again.
+        $liked = Like::query()->where('from_profile_id', $me->id)->pluck('to_profile_id')->map(fn (mixed $id): string => (string) $id)->all();
+
+        $poolIds = $this->search->topIds($me, $criteria, self::POOL, array_values(array_unique([...$recent, ...$liked])));
         if ($poolIds === []) {
             return 0;
         }

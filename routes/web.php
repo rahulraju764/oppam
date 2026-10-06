@@ -12,6 +12,8 @@ use App\Livewire\Member\Auth\Register;
 use App\Livewire\Member\Auth\VerifyOtp;
 use App\Livewire\Member\Browse\AllProfiles;
 use App\Livewire\Member\Dashboard\Dashboard;
+use App\Livewire\Member\Engagement\Favorites;
+use App\Livewire\Member\Engagement\Likes;
 use App\Livewire\Member\Matches\Daily;
 use App\Livewire\Member\Matches\MyMatches;
 use App\Livewire\Member\Notifications\Index as NotificationsIndex;
@@ -82,6 +84,8 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         Route::get('/matches/daily', Daily::class)->name('member.matches.daily');
         Route::get('/visitors', Visitors::class)->name('member.visitors');
         Route::get('/notifications', NotificationsIndex::class)->name('member.notifications');
+        Route::get('/likes', Likes::class)->name('member.likes');
+        Route::get('/favorites', Favorites::class)->name('member.favorites');
         Route::get('/search', Search::class)->name('member.search');
         Route::get('/profiles', AllProfiles::class)->name('member.profiles');
         Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');

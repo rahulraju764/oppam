@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 3 — Real-time core & engagement (Phase 2 complete, 2026-10-04)
-**Next session:** P3.3 — Likes & favorites (M06)
+**Next session:** P3.4 — Interests & requests (M06)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -43,7 +43,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 ## Phase 3 — Real-time core & engagement
 - [x] P3.1 Reverb, Echo, channels & presence — 2026-10-05 (reviewer READY in round 2 after 1 Blocker + 3 Majors fixed: user ULID in presence rosters → profile code, best-effort ForceLogout (LiveSignal), flaky live-logout Dusk test, HTTP impersonation/security tests; owner review of the commit — rule 5)
 - [x] P3.2 Notifications system (M08) — 2026-10-06 (reviewer READY in round 3 after 6 Majors + 1 Blocker fixed: mandatory events forced a template-less SMS, row / live-signal order (InAppChannel: one job), purge left notifications, support session could read / delete, list collapsed to page 1, a flaky test; owner decision: no notification email until email verification, M14)
-- [ ] P3.3 Likes & favorites (M06)
+- [x] P3.3 Likes & favorites (M06) — 2026-10-06 (reviewer READY in round 2 after 2 Majors fixed: favourite slots stuck on profiles no longer available, favourites + notes readable in an admin support session (R-M06-6); found on the way: P3.1's "End session" sent the admin to the sign-in page — fix held for owner review, rule 5)
 - [ ] P3.4 Interests & requests (M06)
 - [ ] P3.5 Live admin dashboard (A02)
 
@@ -94,6 +94,20 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.4 → P1.6: photo queue uses `moderation_items` PHOTO rows (subject_id = media uuid) and `media.phash` for duplicates.
 - P1.4 → P2.x: `PhotoUrls` queries per profile; add a batch `forViewers()` (eager-loaded) before search/list cards use it.
 - P1.4 → P9.5: S3 public bucket with listing disabled; `media-library:regenerate` after an APP_KEY rotation (conversion names are keyed).
+- P3.3 → owner review (rule 5): `resources/js/realtime.js` + `components/impersonation-banner.blade.php` — the tab that
+  presses "End session" no longer reloads itself onto the sign-in page (P3.1 bug; both impersonation Dusk tests failed
+  without it). Uncommitted until reviewed.
+- P3.3 → P3.4: "favourites only" search filter; "send interest to all selected" on /favorites; Send Interest in the
+  "It's a match!" dialog; exclude interest-sent profiles from daily matches (liked ones already are).
+- P3.3 → P4.3 (A13): screens for `engagement_signals` (LIKE_SPAM rows exist now); the like-spam window is fixed (10 min from
+  the first like), not sliding — tighten there if abuse shows it matters.
+- P3.3 → P6.2 (block / ignore): creating a block removes likes, favourites and pending interests both ways (R-M06-4) and
+  the notification rows naming the other; decide whether a like from an incognito / ignored member should notify (today it
+  does, though that member is never listed on /likes).
+- P3.3 → P9.4: measure /likes and the dashboard (six strips, up to 60 nested like buttons); `BuildDailyMatches` passes every
+  liked profile id as a list (use a NOT EXISTS for heavy likers); the quota dialog and the Gold "new like" row are covered by
+  Livewire tests only, not in a browser.
+- P3.3 → P1.7a carry-over still open: the A03 member page "Engagement" tab (likes / interests; favourites as a number only).
 - P3.2 → P3.3 / P3.4 / P4 / P5 / P6: like, mutual-like, interest, message, photo / horoscope request, verification, payment and
   safety notifications extend `MemberNotification` (event in `NotificationEvent`, `actorProfileId()` for R-M08-1); likes use
   `OncePerDay` (R-M08-2). Any new table that names another member in a notification: nothing to add — the purge already

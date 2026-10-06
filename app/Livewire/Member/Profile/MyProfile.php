@@ -14,6 +14,7 @@ use App\Models\ModerationItem;
 use App\Models\Profile;
 use App\Models\ProfileView;
 use App\Models\User;
+use App\Queries\Engagement\EngagementLists;
 use App\Services\Entitlements\EntitlementService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -22,7 +23,7 @@ use Livewire\Component;
  * /me — the member's own profile (M03, template my-profile.php): header with Edit / Photos /
  * Preview, completeness meter with "add X" links to the exact wizard step, a status banner
  * (under review / rejected with reason / hidden / suspended), views this week, and the profile's
- * sections exactly as saved. Likes and interests stats arrive with P3.3 / P3.4.
+ * sections exactly as saved, likes received this week (a number only). Interest stats arrive with P3.4.
  */
 final class MyProfile extends Component
 {
@@ -32,6 +33,7 @@ final class MyProfile extends Component
         PhotoUrls $photos,
         PendingTextEdits $pending,
         EntitlementService $entitlements,
+        EngagementLists $likes,
     ): View {
         $user = $this->member();
         $profile = $user->profile ?? abort(404);
@@ -50,6 +52,9 @@ final class MyProfile extends Component
             'rejectionNote' => $profile->status === ProfileStatus::Rejected ? ModerationItem::latestDecisionNote($profile) : null,
             'fixStep' => ModerationItem::latestDecisionStep($profile),
             'viewsThisWeek' => (int) ProfileView::query()->where('viewed_profile_id', $profile->id)->where('view_date', '>=', $weekStart)->count(),
+            'likesThisWeek' => $profile->status === ProfileStatus::Active
+                ? $likes->likedMe($profile)->where('likes.created_at', '>=', now((string) config('oppam.display_timezone'))->subDays(6)->startOfDay()->utc())->count()
+                : 0,
             'plan' => $entitlements->plan($profile),
             'canEdit' => $user->can('editWizard', $profile),
         ])->layout('layouts::member', ['seo' => SeoData::private('My Profile | Oppam Matrimony')]);

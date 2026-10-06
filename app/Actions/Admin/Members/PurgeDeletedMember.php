@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Actions\Admin\Members;
 
+use App\Enums\Entitlement;
 use App\Enums\SettingKey;
 use App\Enums\UserRole;
 use App\Models\ContactDetail;
 use App\Models\ContactView;
 use App\Models\DailyMatch;
 use App\Models\EducationCareer;
+use App\Models\EngagementSignal;
 use App\Models\FamilyDetail;
+use App\Models\Favorite;
 use App\Models\HoroscopeDetail;
 use App\Models\Ignore;
 use App\Models\LifestyleDetail;
+use App\Models\Like;
 use App\Models\LoginEvent;
 use App\Models\MatchScore;
 use App\Models\Media;
@@ -27,6 +31,7 @@ use App\Models\ProfileView;
 use App\Models\SavedSearch;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Entitlements\EntitlementService;
 use App\Support\Facades\Settings;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
@@ -39,13 +44,17 @@ use Illuminate\Support\Str;
  * phone, email, password, names (to "Deleted Member"), date of birth (to 1 January of the same
  * year), about text, contact / family / partner / career / horoscope / lifestyle / privacy rows,
  * photos and the horoscope file, sign-in history, OTP challenges, sessions, profile and contact
- * views, in-app notifications (theirs, and others' that name them), and held moderation text. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
+ * views, likes and favourites (both directions), in-app notifications (theirs, and others' that
+ * name them), and held moderation text. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
  * subscriptions, orders (P5) and audit rows keep pointing at something. Idempotent: an
  * anonymised or not-yet-due member is skipped. Run by PurgeDeletedMembers (daily).
  */
 final class PurgeDeletedMember
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly EntitlementService $entitlements,
+    ) {}
 
     /** @return bool whether this member was anonymised now */
     public function handle(User $member): bool
@@ -126,6 +135,17 @@ final class PurgeDeletedMember
         DailyMatch::query()->where('profile_id', $profile->id)->orWhere('matched_profile_id', $profile->id)->delete();
         MatchScore::query()->where('source_profile_id', $profile->id)->orWhere('target_profile_id', $profile->id)->delete();
         Ignore::query()->where('ignorer_profile_id', $profile->id)->orWhere('ignored_profile_id', $profile->id)->delete();
+
+        // Likes and favourites, both directions, and the member's abuse signals (P3.3).
+        Like::query()->where('from_profile_id', $profile->id)->orWhere('to_profile_id', $profile->id)->delete();
+        // Members who had bookmarked this profile get that slot of their plan's total back.
+        $bookmarkerIds = Favorite::query()->where('favorite_profile_id', $profile->id)->pluck('profile_id')->all();
+        Favorite::query()->where('profile_id', $profile->id)->orWhere('favorite_profile_id', $profile->id)->delete();
+        foreach (array_chunk($bookmarkerIds, 200) as $ids) {
+            Profile::withTrashed()->whereKey($ids)->get(['id'])
+                ->each(fn (Profile $owner) => $this->entitlements->release($owner, Entitlement::FavoritesTotal));
+        }
+        EngagementSignal::query()->where('profile_id', $profile->id)->delete();
 
         ModerationItem::query()->where('profile_id', $profile->id)->update(['fields' => null, 'reason_note' => null]);
 

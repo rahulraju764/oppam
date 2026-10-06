@@ -16,9 +16,15 @@ final class BlockList
 {
     public function isBlocked(Profile $a, Profile $b): bool
     {
+        return $this->isBlockedPair($a->id, $b->id);
+    }
+
+    /** The same rule by profile id — for queued events that carry ids, not models. */
+    public function isBlockedPair(string $profileIdA, string $profileIdB): bool
+    {
         return Block::query()
-            ->where(fn ($q) => $q->where('blocker_profile_id', $a->id)->where('blocked_profile_id', $b->id))
-            ->orWhere(fn ($q) => $q->where('blocker_profile_id', $b->id)->where('blocked_profile_id', $a->id))
+            ->where(fn ($q) => $q->where('blocker_profile_id', $profileIdA)->where('blocked_profile_id', $profileIdB))
+            ->orWhere(fn ($q) => $q->where('blocker_profile_id', $profileIdB)->where('blocked_profile_id', $profileIdA))
             ->exists();
     }
 

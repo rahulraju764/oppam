@@ -4,9 +4,11 @@
     around the card). URLs use the profile CODE, never the database key.
 
     profile   App\Data\Profile\ProfileCardData
-    actions   optional slot: the button row (Livewire interest/like buttons from P3, or
-              Accept/Decline on the interests page). Omitted → no action row.
-    shortlist optional slot: the bookmark control on the photo (Favorite, P3.3).
+    actions   optional slot: extra controls in the button row (Accept/Decline on the interests
+              page, "Not interested" on daily matches …). The Like button follows them whenever
+              the card carries the viewer's like state (ProfileCards::forViewers).
+    shortlist optional slot replacing the bookmark on the photo; by default the Favorite button,
+              whenever the card carries the viewer's bookmark state.
 --}}
 @props(['profile'])
 
@@ -15,7 +17,12 @@
         {{-- alt="" — the name is the adjacent <h2>; a filled alt would be read twice. --}}
         <img src="{{ $profile->photoUrl }}" class="img-fluid" alt="" width="600" height="600" loading="lazy" decoding="async">
 
-        {{ $shortlist ?? '' }}
+        @isset($shortlist)
+            {{ $shortlist }}
+        @elseif ($profile->favorited !== null)
+            <livewire:shared.favorite-button :profile-code="$profile->code" :favorited="$profile->favorited" :name="$profile->name"
+                                             variant="photo" :key="'fav-'.$profile->code" />
+        @endisset
 
         @if ($profile->isNew)
             <div class="triangle">
@@ -50,13 +57,17 @@
                 <li class="place">{{ $profile->place }}</li>
             </ul>
 
-            @isset($actions)
+            @if (isset($actions) || $profile->liked !== null)
                 <div class="intst-parent is-flush">
                     <div class="intst-button">
-                        {{ $actions }}
+                        {{ $actions ?? '' }}
+                        @if ($profile->liked !== null)
+                            <livewire:shared.like-button :profile-code="$profile->code" :liked="$profile->liked" :name="$profile->name"
+                                                         variant="row" :key="'like-'.$profile->code" />
+                        @endif
                     </div>
                 </div>
-            @endisset
+            @endif
         </div>
     </div>
 

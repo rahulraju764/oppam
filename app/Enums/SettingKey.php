@@ -35,7 +35,9 @@ enum SettingKey: string
     case DailyMatchCount = 'matching.daily_match_count';
     case PhotosMaxAdditional = 'photos.max_additional';
     case PhotosMaxUploadMb = 'photos.max_upload_mb';
-    case LikesSpamThresholdPerHour = 'likes.spam_threshold_per_hour';
+    case LikesSpamMaxPer10Minutes = 'likes.spam_max_per_10_minutes';
+    case LikesSpamBlockMinutes = 'likes.spam_block_minutes';
+    case FavoritesMaxPerMinute = 'favorites.max_per_minute';
     case SearchMaxPerMinute = 'search.max_per_minute';
     case ProfileViewsMaxPerMinute = 'profile_views.max_per_minute';
     case BrokerStaffSeatsDefault = 'broker.staff_seats_default';
@@ -81,7 +83,9 @@ enum SettingKey: string
             self::DailyMatchCount => 10,
             self::PhotosMaxAdditional => 9,
             self::PhotosMaxUploadMb => 8,
-            self::LikesSpamThresholdPerHour => 30,
+            self::LikesSpamMaxPer10Minutes => 50,   // R-M06-2: more than this in 10 minutes = like spam
+            self::LikesSpamBlockMinutes => 60,      // R-M06-2: the soft block that follows
+            self::FavoritesMaxPerMinute => 60,      // A13 "mass favourites via automation": add / remove per member
             self::SearchMaxPerMinute => 60,   // M04 / CLAUDE.md rule 10: searches (incl. "load more") per member
             self::ProfileViewsMaxPerMinute => 30,   // M03 / M15: recorded profile views per member (more still open, uncounted)
             self::BrokerStaffSeatsDefault => 5,
@@ -121,7 +125,9 @@ enum SettingKey: string
             self::DailyMatchCount => ['required', 'integer', 'min:1', 'max:50'],
             self::PhotosMaxAdditional => ['required', 'integer', 'min:0', 'max:20'],
             self::PhotosMaxUploadMb => ['required', 'integer', 'min:1', 'max:20'],
-            self::LikesSpamThresholdPerHour => ['required', 'integer', 'min:5', 'max:500'],
+            self::LikesSpamMaxPer10Minutes => ['required', 'integer', 'min:5', 'max:500'],
+            self::LikesSpamBlockMinutes => ['required', 'integer', 'min:1', 'max:1440'],
+            self::FavoritesMaxPerMinute => ['required', 'integer', 'min:5', 'max:600'],
             self::SearchMaxPerMinute => ['required', 'integer', 'min:10', 'max:600'],
             self::ProfileViewsMaxPerMinute => ['required', 'integer', 'min:5', 'max:300'],
             self::BrokerStaffSeatsDefault => ['required', 'integer', 'min:1', 'max:100'],
