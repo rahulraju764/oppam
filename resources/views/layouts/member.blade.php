@@ -32,6 +32,9 @@
     <x-ui.toast-stack />
     @if ($member && \Illuminate\Support\Facades\Route::has('member.likes'))
         <x-engagement.dialogs />
+        @if (auth('web')->user() instanceof \App\Models\User)
+            <livewire:shared.interest-composer :key="'interest-composer'" />
+        @endif
     @endif
 
     <main id="main" tabindex="-1">

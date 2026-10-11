@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Jobs\Engagement\ExpireInterests;
 use App\Jobs\Matching\GenerateDailyMatches;
 use App\Jobs\Members\PurgeDeletedMembers;
 use App\Jobs\Notifications\PruneOldNotifications;
@@ -23,6 +24,9 @@ Schedule::job(new GenerateDailyMatches)->timezone('Asia/Kolkata')->dailyAt('05:0
 
 // M04: Saved search daily alerts sent at 08:00 IST.
 Schedule::job(new SendSavedSearchAlerts)->timezone('Asia/Kolkata')->dailyAt('08:00')->onOneServer()->withoutOverlapping();
+
+// F02: pending interests past their 30 days become EXPIRED, every hour.
+Schedule::job(new ExpireInterests)->hourly()->onOneServer()->withoutOverlapping();
 
 // R-M08-4: in-app notifications older than 180 days. 21:45 UTC = 03:15 IST.
 Schedule::job(new PruneOldNotifications)->dailyAt('21:45')->onOneServer()->withoutOverlapping();

@@ -120,6 +120,21 @@ it('F06 exclusions (P3.3): a profile the member already liked is not recommended
         ->toContain($fresh->id)->not->toContain($liked->id);
 });
 
+it('F06 exclusions (P3.4): a profile the member already sent an interest to is not recommended again', function (): void {
+    $groom = dailyGroom();
+    $contacted = dailyBride();
+    $connected = dailyBride();
+    $declined = dailyBride();
+    $fresh = dailyBride();
+    App\Models\Interest::factory()->between($groom->profile, $contacted)->create();
+    App\Models\Interest::factory()->between($groom->profile, $connected)->accepted()->create();
+    App\Models\Interest::factory()->between($groom->profile, $declined)->declined()->create();   // may come back once the cooldown allows
+
+    expect(buildFor($groom))->toBe(2)
+        ->and(DailyMatch::query()->where('profile_id', $groom->profile->id)->pluck('matched_profile_id')->all())
+        ->toContain($fresh->id, $declined->id)->not->toContain($contacted->id)->not->toContain($connected->id);
+});
+
 it('F06: the member\'s partner preferences decide the candidates', function (): void {
     $groom = dailyGroom();
     $pref = PartnerPreference::factory()->make(['profile_id' => $groom->profile->id, 'age_min' => 24, 'age_max' => 28, 'religion_ids' => null, 'marital_statuses' => null,

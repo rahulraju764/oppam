@@ -7,6 +7,7 @@ namespace App\Actions\Admin\Members;
 use App\Enums\Entitlement;
 use App\Enums\SettingKey;
 use App\Enums\UserRole;
+use App\Models\AccessRequest;
 use App\Models\ContactDetail;
 use App\Models\ContactView;
 use App\Models\DailyMatch;
@@ -16,6 +17,7 @@ use App\Models\FamilyDetail;
 use App\Models\Favorite;
 use App\Models\HoroscopeDetail;
 use App\Models\Ignore;
+use App\Models\Interest;
 use App\Models\LifestyleDetail;
 use App\Models\Like;
 use App\Models\LoginEvent;
@@ -44,7 +46,7 @@ use Illuminate\Support\Str;
  * phone, email, password, names (to "Deleted Member"), date of birth (to 1 January of the same
  * year), about text, contact / family / partner / career / horoscope / lifestyle / privacy rows,
  * photos and the horoscope file, sign-in history, OTP challenges, sessions, profile and contact
- * views, likes and favourites (both directions), in-app notifications (theirs, and others' that
+ * views, likes, favourites, interests and photo / horoscope requests (both directions), in-app notifications (theirs, and others' that
  * name them), and held moderation text. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
  * subscriptions, orders (P5) and audit rows keep pointing at something. Idempotent: an
  * anonymised or not-yet-due member is skipped. Run by PurgeDeletedMembers (daily).
@@ -135,6 +137,11 @@ final class PurgeDeletedMember
         DailyMatch::query()->where('profile_id', $profile->id)->orWhere('matched_profile_id', $profile->id)->delete();
         MatchScore::query()->where('source_profile_id', $profile->id)->orWhere('target_profile_id', $profile->id)->delete();
         Ignore::query()->where('ignorer_profile_id', $profile->id)->orWhere('ignored_profile_id', $profile->id)->delete();
+
+        // Interests (their history goes with them; a conversation they opened keeps running without the
+        // link) and photo / horoscope requests, both directions (P3.4).
+        Interest::query()->where('from_profile_id', $profile->id)->orWhere('to_profile_id', $profile->id)->delete();
+        AccessRequest::query()->where('requester_profile_id', $profile->id)->orWhere('owner_profile_id', $profile->id)->delete();
 
         // Likes and favourites, both directions, and the member's abuse signals (P3.3).
         Like::query()->where('from_profile_id', $profile->id)->orWhere('to_profile_id', $profile->id)->delete();

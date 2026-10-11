@@ -6,10 +6,12 @@ namespace App\Services\Profile;
 
 use App\Data\Search\SearchCriteria;
 use App\Data\Search\SearchPage;
+use App\Domain\Engagement\FavoritePrivacy;
 use App\Domain\Safety\BlockList;
 use App\Enums\CreatedFor;
 use App\Enums\Dosham;
 use App\Enums\Gender;
+use App\Enums\InterestStatus;
 use App\Enums\PhotoStatus;
 use App\Enums\ProfileStatus;
 use App\Enums\SearchSort;
@@ -44,6 +46,7 @@ final class ProfileSearch
     public function __construct(
         private readonly BlockList $blocks,
         private readonly Masters $masters,
+        private readonly FavoritePrivacy $favoritePrivacy,
     ) {}
 
     /**
@@ -281,6 +284,16 @@ final class ProfileSearch
             ->when($c->hideViewed, fn (Builder $q) => $q->whereNotExists(fn (QueryBuilder $x) => $x->selectRaw('1')->from('profile_views')
                 ->whereColumn('profile_views.viewed_profile_id', 'profiles.id')
                 ->where('profile_views.viewer_profile_id', $searcher->id)))
+            // M06: "favourites-only filter in search" — the searcher's own private bookmarks. Ignored in an
+            // admin support session: it would list exactly whom the member bookmarked (R-M06-6).
+            ->when($c->favoritesOnly && ! $this->favoritePrivacy->hiddenInThisSession(), fn (Builder $q) => $q->whereExists(fn (QueryBuilder $x) => $x->selectRaw('1')->from('favorites')
+                ->whereColumn('favorites.favorite_profile_id', 'profiles.id')
+                ->where('favorites.profile_id', $searcher->id)))
+            // M04 exclusions: profiles the searcher already sent an interest to (waiting or accepted).
+            ->when($c->hideContacted, fn (Builder $q) => $q->whereNotExists(fn (QueryBuilder $x) => $x->selectRaw('1')->from('interests')
+                ->whereColumn('interests.to_profile_id', 'profiles.id')
+                ->where('interests.from_profile_id', $searcher->id)
+                ->whereIn('interests.status', [InterestStatus::Pending->value, InterestStatus::Accepted->value])))
             ->when($c->viewedOnly, fn (Builder $q) => $q->whereExists(fn (QueryBuilder $x) => $x->selectRaw('1')->from('profile_views')
                 ->whereColumn('profile_views.viewed_profile_id', 'profiles.id')
                 ->where('profile_views.viewer_profile_id', $searcher->id)))

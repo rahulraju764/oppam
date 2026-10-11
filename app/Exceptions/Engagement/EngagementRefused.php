@@ -7,7 +7,7 @@ namespace App\Exceptions\Engagement;
 use RuntimeException;
 
 /**
- * A like / favourite the member may not make right now, with a reason they can be shown
+ * A like / favourite / interest / request the member may not make right now, with a reason they can be shown
  * (PRD M06). `reason` is a stable key for tests and the UI; the message is member-facing.
  */
 final class EngagementRefused extends RuntimeException
@@ -17,6 +17,18 @@ final class EngagementRefused extends RuntimeException
     public const LIKE_SPAM = 'like_spam';
 
     public const TOO_FAST = 'too_fast';
+
+    public const CONTACT_FILTER = 'contact_filter';
+
+    public const COOLDOWN = 'cooldown';
+
+    public const ALREADY_CONNECTED = 'already_connected';
+
+    public const CUSTOM_MESSAGE_PLAN = 'custom_message_plan';
+
+    public const NOT_PENDING = 'not_pending';
+
+    public const NOT_REQUESTABLE = 'not_requestable';
 
     private function __construct(public readonly string $reason, string $message)
     {
@@ -37,6 +49,40 @@ final class EngagementRefused extends RuntimeException
             max(1, $minutesLeft),
             ['count' => max(1, $minutesLeft)],
         ));
+    }
+
+    /** R-M06-3: the target only accepts contact from members who match their partner preferences. */
+    public static function contactFilter(): self
+    {
+        return new self(self::CONTACT_FILTER, __('This member only accepts interests from profiles that match their partner preferences.'));
+    }
+
+    /** Declined pairs can't re-send for the cooldown (M06, `interest.resend_cooldown_days`). */
+    public static function cooldown(string $until): self
+    {
+        return new self(self::COOLDOWN, __('You can send this member another interest after :date.', ['date' => $until]));
+    }
+
+    public static function alreadyConnected(): self
+    {
+        return new self(self::ALREADY_CONNECTED, __('You are already connected with this member.'));
+    }
+
+    public static function customMessageNeedsPlan(): self
+    {
+        return new self(self::CUSTOM_MESSAGE_PLAN, __('Writing your own message is part of the paid plans. Pick one of the ready messages, or upgrade.'));
+    }
+
+    /** The interest is no longer waiting for a reply (answered, withdrawn or expired meanwhile). */
+    public static function notPending(): self
+    {
+        return new self(self::NOT_PENDING, __('This interest is no longer waiting for a reply.'));
+    }
+
+    /** A photo / horoscope request that isn't needed or possible (nothing to ask for, already open). */
+    public static function notRequestable(): self
+    {
+        return new self(self::NOT_REQUESTABLE, __('There is nothing to request here right now.'));
     }
 
     public static function tooFast(): self

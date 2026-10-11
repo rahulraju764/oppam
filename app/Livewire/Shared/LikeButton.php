@@ -79,7 +79,7 @@ final class LikeButton extends Component
 
         if ($result->changed && $result->mutual) {
             $card = $cards->forViewer($target, $member);
-            $this->dispatch('its-a-match', name: $card->name, url: (string) $card->url, photo: $card->photoUrl);
+            $this->dispatch('its-a-match', name: $card->name, url: (string) $card->url, photo: $card->photoUrl, code: $card->code);
         }
 
         return $this->liked;

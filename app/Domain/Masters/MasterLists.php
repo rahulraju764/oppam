@@ -20,8 +20,8 @@ use App\Models\Masters\State;
 /**
  * The A11 registry: every master list an admin can edit, in one place. Keys are URL slugs
  * (/masters/{key}). Lists that are PHP enums with code behind them (marital / physical status,
- * dosham, reject reasons) stay enums; report reasons and icebreaker templates arrive with their
- * modules (owner decision 2026-10-02). The chat / text profanity word lists live here as option
+ * dosham, reject reasons) stay enums; report reasons arrive with their module (owner decision
+ * 2026-10-02); the interest message templates are here since P3.4. The chat / text profanity word lists live here as option
  * groups and feed the A04 pre-flags.
  */
 final class MasterLists
@@ -44,6 +44,9 @@ final class MasterLists
         'profanity_ml' => 'Profanity — Malayalam',
         'profanity_manglish' => 'Profanity — Manglish',
     ];
+
+    /** Option group of the ready "Send Interest" messages. */
+    public const INTEREST_TEMPLATES = 'interest_template';
 
     /** @var array<string, MasterList>|null */
     private static ?array $lists = null;
@@ -87,6 +90,9 @@ final class MasterLists
             $lists[] = new MasterList('option-'.str_replace('_', '-', $group), $label, 'Lifestyle & family', MasterOption::class,
                 group: $group, references: $references, jsonReferences: $jsonReferences);
         }
+
+        // Ready messages for "Send Interest" (M06): the text is the label; an interest keeps its own copy.
+        $lists[] = new MasterList('interest-templates', 'Interest messages', 'Engagement', MasterOption::class, group: self::INTEREST_TEMPLATES);
 
         foreach (self::WORD_LISTS as $group => $label) {
             $lists[] = new MasterList(str_replace('_', '-', $group), $label, 'Moderation', MasterOption::class, group: $group, isWordList: true);

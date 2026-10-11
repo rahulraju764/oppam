@@ -1,6 +1,6 @@
 {{--
     The two dialogs the like / favourite buttons open (PRD M06), once per member layout:
-      "It's a match!"  — window event `its-a-match` { name, url, photo } from Shared\LikeButton
+      "It's a match!"  — window event `its-a-match` { name, url, photo, code } from Shared\LikeButton
                          when a like completes a pair (acceptance: shown to the second liker at once);
       "Limit reached"  — window event `quota-reached` { title, message } when the plan's daily likes
                          or total favourites are used up (the server already refused).
@@ -16,6 +16,8 @@
         </div>
         <x-slot:footer>
             <x-ui.button type="button" variant="ghost" x-on:click="close()">{{ __('Keep browsing') }}</x-ui.button>
+            <x-ui.button type="button" variant="outline" icon="fa-envelope" x-show="info.code"
+                         x-on:click="close(); window.Livewire?.dispatch('compose-interest', { code: info.code })">{{ __('Send interest') }}</x-ui.button>
             {{-- Blade directives aren't compiled inside component attributes, so the fallback is echoed. --}}
             <x-ui.button :href="$mutualUrl" x-bind:href="info.url || {{ \Illuminate\Support\Js::from($mutualUrl) }}"
                          x-on:click="close()" wire:navigate>{{ __('View profile') }}</x-ui.button>

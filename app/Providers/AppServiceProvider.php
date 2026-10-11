@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Contracts\SmsGateway;
 use App\Domain\Billing\UsagePeriodResolver;
+use App\Domain\Engagement\Connections;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
@@ -70,6 +71,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(FeatureFlags::class);
         $this->app->scoped(EntitlementService::class);
         $this->app->scoped(Impersonation::class);
+        $this->app->scoped(Connections::class);   // memoises "who is connected" for the request (P3.4)
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
 
         $this->app->singleton(SmsGateway::class, function (): SmsGateway {

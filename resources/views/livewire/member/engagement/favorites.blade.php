@@ -35,9 +35,13 @@
                     @if ($rows !== [])
                         <div class="fav-toolbar" x-data>
                             <span class="fav-toolbar__count" aria-live="polite"
-                                  x-text="$wire.selected.length ? @js(__(':n selected')).replace(':n', $wire.selected.length) : @js(__('Tick profiles to remove several at once'))">{{ __('Tick profiles to remove several at once') }}</span>
-                            <x-ui.button type="button" variant="outline" size="sm" icon="fa-trash-o" wire:click="removeSelected" loading="removeSelected"
-                                         x-bind:disabled="$wire.selected.length === 0">{{ __('Remove selected') }}</x-ui.button>
+                                  x-text="$wire.selected.length ? @js(__(':n selected')).replace(':n', $wire.selected.length) : @js(__('Tick profiles to act on several at once'))">{{ __('Tick profiles to act on several at once') }}</span>
+                            <span class="fav-toolbar__actions">
+                                <x-ui.button type="button" size="sm" icon="fa-envelope" wire:click="interestSelected" loading="interestSelected"
+                                             x-bind:disabled="$wire.selected.length === 0">{{ __('Send interest to selected') }}</x-ui.button>
+                                <x-ui.button type="button" variant="outline" size="sm" icon="fa-trash-o" wire:click="removeSelected" loading="removeSelected"
+                                             x-bind:disabled="$wire.selected.length === 0">{{ __('Remove selected') }}</x-ui.button>
+                            </span>
                         </div>
                     @endif
 

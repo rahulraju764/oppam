@@ -75,6 +75,8 @@ final readonly class SearchCriteria
         public ?string $activeWithin = null,
         public bool $newlyJoined = false,
         public bool $hideViewed = false,
+        public bool $favoritesOnly = false,
+        public bool $hideContacted = false,
         public SearchSort $sort = SearchSort::Relevance,
         // Built by the server only (My Matches / dashboard, M05) — never from input, never in a URL.
         public array $religionIds = [],
@@ -207,6 +209,8 @@ final readonly class SearchCriteria
             activeWithin: $active,
             newlyJoined: $bool('new'),
             hideViewed: $bool('hide_viewed'),
+            favoritesOnly: $bool('favorites'),
+            hideContacted: $bool('hide_contacted'),
             sort: is_string($in['sort'] ?? null) ? (SearchSort::tryFrom($in['sort']) ?? SearchSort::Relevance) : SearchSort::Relevance,
         );
     }
@@ -257,6 +261,8 @@ final readonly class SearchCriteria
             'active' => $this->activeWithin,
             'new' => $this->newlyJoined,
             'hide_viewed' => $this->hideViewed,
+            'favorites' => $this->favoritesOnly,
+            'hide_contacted' => $this->hideContacted,
             'sort' => $this->sort === SearchSort::Relevance ? null : $this->sort->value,
         ];
 

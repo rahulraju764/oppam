@@ -211,6 +211,15 @@ return [
         'family_status' => ['MIDDLE_CLASS' => 'Middle class', 'UPPER_MIDDLE' => 'Upper middle class', 'RICH' => 'Rich', 'AFFLUENT' => 'Affluent'],
         'family_values' => ['TRADITIONAL' => 'Traditional', 'MODERATE' => 'Moderate', 'LIBERAL' => 'Liberal'],
 
+        // Ready messages for "Send Interest" (M06: 5 templated messages; editable in A11 from P3.4).
+        'interest_template' => [
+            'T01' => 'I liked your profile and would like to know more about you.',
+            'T02' => 'Our families seem to share similar values. Shall we take this forward?',
+            'T03' => 'Your profile matches what I am looking for. Please have a look at mine.',
+            'T04' => 'We are from the same community and I feel we could be a good match.',
+            'T05' => 'My family liked your profile. We would be happy to hear from you.',
+        ],
+
         // Word lists for the A04 automatic profanity pre-flag (whole words, any case). Short seeds:
         // moderators extend them in A11 (P1.8). Codes are opaque (the word is the label).
         'profanity_en' => [

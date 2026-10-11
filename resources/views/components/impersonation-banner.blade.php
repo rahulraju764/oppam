@@ -15,7 +15,12 @@
                     'time' => $impersonation->expires_at?->timezone(config('oppam.display_timezone'))->format('g:i a'),
                 ]) }}
             </p>
-            <form method="POST" action="{{ route('impersonation.end') }}">
+            {{-- This tab is ending the session itself: mark it, so the live ".session.revoked" that
+                 follows doesn't reload it away from the "Support session ended" page (realtime.js).
+                 The mark lapses after 10 s, so a submit that never completes can't leave the tab
+                 deaf to a later end of the session. --}}
+            <form method="POST" action="{{ route('impersonation.end') }}" x-data
+                  x-on:submit="document.documentElement.dataset.endingSupportSession = 'on'; setTimeout(() => delete document.documentElement.dataset.endingSupportSession, 10000)">
                 @csrf
                 <button type="submit" class="btn btn-light btn-sm">{{ __('End session') }}</button>
             </form>

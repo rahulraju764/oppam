@@ -3,7 +3,8 @@
     Home | Matches (sheet) | Interests (sheet) | Search | Profile. Sheets open via
     aria-controls (tab-sheet.js). On the wizard the page's prev/next are repeated in the bar,
     because the top page-nav has scrolled away by the bottom of a long form.
-    Interest box counts become live in P3.4 (the template's numbers were demo data).
+    The Interests sheet links to /interests by box and status (the template's numbers were demo
+    data and are not shown; the page itself carries the counts).
 --}}
 @inject('nav', 'App\Support\Navigation\Navigation')
 @php($matchesLinks = $nav->matchesLinks())
@@ -131,9 +132,12 @@
                 @foreach (['received' => __('Interests Received'), 'sent' => __('Interests Sent')] as $box => $boxLabel)
                     <p @class(['tab-sheet-group', 'is-sent' => $box === 'sent', 'is-received' => $box === 'received'])>{{ $boxLabel }}</p>
                     <div class="tab-sheet-list">
-                        @foreach (['all' => __('All'), 'pending' => __('Pending'), 'accepted' => __('Accepted / replied'), 'declined' => __('Declined')] as $status => $statusLabel)
-                            <a href="{{ $interestsUrl }}?box={{ $box }}{{ $status !== 'all' ? '&status='.$status : '' }}" class="tab-sheet-item" wire:navigate>{{ $statusLabel }}</a>
+                        @foreach (['all' => __('All'), 'pending' => __('Pending'), 'accepted' => __('Accepted'), 'declined' => __('Declined'), 'expired' => __('Expired')] as $status => $statusLabel)
+                            <a href="{{ $interestsUrl }}?box={{ $box }}&status={{ $status }}" class="tab-sheet-item" wire:navigate>{{ $statusLabel }}</a>
                         @endforeach
+                        @if ($box === 'sent')
+                            <a href="{{ $interestsUrl }}?box=requests" class="tab-sheet-item" wire:navigate>{{ __('Photo & horoscope requests') }}</a>
+                        @endif
                     </div>
                 @endforeach
 

@@ -407,6 +407,33 @@ it('P3.3: the purge also removes likes, favourites and abuse signals, both direc
         ->and($entitlements->used($other->profile, App\Enums\Entitlement::FavoritesTotal))->toBe(0);
 });
 
+it('P3.4: the purge also removes interests (with their history) and photo / horoscope requests, both directions — the pair is no longer connected', function (): void {
+    $member = a03Member('+919811100091');
+    $other = memberWithPhone('+919811100092');
+    $third = memberWithPhone('+919811100093');
+    $member->profile->forceFill(['gender' => App\Enums\Gender::Male])->save();
+    foreach ([$other, $third] as $bride) {
+        $bride->profile->forceFill(['gender' => App\Enums\Gender::Female])->save();
+    }
+    app(App\Actions\Engagement\SendInterest::class)->handle($member->refresh(), $other->profile);
+    $conversation = app(App\Actions\Engagement\AcceptInterest::class)->handle($other->refresh(), $member->profile);
+    app(App\Actions\Engagement\SendInterest::class)->handle($third->refresh(), $member->profile);
+    App\Models\AccessRequest::factory()->between($member->profile, $other->profile)->create();
+    App\Models\AccessRequest::factory()->between($third->profile, $member->profile)->approved()->create();
+    $untouched = App\Models\Interest::factory()->between($third->profile, $other->profile)->create();   // nothing to do with the member
+
+    app(DeleteMember::class)->handle(adminWithRole(), $member, $member->profile->code, 'Member asked us to delete it.');
+    $this->travel(31)->days();
+    app(PurgeDeletedMember::class)->handle(User::withTrashed()->findOrFail($member->id));
+    app(App\Domain\Engagement\Connections::class)->forget();
+
+    expect(App\Models\Interest::query()->pluck('id')->all())->toBe([$untouched->id])
+        ->and(App\Models\InterestEvent::query()->count())->toBe(0)
+        ->and(App\Models\AccessRequest::query()->count())->toBe(0)
+        ->and($conversation->refresh()->interest_id)->toBeNull()
+        ->and(app(App\Domain\Engagement\Connections::class)->isConnected($other->profile, $member->profile))->toBeFalse();
+});
+
 it('P3.2: the purge also removes the member\'s in-app notifications and others\' notifications that name them', function (): void {
     $member = a03Member('+919811100096');
     $other = memberWithPhone('+919811100097');

@@ -112,7 +112,15 @@ function listenForLogout(echo) {
         })
         .listen('.session.revoked', (event) => {
             const forThisTab = event?.scope !== 'IMPERSONATION' || meta('oppam-impersonating') === 'on';
-            if (forThisTab) window.location.reload();
+            // The tab whose own "End session" button caused this is already on its way to the
+            // "Support session ended" page — reloading it would send it to the sign-in page instead.
+            const endingItself = event?.scope === 'IMPERSONATION' && document.documentElement.dataset.endingSupportSession === 'on';
+            if (forThisTab && !endingItself) window.location.reload();
+        })
+        // An interest with another member changed (M06): the Interest / Chat buttons for that
+        // profile switch state on the open page — a hint only, the server enforces everything.
+        .listen('.interest.changed', (event) => {
+            window.dispatchEvent(new CustomEvent('interest-changed', { detail: { code: event?.code, state: event?.state } }));
         })
         // A new notification (M08): a toast; the bell re-reads its own count (Livewire listener).
         .notification((notification) => {

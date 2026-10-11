@@ -7,8 +7,10 @@ namespace App\Livewire\Member\Engagement;
 use App\Actions\Engagement\RemoveFavorites;
 use App\Actions\Engagement\RemoveUnavailableFavorites;
 use App\Actions\Engagement\SaveFavoriteNote;
+use App\Actions\Engagement\SendInterests;
 use App\Data\Content\SeoData;
 use App\Domain\Engagement\FavoritePrivacy;
+use App\Domain\Engagement\InterestMessages;
 use App\Domain\Profile\ProfileCards;
 use App\Enums\Entitlement;
 use App\Exceptions\Admin\ImpersonationRestricted;
@@ -29,7 +31,7 @@ use Livewire\WithPagination;
  * Action scoped to the member's own favourites. Bookmarks whose profile is no longer available
  * still hold a slot of the plan, so the page offers to clear them. Nobody else ever sees this
  * list (R-M06-6) — in an admin support session only the number is shown (FavoritePrivacy).
- * "Send interest to all selected" arrives with interests (P3.4).
+ * "Send interest to all selected" goes through SendInterests (quota respected).
  */
 final class Favorites extends Component
 {
@@ -77,6 +79,30 @@ final class Favorites extends Component
     {
         $this->removed(fn (): int => $remove->handle($this->member(), $this->selected));
         $this->selected = [];
+    }
+
+    /** "Send interest to all selected" (M06, respecting the month's quota), with the first ready message. */
+    public function interestSelected(SendInterests $send, InterestMessages $messages): void
+    {
+        try {
+            $result = $send->handle($this->member(), $this->selected, $messages->templates()[0]->code ?? null);
+        } catch (ImpersonationRestricted $restricted) {
+            $this->dispatch('toast', title: $restricted->getMessage(), type: 'danger');
+
+            return;
+        }
+
+        $this->selected = [];
+
+        if ($result['quotaReached']) {
+            $this->dispatch('quota-reached', title: __('You’ve used this month’s interests'),
+                message: trans_choice(':count interest was sent before your plan’s monthly limit was reached.|:count interests were sent before your plan’s monthly limit was reached.', $result['sent'], ['count' => $result['sent']]));
+
+            return;
+        }
+
+        $this->dispatch('toast', type: $result['sent'] > 0 ? 'success' : 'info', title: trans_choice(':count interest sent.|:count interests sent.', $result['sent'], ['count' => $result['sent']])
+            .($result['skipped'] > 0 ? ' '.trans_choice(':count profile skipped (already contacted or not accepting interests).|:count profiles skipped (already contacted or not accepting interests).', $result['skipped'], ['count' => $result['skipped']]) : ''));
     }
 
     /** Clear bookmarks of profiles that are no longer available (they still hold plan slots). */

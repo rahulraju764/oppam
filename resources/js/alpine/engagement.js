@@ -46,6 +46,39 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // The Send Interest / Interest sent / Respond / Chat control for one profile (PRD M06).
+    // `state` follows the window event `interest-changed` { code, state } — from the Send Interest
+    // dialog in this tab and from the live `.interest.changed` (resources/js/realtime.js).
+    window.Alpine.data('interestButton', (initial, code, chatUrl) => ({
+        state: initial,
+        sync: null,
+
+        init() {
+            this.sync = (event) => {
+                const data = detailOf(event);
+                if (data.code === code && ['none', 'sent', 'received', 'connected'].includes(data.state)) this.state = data.state;
+            };
+            window.addEventListener('interest-changed', this.sync);
+        },
+
+        destroy() {
+            window.removeEventListener('interest-changed', this.sync);
+        },
+
+        compose() {
+            window.Livewire?.dispatch('compose-interest', { code });
+        },
+
+        chat() {
+            if (chatUrl) {
+                if (window.Livewire?.navigate) window.Livewire.navigate(chatUrl);
+                else window.location.assign(chatUrl);
+                return;
+            }
+            window.dispatchEvent(new CustomEvent('toast', { detail: { title: this.$root.dataset.chatSoon ?? '', type: 'info' } }));
+        },
+    }));
+
     // "It's a match!" and "limit reached" dialogs: filled from a Livewire event, then opened.
     window.Alpine.data('engagementDialog', (modalName) => ({
         info: {},

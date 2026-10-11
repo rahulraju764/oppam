@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Profile;
 
 use App\Data\Profile\ProfileCardData;
+use App\Domain\Engagement\Connections;
 use App\Domain\Engagement\FavoritePrivacy;
 use App\Domain\Media\PhotoUrls;
 use App\Models\Profile;
@@ -29,6 +30,7 @@ final class ProfileCards
         private readonly Masters $masters,
         private readonly EngagementLists $engagement,
         private readonly FavoritePrivacy $favoritePrivacy,
+        private readonly Connections $connections,
     ) {}
 
     public function forViewer(Profile $profile, ?User $viewer): ProfileCardData
@@ -49,7 +51,7 @@ final class ProfileCards
     /**
      * forViewer() for a whole page of profiles (search, lists): photo URLs in one batch
      * (PhotoUrls::primaryCardUrls), district labels from the cached master list, the viewer's
-     * likes / bookmarks in two — no query per card. Pass profiles with privacySetting loaded.
+     * likes / bookmarks in two and interests in one — no query per card. Pass profiles with privacySetting loaded.
      *
      * @param  iterable<Profile>  $profiles
      * @return list<ProfileCardData>
@@ -66,6 +68,10 @@ final class ProfileCards
         $state = $withEngagement && $own !== null
             ? $this->engagement->stateFor($own, $profiles->map(fn (Profile $p): string => (string) $p->id)->all())
             : null;
+        // Where the viewer stands with each profile, for the Interest / Chat buttons (one query).
+        $interests = $state !== null
+            ? $this->connections->statesFor($own, $profiles->map(fn (Profile $p): string => (string) $p->id)->all())
+            : null;
         // R-M06-6: an admin support session never learns whom the member bookmarked — no star at all.
         $showFavorites = $state !== null && ! $this->favoritePrivacy->hiddenInThisSession();
 
@@ -80,6 +86,7 @@ final class ProfileCards
             isNew: $profile->published_at?->greaterThan($newSince) === true,
             liked: $state !== null ? isset($state['liked'][(string) $profile->id]) : null,
             favorited: $showFavorites ? isset($state['favorited'][(string) $profile->id]) : null,
+            interest: $interests !== null ? ($interests[(string) $profile->id] ?? Connections::NONE) : null,
         ))->values()->all();
     }
 

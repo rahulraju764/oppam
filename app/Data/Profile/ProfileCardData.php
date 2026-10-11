@@ -27,5 +27,7 @@ final readonly class ProfileCardData
         /** The viewer's own like / bookmark on this profile; null = no engagement buttons on this card. */
         public ?bool $liked = null,
         public ?bool $favorited = null,
+        /** Where the viewer stands with this profile (Connections::NONE / SENT / RECEIVED / CONNECTED); null = no interest button. */
+        public ?string $interest = null,
     ) {}
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Media;
 
+use App\Domain\Engagement\Connections;
+use App\Enums\AccessRequestType;
 use App\Enums\PhotoVisibility;
 use App\Enums\UserRole;
 use App\Models\Profile;
@@ -12,12 +14,14 @@ use App\Models\User;
 /**
  * THE rule for who sees a profile's photos clearly (M11, privacy_settings.photo_visibility).
  * Everyone else gets the blurred conversion (PhotoUrls). Owner: always. Guests: never.
- * ALL_MEMBERS: any active member. PREMIUM_ONLY: viewers with a paid plan. ON_REQUEST and
- * ACCEPTED_ONLY need an accepted connection — interests arrive in P3.4, so until then
- * isConnected() is false and those photos stay blurred.
+ * ALL_MEMBERS: any active member. PREMIUM_ONLY: viewers with a paid plan. ACCEPTED_ONLY: members
+ * connected by an accepted interest. ON_REQUEST: those, plus anyone whose photo request the owner
+ * approved (Connections, P3.4).
  */
 final class PhotoAccess
 {
+    public function __construct(private readonly Connections $connections) {}
+
     public function canSeeClearly(Profile $owner, ?User $viewer): bool
     {
         if ($viewer === null) {
@@ -51,9 +55,12 @@ final class PhotoAccess
         return $owner->privacySetting->photo_visibility ?? PhotoVisibility::AllMembers;
     }
 
-    /** Accepted interest (or granted photo request) between the two — P3.4 plugs in here. */
+    /** An accepted interest between the two (either direction), or — for ON_REQUEST — an approved photo request. */
     private function isConnected(Profile $owner, Profile $viewer): bool
     {
-        return false;
+        // Viewer first: Connections memoises per first profile, so a page of cards is one query.
+        return $this->connections->isConnected($viewer, $owner)
+            || ($this->visibility($owner) === PhotoVisibility::OnRequest
+                && $this->connections->hasGrant(AccessRequestType::Photo, $owner, $viewer));
     }
 }

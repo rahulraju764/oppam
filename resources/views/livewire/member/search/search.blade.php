@@ -183,7 +183,10 @@
                                                 'photo' => __('With photo'), 'verified' => __('ID verified'), 'premium' => __('Premium members'),
                                                 'new' => __('Newly joined (7 days)'), 'nri' => __('NRI (living abroad)'), 'no_children' => __('No children'),
                                                 'no_dosham' => __('No chovva dosham'), 'hide_viewed' => __('Hide profiles I\'ve viewed'),
+                                                'hide_contacted' => __('Hide profiles I\'ve sent an interest to'), 'favorites' => __('My favourites only'),
                                             ] as $key => $label)
+                                                {{-- R-M06-6: no favourites filter in an admin support session. --}}
+                                                @continue($key === 'favorites' && app(\App\Domain\Engagement\FavoritePrivacy::class)->hiddenInThisSession())
                                                 <div class="form-check">
                                                     <input type="checkbox" class="form-check-input" id="filter-{{ $key }}" name="{{ $key }}" value="1" wire:model.live="filters.{{ $key }}">
                                                     <label class="form-check-label" for="filter-{{ $key }}">{{ $label }}</label>

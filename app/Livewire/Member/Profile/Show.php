@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\Member\Profile;
 
+use App\Actions\Engagement\RequestAccess;
 use App\Actions\Profile\RecordProfileView;
 use App\Actions\Profile\ViewContact;
 use App\Data\Content\SeoData;
+use App\Domain\Engagement\Connections;
 use App\Domain\Matching\PreferenceMatcher;
 use App\Domain\Media\HoroscopeAccess;
 use App\Domain\Media\PhotoUrls;
@@ -14,8 +16,10 @@ use App\Domain\Profile\ContactAccessPolicy;
 use App\Domain\Profile\ProfileCards;
 use App\Domain\Profile\ProfileNames;
 use App\Domain\Profile\ProfileVisibility;
+use App\Enums\AccessRequestType;
 use App\Enums\UserRole;
 use App\Exceptions\Admin\ImpersonationRestricted;
+use App\Exceptions\Engagement\EngagementRefused;
 use App\Exceptions\Profile\ContactNotAvailable;
 use App\Models\Profile;
 use App\Models\User;
@@ -31,7 +35,7 @@ use Livewire\Component;
  * see it get anything (ProfileVisibility: ACTIVE, opposite gender, not blocked — else 404,
  * R-M03-1/3); the owner always may, and ?preview=1 shows them what others see. Photos through
  * PhotoUrls, contact details only through ViewContact (R-M03-2), name masked (ProfileNames).
- * The like / favourite / interest / chat actions arrive in P3.x.
+ * Like / Favorite (P3.3), Send Interest → Chat and photo / horoscope requests (P3.4) are live.
  */
 final class Show extends Component
 {
@@ -45,6 +49,9 @@ final class Show extends Component
     public ?array $contact = null;
 
     public ?string $contactError = null;
+
+    /** What happened to the last photo / horoscope request made from this page. */
+    public ?string $requestNotice = null;
 
     public function mount(string $profile, ProfileVisibility $visibility, RecordProfileView $record): void
     {
@@ -76,6 +83,23 @@ final class Show extends Component
         $this->dispatch('close-modal', name: 'view-contact');
     }
 
+    /** Ask to see photos / the horoscope the member shares on request (M06). */
+    public function requestAccess(string $type, RequestAccess $request): void
+    {
+        $kind = AccessRequestType::tryFrom($type);
+
+        if ($kind === null) {
+            return;
+        }
+
+        try {
+            $request->handle($this->viewer(), $this->target(), $kind);
+            $this->requestNotice = __('Request sent. You will be told when it is approved.');
+        } catch (EngagementRefused|ImpersonationRestricted $refused) {
+            $this->requestNotice = $refused->getMessage();
+        }
+    }
+
     public function render(
         PhotoUrls $photos,
         ProfileFacts $facts,
@@ -87,6 +111,8 @@ final class Show extends Component
         HoroscopeAccess $horoscope,
         ProfileBrowseList $browse,
         Navigation $nav,
+        Connections $connections,
+        RequestAccess $requests,
     ): View {
         $viewer = $this->viewer();
         $target = $this->target();
@@ -98,10 +124,14 @@ final class Show extends Component
             'profile' => $target,
             'isOwner' => $isOwner,
             'asOthers' => $asOthers,
-            'name' => $asOthers ? $names->forViewer($target, null) : $target->fullName(),
+            // Others see the masked name — unless connected by an accepted interest (ProfileNames);
+            // the owner's preview shows what a stranger sees.
+            'name' => $isOwner ? ($this->preview ? $names->forViewer($target, null) : $target->fullName()) : $names->forViewer($target, $viewer),
+            'interestState' => ! $isOwner && $own !== null ? $connections->stateWith($own, $target) : Connections::NONE,
+            'requestable' => ! $isOwner && $own !== null ? $this->requestable($requests, $target, $viewer, $own) : [],
             'photos' => $this->preview ? $photos->forPreview($target) : $photos->forViewer($target, $viewer),
             'headline' => $facts->headline($target),
-            'sections' => $facts->sections($target, $asOthers ? null : $viewer),
+            'sections' => $facts->sections($target, $this->preview ? null : $viewer),   // the Name row follows the same rule as the heading
             'checks' => ! $isOwner && $own !== null ? $matcher->check($own, $target->partnerPreference) : [],
             'contactAccess' => ! $isOwner && $own !== null ? $contactPolicy->decide($target, $own) : null,
             'horoscopeLink' => $horoscope->link($target, $viewer),
@@ -111,6 +141,24 @@ final class Show extends Component
             'neighbours' => $browse->neighbours($target->code),
             'plansUrl' => $nav->url('plans'),
         ])->layout('layouts::member', ['seo' => SeoData::private($names->forViewer($target, null).' | Oppam Matrimony')]);
+    }
+
+    /**
+     * Content the member shares on request that this viewer can't open yet: type => already asked.
+     *
+     * @return array<string, bool>
+     */
+    private function requestable(RequestAccess $requests, Profile $target, User $viewer, Profile $own): array
+    {
+        $out = [];
+
+        foreach (AccessRequestType::cases() as $type) {
+            if ($requests->requestable($target, $viewer, $type)) {
+                $out[$type->value] = $requests->isPending($own, $target, $type);
+            }
+        }
+
+        return $out;
     }
 
     private function target(): Profile

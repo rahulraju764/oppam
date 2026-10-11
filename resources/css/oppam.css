@@ -468,3 +468,20 @@ body.search-sheet-open .mobile-footer { display: none; }
 .match-dialog { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; }
 .match-dialog__photo { width: var(--space-11); height: var(--space-11); border-radius: var(--radius-circle); object-fit: cover; }
 .match-dialog__name { margin: 0; font-size: var(--text-lg); font-weight: var(--fw-semibold); color: var(--color-black); }
+
+/* ---- Interests & requests (M06, P3.4) ---- */
+.engage--interest { position: relative; z-index: var(--z-raised); align-items: center; }
+.interest-btn { display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--tap-compact); border: 0; cursor: pointer; }
+.profiles .intst-button .interest-btn { padding: var(--space-2) var(--space-3); border-radius: var(--radius-pill); background: var(--color-primary); color: var(--color-default); font-family: var(--font-primary); font-size: var(--text-sm); }
+.profiles .intst-button .interest-btn:hover { background: var(--color-primary-dark); color: var(--color-default); }
+.interest-btn:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.interest-chip { display: inline-flex; align-items: center; gap: var(--space-1); }
+.profiles .intst-button { flex-wrap: wrap; align-items: center; }
+.interest-pick { position: relative; z-index: var(--z-raised); display: flex; align-items: center; gap: var(--space-2); min-height: var(--tap-min); margin: 0; }
+.interest-note { position: relative; z-index: var(--z-raised); flex: 1 1 100%; margin: 0; font-size: var(--text-sm); font-style: italic; color: var(--color-gr-dark); overflow-wrap: anywhere; }
+.interest-templates { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); border: 0; padding: 0; }
+.interest-quota { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-gr-dark); }
+.fav-toolbar__actions { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
+/* Profile page action row: every control keeps its own height and they share one centre line. */
+.profile-actions { align-items: center; }
+.profile-actions .engage { align-items: center; }

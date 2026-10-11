@@ -458,7 +458,7 @@ it('the profile page has live Like and Favorite buttons in place of the placehol
 
     Livewire::test(Show::class, ['profile' => $bride->profile->code])
         ->assertSeeLivewire(LikeButton::class)->assertSeeLivewire(FavoriteButton::class)
-        ->assertSee('Interests and chat are opening soon.');
+        ->assertSee('Send Interest');
 });
 
 it('a member\'s own profile page has no like or favourite button', function (): void {

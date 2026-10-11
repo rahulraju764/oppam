@@ -7,10 +7,11 @@
     actions   optional slot: extra controls in the button row (Accept/Decline on the interests
               page, "Not interested" on daily matches …). The Like button follows them whenever
               the card carries the viewer's like state (ProfileCards::forViewers).
+    hideInterest  true on pages that bring their own interest controls (/interests).
     shortlist optional slot replacing the bookmark on the photo; by default the Favorite button,
               whenever the card carries the viewer's bookmark state.
 --}}
-@props(['profile'])
+@props(['profile', 'hideInterest' => false])
 
 <div {{ $attributes->class('profiles') }}>
     <div class="profile-img">
@@ -57,10 +58,13 @@
                 <li class="place">{{ $profile->place }}</li>
             </ul>
 
-            @if (isset($actions) || $profile->liked !== null)
+            @if (isset($actions) || $profile->liked !== null || $profile->interest !== null)
                 <div class="intst-parent is-flush">
                     <div class="intst-button">
                         {{ $actions ?? '' }}
+                        @if ($profile->interest !== null && ! ($hideInterest ?? false))
+                            <x-engagement.interest-button :code="$profile->code" :state="$profile->interest" />
+                        @endif
                         @if ($profile->liked !== null)
                             <livewire:shared.like-button :profile-code="$profile->code" :liked="$profile->liked" :name="$profile->name"
                                                          variant="row" :key="'like-'.$profile->code" />

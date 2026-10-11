@@ -58,7 +58,7 @@ it('renders the template profile: masked name, code, tabs, facts and the match c
         ->assertSee('Religious Information')
         ->assertSee('Gopalan Nair')               // father (family section), not the contact person
         ->assertSee('You match')
-        ->assertSee('Interests and chat are opening soon.');   // Like / Favorite are live since P3.3 (EngagementTest)
+        ->assertSee('Send Interest');   // Like / Favorite (P3.3) and Send Interest (P3.4) are live — EngagementTest, InterestsTest
 });
 
 it('keeps contact details masked; a free member is told to upgrade', function (): void {

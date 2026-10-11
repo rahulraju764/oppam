@@ -54,15 +54,25 @@
                                 </ul>
 
                                 @unless ($isOwner)
-                                    {{-- Like and Favorite are live (P3.3); interest and chat arrive in P3.4 / P4.1 — shown, disabled, with the reason. --}}
+                                    {{-- Like, Favorite (P3.3) and the interest → chat step (P3.4) are live; requests where the member shares on request. --}}
                                     <div class="intst-parent">
                                         <div class="intst-button profile-actions">
                                             <livewire:shared.like-button :profile-code="$profile->code" :name="$name" variant="page" :key="'like-page-'.$profile->code" />
                                             <livewire:shared.favorite-button :profile-code="$profile->code" :name="$name" variant="page" :key="'fav-page-'.$profile->code" />
-                                            <button type="button" class="send-int" disabled aria-describedby="actions-soon"><i class="fa fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}</button>
-                                            <button type="button" class="send-int" disabled aria-describedby="actions-soon"><i class="fa fa-comments" aria-hidden="true"></i>{{ __('Chat') }}</button>
+                                            <x-engagement.interest-button :code="$profile->code" :state="$interestState" />
+                                            @foreach ($requestable as $type => $pending)
+                                                @if ($pending)
+                                                    <span class="chip chip--warning interest-chip"><i class="fa fa-check" aria-hidden="true"></i> {{ $type === 'PHOTO' ? __('Photo request sent') : __('Horoscope request sent') }}</span>
+                                                @else
+                                                    <button type="button" class="send-int" wire:click="requestAccess('{{ $type }}')" wire:loading.attr="disabled" wire:target="requestAccess('{{ $type }}')">
+                                                        <i class="fa {{ $type === 'PHOTO' ? 'fa-picture-o' : 'fa-file-text-o' }}" aria-hidden="true"></i>{{ $type === 'PHOTO' ? __('Request photos') : __('Request horoscope') }}
+                                                    </button>
+                                                @endif
+                                            @endforeach
                                         </div>
-                                        <p class="form-text mb-0" id="actions-soon">{{ __('Interests and chat are opening soon.') }}</p>
+                                        @if ($requestNotice)
+                                            <p class="form-text mb-0" role="status">{{ $requestNotice }}</p>
+                                        @endif
                                     </div>
                                 @endunless
                             </div>

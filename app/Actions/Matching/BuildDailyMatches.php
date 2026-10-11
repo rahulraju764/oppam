@@ -76,7 +76,7 @@ final class BuildDailyMatches
             return 0;
         }
 
-        $criteria = $this->funnel->criteria($me, MatchTab::All)?->with(['hideViewed' => true]);
+        $criteria = $this->funnel->criteria($me, MatchTab::All)?->with(['hideViewed' => true, 'hideContacted' => true]);
         if ($criteria === null) {
             return 0;
         }
