@@ -78,7 +78,7 @@ final class AcceptInterest
             InterestEvent::record($interest, InterestStatus::Accepted, $own->id);
 
             return $this->openConversation($interest, $own, $from);
-        });
+        }, attempts: 3);   // a deadlock on the pair's new conversation row is retried, not shown as an error
 
         $this->signals->changed($own, $from);
 

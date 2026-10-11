@@ -209,6 +209,6 @@ final class SendInterest
             $this->entitlements->consume($own, Entitlement::InterestsPerMonth);   // QuotaExceeded rolls everything back
 
             return self::SENT;
-        });
+        }, attempts: 3);   // two members sending their first interest to each other at once can deadlock: try again
     }
 }

@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 3 — Real-time core & engagement (Phase 2 complete, 2026-10-04)
-**Next session:** P3.4 — Interests & requests (M06)
+**Next session:** P3.5 — Live admin dashboard (A02)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -44,7 +44,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P3.1 Reverb, Echo, channels & presence — 2026-10-05 (reviewer READY in round 2 after 1 Blocker + 3 Majors fixed: user ULID in presence rosters → profile code, best-effort ForceLogout (LiveSignal), flaky live-logout Dusk test, HTTP impersonation/security tests; owner review of the commit — rule 5)
 - [x] P3.2 Notifications system (M08) — 2026-10-06 (reviewer READY in round 3 after 6 Majors + 1 Blocker fixed: mandatory events forced a template-less SMS, row / live-signal order (InAppChannel: one job), purge left notifications, support session could read / delete, list collapsed to page 1, a flaky test; owner decision: no notification email until email verification, M14)
 - [x] P3.3 Likes & favorites (M06) — 2026-10-06 (reviewer READY in round 2 after 2 Majors fixed: favourite slots stuck on profiles no longer available, favourites + notes readable in an admin support session (R-M06-6); found on the way: P3.1's "End session" sent the admin to the sign-in page — fix held for owner review, rule 5)
-- [ ] P3.4 Interests & requests (M06)
+- [x] P3.4 Interests & requests (M06) — 2026-10-11 (reviewer READY in round 3 after 2 Majors fixed: the new "favourites only" search filter listed a member's bookmarks to an admin support session, withdraw-and-send-again could notify the same member without limit; round 2 could not run its tests for lack of memory, round 3 confirmed)
 - [ ] P3.5 Live admin dashboard (A02)
 
 ## Phase 4 — Chat
@@ -94,6 +94,22 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P1.4 → P1.6: photo queue uses `moderation_items` PHOTO rows (subject_id = media uuid) and `media.phash` for duplicates.
 - P1.4 → P2.x: `PhotoUrls` queries per profile; add a batch `forViewers()` (eager-loaded) before search/list cards use it.
 - P1.4 → P9.5: S3 public bucket with listing disabled; `media-library:regenerate` after an APP_KEY rotation (conversion names are keyed).
+- P3.4 → P4.1 (chat): the Chat button (`<x-engagement.interest-button>`, state "connected") only says chat opens soon —
+  give it the conversation link (it looks for a `member.messages` route); the `messages` table and the SYSTEM message
+  "You are now connected" already exist (body stored in English: translate when shown); `AcceptInterest` links an existing
+  conversation of the pair as it is.
+- P3.4 → P6.2 (block): a new block withdraws / closes pending interests and requests of the pair and freezes their
+  conversation; decide whether an approved photo / horoscope request can be revoked on its own (today only by changing the
+  visibility setting); frozen / closed conversation rules when a pair connects again.
+- P3.4 → P8.2 (M14): the privacy screen where members set ON_REQUEST / ACCEPTED_ONLY (the rules are live now); whether a
+  member with a hidden / unapproved profile may accept an interest (today: yes).
+- P3.4 → P8.3 (A14): the day-3 reminder for unanswered interests.
+- P3.4 → P9.4: the interest button isn't re-read on a socket reconnect outside /interests; no rate limit on accept / decline /
+  withdraw; "hide contacted" in search and the /interests lists count an interest for up to an hour after it expired (until
+  the hourly job); EXPLAIN `Connections::statesFor` on the bench data; a "My favourites only" label may still show in a
+  support session though the filter is inert.
+- P3.4 → P9.5: run `php artisan db:seed --class=MastersSeeder` once so the five interest messages exist (A11 "Interest
+  messages"); register the MSG91 templates for interest received / accepted (variable: the other member's profile code).
 - P3.3 → owner review (rule 5): `resources/js/realtime.js` + `components/impersonation-banner.blade.php` — the tab that
   presses "End session" no longer reloads itself onto the sign-in page (P3.1 bug; both impersonation Dusk tests failed
   without it). Uncommitted until reviewed.
