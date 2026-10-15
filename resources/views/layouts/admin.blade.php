@@ -6,7 +6,10 @@
 @props(['title' => null])
 
 @inject('adminNav', 'App\Support\Navigation\AdminNavigation')
+@inject('workQueues', 'App\Queries\Admin\WorkQueues')
 @php($admin = auth('admin')->user())
+{{-- Waiting counts for the sidebar badges, by link URL (PRD §11.0 "live queue badges"). --}}
+@php($queueBadges = collect($workQueues->badges($admin))->mapWithKeys(fn (array $badge, string $routeName): array => [route($routeName) => $badge])->all())
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -17,6 +20,13 @@
     <meta name="robots" content="noindex, nofollow">
     <title>{{ $title ?? __('Admin') }} | {{ config('oppam.site.name') }} {{ __('Admin') }}</title>
     <link rel="icon" type="image/webp" href="{{ asset('images/logo/oppam-logo.webp') }}">
+    {{-- Real-time switches for resources/js/admin.js: only for a signed-in admin, and each channel
+         only when this admin may join it (the channel classes re-check on the server). --}}
+    @if ($admin)
+        <meta name="oppam-realtime" content="on">
+        <meta name="oppam-admin-queues" content="{{ $admin->can('moderation.view') || $admin->can('verification.queue.view') ? 'on' : 'off' }}">
+        <meta name="oppam-admin-dashboard" content="{{ $admin->can('dashboard.view') ? 'on' : 'off' }}">
+    @endif
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])
     @livewireStyles
 </head>
@@ -37,6 +47,19 @@
                     <a href="{{ $link->url }}" @class(['admin-nav-link', 'active' => $link->active]) @if ($link->active) aria-current="page" @endif>
                         <i class="fa {{ $link->icon }}" aria-hidden="true"></i>
                         <span>{{ $link->label }}</span>
+                        @php($badge = $queueBadges[$link->url] ?? null)
+                        {{-- A queue without a live key (escalations) shows its badge only while something waits. --}}
+                        @if ($badge !== null && ($badge['key'] !== null || $badge['count'] > 0))
+                            {{-- The count the page was rendered with; a live `.queue.count` replaces it (admin.js). --}}
+                            <span class="admin-nav-badge" x-data @if ($badge['key'])
+                                  x-text="$store.adminQueues.get(@js($badge['key']), {{ $badge['count'] }})"
+                                  x-show="$store.adminQueues.get(@js($badge['key']), {{ $badge['count'] }}) > 0" @endif
+                                  @if ($badge['count'] === 0) x-cloak @endif
+                                  data-queue="{{ $badge['key'] ?? 'escalations' }}">{{ $badge['count'] }}</span>
+                            @if ($badge['count'] > 0)
+                                <span class="visually-hidden">{{ __('waiting') }}</span>
+                            @endif
+                        @endif
                     </a>
                 @endforeach
             @endforeach

@@ -25,6 +25,11 @@ Schedule::job(new GenerateDailyMatches)->timezone('Asia/Kolkata')->dailyAt('05:0
 // M04: Saved search daily alerts sent at 08:00 IST.
 Schedule::job(new SendSavedSearchAlerts)->timezone('Asia/Kolkata')->dailyAt('08:00')->onOneServer()->withoutOverlapping();
 
+// A02: dashboard KPI snapshots — today's row every hour, yesterday closed just after midnight IST.
+// The overlap lock lapses after 10 minutes: a run that was killed must not stop the next hours.
+Schedule::command('metrics:snapshot')->hourlyAt(5)->onOneServer()->withoutOverlapping(10);
+Schedule::command('metrics:snapshot --yesterday')->timezone('Asia/Kolkata')->dailyAt('00:10')->onOneServer()->withoutOverlapping(10);
+
 // F02: pending interests past their 30 days become EXPIRED, every hour.
 Schedule::job(new ExpireInterests)->hourly()->onOneServer()->withoutOverlapping();
 

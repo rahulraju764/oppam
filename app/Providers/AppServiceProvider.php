@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\PresenceCounter;
 use App\Contracts\SmsGateway;
 use App\Domain\Billing\UsagePeriodResolver;
 use App\Domain\Engagement\Connections;
@@ -26,9 +27,13 @@ use App\Models\Masters\Rasi;
 use App\Models\Masters\Religion;
 use App\Models\Masters\Star;
 use App\Models\Masters\State;
+use App\Models\User;
 use App\Observers\MasterDataObserver;
+use App\Observers\NewMemberTickObserver;
+use App\Queries\Admin\WorkQueues;
 use App\Services\Admin\Impersonation;
 use App\Services\Entitlements\EntitlementService;
+use App\Services\Realtime\BroadcastPresenceCounter;
 use App\Services\Settings\FeatureFlags;
 use App\Services\Settings\SettingsRepository;
 use App\Services\Sms\LogSmsGateway;
@@ -72,7 +77,10 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(EntitlementService::class);
         $this->app->scoped(Impersonation::class);
         $this->app->scoped(Connections::class);   // memoises "who is connected" for the request (P3.4)
+        $this->app->scoped(WorkQueues::class);    // the sidebar and the dashboard ask for the same counts (P3.5)
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
+
+        $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
 
         $this->app->singleton(SmsGateway::class, function (): SmsGateway {
             $driver = (string) config('oppam.sms.driver');
@@ -115,6 +123,9 @@ final class AppServiceProvider extends ServiceProvider
             Education::class, Occupation::class, IncomeBand::class, MotherTongue::class, MasterOption::class] as $master) {
             $master::observe(MasterDataObserver::class);
         }
+
+        // A02: a new member account ticks "new today" on the open admin dashboards.
+        User::observe(NewMemberTickObserver::class);
 
         $this->bootAdminSecurity();
 

@@ -36,6 +36,20 @@ final class EditedFieldsQueue extends Component
 
     public string $note = '';
 
+    /**
+     * Live (PRD §11.0): a new or decided item, and a claim taken or released by another moderator
+     * ("being reviewed by …") — the list is read again through its own query.
+     *
+     * @return array<string, string>
+     */
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:admin.queues,.queue.count' => '$refresh',
+            'echo-private:admin.queues,.queue.claim' => '$refresh',
+        ];
+    }
+
     public function mount(): void
     {
         Gate::authorize('moderation.view');

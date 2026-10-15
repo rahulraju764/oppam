@@ -4,8 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 3 — Real-time core & engagement (Phase 2 complete, 2026-10-04)
-**Next session:** P3.5 — Live admin dashboard (A02)
+**Current phase:** 4 — Chat (Phase 3 complete, 2026-10-15)
+**Next session:** P4.1 — Chat core: inbox, thread, send, receipts (M07)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -45,7 +45,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P3.2 Notifications system (M08) — 2026-10-06 (reviewer READY in round 3 after 6 Majors + 1 Blocker fixed: mandatory events forced a template-less SMS, row / live-signal order (InAppChannel: one job), purge left notifications, support session could read / delete, list collapsed to page 1, a flaky test; owner decision: no notification email until email verification, M14)
 - [x] P3.3 Likes & favorites (M06) — 2026-10-06 (reviewer READY in round 2 after 2 Majors fixed: favourite slots stuck on profiles no longer available, favourites + notes readable in an admin support session (R-M06-6); found on the way: P3.1's "End session" sent the admin to the sign-in page — fix held for owner review, rule 5)
 - [x] P3.4 Interests & requests (M06) — 2026-10-11 (reviewer READY in round 3 after 2 Majors fixed: the new "favourites only" search filter listed a member's bookmarks to an admin support session, withdraw-and-send-again could notify the same member without limit; round 2 could not run its tests for lack of memory, round 3 confirmed)
-- [ ] P3.5 Live admin dashboard (A02)
+- [x] P3.5 Live admin dashboard (A02) — 2026-10-15 (reviewer READY in round 2 after round-1 fixes: own 2 s client for "online now", snapshot / queue-count indexes + one grouped queue query, live "being reviewed by …", after-commit rescued signup tick, system alerts need dashboard.view, finished-day change; A03 Engagement tab; Chart.js 4 admin-only; Dusk: submit → badge + card live)
 
 ## Phase 4 — Chat
 - [ ] P4.1 Chat core: inbox, thread, send, receipts (M07)
@@ -88,6 +88,16 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
+- P3.5 → later modules: the dashboard shows only real data — P5.3 adds revenue today / MTD, the revenue-by-plan chart and
+  payment ticks; P6 the verification / report / ticket cards; P4.3 flagged chats; P7 broker KYC; P5 stuck orders; P9.2
+  webhook-failure / error-rate alerts (decisions 2026-10-11).
+- P3.5 review Minors (round 2), open: (1) between 00:00 and the first hourly snapshot (~00:35 IST) the "today" flow tiles
+  (new members, messages, likes) fall back to yesterday's row — show 0 / a dash for flows without today's row
+  (`DashboardMetrics`); (2) each `.queue.count` re-renders the whole dashboard (~10 queries) — re-read only the cards or
+  cache the alerts ~30 s (measure in P9.4); (3) the live signup count can read one high when two signups seed the cache
+  together (best-effort, the hourly snapshot corrects it); (4) LiveQueueBadgeTest waits for the socket, not the
+  `private-admin.queues` subscription; (5) `.queue.claim` isn't `toOthers()`; (6) the sidebar badge's hidden "waiting"
+  text is only rendered when the server count was > 0; (7) dashboard widths 320–1440 px not checked in a browser — P9.3.
 - P1.4 local setup: run `php artisan storage:link` once (public disk for photo conversions). Demo photos are added by
   DemoProfilesSeeder only on a fresh seed (`php artisan migrate:fresh --seed`, LOCAL ONLY).
 - P1.4 → P1.5: profile pages show photos only through `PhotoUrls::forViewer()`; horoscope links via `HoroscopeAccess::link()`.
@@ -112,7 +122,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
   messages"); register the MSG91 templates for interest received / accepted (variable: the other member's profile code).
 - P3.3 → owner review (rule 5): `resources/js/realtime.js` + `components/impersonation-banner.blade.php` — the tab that
   presses "End session" no longer reloads itself onto the sign-in page (P3.1 bug; both impersonation Dusk tests failed
-  without it). Uncommitted until reviewed.
+  without it). Committed by the owner in 1f401be (2026-10-11).
 - P3.3 → P3.4: "favourites only" search filter; "send interest to all selected" on /favorites; Send Interest in the
   "It's a match!" dialog; exclude interest-sent profiles from daily matches (liked ones already are).
 - P3.3 → P4.3 (A13): screens for `engagement_signals` (LIKE_SPAM rows exist now); the like-spam window is fixed (10 min from

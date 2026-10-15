@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Broadcasting\AdminDashboardChannel;
 use App\Broadcasting\AdminQueuesChannel;
 use App\Broadcasting\ChatChannel;
 use App\Broadcasting\InboxChannel;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Broadcast;
 | Every callback must re-check the database (participant, not blocked, active staff,
 | admin permission). A channel is never protected by its name alone. Member channels use the
 | `web` guard (the member site's /broadcasting/auth), admin channels the `admin` guard.
-| Broker channels arrive with the broker module (P7), admin.dashboard with P3.5.
+| Broker channels arrive with the broker module (P7).
 */
 
 // Notifications, signals and forced logout for one member.
@@ -36,3 +37,7 @@ Broadcast::channel('presence.online', OnlinePresenceChannel::class, ['guards' =>
 // Live moderation / verification queue counts for admins (PRD §9.3, A04). Admin guard only;
 // AdminQueuesChannel re-checks status, 2FA and permission against the database.
 Broadcast::channel('admin.queues', AdminQueuesChannel::class, ['guards' => ['admin']]);
+
+// Live KPI ticks on the admin dashboard (PRD §9.3, A02). Admin guard only; AdminDashboardChannel
+// re-checks status, 2FA and `dashboard.view` against the database.
+Broadcast::channel('admin.dashboard', AdminDashboardChannel::class, ['guards' => ['admin']]);

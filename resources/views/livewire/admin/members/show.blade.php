@@ -28,7 +28,7 @@
                     @if ($tab === $key) aria-current="page" @endif>
                 {{ match ($key) {
                     'overview' => __('Overview'), 'profile' => __('Profile'), 'photos' => __('Photos'),
-                    'subscriptions' => __('Subscriptions'), 'activity' => __('Activity'), 'notes' => __('Notes'), default => __('Timeline'),
+                    'subscriptions' => __('Subscriptions'), 'engagement' => __('Engagement'), 'activity' => __('Activity'), 'notes' => __('Notes'), default => __('Timeline'),
                 } }}
             </button>
         @endforeach
@@ -152,6 +152,8 @@
         <livewire:admin.members.tabs.photos-tab :code="$code" :key="'tab-photos-'.$code" lazy />
     @elseif ($tab === 'subscriptions')
         <livewire:admin.members.tabs.subscriptions-tab :code="$code" :key="'tab-subs-'.$code" lazy />
+    @elseif ($tab === 'engagement')
+        <livewire:admin.members.tabs.engagement-tab :code="$code" :key="'tab-engagement-'.$code" lazy />
     @elseif ($tab === 'activity')
         <livewire:admin.members.tabs.activity-tab :code="$code" :key="'tab-activity-'.$code" lazy />
     @elseif ($tab === 'notes')

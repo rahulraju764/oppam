@@ -41,6 +41,8 @@ enum SettingKey: string
     case InterestsMaxPerMinute = 'interests.max_per_minute';
     case SearchMaxPerMinute = 'search.max_per_minute';
     case ProfileViewsMaxPerMinute = 'profile_views.max_per_minute';
+    case ModerationSlaHours = 'moderation.sla_hours';
+    case SystemQueueBacklogAlert = 'system.queue_backlog_alert';
     case BrokerStaffSeatsDefault = 'broker.staff_seats_default';
     case BrokerImportRowsPerFile = 'broker.import_rows_per_file';
     case BrokerImportRowsPerDay = 'broker.import_rows_per_day';
@@ -90,6 +92,8 @@ enum SettingKey: string
             self::InterestsMaxPerMinute => 20,      // interests and photo / horoscope requests sent per member (the monthly quota still applies)
             self::SearchMaxPerMinute => 60,   // M04 / CLAUDE.md rule 10: searches (incl. "load more") per member
             self::ProfileViewsMaxPerMinute => 30,   // M03 / M15: recorded profile views per member (more still open, uncounted)
+            self::ModerationSlaHours => 24,          // A02 alert strip: a moderation item waiting longer than this breaches the SLA
+            self::SystemQueueBacklogAlert => 500,    // A02 alert strip: jobs waiting on one queue before it is called a backlog
             self::BrokerStaffSeatsDefault => 5,
             self::BrokerImportRowsPerFile => 500,
             self::BrokerImportRowsPerDay => 1000,
@@ -133,6 +137,8 @@ enum SettingKey: string
             self::InterestsMaxPerMinute => ['required', 'integer', 'min:1', 'max:300'],
             self::SearchMaxPerMinute => ['required', 'integer', 'min:10', 'max:600'],
             self::ProfileViewsMaxPerMinute => ['required', 'integer', 'min:5', 'max:300'],
+            self::ModerationSlaHours => ['required', 'integer', 'min:1', 'max:720'],
+            self::SystemQueueBacklogAlert => ['required', 'integer', 'min:10', 'max:100000'],
             self::BrokerStaffSeatsDefault => ['required', 'integer', 'min:1', 'max:100'],
             self::BrokerImportRowsPerFile => ['required', 'integer', 'min:1', 'max:5000'],
             self::BrokerImportRowsPerDay, self::BrokerImportRowsPerDayNew => ['required', 'integer', 'min:1', 'max:20000'],

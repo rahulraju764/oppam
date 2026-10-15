@@ -6,16 +6,18 @@ namespace App\Actions\Moderation;
 
 use App\Actions\Moderation\Concerns\DecidesModerationItems;
 use App\Enums\ModerationStatus;
+use App\Events\Admin\ModerationClaimChanged;
 use App\Exceptions\Moderation\ModerationItemUnavailable;
 use App\Models\AdminUser;
 use App\Models\ModerationItem;
+use App\Support\Realtime\LiveSignal;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 
 /**
  * Open an item for review (A04 "15-min soft claim"): the moderator holds it for
  * config('moderation.claim_minutes'); others see "being reviewed by …" and can't decide it.
- * Release gives it back early (e.g. "skip").
+ * Release gives it back early (e.g. "skip"). Both tell the open queue pages live (`.queue.claim`).
  */
 final class ClaimModerationItem
 {
@@ -29,6 +31,9 @@ final class ClaimModerationItem
     {
         $this->authorizeDecision($admin, $item);
         $this->holdClaim($admin, $item);
+
+        // §11.0: other moderators' open queue pages show "being reviewed by …" at once (best-effort).
+        LiveSignal::afterCommit(new ModerationClaimChanged($item->type->queueKey()));
     }
 
     /**
@@ -70,5 +75,7 @@ final class ClaimModerationItem
             ->whereKey($item->id)
             ->where('claimed_by_admin_id', $admin->id)
             ->update(['claimed_by_admin_id' => null, 'claimed_until' => null, 'updated_at' => now()]);
+
+        LiveSignal::afterCommit(new ModerationClaimChanged($item->type->queueKey()));
     }
 }
