@@ -220,6 +220,16 @@ return [
             'T05' => 'My family liked your profile. We would be happy to hear from you.',
         ],
 
+        // Chat icebreakers: ready first messages in a new conversation (M07, P4.2; editable in A11).
+        'chat_icebreaker' => [
+            'I01' => 'Hello! Thank you for accepting. How are you?',
+            'I02' => 'Hi, it is lovely to connect with you. Shall we get to know each other?',
+            'I03' => 'Hello! What do you enjoy doing on weekends?',
+            'I04' => 'Hi! Your profile says a lot about family. Tell me a little about yours?',
+            'I05' => 'Hello! What are you looking for in a partner?',
+            'I06' => 'Hi! Would your family like to speak with mine at some point?',
+        ],
+
         // Word lists for the A04 automatic profanity pre-flag (whole words, any case). Short seeds:
         // moderators extend them in A11 (P1.8). Codes are opaque (the word is the label).
         'profanity_en' => [

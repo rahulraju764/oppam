@@ -6,7 +6,6 @@ use App\Actions\Engagement\AcceptInterest;
 use App\Actions\Engagement\SendInterest;
 use App\Enums\MessageType;
 use App\Enums\PlanCode;
-use App\Models\Conversation;
 use App\Models\Message;
 use Laravel\Dusk\Browser;
 
@@ -25,25 +24,6 @@ beforeEach(function (): void {
 afterEach(function (): void {
     duskChatCleanup();
 });
-
-function duskChatCleanup(): void
-{
-    // Conversations have no cascade from profiles: remove the pair's threads before the members.
-    $ids = App\Models\Profile::withTrashed()->whereIn('user_id', App\Models\User::withTrashed()
-        ->whereIn('phone', [DUSK_MEMBER_PHONE, DUSK_SECOND_PHONE])->select('id'))->pluck('id');
-    Conversation::query()->whereIn('id', App\Models\ConversationParticipant::query()->whereIn('profile_id', $ids)->select('conversation_id'))->delete();
-    App\Models\Subscription::query()->whereIn('profile_id', $ids)->delete();
-
-    duskMemberCleanup();
-    duskMemberCleanup(DUSK_SECOND_PHONE);
-}
-
-/** Wait until this browser follows the thread's private channel (Livewire's Echo listener). */
-function duskChatSubscribed(Browser $browser, Conversation $thread): void
-{
-    $browser->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
-        "return window.Echo?.connector?.channels?.['private-chat.{$thread->id}']?.subscription?.subscribed === true;")[0]);
-}
 
 it('P4.1: a message reaches the other member\'s open thread in under a second, read receipts turn blue, the Free member replies once then is locked', function (): void {
     $this->browse(function (Browser $first, Browser $second): void {

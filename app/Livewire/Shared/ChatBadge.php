@@ -15,7 +15,7 @@ use Livewire\Component;
 
 /**
  * The header's Messages link with the live unread count (PRD M07 `Shared\ChatBadge`), desktop and
- * mobile. Live on the member's own `inbox.{profile}`: `.conversation.updated` carries the new total;
+ * mobile. Live on the member's own `inbox.{profile}`: `.conversation.updated` → the total is re-read;
  * a message from the other member pops a toast unless that thread is open on screen ("New message
  * from Anjali — Reply"). The DESKTOP badge (always on the page, also when hidden by CSS on phones)
  * is the one that acknowledges delivery — on page load when something is unread, and on each new
@@ -65,7 +65,7 @@ final class ChatBadge extends Component
     /** @param  array<string, mixed>  $payload */
     public function onUpdated(array $payload = []): void
     {
-        $this->unread = max(0, (int) ($payload['total_unread'] ?? 0));
+        $this->recount();   // never trust a count from the (member-callable) listener payload
 
         if ($this->variant !== 'desktop' || ($payload['from_me'] ?? true) !== false) {
             return;
@@ -74,6 +74,10 @@ final class ChatBadge extends Component
         $me = $this->me();
         if ($me !== null) {
             app(MarkMessagesDelivered::class)->handle($me);
+        }
+
+        if (($payload['muted'] ?? false) === true) {
+            return;   // a muted thread: delivered and counted, but no toast
         }
 
         $code = (string) ($payload['with_code'] ?? '');

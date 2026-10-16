@@ -48,6 +48,9 @@ final class MasterLists
     /** Option group of the ready "Send Interest" messages. */
     public const INTEREST_TEMPLATES = 'interest_template';
 
+    /** Option group of the chat icebreakers — ready first messages in a new conversation (M07). */
+    public const CHAT_ICEBREAKERS = 'chat_icebreaker';
+
     /** @var array<string, MasterList>|null */
     private static ?array $lists = null;
 
@@ -93,6 +96,7 @@ final class MasterLists
 
         // Ready messages for "Send Interest" (M06): the text is the label; an interest keeps its own copy.
         $lists[] = new MasterList('interest-templates', 'Interest messages', 'Engagement', MasterOption::class, group: self::INTEREST_TEMPLATES);
+        $lists[] = new MasterList('chat-icebreakers', 'Chat icebreakers', 'Engagement', MasterOption::class, group: self::CHAT_ICEBREAKERS);
 
         foreach (self::WORD_LISTS as $group => $label) {
             $lists[] = new MasterList(str_replace('_', '-', $group), $label, 'Moderation', MasterOption::class, group: $group, isWordList: true);

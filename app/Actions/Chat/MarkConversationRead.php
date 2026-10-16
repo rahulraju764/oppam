@@ -24,8 +24,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * other member wrote is read — their messages get `read_at` (and `delivered_at` if missing), the
  * member's unread count goes to 0 and their read position to the newest message. After commit:
  * the member's inboxes / badges in other tabs sync (ConversationUpdated), and the other member's
- * ticks turn blue (MessagesRead) — only when the reader has read receipts on (R-M07-7); with them
- * off the other member is only told the messages were delivered.
+ * ticks turn blue (MessagesRead) — only when BOTH members have read receipts on (R-M07-7); otherwise
+ * the other member is only told the messages were delivered.
  * Nothing to mark → nothing written or sent. Never during an admin support session (reading as
  * the member would tell the other member they read it).
  *
@@ -71,8 +71,9 @@ final class MarkConversationRead
             $this->inbox->changed($thread, [$me->id]);
 
             if ($marked > 0 && is_string($latest)) {
-                // Receipts off: the other side only learns the messages arrived (✓✓), never that they were read.
-                LiveSignal::afterCommit($this->receipts->enabled($me->id)
+                // Receipts off on either side: the other side only learns the messages arrived (✓✓) — never
+                // the read time (R-M07-7 is symmetric: a sender who turned them off doesn't receive them either).
+                LiveSignal::afterCommit($this->receipts->shownBetween($me->id, $other->id)
                     ? new MessagesRead($thread->id, $me->code, $latest, $now->toIso8601String())
                     : new MessagesDelivered($thread->id, $latest));
             }

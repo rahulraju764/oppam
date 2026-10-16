@@ -49,7 +49,7 @@ it('§9.4: inbox, read and delivered events name the right channel and carry no 
     expect($updated->broadcastOn()[0]->name)->toBe('private-inbox.'.$bride->profile->id)
         ->and($updated->broadcastAs())->toBe('conversation.updated')
         ->and($updated->queue)->toBe('broadcasts')
-        ->and(array_keys($updated->broadcastWith()))->toBe(['with_code', 'name', 'preview', 'at', 'unread', 'total_unread', 'from_me'])
+        ->and(array_keys($updated->broadcastWith()))->toBe(['with_code', 'name', 'preview', 'at', 'unread', 'total_unread', 'from_me', 'muted'])
         ->and($read->broadcastAs())->toBe('message.read')
         ->and($delivered->broadcastAs())->toBe('message.delivered');
 
@@ -66,4 +66,17 @@ it('§9.3: the chat channel is the thread\'s ULID; a member of another thread is
 
     expect(app(ChatChannel::class)->join($groom, $thread->id))->toBeTrue()
         ->and(app(ChatChannel::class)->join($groom, $other->id))->toBeFalse();
+});
+
+it('P4.2 typing: Echo.join("presence-chat.{id}") is signed for a participant (code only) and refused to anyone else', function (): void {
+    [$groom, , $thread] = chatConnected();
+    $stranger = bride('+919800000011');
+    pusherBroadcasting();   // after the set-up: the real Pusher driver would try to deliver its events
+    $auth = fn () => $this->post(memberUrl('/broadcasting/auth'), ['socket_id' => '1234.5678', 'channel_name' => 'presence-presence-chat.'.$thread->id]);
+
+    $this->actingAs($groom, 'web');
+    $auth()->assertOk()->assertJsonPath('channel_data', fn (string $data): bool => json_decode($data, true)['user_info'] === ['code' => $groom->profile->code]);
+
+    $this->actingAs($stranger, 'web');
+    $auth()->assertForbidden();
 });

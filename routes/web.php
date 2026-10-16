@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Member\ChatImageController;
 use App\Http\Controllers\Member\HoroscopeController;
 use App\Http\Controllers\Member\ImpersonationController;
 use App\Http\Controllers\Member\UnsubscribeSavedSearchController;
@@ -97,6 +98,11 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
 
     // WebSocket channel sign-in for the member site (PRD §9): routes/channels.php decides per channel.
     Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate'])->name('broadcasting.auth');
+
+    // Chat image (M07, P4.2): private file, re-authorised on every request (participants only).
+    Route::get('/media/chat/{message}/{size}', ChatImageController::class)
+        ->where('message', '[0-9A-Za-z]{26}')->whereIn('size', ['preview', 'original'])
+        ->middleware('throttle:120,1')->name('member.chat.image');
 
     // Horoscope file (M11): short-lived signed link from HoroscopeAccess; checked + audited again.
     Route::get('/media/horoscope/{profile}', HoroscopeController::class)

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Jobs\Chat\PruneChatHistory;
+use App\Jobs\Chat\SendChatDigests;
 use App\Jobs\Engagement\ExpireInterests;
 use App\Jobs\Matching\GenerateDailyMatches;
 use App\Jobs\Members\PurgeDeletedMembers;
@@ -35,3 +37,7 @@ Schedule::job(new ExpireInterests)->hourly()->onOneServer()->withoutOverlapping(
 
 // R-M08-4: in-app notifications older than 180 days. 21:45 UTC = 03:15 IST.
 Schedule::job(new PruneOldNotifications)->dailyAt('21:45')->onOneServer()->withoutOverlapping();
+
+// Chat (M07, P4.2): the offline message digest every 5 minutes; retention (R-M07-6) nightly.
+Schedule::job(new SendChatDigests)->everyFiveMinutes()->onOneServer()->withoutOverlapping();
+Schedule::job(new PruneChatHistory)->dailyAt('21:50')->onOneServer()->withoutOverlapping();

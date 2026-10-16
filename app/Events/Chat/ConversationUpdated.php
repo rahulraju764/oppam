@@ -13,7 +13,8 @@ use Illuminate\Foundation\Events\Dispatchable;
 /**
  * One member's view of a thread changed — `.conversation.updated` on `inbox.{profile}` (PRD §9.4):
  * the inbox re-orders, the chat badge and the tab title take `total_unread`, and a message from the
- * other member pops a toast where that thread isn't open. Built per participant by InboxSignals.
+ * other member pops a toast where that thread isn't open and isn't muted. Built per participant by
+ * InboxSignals.
  * The thread is named by the OTHER member's code (URLs use codes); `name` is their first name for
  * the toast. The inbox channel is the owner's alone, so the preview may be shown.
  */
@@ -32,6 +33,7 @@ final class ConversationUpdated implements ShouldBroadcast, ShouldDispatchAfterC
         public readonly int $unread,
         public readonly int $totalUnread,
         public readonly bool $fromMe,
+        public readonly bool $muted = false,
     ) {}
 
     /** @return list<PrivateChannel> */
@@ -45,7 +47,7 @@ final class ConversationUpdated implements ShouldBroadcast, ShouldDispatchAfterC
         return 'conversation.updated';
     }
 
-    /** @return array{with_code: string, name: string, preview: string, at: string|null, unread: int, total_unread: int, from_me: bool} */
+    /** @return array{with_code: string, name: string, preview: string, at: string|null, unread: int, total_unread: int, from_me: bool, muted: bool} */
     public function broadcastWith(): array
     {
         return [
@@ -56,6 +58,7 @@ final class ConversationUpdated implements ShouldBroadcast, ShouldDispatchAfterC
             'unread' => $this->unread,
             'total_unread' => $this->totalUnread,
             'from_me' => $this->fromMe,
+            'muted' => $this->muted,
         ];
     }
 }

@@ -7,10 +7,10 @@ namespace App\Actions\Admin\Members;
 use App\Enums\Entitlement;
 use App\Enums\SettingKey;
 use App\Enums\UserRole;
+use App\Jobs\Chat\PruneChatHistory;
 use App\Models\AccessRequest;
 use App\Models\ContactDetail;
 use App\Models\ContactView;
-use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\DailyMatch;
 use App\Models\EducationCareer;
@@ -168,7 +168,7 @@ final class PurgeDeletedMember
                 ->where('conversation_participants.profile_id', '!=', $profile->id)
                 ->whereNotNull('users.anonymised_at')
                 ->pluck('conversation_participants.conversation_id')->all();
-            Conversation::query()->whereKey($bothGone)->delete();
+            PruneChatHistory::deleteThreads(array_values(array_map('strval', $bothGone)));   // image files too (P4.2)
         }
 
         ModerationItem::query()->where('profile_id', $profile->id)->update(['fields' => null, 'reason_note' => null]);

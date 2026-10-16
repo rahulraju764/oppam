@@ -198,7 +198,7 @@ it('inbox: listens on the member\'s own inbox channel only', function (): void {
     expect($listeners)->toHaveKey('echo-private:inbox.'.$groom->profile->id.',.conversation.updated');
 });
 
-it('chat badge: the unread total in the header; a live update sets it and announces a new message; loading the site marks waiting messages delivered', function (): void {
+it('chat badge: the unread total in the header; a live update re-reads it and announces a new message; loading the site marks waiting messages delivered', function (): void {
     [$groom, $bride] = chatConnected();
     chatSend($groom, $bride, 'One');
     chatSend($groom, $bride, 'Two');
@@ -208,12 +208,14 @@ it('chat badge: the unread total in the header; a live update sets it and announ
         ->assertSeeHtml('aria-label="Messages (2 unread)"');
     expect(Message::query()->where('sender_profile_id', $groom->profile->id)->whereNull('delivered_at')->count())->toBe(0);
 
+    chatSend($groom, $bride, 'Three');
     $badge->call('onUpdated', ['total_unread' => 3, 'from_me' => false, 'with_code' => $groom->profile->code, 'unread' => 3, 'name' => 'Arun', 'preview' => 'Three'])
         ->assertSet('unread', 3)
         ->assertDispatched('chat-new-message', code: $groom->profile->code);
 
-    $badge->call('onUpdated', ['total_unread' => 0, 'from_me' => true, 'with_code' => $groom->profile->code, 'unread' => 0])
-        ->assertSet('unread', 0)
+    // The count is always re-read from the database: a payload can't set it (P4.1 review).
+    $badge->call('onUpdated', ['total_unread' => 99, 'from_me' => true, 'with_code' => $groom->profile->code, 'unread' => 0])
+        ->assertSet('unread', 3)
         ->assertNotDispatched('chat-new-message');
 });
 
@@ -253,3 +255,75 @@ it('Messages::validCode accepts profile codes only', function (string $code, str
     ['OPM1<script>', ''],
     ['BRK1042', ''],
 ]);
+
+// ---- P4.2 -----------------------------------------------------------------------------------------
+
+it('P4.2: load earlier moves the cursor back 30 and keeps everything newer on screen', function (): void {
+    [$groom, $bride] = chatConnected();
+    App\Models\Setting::factory()->keyed(App\Enums\SettingKey::ChatMaxPerMinute, 300)->create();
+    App\Support\Facades\Settings::flush();
+    foreach (range(1, 45) as $i) {
+        chatSend($groom, $bride, "Line {$i}");
+    }
+
+    Livewire::actingAs($bride, 'web')->test(Thread::class, ['withCode' => $groom->profile->code])
+        ->assertDontSee('Line 15')->assertSee('Line 16')->assertSee('Load earlier messages')
+        ->call('loadEarlier')->assertDispatched('chat-loaded-earlier')
+        ->assertSee('Line 1')->assertSee('Line 45')->assertDontSee('Load earlier messages');
+});
+
+it('P4.2: unsend from the thread, mute toggle, and icebreaker chips only before the member has written', function (): void {
+    [$groom, $bride] = chatConnected();
+
+    $thread = Livewire::actingAs($groom, 'web')->test(Thread::class, ['withCode' => $bride->profile->code])
+        ->assertSee('Hello! Thank you for accepting. How are you?')
+        ->assertSeeHtml('aria-label="Mute this conversation"');
+
+    $thread->call('icebreaker', (string) Str::uuid(), 'I01')->assertDispatched('chat-inbox-changed')
+        ->assertDontSeeHtml('class="msg-icebreaker"');
+
+    $mine = Message::query()->where('sender_profile_id', $groom->profile->id)->sole();
+    $thread->assertSee('Unsend')
+        ->call('unsend', $mine->id)->assertSee('This message was deleted')
+        ->call('setMuted', true)->assertDispatched('toast', type: 'success')
+        ->assertSeeHtml('aria-label="Unmute this conversation"');
+
+    expect(ConversationParticipant::query()->where('profile_id', $groom->profile->id)->value('is_muted'))->toBeTrue();
+});
+
+it('P4.2: a paid member sends a photo through the composer; a Free member has no photo button', function (): void {
+    fakeMediaDisks();
+    [$groom, $bride] = chatConnected(PlanCode::Gold, null);
+    $clientId = (string) Str::uuid();
+
+    Livewire::actingAs($groom, 'web')->test(Thread::class, ['withCode' => $bride->profile->code])
+        ->assertSeeHtml('id="msgPhoto"')
+        ->set('photo', Illuminate\Http\UploadedFile::fake()->image('photo.jpg', 800, 800))
+        ->call('sendImage', $clientId)
+        ->assertNotDispatched('chat-send-failed')
+        ->assertSeeHtml('/media/chat/');
+
+    expect(Message::query()->where('client_id', $clientId)->value('type'))->toBe(MessageType::Image);
+
+    chatSend($groom, $bride, 'Hello');
+    Livewire::actingAs($bride, 'web')->test(Thread::class, ['withCode' => $groom->profile->code])
+        ->assertSeeHtml('id="msgText"')->assertDontSeeHtml('id="msgPhoto"');
+});
+
+it('P4.2: last seen in the header (privacy allowing); the typing channel is the thread\'s presence channel', function (): void {
+    [$groom, $bride, $conversation] = chatConnected();
+    $groom->forceFill(['last_seen_at' => now()->subMinutes(5)])->save();
+
+    Livewire::actingAs($bride, 'web')->test(Thread::class, ['withCode' => $groom->profile->code])
+        ->assertSee('Last seen today at')
+        ->assertSeeHtml('chat.'.$conversation->id);
+});
+
+it('P4.2: a support session sees no mute button, no composer and no last seen', function (): void {
+    [$groom, $bride] = chatConnected();
+    $groom->forceFill(['last_seen_at' => now()->subMinutes(5)])->save();
+    chatImpersonate($bride);
+
+    Livewire::actingAs($bride, 'web')->test(Thread::class, ['withCode' => $groom->profile->code])
+        ->assertDontSeeHtml('Mute this conversation')->assertDontSeeHtml('id="msgText"')->assertDontSee('Last seen');
+});

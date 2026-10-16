@@ -34,6 +34,9 @@ enum SettingKey: string
     case ChatUnsendWindowMinutes = 'chat.unsend_window_minutes';
     case ChatMaxPerMinute = 'chat.max_per_minute';
     case ChatMaxLength = 'chat.max_length';
+    case ChatImageMaxMb = 'chat.image_max_mb';
+    case ChatRetentionDays = 'chat.retention_days';
+    case ChatDigestDelayMinutes = 'chat.digest_delay_minutes';
     case DailyMatchCount = 'matching.daily_match_count';
     case PhotosMaxAdditional = 'photos.max_additional';
     case PhotosMaxUploadMb = 'photos.max_upload_mb';
@@ -87,6 +90,9 @@ enum SettingKey: string
             self::ChatUnsendWindowMinutes => 60,
             self::ChatMaxPerMinute => 30,           // M07 send flow: messages per member per minute
             self::ChatMaxLength => 2000,            // R-M07-4: characters per message
+            self::ChatImageMaxMb => 5,              // M07: image messages (paid plans)
+            self::ChatRetentionDays => 730,         // R-M07-6: a thread is deleted this long after its last activity
+            self::ChatDigestDelayMinutes => 10,     // M07 / M08: offline this long with unread messages → one email digest
             self::DailyMatchCount => 10,
             self::PhotosMaxAdditional => 9,
             self::PhotosMaxUploadMb => 8,
@@ -134,6 +140,9 @@ enum SettingKey: string
             self::ChatUnsendWindowMinutes => ['required', 'integer', 'min:0', 'max:1440'],
             self::ChatMaxPerMinute => ['required', 'integer', 'min:5', 'max:300'],
             self::ChatMaxLength => ['required', 'integer', 'min:100', 'max:5000'],
+            self::ChatImageMaxMb => ['required', 'integer', 'min:1', 'max:10'],
+            self::ChatRetentionDays => ['required', 'integer', 'min:180', 'max:3650'],
+            self::ChatDigestDelayMinutes => ['required', 'integer', 'min:5', 'max:240'],
             self::DailyMatchCount => ['required', 'integer', 'min:1', 'max:50'],
             self::PhotosMaxAdditional => ['required', 'integer', 'min:0', 'max:20'],
             self::PhotosMaxUploadMb => ['required', 'integer', 'min:1', 'max:20'],

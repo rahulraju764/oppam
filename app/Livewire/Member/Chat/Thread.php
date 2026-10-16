@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Livewire\Member\Chat;
 
 use App\Actions\Chat\MarkConversationRead;
+use App\Actions\Chat\SendIcebreaker;
 use App\Actions\Chat\SendMessage;
-use App\Data\Chat\MessageData;
+use App\Actions\Chat\SetConversationMuted;
+use App\Actions\Chat\UnsendMessage;
+use App\Data\Chat\ThreadDays;
 use App\Domain\Chat\ChatAccess;
+use App\Domain\Chat\LastSeen;
 use App\Domain\Chat\ReadReceipts;
 use App\Domain\Media\PhotoUrls;
 use App\Domain\Profile\ProfileNames;
@@ -16,39 +20,47 @@ use App\Enums\SettingKey;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Chat\ChatRefused;
 use App\Models\Conversation;
+use App\Models\ConversationParticipant;
 use App\Models\Profile;
 use App\Models\User;
 use App\Queries\Chat\ThreadWindow;
 use App\Services\Admin\Impersonation;
 use App\Support\Facades\Settings;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * The open thread (PRD M07, F03, template messages.php centre): the other member's header, the
- * newest messages with day separators and same-sender grouping, ticks on the member's own
- * messages, and the composer. The composer (Alpine, resources/js/alpine/chat.js) shows the
- * message at once as a grey bubble with its own client id and calls send(); the re-render brings
- * the stored message and the bubble goes. A refusal marks the bubble "not sent" with Retry (the
- * same client id, so a retry never doubles it).
- *
- * Live on `chat.{conversation}`: a new message, delivered / read receipts → re-read; a message from
- * the other member while the tab is visible marks the thread read. A reconnect re-reads.
- * The composer is locked with the reason when ChatAccess says the member may not write (Free
- * member: "Upgrade to chat" — R-M07-3; the server refuses a bypass with 403).
- * Admin support session: no message text at all (R-M07-6, owner decision 2026-10-15), nothing sent
- * or marked read.
+ * The open thread (PRD M07, F03, template messages.php centre). Header: the other member, "Online
+ * now" (live roster) or "Last seen …" (their privacy allowing), typing, mute. Messages by id
+ * cursor (ThreadWindow): the newest 30, "load earlier" moves the cursor back 30, and every
+ * re-render re-reads everything newer — so a socket reconnect back-fills in order (§9.7.1).
+ * The composer (Alpine, resources/js/alpine/chat.js) shows a message at once with its own client
+ * id and calls send() / sendImage() / icebreaker(); the re-render brings the stored message. A
+ * refusal marks the bubble "not sent" with Retry (same client id — never stored twice). Own
+ * messages can be unsent within the window. Live on `chat.{conversation}`: new / delivered / read /
+ * deleted messages re-read; a message from the other member while the tab is in view marks it read.
+ * The composer is locked with the reason when ChatAccess says the member may not write.
+ * Admin support session: no message text at all (R-M07-6), nothing sent, read, unsent or muted.
  */
 final class Thread extends Component
 {
+    use WithFileUploads;
+
     #[Locked]
     public string $withCode = '';
 
-    /** Resolved once per request (never sent to the browser). */
+    /** Id cursor: the oldest message on screen (null until the first render). */
+    #[Locked]
+    public ?string $fromId = null;
+
+    /** The photo being sent (Livewire temporary upload); validated by SendMessage::image(). */
+    public ?TemporaryUploadedFile $photo = null;
+
     private ?Conversation $resolvedThread = null;
 
     private ?Profile $resolvedOther = null;
@@ -76,7 +88,8 @@ final class Thread extends Component
             $channel.',.message.sent' => 'onMessage',
             $channel.',.message.delivered' => '$refresh',
             $channel.',.message.read' => '$refresh',
-            'realtime-reconnected' => '$refresh',
+            $channel.',.message.deleted' => '$refresh',
+            'realtime-reconnected' => '$refresh',   // back-fill: the window re-reads everything newer
         ];
     }
 
@@ -101,10 +114,98 @@ final class Thread extends Component
         }
     }
 
+    public function loadEarlier(ThreadWindow $window): void
+    {
+        if ($this->fromId !== null && ! $this->support()) {
+            $this->fromId = $window->earlierCursor($this->thread(), $this->fromId) ?? $this->fromId;
+        }
+        $this->dispatch('chat-loaded-earlier');
+    }
+
     public function send(string $clientId, string $body, SendMessage $send): void
     {
+        $this->attempt($clientId, fn () => $send->handle($this->member(), $this->other(), $body, $clientId));
+    }
+
+    public function sendImage(string $clientId, SendMessage $send): void
+    {
+        $photo = $this->photo;
+        $this->attempt($clientId, fn () => $photo instanceof TemporaryUploadedFile
+            ? $send->image($this->member(), $this->other(), $photo, $clientId)
+            : throw ValidationException::withMessages(['photo' => __('Please choose a photo.')]));
+        $this->reset('photo');
+    }
+
+    public function icebreaker(string $clientId, string $code, SendIcebreaker $icebreakers): void
+    {
+        $this->attempt($clientId, fn () => $icebreakers->handle($this->member(), $this->other(), $code, $clientId));
+    }
+
+    public function unsend(string $messageId, UnsendMessage $unsend): void
+    {
         try {
-            $send->handle($this->member(), $this->other(), $body, $clientId);
+            $unsend->handle($this->member(), $messageId);
+        } catch (ChatRefused|ImpersonationRestricted $refused) {
+            $this->dispatch('toast', title: $refused->getMessage(), type: 'danger');
+        } catch (NotFoundHttpException) {
+            $this->dispatch('toast', title: __('This message is no longer available.'), type: 'danger');
+        }
+    }
+
+    public function setMuted(bool $muted, SetConversationMuted $mute): void
+    {
+        try {
+            $mute->handle($this->member(), $this->other(), $muted);
+        } catch (ImpersonationRestricted $restricted) {
+            $this->dispatch('toast', title: $restricted->getMessage(), type: 'danger');
+
+            return;
+        }
+
+        $this->dispatch('toast', type: 'success', title: $muted ? __('Conversation muted.') : __('Conversation unmuted.'));
+        $this->dispatch('chat-inbox-changed');
+    }
+
+    public function render(ChatAccess $access, ThreadWindow $window, ReadReceipts $receipts, ProfileNames $names, PhotoUrls $photos, SendIcebreaker $icebreakers, LastSeen $lastSeen): View
+    {
+        $thread = $this->thread();
+        $me = $this->me();
+        $other = $this->other();
+        $support = $this->support();
+        $state = $support ? ChatSendState::Unavailable : $access->sendState($me, $other, $thread);
+        $page = $support ? ['messages' => [], 'oldestId' => null, 'hasEarlier' => false]
+            : $window->window($thread, $me, $receipts->shownBetween($me->id, $other->id), $this->fromId);
+        $this->fromId ??= $page['oldestId'];
+
+        return view('livewire.member.chat.thread', [
+            'threadId' => $thread->id,
+            'myCode' => $me->code,
+            'name' => $names->forViewer($other, $this->member()),
+            'firstName' => $other->first_name,
+            'code' => $other->code,
+            'photoUrl' => $photos->primaryCardUrl($other, $this->member()) ?? PhotoUrls::PLACEHOLDER,
+            'profileUrl' => $other->trashed() ? null : route('member.profile.show', $other->code),
+            'lastSeen' => $support ? null : $lastSeen->label($other),
+            'muted' => (bool) ConversationParticipant::query()->where('conversation_id', $thread->id)->where('profile_id', $me->id)->value('is_muted'),
+            'days' => ThreadDays::of($page['messages']),
+            'hasEarlier' => $page['hasEarlier'],
+            'support' => $support,
+            'state' => $state,
+            'freeLeft' => $state->canSend() && $access->sendsFree($me) ? $access->freeRepliesLeft($me, $other, $thread) : null,
+            'canSendPhotos' => $state->canSend() && ! $access->sendsFree($me),
+            'icebreakers' => $state->canSend() && ! $icebreakers->hasWritten($me, $thread->id) ? $icebreakers->options() : [],
+            'upgradable' => in_array($state, [ChatSendState::Upgrade, ChatSendState::WaitForReply], true),
+            'maxLength' => Settings::int(SettingKey::ChatMaxLength),
+            'imageMaxMb' => Settings::int(SettingKey::ChatImageMaxMb),
+            'plansUrl' => route('plans'),
+        ]);
+    }
+
+    /** Run one send; a refusal marks the composer's bubble "not sent" with the reason. */
+    private function attempt(string $clientId, callable $send): void
+    {
+        try {
+            $send();
         } catch (ChatRefused|ImpersonationRestricted $refused) {
             $this->failed($clientId, $refused->getMessage());
 
@@ -120,64 +221,6 @@ final class Thread extends Component
         }
 
         $this->dispatch('chat-inbox-changed');
-    }
-
-    public function render(ChatAccess $access, ThreadWindow $window, ReadReceipts $receipts, ProfileNames $names, PhotoUrls $photos): View
-    {
-        $thread = $this->thread();
-        $me = $this->me();
-        $other = $this->other();
-        $support = $this->support();
-        $state = $support ? ChatSendState::Unavailable : $access->sendState($me, $other, $thread);
-
-        return view('livewire.member.chat.thread', [
-            'threadId' => $thread->id,
-            'myCode' => $me->code,
-            'name' => $names->forViewer($other, $this->member()),
-            'code' => $other->code,
-            'photoUrl' => $photos->primaryCardUrl($other, $this->member()) ?? PhotoUrls::PLACEHOLDER,
-            'profileUrl' => $other->trashed() ? null : route('member.profile.show', $other->code),
-            'days' => $support ? [] : $this->days($window->latest($thread, $me, $receipts->shownBetween($me->id, $other->id))),
-            'support' => $support,
-            'state' => $state,
-            'freeLeft' => $state->canSend() && $access->sendsFree($me) ? $access->freeRepliesLeft($me, $other, $thread) : null,
-            'upgradable' => in_array($state, [ChatSendState::Upgrade, ChatSendState::WaitForReply], true),
-            'maxLength' => Settings::int(SettingKey::ChatMaxLength),
-            'plansUrl' => route('plans'),
-        ]);
-    }
-
-    /**
-     * Messages by IST day ("Today", "Yesterday", "12 Oct 2026"); `grouped` = same sender as the
-     * message before within 5 minutes (the time is shown once for the run).
-     *
-     * @param  list<MessageData>  $messages
-     * @return list<array{label: string, messages: list<array{message: MessageData, grouped: bool}>}>
-     */
-    private function days(array $messages): array
-    {
-        $now = CarbonImmutable::now((string) config('oppam.display_timezone'));
-        $days = [];
-        $previous = null;
-
-        foreach ($messages as $message) {
-            $key = $message->at->toDateString();
-            if (! isset($days[$key])) {
-                $days[$key] = ['label' => match (true) {
-                    $message->at->isSameDay($now) => __('Today'),
-                    $message->at->isSameDay($now->subDay()) => __('Yesterday'),
-                    default => $message->at->translatedFormat('j M Y'),
-                }, 'messages' => []];
-                $previous = null;
-            }
-
-            $grouped = $previous !== null && ! $message->system && ! $previous->system && $previous->mine === $message->mine
-                && $message->at->diffInMinutes($previous->at, true) < 5;
-            $days[$key]['messages'][] = ['message' => $message, 'grouped' => $grouped];
-            $previous = $message;
-        }
-
-        return array_values($days);
     }
 
     private function failed(string $clientId, string $reason): void

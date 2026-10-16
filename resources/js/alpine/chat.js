@@ -1,8 +1,9 @@
 /* =============================================================================
    CHAT (PRD M07, §9.5, F03) — client behaviour only; the server decides who may write.
 
-   chatThread(maxLength, texts, channel, myCode) — the open thread's composer and scroll (texts:
-   translated { notSent, tooLong } from the view; channel: "chat.{id}"; myCode: the member's code):
+   chatThread(maxLength, texts, channel, myCode, imageMaxMb) — the open thread's composer and scroll
+   (texts: translated { notSent, tooLong, photo, tooBig } from the view; channel: "chat.{id}"; myCode:
+   the member's code). Typing and the emoji palette: chat-extras.js.
      - a new message on the thread's channel is drawn AT ONCE from the live payload (text only,
        x-text) — the server re-render that follows replaces it (same data-client-id). This is what
        keeps "sent → on the other screen" under a second (M07 acceptance).
@@ -14,12 +15,17 @@
      - a message from the other member ('chat-message-arrived') is marked read when the tab is in
        view, otherwise as soon as it comes back into view.
      - polling fallback (no socket, flag on): re-read every 10 s (PRD §9.7.2).
+     - "load earlier" (button, or scrolling to the top) keeps the message under the eye in place.
+     - a photo: uploaded, then $wire.sendImage(clientId); an icebreaker: $wire.icebreaker(clientId, code).
    chatBadge — the header badge: tab title count, and a toast for a new message unless that
      thread is open on screen.
 ============================================================================= */
 
+import { emojiMixin, typingMixin } from './chat-extras';
+
 const POLL_EVERY_MS = 10_000;
 const NEAR_BOTTOM_PX = 120;
+const NEAR_TOP_PX = 40;
 
 const uuid = () => {
     if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -36,7 +42,10 @@ const detailOf = (event) => (Array.isArray(event.detail) ? (event.detail[0] ?? {
 document.addEventListener('alpine:init', () => {
     const Alpine = window.Alpine;
 
-    Alpine.data('chatThread', (maxLength = 2000, texts = {}, channel = '', myCode = '') => ({
+    Alpine.data('chatThread', (maxLength = 2000, texts = {}, channel = '', myCode = '', imageMaxMb = 5) => ({
+        ...typingMixin(channel, myCode),
+        ...emojiMixin(),
+        loadingEarlier: false,
         body: '',
         pending: [],
         live: [],
@@ -79,6 +88,7 @@ document.addEventListener('alpine:init', () => {
                 this.echoChannel = window.Echo.private(channel);
                 this.echoChannel.listen('.message.sent', this.onLive);
             }
+            this.initTyping();
         },
 
         destroy() {
@@ -88,6 +98,7 @@ document.addEventListener('alpine:init', () => {
             window.removeEventListener('chat-message-arrived', this.onArrived);
             document.removeEventListener('visibilitychange', this.onVisible);
             this.echoChannel?.stopListening('.message.sent', this.onLive);
+            this.stopTyping();
         },
 
         incoming(event) {
@@ -96,10 +107,11 @@ document.addEventListener('alpine:init', () => {
                 || this.$refs.scroll?.querySelector(`[data-client-id="${CSS.escape(id)}"]`);
             if (known(event.client_id)) return;
 
+            if (event.sender_code !== myCode) this.typing = false;   // their message arrived: they stopped typing
             const at = new Date(event.created_at);
             this.live.push({
                 clientId: event.client_id,
-                text: event.body,
+                text: event.type === 'IMAGE' ? `📷 ${texts.photo ?? ''}` : event.body,
                 mine: event.sender_code === myCode,
                 time: Number.isNaN(at.getTime()) ? '' : at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }),
             });
@@ -113,22 +125,68 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const item = { clientId: uuid(), text, failed: false, error: '' };
-            this.pending.push(item);
             this.body = '';
+            this.queue({ clientId: uuid(), text, retry: true, send: (id) => this.$wire.send(id, text) });
+        },
+
+        icebreaker(code, text) {
+            this.queue({ clientId: uuid(), text, retry: true, send: (id) => this.$wire.icebreaker(id, code) });
+        },
+
+        sendPhoto(input) {
+            const file = input.files?.[0];
+            input.value = '';
+            if (!file) return;
+            const clientId = uuid();
+            if (file.size > imageMaxMb * 1024 * 1024) {
+                this.pending.push({ clientId, text: `📷 ${texts.photo ?? ''}`, failed: true, retry: false, error: texts.tooBig ?? '' });
+                return;
+            }
+            // A photo can't be retried from here (the file is gone): a refusal says why and stays.
+            this.queue({
+                clientId, text: `📷 ${texts.photo ?? ''}`, retry: false,
+                send: (id) => new Promise((resolve) => {
+                    this.$wire.upload('photo', file,
+                        () => this.$wire.sendImage(id).then(resolve),
+                        () => { this.fail({ clientId: id, message: texts.notSent }); resolve(); });
+                }),
+            });
+        },
+
+        queue(item) {
+            this.pending.push({ failed: false, error: '', ...item });
             this.stickToBottom = true;
             this.$nextTick(() => this.scrollToBottom());
-            this.deliver(item);
+            this.deliver(item.clientId);
         },
 
         retry(item) {
             item.failed = false;
             item.error = '';
-            this.deliver(item);
+            this.deliver(item.clientId);
         },
 
-        deliver(item) {
-            this.$wire.send(item.clientId, item.text).then(() => this.$nextTick(() => this.prune()));
+        deliver(clientId) {
+            const item = this.pending.find((p) => p.clientId === clientId);
+            item?.send(clientId).then(() => this.$nextTick(() => this.prune()));
+        },
+
+        earlier() {
+            const scroll = this.$refs.scroll;
+            if (this.loadingEarlier || !scroll) return;
+            this.loadingEarlier = true;
+            this.stickToBottom = false;
+            // Keep the message under the eye in place: the distance from the bottom doesn't change.
+            const fromBottom = scroll.scrollHeight - scroll.scrollTop;
+            this.$wire.loadEarlier().then(() => this.$nextTick(() => {
+                scroll.scrollTop = scroll.scrollHeight - fromBottom;
+                this.loadingEarlier = false;
+            }));
+        },
+
+        nearTop() {
+            const scroll = this.$refs.scroll;
+            if (scroll && scroll.scrollTop < NEAR_TOP_PX && scroll.querySelector('.msg-earlier')) this.earlier();
         },
 
         fail({ clientId, message }) {

@@ -58,7 +58,8 @@ enum NotificationEvent: string
     {
         return match ($this) {
             // digests (P8.3) or in-app only
-            self::InterestDeclined, self::NewMessage, self::ProfileLiked, self::MutualLike, self::ProfileViewed => false,
+            self::InterestDeclined, self::ProfileLiked, self::MutualLike, self::ProfileViewed => false,
+            self::NewMessage => true,   // the offline digest only (P4.2, SendChatDigests) — never one mail per message
             default => true,
         };
     }

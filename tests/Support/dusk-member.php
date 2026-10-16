@@ -160,3 +160,35 @@ function duskSecondMember(): User
 
     return $groom->refresh();
 }
+
+/** Chat Dusk tests (P4.1, P4.2): the two Dusk members' threads and plan rows go before the members. */
+function duskChatCleanup(): void
+{
+    // Conversations have no cascade from profiles: remove the pair's threads before the members.
+    $ids = Profile::withTrashed()->whereIn('user_id', User::withTrashed()
+        ->whereIn('phone', [DUSK_MEMBER_PHONE, DUSK_SECOND_PHONE])->select('id'))->pluck('id');
+    App\Jobs\Chat\PruneChatHistory::deleteThreads(App\Models\ConversationParticipant::query()->whereIn('profile_id', $ids)
+        ->pluck('conversation_id')->map(fn (mixed $id): string => (string) $id)->unique()->values()->all());
+    App\Models\Subscription::query()->whereIn('profile_id', $ids)->delete();
+
+    duskMemberCleanup();
+    duskMemberCleanup(DUSK_SECOND_PHONE);
+}
+
+/** Wait until this browser follows the thread's private channel (Livewire's Echo listener). */
+function duskChatSubscribed(Laravel\Dusk\Browser $browser, App\Models\Conversation $thread): void
+{
+    $browser->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+        "return window.Echo?.connector?.channels?.['private-chat.{$thread->id}']?.subscription?.subscribed === true;")[0]);
+}
+
+/** Sign the second Dusk member (the groom) in with email + password and open a page. */
+function duskSignInSecond(Laravel\Dusk\Browser $browser, string $path): void
+{
+    $browser->resize(1280, 900)->visit('/login')
+        ->type('#loginId', 'dusk.groom@example.com')
+        ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+        ->click('.login-form button[type="submit"]')
+        ->waitForLocation('/dashboard')
+        ->visit($path);
+}

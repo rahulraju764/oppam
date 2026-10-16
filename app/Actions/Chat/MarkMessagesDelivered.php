@@ -49,19 +49,20 @@ final class MarkMessagesDelivered
         }
 
         $hidden = $this->blocks->hiddenFrom($me);
-        $pending = Message::query()->whereIn('conversation_id', $threadIds)->whereNull('delivered_at')
+        $pending = fn () => Message::query()->whereIn('conversation_id', $threadIds)->whereNull('delivered_at')
             ->whereNotNull('sender_profile_id')->where('sender_profile_id', '!=', $me->id)
-            ->when($hidden !== [], fn ($q) => $q->whereNotIn('sender_profile_id', $hidden))
-            ->get(['id', 'conversation_id']);
+            ->when($hidden !== [], fn ($q) => $q->whereNotIn('sender_profile_id', $hidden));
 
-        if ($pending->isEmpty()) {
+        // The newest waiting message per thread (one grouped query), then one UPDATE for them all.
+        $newest = $pending()->groupBy('conversation_id')->selectRaw('conversation_id, MAX(id) as up_to')->pluck('up_to', 'conversation_id');
+        if ($newest->isEmpty()) {
             return 0;
         }
 
-        $marked = Message::query()->whereKey($pending->pluck('id')->all())->whereNull('delivered_at')->update(['delivered_at' => now()]);
+        $marked = $pending()->update(['delivered_at' => now()]);
 
-        foreach ($pending->groupBy('conversation_id') as $threadId => $messages) {
-            LiveSignal::afterCommit(new MessagesDelivered((string) $threadId, (string) $messages->max('id')));
+        foreach ($newest as $threadId => $upTo) {
+            LiveSignal::afterCommit(new MessagesDelivered((string) $threadId, (string) $upTo));
         }
 
         return $marked;

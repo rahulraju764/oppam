@@ -52,7 +52,7 @@ function receiptsOff(User $member): void
 /** @return list<string|null> the ticks the member sees on their own messages, oldest first */
 function ticksFor(User $member, Conversation $thread, bool $blue = true): array
 {
-    return collect(app(ThreadWindow::class)->latest($thread, $member->profile, $blue))
+    return collect(app(ThreadWindow::class)->window($thread, $member->profile, $blue)['messages'])
         ->filter(fn (MessageData $m): bool => $m->mine)->map(fn (MessageData $m): ?string => $m->tick)->values()->all();
 }
 

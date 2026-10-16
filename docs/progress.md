@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 4 — Chat (Phase 3 complete, 2026-10-15)
-**Next session:** P4.2 — Chat part 2: typing, history, extras (M07)
+**Next session:** P4.3 — Content safety & chat moderation (A13)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -49,7 +49,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Phase 4 — Chat
 - [x] P4.1 Chat core: inbox, thread, send, receipts (M07) — 2026-10-16 (reviewer READY in round 1, Minors only; owner reviewed and approved the commit — rule 5: an admin support session sees no message text and the chat / inbox channels refuse it)
-- [ ] P4.2 Chat part 2: typing, history, extras (M07)
+- [x] P4.2 Chat part 2: typing, history, extras (M07) — 2026-10-16 (reviewer READY in round 2 after 2 Majors fixed: the digest job re-read every member with old unread messages (now SQL-filtered, fixed query count), decisions not recorded; two decisions in decisions.md still await owner confirmation)
 - [ ] P4.3 Content safety & chat moderation (A13)
 
 ## Phase 5 — Money
@@ -88,6 +88,18 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
+- P4.2 → owner: confirm the two decisions in docs/decisions.md (2026-10-16): images reviewed after delivery (reports + P4.3
+  flags), digest only to a verified email (none until P8.2).
+- P4.2 → P4.3: the inbox "muted" icon; image moderation / flags on IMAGE messages; whether images count as "files" in the
+  first 10 messages (R-M07-4).
+- P4.2 → P9.4: Reverb client-event rate limiting (`config/reverb.php`, off by default) for typing whispers (§9.8);
+  `ThreadWindow::MAX` (600) — "load earlier" stops working after ~20 pages and each refresh re-reads the window; the image
+  route's `throttle:120,1` on image-heavy threads; image file copy / delete inside the DB transaction (orphan file on a
+  rollback); SendIcebreaker checks "has written" outside the thread lock (the free reply is still safe); a message arriving
+  between MarkMessagesDelivered's grouped read and its UPDATE gets ✓✓ late; tests: tampered `fromId`, suspended member on
+  unsend / mute / image route / icebreaker, the 10 s fallback detection + `realtime.polling_fallback` flag in Dusk.
+- P4.2 → P9.3: photo button focus ring (label over a hidden input); thread widths 320 / 768 / 1024 / 1440.
+- P4.2 not built: the optional new-message sound (PRD "optional").
 - P4.1 → P4.2: presence-chat join + typing whisper, online / last seen in the thread header, load earlier (ThreadWindow
   keeps the newest 30 today), reconnect back-fill by id (today a reconnect re-reads the newest 30), unsend
   (`MessageText` already shows "This message was deleted"), images, emoji, icebreakers, mute, the offline email digest

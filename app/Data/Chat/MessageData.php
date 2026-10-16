@@ -8,10 +8,12 @@ use Carbon\CarbonImmutable;
 
 /**
  * One message as the thread shows it to one member (PRD M07): `mine` (the member wrote it),
- * `system` (the platform did), the text to show (SYSTEM translated, an unsent message replaced),
- * its time in IST and — on the member's own messages only — the tick: `sent` ✓, `delivered` ✓✓
- * or `read` blue ✓✓ (blue only when both members have read receipts on, R-M07-7). The id is the
- * message ULID: the thread's order and the client's de-dupe key, as in the live payload (§9.4).
+ * `system` (the platform did), the text to show (SYSTEM translated, an unsent message replaced,
+ * "Photo" for an image), its time in IST and — on the member's own messages only — the tick:
+ * `sent` ✓, `delivered` ✓✓ or `read` blue ✓✓ (blue only when both members have read receipts on,
+ * R-M07-7). `imageUrl` is the authorised route to an image message's preview (never a file URL);
+ * `canUnsend` says whether the member may still unsend it. The id is the message ULID: the thread's
+ * order, its cursor and the client's de-dupe key, as in the live payload (§9.4).
  */
 final readonly class MessageData
 {
@@ -29,6 +31,9 @@ final readonly class MessageData
         public string $text,
         public CarbonImmutable $at,
         public ?string $tick,
+        public bool $deleted = false,
+        public ?string $imageUrl = null,
+        public bool $canUnsend = false,
     ) {}
 
     public function tickLabel(): string

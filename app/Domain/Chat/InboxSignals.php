@@ -57,6 +57,7 @@ final class InboxSignals
                 unread: $mine->unread_count,
                 totalUnread: $this->unread->total($me),
                 fromMe: $last?->sender_profile_id === $profileId,
+                muted: $mine->is_muted,
             ));
         }
     }
