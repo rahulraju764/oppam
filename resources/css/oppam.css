@@ -485,3 +485,55 @@ body.search-sheet-open .mobile-footer { display: none; }
 /* Profile page action row: every control keeps its own height and they share one centre line. */
 .profile-actions { align-items: center; }
 .profile-actions .engage { align-items: center; }
+
+/* ---- Chat (M07, P4.1) — on top of the template's MESSAGES rules (style.css "messages.php") ---- */
+.msg-list-tools { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3); }
+.msg-list-search { min-height: var(--tap-compact); font-size: var(--text-sm); }
+.msg-filters { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.msg-filter { min-height: var(--tap-compact); padding: 0 var(--space-3); border: var(--border-hair); border-radius: var(--radius-pill); background: var(--color-default); color: var(--color-bltxt); font-size: var(--text-xs); font-weight: var(--fw-medium); cursor: pointer; }
+.msg-filter.is-current { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-default); }
+.msg-filter:focus-visible, .msg-thread:focus-visible, .msg-thread-archive:focus-visible, .msg-back:focus-visible, .msg-retry:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.msg-list-rows.is-loading { opacity: .6; }
+.msg-thread-row { display: flex; align-items: center; gap: var(--space-1); }
+.msg-thread-row .msg-thread { flex: 1 1 auto; min-width: 0; }
+.msg-thread.is-unread .msg-thread-name, .msg-thread.is-unread .msg-thread-last { color: var(--color-black); font-weight: var(--fw-semibold); }
+.msg-thread-img, .msg-panel-avatar { position: relative; overflow: visible; }
+.msg-thread-img img { border-radius: var(--radius-circle); }
+.msg-thread-img .online-dot, .msg-panel-avatar .online-dot { position: absolute; right: 0; bottom: 0; }
+.msg-thread-archive { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: var(--tap-min); height: var(--tap-min); border: 0; border-radius: var(--radius-circle); background: none; color: var(--color-gr-dark); cursor: pointer; }
+.msg-thread-archive:hover { background: var(--bg-mist); color: var(--color-primary); }
+.msg-list-more { width: 100%; margin-top: var(--space-2); }
+.msg-list-empty { padding: var(--space-6) var(--space-2); }
+.msg-panel--empty { justify-content: center; min-height: var(--space-11); }
+.msg-panel-avatar { flex: 0 0 auto; display: inline-flex; }
+.msg-back { display: inline-flex; align-items: center; justify-content: center; width: var(--tap-min); height: var(--tap-min); margin-left: calc(var(--space-2) * -1); border-radius: var(--radius-circle); color: var(--color-bltxt); text-decoration: none; }
+.msg-reconnecting { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-2) 0 0; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); background: var(--color-back); font-size: var(--text-xs); color: var(--color-gr-dark); }
+.msg-day { display: flex; justify-content: center; margin: var(--space-2) 0; }
+.msg-day span { padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--bg-mist); font-size: var(--text-xs); color: var(--color-gr-dark); }
+.msg-system { align-self: center; max-width: 90%; margin: 0; font-size: var(--text-xs); font-style: italic; color: var(--color-gr-dark); text-align: center; }
+.msg-bubble { overflow-wrap: anywhere; }
+.msg-bubble-text { white-space: pre-line; }
+.msg-bubble.is-grouped { margin-top: calc(var(--space-2) * -1); }
+.msg-bubble-time { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.msg-bubble.is-me .msg-bubble-time { justify-content: flex-end; }
+.msg-tick { display: inline-flex; letter-spacing: -0.3em; }
+.msg-tick.is-read { color: var(--color-tick-read); }
+.msg-bubble.is-pending { opacity: .75; }
+.msg-bubble.is-failed { opacity: 1; background: var(--color-default); border: 1px solid var(--color-primary); color: var(--color-black); }
+.msg-bubble.is-failed .msg-bubble-time { color: var(--color-primary-dark); }
+.msg-pending { display: flex; flex-direction: column; gap: var(--space-3); }
+.msg-retry { min-height: var(--tap-compact); padding: 0 var(--space-2); border: 0; background: none; color: var(--color-primary-dark); font-size: var(--text-xs); font-weight: var(--fw-semibold); text-decoration: underline; cursor: pointer; }
+.msg-composer-send:disabled { opacity: .6; cursor: not-allowed; }
+.msg-composer-hint { margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--color-gr-dark); }
+.msg-composer-hint a { color: var(--color-primary-dark); font-weight: var(--fw-medium); }
+.msg-composer.is-locked { flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.msg-locked-text { flex: 1 1 auto; margin: 0; font-size: var(--text-sm); color: var(--color-gr-dark); }
+.msg-private { margin: 0; }
+.nav-chat { margin-right: var(--space-2); }
+.mobile-chat { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-min); min-height: var(--tap-min); }
+/* The template stacked list-then-thread below 992px with a 320px list ceiling; the real page shows
+   ONE pane at a time (template TODO), so the list takes the page height again. */
+@media (max-width: 991.98px) {
+  .msg-list { max-height: none; overflow-y: visible; }
+}
+.chat-badge { display: inline-flex; }

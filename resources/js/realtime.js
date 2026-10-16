@@ -7,6 +7,8 @@
                        :code> reads it; no Livewire round trip.
      $store.realtime — { status: 'off' | 'connecting' | 'connected' | 'reconnecting', fallback,
                          userChannel (the member's own channel is subscribed) }
+     $store.tabTitle — unread counts by source ('bell', 'chat'); their sum prefixes the browser
+                       tab title, "(3) Messages | Oppam" (M07, M08).
 
    Browser / Livewire events:
      realtime-reconnected — the socket came back after a drop: components back-fill from the DB.
@@ -47,6 +49,18 @@ function registerStores() {
         });
 
         Alpine.store('realtime', { status: 'off', fallback: false, userChannel: false });
+
+        // The counts live outside Alpine's reactivity: set() runs inside x-effect, and reading a
+        // reactive object there would make every effect depend on every other source.
+        const titleCounts = {};
+        Alpine.store('tabTitle', {
+            set(source, count) {
+                titleCounts[source] = Math.max(0, Number(count) || 0);
+                const total = Object.values(titleCounts).reduce((sum, n) => sum + n, 0);
+                const base = document.title.replace(/^\(\d+\+?\) /, '');
+                document.title = total > 0 ? `(${total > 99 ? '99+' : total}) ${base}` : base;
+            },
+        });
     });
 }
 

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
 use Laravel\Dusk\Browser;
 
 /*
@@ -10,8 +9,6 @@ use Laravel\Dusk\Browser;
 | the first member watches the second member's profile, and the green online dot appears as soon
 | as the second member signs in (presence.online, $store.online — no reload).
 */
-
-const DUSK_SECOND_PHONE = '+919999900002';
 
 beforeEach(function (): void {
     duskMemberCleanup();
@@ -22,16 +19,6 @@ afterEach(function (): void {
     duskMemberCleanup();
     duskMemberCleanup(DUSK_SECOND_PHONE);
 });
-
-/** A live groom the Dusk bride can see, signing in with email + password. */
-function duskSecondMember(): User
-{
-    $groom = memberWithPhone(DUSK_SECOND_PHONE);
-    $groom->forceFill(['email' => 'dusk.groom@example.com', 'email_verified_at' => now()])->save();
-    $groom->profile->forceFill(['gender' => App\Enums\Gender::Male, 'status' => App\Enums\ProfileStatus::Active, 'published_at' => now()])->save();
-
-    return $groom->refresh();
-}
 
 it('P3.1: the online dot turns green when a second member signs in', function (): void {
     $this->browse(function (Browser $first, Browser $second): void {

@@ -4,7 +4,7 @@
       none       "Send Interest"  → opens the Send Interest dialog (Shared\InterestComposer)
       sent       "Interest sent"  (withdraw it on /interests)
       received   "Respond"        → /interests
-      connected  "Chat"           → the conversation (the chat screens arrive with P4.1)
+      connected  "Chat"           → the conversation (/messages?with=CODE, P4.1)
     Plain Blade + Alpine (`interestButton`, resources/js/alpine/engagement.js): the state switches
     on the window event `interest-changed` { code, state } — sent by the dialog in this tab and by
     the live `.interest.changed` from the other member — so both sides update without a reload

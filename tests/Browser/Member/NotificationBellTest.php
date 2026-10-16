@@ -18,7 +18,7 @@ it('P3.2: the bell rises live with a toast, and "mark all as read" in one tab cl
     $this->browse(function (Browser $first, Browser $second): void {
         $member = duskLiveMember($first);
         $userChannelReady = "return window.Alpine?.store('realtime')?.userChannel === true;";
-        $count = fn (Browser $b): string => (string) $b->script("return document.querySelector('.nav-bell .nav-bell-count')?.textContent?.trim() ?? '0';")[0];
+        $count = fn (Browser $b): string => (string) $b->script("return document.querySelector('.nt-bell .nav-bell .nav-bell-count')?.textContent?.trim() ?? '0';")[0];
 
         $first->resize(1280, 800)->visit('/me')
             ->waitUsing(15, 100, fn (): bool => (bool) $first->script($userChannelReady)[0]);
@@ -37,7 +37,7 @@ it('P3.2: the bell rises live with a toast, and "mark all as read" in one tab cl
             ->waitForText('Your 3 new matches are ready');   // the toast
         $second->waitUsing(20, 200, fn (): bool => $count($second) === '1');
 
-        $first->click('.nav-bell')
+        $first->click('.nt-bell .nav-bell')
             ->waitForText('Mark all as read')
             ->press('Mark all as read')
             ->waitUsing(10, 200, fn (): bool => $count($first) === '0');

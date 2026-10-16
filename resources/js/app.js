@@ -26,6 +26,7 @@ import './alpine/carousel';
 import './alpine/countdown';
 import './alpine/toasts';
 import './alpine/engagement';
+import './alpine/chat';
 
 window.bootstrap = bootstrap;
 

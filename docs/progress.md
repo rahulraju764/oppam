@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 4 — Chat (Phase 3 complete, 2026-10-15)
-**Next session:** P4.1 — Chat core: inbox, thread, send, receipts (M07)
+**Next session:** P4.2 — Chat part 2: typing, history, extras (M07)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -48,7 +48,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P3.5 Live admin dashboard (A02) — 2026-10-15 (reviewer READY in round 2 after round-1 fixes: own 2 s client for "online now", snapshot / queue-count indexes + one grouped queue query, live "being reviewed by …", after-commit rescued signup tick, system alerts need dashboard.view, finished-day change; A03 Engagement tab; Chart.js 4 admin-only; Dusk: submit → badge + card live)
 
 ## Phase 4 — Chat
-- [ ] P4.1 Chat core: inbox, thread, send, receipts (M07)
+- [x] P4.1 Chat core: inbox, thread, send, receipts (M07) — 2026-10-16 (reviewer READY in round 1, Minors only; owner reviewed and approved the commit — rule 5: an admin support session sees no message text and the chat / inbox channels refuse it)
 - [ ] P4.2 Chat part 2: typing, history, extras (M07)
 - [ ] P4.3 Content safety & chat moderation (A13)
 
@@ -88,6 +88,28 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
+- P4.1 → P4.2: presence-chat join + typing whisper, online / last seen in the thread header, load earlier (ThreadWindow
+  keeps the newest 30 today), reconnect back-fill by id (today a reconnect re-reads the newest 30), unsend
+  (`MessageText` already shows "This message was deleted"), images, emoji, icebreakers, mute, the offline email digest
+  (`new_message` writes no bell row), retention job (R-M07-6: today only the purge deletes a thread, once both members
+  are purged), polling fallback test (the thread already re-reads every 10 s in fallback mode), the optional sound.
+- P4.1 → P4.3: ContentSafety in SendMessage (masking in the first 10 messages, profanity, repetition), message flags,
+  report from chat, auto-freeze; `ConversationFrozen` live event (today a frozen thread is read-only on the next render).
+- P4.1 → P6.2 (block): freeze the pair's thread on a block (ChatAccess already hides a blocked pair's thread: 404).
+- P4.1 → P8.2 (M14): the read-receipts switch (the rule is live: `privacy_settings.read_receipts`).
+- P4.1 → P9.4: no rate limit on mark read / delivered / archive or the inbox name search (all owner-scoped and cheap);
+  measure /messages and the header badge (UnreadChats: two queries per page; MarkMessagesDelivered on page load when
+  something is unread); the free-reply count and "has the other member written" are two counts per send.
+- P4.1 review Minors (round 1), open: (1) R-M07-7 — a SENDER with read receipts off still receives `.message.read`
+  (reader code + time) in the socket frames; the screen is right (blue needs both on) — choose MessagesRead vs
+  MessagesDelivered with `ReadReceipts::shownBetween()`; (2) SendMessage counts the rate limit after the transaction,
+  so parallel sends can slightly exceed `chat.max_per_minute`; (3) ChatBadge trusts `total_unread` from its own echo
+  payload (a member can only fake their own badge) — recount; (4) MarkMessagesDelivered loads all waiting messages
+  unbounded — chunk / group by thread; (5) widths 320 / 768 / 1024 / 1440 not tested (375 + 1280 only) — P9.3;
+  (6) the PRD's right rail "profile summary + safety tips" is the template's ads rail for now; (7) the < 1 s delivery is
+  shown by single local samples (668–1520 ms without OPcache) — run the Dusk test with OPcache / in CI and time a p95.
+- P4.1 local dev: `REVERB_HOST=127.0.0.1` in .env (see .env.example) — with `localhost` every broadcast waited ~2 s on
+  Windows; consider enabling OPcache in XAMPP's php.ini (each request spends ~0.5–0.8 s compiling without it).
 - P3.5 → later modules: the dashboard shows only real data — P5.3 adds revenue today / MTD, the revenue-by-plan chart and
   payment ticks; P6 the verification / report / ticket cards; P4.3 flagged chats; P7 broker KYC; P5 stuck orders; P9.2
   webhook-failure / error-rate alerts (decisions 2026-10-11).

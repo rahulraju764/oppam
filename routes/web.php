@@ -11,6 +11,7 @@ use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
 use App\Livewire\Member\Auth\VerifyOtp;
 use App\Livewire\Member\Browse\AllProfiles;
+use App\Livewire\Member\Chat\Messages;
 use App\Livewire\Member\Dashboard\Dashboard;
 use App\Livewire\Member\Engagement\Favorites;
 use App\Livewire\Member\Engagement\Interests;
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         Route::get('/likes', Likes::class)->name('member.likes');
         Route::get('/favorites', Favorites::class)->name('member.favorites');
         Route::get('/interests', Interests::class)->name('member.interests');
+        Route::get('/messages', Messages::class)->name('member.messages');
         Route::get('/search', Search::class)->name('member.search');
         Route::get('/profiles', AllProfiles::class)->name('member.profiles');
         Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');

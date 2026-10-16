@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A chat thread between two profiles (PRD §7.2, M07) — one per pair (`pair_key`). Created when an
- * interest is accepted (P3.4); messages arrive in P4.1. Only the server sets any column.
+ * interest is accepted (P3.4); written to by SendMessage (P4.1). Only the server sets any column.
  *
  * @property string $id
  * @property string|null $interest_id
@@ -44,6 +44,12 @@ final class Conversation extends Model
     public function participants(): HasMany
     {
         return $this->hasMany(ConversationParticipant::class);
+    }
+
+    /** @return HasMany<Message, $this> */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(Message::class);
     }
 
     /** @return array<string, string> */

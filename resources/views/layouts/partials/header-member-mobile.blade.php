@@ -1,5 +1,6 @@
 {{--
-    Member mobile header (< 992px): avatar + name + tier on the left, upgrade + bell on the right.
+    Member mobile header (< 992px): avatar + name + tier on the left, upgrade + messages + bell on
+    the right (the bottom tab bar's five tabs are full, so the chat badge lives here — P4.1).
     The bell count becomes <livewire:shared.notification-bell /> in P3.2 — keep it in step with
     .nav-bell in header-member-nav (same destination, same count).
 --}}
@@ -31,6 +32,10 @@
             <a href="{{ $plansUrl }}" @class(['mobile-upgrade', 'is-current' => $onPlans]) @if ($onPlans) aria-current="page" @endif aria-label="{{ __('Upgrade membership') }}" wire:navigate>
                 <i class="fa fa-diamond" aria-hidden="true"></i>
             </a>
+        @endif
+
+        @if ($nav->url('member.messages') && auth('web')->user() instanceof \App\Models\User)
+            <livewire:shared.chat-badge variant="mobile" :key="'chat-mobile'" />
         @endif
 
         @if ($notificationsUrl && auth('web')->user() instanceof \App\Models\User)

@@ -53,6 +53,13 @@
     @endif
 @endforeach
 
+{{-- Desktop chat badge (P4.1, M07): Messages with the live unread count, beside the bell. --}}
+@if ($nav->url('member.messages') && auth('web')->user() instanceof \App\Models\User)
+    <li class="nav-item d-none d-lg-flex">
+        <livewire:shared.chat-badge variant="desktop" :key="'chat-desktop'" />
+    </li>
+@endif
+
 {{-- Desktop bell (the mobile one lives in .mobile-header): live count + lazy dropdown (P3.2, M08). --}}
 @php($notificationsUrl = $nav->url('member.notifications'))
 @if ($notificationsUrl && auth('web')->user() instanceof \App\Models\User)

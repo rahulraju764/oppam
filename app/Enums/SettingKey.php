@@ -32,6 +32,8 @@ enum SettingKey: string
     case InterestExpiryDays = 'interest.expiry_days';
     case InterestResendCooldownDays = 'interest.resend_cooldown_days';
     case ChatUnsendWindowMinutes = 'chat.unsend_window_minutes';
+    case ChatMaxPerMinute = 'chat.max_per_minute';
+    case ChatMaxLength = 'chat.max_length';
     case DailyMatchCount = 'matching.daily_match_count';
     case PhotosMaxAdditional = 'photos.max_additional';
     case PhotosMaxUploadMb = 'photos.max_upload_mb';
@@ -83,6 +85,8 @@ enum SettingKey: string
             self::InterestExpiryDays => 30,
             self::InterestResendCooldownDays => 90,
             self::ChatUnsendWindowMinutes => 60,
+            self::ChatMaxPerMinute => 30,           // M07 send flow: messages per member per minute
+            self::ChatMaxLength => 2000,            // R-M07-4: characters per message
             self::DailyMatchCount => 10,
             self::PhotosMaxAdditional => 9,
             self::PhotosMaxUploadMb => 8,
@@ -128,6 +132,8 @@ enum SettingKey: string
             self::InterestExpiryDays => ['required', 'integer', 'min:1', 'max:365'],
             self::InterestResendCooldownDays => ['required', 'integer', 'min:0', 'max:365'],
             self::ChatUnsendWindowMinutes => ['required', 'integer', 'min:0', 'max:1440'],
+            self::ChatMaxPerMinute => ['required', 'integer', 'min:5', 'max:300'],
+            self::ChatMaxLength => ['required', 'integer', 'min:100', 'max:5000'],
             self::DailyMatchCount => ['required', 'integer', 'min:1', 'max:50'],
             self::PhotosMaxAdditional => ['required', 'integer', 'min:0', 'max:20'],
             self::PhotosMaxUploadMb => ['required', 'integer', 'min:1', 'max:20'],

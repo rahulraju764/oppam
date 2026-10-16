@@ -148,6 +148,7 @@
    not as raw values in a stylesheet. */
 :root {
   --color-online: #1f8a4c;            /* presence dot */
+  --color-tick-read: #c9f0ff;         /* chat "read" ticks on the brand bubble (3.8:1 on --color-primary) */
   --color-success: #1f7a45;           /* success text/borders — AA on white and on --bg-success */
   --bg-success: #eef8f1;
   --color-warning: #7a5000;           /* warning text — AA on --bg-warning */

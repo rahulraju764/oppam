@@ -10,6 +10,8 @@ use App\Enums\UserRole;
 use App\Models\AccessRequest;
 use App\Models\ContactDetail;
 use App\Models\ContactView;
+use App\Models\Conversation;
+use App\Models\ConversationParticipant;
 use App\Models\DailyMatch;
 use App\Models\EducationCareer;
 use App\Models\EngagementSignal;
@@ -47,7 +49,8 @@ use Illuminate\Support\Str;
  * year), about text, contact / family / partner / career / horoscope / lifestyle / privacy rows,
  * photos and the horoscope file, sign-in history, OTP challenges, sessions, profile and contact
  * views, likes, favourites, interests and photo / horoscope requests (both directions), in-app notifications (theirs, and others' that
- * name them), and held moderation text. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
+ * name them), and held moderation text. Chat threads (R-M07-6) stay for the other member — they read "Deleted Member" —
+ * until that member is purged too; then the thread and its messages are deleted. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
  * subscriptions, orders (P5) and audit rows keep pointing at something. Idempotent: an
  * anonymised or not-yet-due member is skipped. Run by PurgeDeletedMembers (daily).
  */
@@ -153,6 +156,20 @@ final class PurgeDeletedMember
                 ->each(fn (Profile $owner) => $this->entitlements->release($owner, Entitlement::FavoritesTotal));
         }
         EngagementSignal::query()->where('profile_id', $profile->id)->delete();
+
+        // Chat (P4.1, R-M07-6): messages are deleted once BOTH members are gone — a thread whose
+        // other member was purged earlier goes now, with its messages (cascade); the rest is kept.
+        $threadIds = ConversationParticipant::query()->where('profile_id', $profile->id)->pluck('conversation_id')->all();
+        foreach (array_chunk($threadIds, 200) as $ids) {
+            $bothGone = ConversationParticipant::query()
+                ->join('profiles', 'profiles.id', '=', 'conversation_participants.profile_id')
+                ->join('users', 'users.id', '=', 'profiles.user_id')
+                ->whereIn('conversation_participants.conversation_id', $ids)
+                ->where('conversation_participants.profile_id', '!=', $profile->id)
+                ->whereNotNull('users.anonymised_at')
+                ->pluck('conversation_participants.conversation_id')->all();
+            Conversation::query()->whereKey($bothGone)->delete();
+        }
 
         ModerationItem::query()->where('profile_id', $profile->id)->update(['fields' => null, 'reason_note' => null]);
 

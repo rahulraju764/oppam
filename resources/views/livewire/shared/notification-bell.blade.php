@@ -18,8 +18,8 @@
 @else
     {{-- `open` comes from the wrapping <li x-data> in header-member-nav (survives re-renders). --}}
     <div class="nt-bell__inner"
-         x-data="{ polling: null, base: document.title.replace(/^\(\d+\+?\) /, '') }"
-         x-effect="document.title = ($wire.unread > 0 ? '(' + ($wire.unread > 99 ? '99+' : $wire.unread) + ') ' : '') + base"
+         x-data="{ polling: null }"
+         x-effect="$store.tabTitle && $store.tabTitle.set('bell', $wire.unread)"
          x-on:realtime-fallback.window="polling ??= setInterval(() => $wire.refreshBell(), 30000)"
          x-on:livewire:navigating.window="clearInterval(polling)">
         <button type="button" class="nav-bell" aria-label="{{ $label }}" aria-haspopup="true" aria-controls="nt-dropdown"

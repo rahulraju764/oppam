@@ -147,3 +147,16 @@ function assertNoHorizontalScroll(Laravel\Dusk\Browser $browser): void
 {
     expect((bool) $browser->script('return document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth;')[0])->toBeTrue();
 }
+
+/** The second Dusk member's phone (two-browser tests: presence, likes, interests, chat). */
+const DUSK_SECOND_PHONE = '+919999900002';
+
+/** A live groom the Dusk bride can see, signing in with email + password. */
+function duskSecondMember(): User
+{
+    $groom = memberWithPhone(DUSK_SECOND_PHONE);
+    $groom->forceFill(['email' => 'dusk.groom@example.com', 'email_verified_at' => now()])->save();
+    $groom->profile->forceFill(['gender' => App\Enums\Gender::Male, 'status' => App\Enums\ProfileStatus::Active, 'published_at' => now()])->save();
+
+    return $groom->refresh();
+}

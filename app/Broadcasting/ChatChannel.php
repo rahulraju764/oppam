@@ -10,17 +10,23 @@ use App\Enums\ConversationStatus;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Profile;
+use App\Services\Admin\Impersonation;
 
 /**
  * `chat.{conversation}` (PRD §9.3): messages, receipts, deletions. Only an active member whose
  * profile is a participant, while the thread isn't CLOSED and there is no block between the two
  * (either direction). PresenceChatChannel applies the same rule to `presence-chat.{conversation}`.
+ * Never while an admin is impersonating the member: message text is private, the support session
+ * reads no thread (R-M07-6, owner decision 2026-10-15).
  */
 final class ChatChannel
 {
     use ChecksMember;
 
-    public function __construct(private readonly BlockList $blocks) {}
+    public function __construct(
+        private readonly BlockList $blocks,
+        private readonly Impersonation $impersonation,
+    ) {}
 
     public function join(mixed $user, string $conversation): bool
     {
@@ -30,7 +36,7 @@ final class ChatChannel
     /** The member's profile when they may follow this thread live; null otherwise. */
     public function participant(mixed $user, string $conversationId): ?Profile
     {
-        $member = $this->activeMember($user);
+        $member = $this->impersonation->isActive() ? null : $this->activeMember($user);
         $me = $member === null ? null : $this->profileOf($member);
         $thread = $me === null ? null : Conversation::query()->whereKey($conversationId)->first();
 
