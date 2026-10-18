@@ -42,6 +42,8 @@ final class ReopenReportFrozenThreads
             [], ['reason' => __('reason')])->validate();
 
         return DB::transaction(function () use ($admin, $member, $reason): int {
+            // The member's profile row first, as ReportChatMessages / DecideMessageFlag lock it.
+            Profile::withTrashed()->whereKey($member->id)->lockForUpdate()->first(['id']);
             $opened = $this->freezer->unfreezeReportFrozen($member->id);
 
             if ($opened > 0) {

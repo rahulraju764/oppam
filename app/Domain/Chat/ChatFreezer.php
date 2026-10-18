@@ -20,9 +20,24 @@ use App\Support\Realtime\LiveSignal;
  */
 final class ChatFreezer
 {
-    /** @return bool whether the thread was OPEN and is FROZEN now */
+    public function __construct(private readonly ReportFreezeRule $rule) {}
+
+    /**
+     * Freeze an OPEN thread. A moderator freezing a thread the automatic freeze after reports already
+     * closed takes it over: the reason becomes MODERATION, so dismissing the reports later never opens
+     * it (decisions 2026-10-16 (d)). Nothing goes out live then — the thread was already read-only.
+     *
+     * @return bool whether the thread changed (OPEN → FROZEN, or REPORTS → MODERATION)
+     */
     public function freeze(Conversation $thread, FreezeReason $reason): bool
     {
+        if ($thread->status === ConversationStatus::Frozen && $thread->frozen_reason === FreezeReason::Reports && $reason === FreezeReason::Moderation) {
+            $thread->frozen_reason = FreezeReason::Moderation;
+            $thread->save();
+
+            return true;
+        }
+
         if ($thread->status !== ConversationStatus::Open) {
             return false;
         }
@@ -40,17 +55,25 @@ final class ChatFreezer
     /**
      * Open again every thread of this member that the automatic freeze after reports closed
      * (FreezeReason::Reports) — the freeze is undone as one unit, never thread by thread only.
-     * Threads frozen by a moderator stay frozen. Call inside a transaction.
+     * Threads frozen by a moderator stay frozen, and so does a thread whose OTHER member is still
+     * over the rule (that member's own reports froze it too). Call inside a transaction.
      *
      * @return int how many threads were opened
      */
     public function unfreezeReportFrozen(string $profileId): int
     {
         $threadIds = ConversationParticipant::query()->where('profile_id', $profileId)->pluck('conversation_id')->all();
+        $threads = Conversation::query()->whereKey($threadIds)->where('status', ConversationStatus::Frozen->value)
+            ->where('frozen_reason', FreezeReason::Reports->value)->lockForUpdate()->get();
+        $others = ConversationParticipant::query()->whereIn('conversation_id', $threads->modelKeys())
+            ->where('profile_id', '!=', $profileId)->pluck('profile_id', 'conversation_id');
         $opened = 0;
 
-        foreach (Conversation::query()->whereKey($threadIds)->where('status', ConversationStatus::Frozen->value)
-            ->where('frozen_reason', FreezeReason::Reports->value)->lockForUpdate()->get() as $thread) {
+        foreach ($threads as $thread) {
+            $other = $others->get($thread->id);
+            if ($other !== null && $this->rule->reached((string) $other)) {
+                continue;
+            }
             $opened += $this->unfreeze($thread) ? 1 : 0;
         }
 

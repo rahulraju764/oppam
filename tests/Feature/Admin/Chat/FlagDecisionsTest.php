@@ -275,10 +275,13 @@ function reportFrozenSender(): array
 it('M09 auto-freeze is undone as ONE unit: dismissing a report that takes the sender below the rule opens every report-frozen thread — a moderator\'s freeze stays', function (): void {
     [$sender, $reporters, $threads] = reportFrozenSender();
     expect(collect($threads)->every(fn (Conversation $t): bool => $t->status === ConversationStatus::Frozen))->toBeTrue();
-    // A moderator also froze the non-reporter's thread for a reason of their own: that one stays.
-    $threads[3]->forceFill(['frozen_reason' => FreezeReason::Moderation])->save();
-    Event::fake([ConversationFrozen::class]);
     $moderator = adminWithRole('moderator');
+    // A moderator also freezes the non-reporter's (already report-frozen) thread for a reason of their own:
+    // it becomes the moderator's freeze — audited — and stays when the reports are dismissed.
+    expect(app(SetConversationFrozen::class)->handle($moderator, $threads[3], true, 'Seen enough in this thread'))->toBeTrue()
+        ->and($threads[3]->refresh()->frozen_reason)->toBe(FreezeReason::Moderation)
+        ->and(AuditLog::query()->where('action', 'chat.frozen')->sole()->after)->toMatchArray(['status' => 'FROZEN', 'frozen_reason' => 'MODERATION']);
+    Event::fake([ConversationFrozen::class]);
 
     $report = Report::query()->where('reporter_profile_id', $reporters[0]->profile->id)->sole();
     foreach (MessageFlag::query()->where('report_id', $report->id)->get() as $flag) {
@@ -291,6 +294,48 @@ it('M09 auto-freeze is undone as ONE unit: dismissing a report that takes the se
     expect($threads[3]->refresh()->status)->toBe(ConversationStatus::Frozen);
     Event::assertDispatchedTimes(ConversationFrozen::class, 3);
     expect(AuditLog::query()->where('action', 'chat.auto_unfrozen')->sole()->after)->toMatchArray(['threads_opened' => 3]);
+});
+
+it('decisions (d): "Freeze conversation" on a report-frozen thread makes it the moderator\'s freeze — dismissing the other reports leaves it frozen', function (): void {
+    [$sender, $reporters, $threads] = reportFrozenSender();
+    $moderator = adminWithRole('moderator');
+
+    $second = Report::query()->where('reporter_profile_id', $reporters[1]->profile->id)->sole();
+    decideFlag($moderator, MessageFlag::query()->where('report_id', $second->id)->firstOrFail(), MessageFlagDecision::FreezeConversation);
+    expect($threads[1]->refresh()->frozen_reason)->toBe(FreezeReason::Moderation);
+
+    // Reporters 1 and 3 dismissed: one counting reporter left, below the rule.
+    foreach ([$reporters[0], $reporters[2]] as $reporter) {
+        $report = Report::query()->where('reporter_profile_id', $reporter->profile->id)->sole();
+        foreach (MessageFlag::query()->where('report_id', $report->id)->get() as $flag) {
+            decideFlag($moderator, $flag, MessageFlagDecision::Dismiss);
+        }
+    }
+
+    expect($threads[1]->refresh()->status)->toBe(ConversationStatus::Frozen)
+        ->and($threads[1]->frozen_reason)->toBe(FreezeReason::Moderation)
+        ->and($threads[0]->refresh()->status)->toBe(ConversationStatus::Open)
+        ->and($threads[3]->refresh()->status)->toBe(ConversationStatus::Open);
+});
+
+it('M09: undoing one member\'s automatic freeze leaves a thread frozen while the OTHER member is still over the rule', function (): void {
+    [$sender, $reporters, $threads] = reportFrozenSender();
+    // The sender's 4th partner is reported by three members of their own (the shared thread with the sender is one of them).
+    $partner = Conversation::query()->whereKey($threads[3]->id)->sole()->participants()->where('profile_id', '!=', $sender->profile->id)->value('profile_id');
+    $partnerUser = User::query()->whereHas('profile', fn ($q) => $q->whereKey($partner))->sole();
+    $sharedThread = $threads[3]->id;
+    foreach (['+919800000601', '+919800000602', '+919800000603'] as $i => $phone) {
+        [$partnerUser, $reporter] = chatPairOf($partnerUser->refresh(), groom($phone), $i === 0 ? PlanCode::Gold : null);
+        chatSend($partnerUser, $reporter, 'Hello from the partner');
+        app(ReportChatMessages::class)->handle($reporter, $partnerUser->profile, 'SPAM', null,
+            Message::query()->where('sender_profile_id', $partnerUser->profile->id)
+                ->where('conversation_id', Conversation::query()->where('pair_key', Conversation::pairKey($reporter->profile->id, $partnerUser->profile->id))->value('id'))
+                ->pluck('id')->all());
+    }
+
+    expect(app(App\Actions\Admin\Chat\ReopenReportFrozenThreads::class)->handle(adminWithRole('moderator'), $sender->profile, 'Reviewed: false reports'))->toBe(3)
+        ->and(Conversation::query()->find($sharedThread)?->status)->toBe(ConversationStatus::Frozen)
+        ->and($threads[0]->refresh()->status)->toBe(ConversationStatus::Open);
 });
 
 it('a moderator can lift the automatic freeze for a member at once — every report-frozen thread, with a typed reason, audited', function (): void {

@@ -80,6 +80,12 @@ final class DecideMessageFlag
         }
 
         $warn = DB::transaction(function () use ($admin, $flag, $decision, $note): ?User {
+            // The sender's (= reported member's) profile row first, as ReportChatMessages does: a report
+            // arriving meanwhile can't slip between the re-count below and the automatic unfreeze.
+            if ($flag->sender_profile_id !== null) {
+                Profile::withTrashed()->whereKey($flag->sender_profile_id)->lockForUpdate()->first(['id']);
+            }
+
             $locked = MessageFlag::query()->whereKey($flag->id)->lockForUpdate()->firstOrFail();
             $this->assertDecidable($admin, $locked, $decision);
             $before = $locked->status->value;
@@ -143,7 +149,8 @@ final class DecideMessageFlag
         $message->body = null;
         $message->removed_by_admin_at = now();
         $message->save();
-        $message->clearMediaCollection(Message::IMAGE);
+        // The file goes once the wipe is committed: a rollback must not leave a restored message without its photo.
+        DB::afterCommit(static fn () => $message->clearMediaCollection(Message::IMAGE));
 
         LiveSignal::afterCommit(new MessageDeleted($message->conversation_id, $message->id));
         $thread = Conversation::query()->find($message->conversation_id);

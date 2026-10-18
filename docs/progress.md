@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 4 — Chat (Phase 3 complete, 2026-10-15)
-**Next session:** P4.3a — Content safety, flags, report from chat, freeze, flagged queue (A13)
+**Next session:** P4.3b — Chat overview, break-glass, signals, rules editor (A13)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -50,7 +50,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 ## Phase 4 — Chat
 - [x] P4.1 Chat core: inbox, thread, send, receipts (M07) — 2026-10-16 (reviewer READY in round 1, Minors only; owner reviewed and approved the commit — rule 5: an admin support session sees no message text and the chat / inbox channels refuse it)
 - [x] P4.2 Chat part 2: typing, history, extras (M07) — 2026-10-16 (reviewer READY in round 2 after 2 Majors fixed: the digest job re-read every member with old unread messages (now SQL-filtered, fixed query count), decisions not recorded; owner confirmed both decisions in decisions.md)
-- [ ] P4.3a Content safety, flags, report from chat, freeze, flagged queue (A13 + M09 report)
+- [x] P4.3a Content safety, flags, report from chat, freeze, flagged queue (A13 + M09 report) — 2026-10-18 (committed by the owner in bd6fbc8 after reviewer round 1; confirming review NOT READY with 2 Majors fixed: a moderator's freeze on a report-frozen thread was later undone, two simultaneous reports could miss the auto-freeze (profile-row locks); round 2 READY, Dusk freeze 1.1–1.6 s + live badge)
 - [ ] P4.3b Chat overview, break-glass, signals, rules editor (A13)
 
 ## Phase 5 — Money
@@ -103,6 +103,9 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - P4.3a → P9.4: no claim / lock on a flag review (two moderators can open the same flag; the second decision is refused
   409); the A13 queue count is one query per `.queue.count` refresh; ReportChatMessages counts distinct reporters on each
   report (indexed); `chat.max_per_minute` still applies before ContentSafety's repetition query.
+- P4.3a review round 2 Minors → P9.4: ChatFreezer::unfreezeReportFrozen reads the OTHER member's report count without a lock
+  (a dismissal racing that member's 3rd report can reopen their shared thread); the report / decision transactions have a single
+  attempt on a deadlock (an error toast, clean rollback) — consider `DB::transaction(…, 3)`.
 - P4.3a → P9.3: admin chat screens and the report dialog at 320 / 768 / 1024 / 1440 px (checked: thread 375 px, admin 1280).
 - P4.2 → P9.4: Reverb client-event rate limiting (`config/reverb.php`, off by default) for typing whispers (§9.8);
   `ThreadWindow::MAX` (600) — "load earlier" stops working after ~20 pages and each refresh re-reads the window; the image

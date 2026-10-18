@@ -19,7 +19,9 @@ use Illuminate\Validation\ValidationException;
  * Freeze a chat thread, or open a frozen one again (R-M07-5, PRD A13) — e.g. after reviewing a
  * thread frozen automatically by reports. Needs `chat.freeze` and a typed reason (5 – 500);
  * audited ("chat.frozen" / "chat.unfrozen"). Both members' screens follow live
- * (ConversationFrozen). Nothing changes when the thread is already in that state (or CLOSED).
+ * (ConversationFrozen). Freezing a thread frozen automatically after reports makes it the
+ * moderator's freeze (dismissing the reports never opens it then). Nothing changes when the thread is
+ * already in that state (or CLOSED).
  */
 final class SetConversationFrozen
 {
@@ -43,12 +45,12 @@ final class SetConversationFrozen
 
         return DB::transaction(function () use ($admin, $thread, $frozen, $reason): bool {
             $locked = Conversation::query()->whereKey($thread->id)->lockForUpdate()->firstOrFail();
-            $before = $locked->status->value;
+            $before = ['status' => $locked->status->value, 'frozen_reason' => $locked->frozen_reason?->value];
 
             $changed = $frozen ? $this->freezer->freeze($locked, FreezeReason::Moderation) : $this->freezer->unfreeze($locked);
             if ($changed) {
                 $this->audit->record($frozen ? 'chat.frozen' : 'chat.unfrozen', $locked,
-                    ['status' => $before], ['status' => $locked->status->value], reason: $reason, actor: $admin);
+                    $before, ['status' => $locked->status->value, 'frozen_reason' => $locked->frozen_reason?->value], reason: $reason, actor: $admin);
             }
 
             return $changed;

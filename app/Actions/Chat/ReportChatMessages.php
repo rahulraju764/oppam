@@ -105,8 +105,11 @@ final class ReportChatMessages
         $this->limiter->hit($key, 3600);
 
         return DB::transaction(function () use ($me, $other, $thread, $data, $details, $messages): Report {
-            // One open chat report per pair, decided under a lock on the reporter's profile row.
-            Profile::query()->whereKey($me->id)->lockForUpdate()->first();
+            // Both profile rows, in id order (two members reporting each other can't deadlock): the
+            // reporter's lock keeps one open chat report per pair; the REPORTED member's lock serialises
+            // every report about them, so two reports arriving together can't both count one too few
+            // and miss the automatic freeze (DecideMessageFlag takes the same lock before it re-counts).
+            Profile::query()->whereKey([$me->id, $other->id])->orderBy('id')->lockForUpdate()->get(['id']);
             if (Report::query()->where('reporter_profile_id', $me->id)->where('reported_profile_id', $other->id)
                 ->where('source', ReportSource::Chat->value)->where('status', ReportStatus::Open->value)->exists()) {
                 throw ReportRefused::alreadyReported();

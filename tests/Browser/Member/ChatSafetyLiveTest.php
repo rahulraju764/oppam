@@ -73,7 +73,10 @@ it('A13: a message flagged as it is sent raises the admin\'s "Flagged messages" 
 
         $browser->resize(1280, 900)->visit(adminDuskUrl('/chat/flags'))
             ->waitForText('Flagged messages')
-            ->waitUsing(15, 100, fn (): bool => (bool) $browser->script("return window.Alpine?.store('adminLive')?.status === 'up';")[0]);
+            ->waitUsing(15, 100, fn (): bool => (bool) $browser->script("return window.Alpine?.store('adminLive')?.status === 'up';")[0])
+            // The socket being up isn't enough: a count sent before the channel subscription lands is missed.
+            ->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+                "return window.Echo?.connector?.channels?.['private-admin.queues']?.subscription?.subscribed === true;")[0]);
         $before = $number();
 
         chatSend($groom->refresh(), $bride->refresh(), 'call me on 98470 12345');   // masked + flagged; the worker broadcasts the count
