@@ -37,6 +37,13 @@ enum SettingKey: string
     case ChatImageMaxMb = 'chat.image_max_mb';
     case ChatRetentionDays = 'chat.retention_days';
     case ChatDigestDelayMinutes = 'chat.digest_delay_minutes';
+    case ChatSafetyFirstMessages = 'chat.safety_first_messages';
+    case ChatSpamRepeatThreads = 'chat.spam_repeat_threads';
+    case ChatSpamRepeatWindowMinutes = 'chat.spam_repeat_window_minutes';
+    case ChatSpamRepeatMinLength = 'chat.spam_repeat_min_length';
+    case ChatAutoFreezeReports = 'chat.auto_freeze_reports';
+    case ChatAutoFreezeWindowDays = 'chat.auto_freeze_window_days';
+    case ChatReportsMaxPerHour = 'chat.reports_max_per_hour';
     case DailyMatchCount = 'matching.daily_match_count';
     case PhotosMaxAdditional = 'photos.max_additional';
     case PhotosMaxUploadMb = 'photos.max_upload_mb';
@@ -93,6 +100,13 @@ enum SettingKey: string
             self::ChatImageMaxMb => 5,              // M07: image messages (paid plans)
             self::ChatRetentionDays => 730,         // R-M07-6: a thread is deleted this long after its last activity
             self::ChatDigestDelayMinutes => 10,     // M07 / M08: offline this long with unread messages → one email digest
+            self::ChatSafetyFirstMessages => 10,    // R-M07-4 / A13: contact details and links are masked in a thread's first messages
+            self::ChatSpamRepeatThreads => 3,       // A13: the same text into this many different threads …
+            self::ChatSpamRepeatWindowMinutes => 60, // … within this window = a repeated-message (spam) flag
+            self::ChatSpamRepeatMinLength => 20,    // shorter texts ("hi", "good morning") are never counted as repeats
+            self::ChatAutoFreezeReports => 3,       // M09: reported from chat by this many different members …
+            self::ChatAutoFreezeWindowDays => 30,   // … within this window → the sender's threads freeze pending review (decisions 2026-10-16)
+            self::ChatReportsMaxPerHour => 5,       // M09 / rule 10: chat reports per member per hour
             self::DailyMatchCount => 10,
             self::PhotosMaxAdditional => 9,
             self::PhotosMaxUploadMb => 8,
@@ -143,6 +157,13 @@ enum SettingKey: string
             self::ChatImageMaxMb => ['required', 'integer', 'min:1', 'max:10'],
             self::ChatRetentionDays => ['required', 'integer', 'min:180', 'max:3650'],
             self::ChatDigestDelayMinutes => ['required', 'integer', 'min:5', 'max:240'],
+            self::ChatSafetyFirstMessages => ['required', 'integer', 'min:0', 'max:100'],
+            self::ChatSpamRepeatThreads => ['required', 'integer', 'min:2', 'max:50'],
+            self::ChatSpamRepeatWindowMinutes => ['required', 'integer', 'min:5', 'max:1440'],
+            self::ChatSpamRepeatMinLength => ['required', 'integer', 'min:5', 'max:500'],
+            self::ChatAutoFreezeReports => ['required', 'integer', 'min:2', 'max:20'],
+            self::ChatAutoFreezeWindowDays => ['required', 'integer', 'min:1', 'max:365'],
+            self::ChatReportsMaxPerHour => ['required', 'integer', 'min:1', 'max:50'],
             self::DailyMatchCount => ['required', 'integer', 'min:1', 'max:50'],
             self::PhotosMaxAdditional => ['required', 'integer', 'min:0', 'max:20'],
             self::PhotosMaxUploadMb => ['required', 'integer', 'min:1', 'max:20'],

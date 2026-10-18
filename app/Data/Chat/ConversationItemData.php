@@ -24,6 +24,7 @@ final readonly class ConversationItemData
         public int $unread,
         public bool $archived,
         public bool $frozen,
+        public bool $muted = false,
     ) {}
 
     /** "10:24" today, "Yesterday", the weekday this week, else "12 Oct" (template list times). */

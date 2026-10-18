@@ -52,7 +52,7 @@ final class InboxSignals
                 profileId: $profileId,
                 withCode: $other->code,
                 name: $other->first_name,
-                preview: $last !== null ? MessageText::preview($last->type, $last->body, $last->deleted_for_all_at !== null) : '',
+                preview: $last !== null ? MessageText::preview($last->type, $last->body, $last->deleted_for_all_at !== null, $last->removed_by_admin_at !== null) : '',
                 at: $thread->last_message_at?->toIso8601String(),
                 unread: $mine->unread_count,
                 totalUnread: $this->unread->total($me),

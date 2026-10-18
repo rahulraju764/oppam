@@ -60,3 +60,20 @@ function chatImpersonate(User $member): void
     session([Impersonation::SESSION_KEY => $running->id]);
     app(Impersonation::class)->forget();
 }
+
+/**
+ * Another connected pair on their own phone numbers (P4.3a: one sender in many threads, many
+ * reporters). The first member sends the interest, the second accepts.
+ *
+ * @return array{0: User, 1: User, 2: Conversation}
+ */
+function chatPairOf(User $first, User $second, ?PlanCode $firstPlan = PlanCode::Gold): array
+{
+    app(SendInterest::class)->handle($first, $second->profile, 'T01');
+    $thread = app(AcceptInterest::class)->handle($second, $first->profile);
+    if ($firstPlan !== null) {
+        chatOnPlan($first, $firstPlan);
+    }
+
+    return [$first->refresh(), $second->refresh(), $thread->refresh()];
+}

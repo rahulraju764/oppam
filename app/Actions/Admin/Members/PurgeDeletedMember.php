@@ -25,6 +25,7 @@ use App\Models\Like;
 use App\Models\LoginEvent;
 use App\Models\MatchScore;
 use App\Models\Media;
+use App\Models\MessageFlag;
 use App\Models\ModerationItem;
 use App\Models\NotificationPreference;
 use App\Models\OtpChallenge;
@@ -32,6 +33,7 @@ use App\Models\PartnerPreference;
 use App\Models\PrivacySetting;
 use App\Models\Profile;
 use App\Models\ProfileView;
+use App\Models\Report;
 use App\Models\SavedSearch;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
@@ -48,7 +50,8 @@ use Illuminate\Support\Str;
  * phone, email, password, names (to "Deleted Member"), date of birth (to 1 January of the same
  * year), about text, contact / family / partner / career / horoscope / lifestyle / privacy rows,
  * photos and the horoscope file, sign-in history, OTP challenges, sessions, profile and contact
- * views, likes, favourites, interests and photo / horoscope requests (both directions), in-app notifications (theirs, and others' that
+ * views, likes, favourites, interests and photo / horoscope requests (both directions), chat reports about them (reports they filed stay,
+ * without their text) and the excerpts of their flagged messages, in-app notifications (theirs, and others' that
  * name them), and held moderation text. Chat threads (R-M07-6) stay for the other member — they read "Deleted Member" —
  * until that member is purged too; then the thread and its messages are deleted. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
  * subscriptions, orders (P5) and audit rows keep pointing at something. Idempotent: an
@@ -170,6 +173,14 @@ final class PurgeDeletedMember
                 ->pluck('conversation_participants.conversation_id')->all();
             PruneChatHistory::deleteThreads(array_values(array_map('strval', $bothGone)));   // image files too (P4.2)
         }
+
+        // Chat safety (P4.3a): reports the member FILED stay — they are the evidence on someone else (a
+        // harassed member often deletes their account) and point at this tombstone; only the text they
+        // typed goes. Reports ABOUT the member go (their REPORT flags with them, cascade). The masked /
+        // matched excerpts of the member's own flagged messages are wiped.
+        Report::query()->where('reporter_profile_id', $profile->id)->whereNotNull('details')->update(['details' => null]);
+        Report::query()->where('reported_profile_id', $profile->id)->delete();
+        MessageFlag::query()->where('sender_profile_id', $profile->id)->whereNotNull('excerpt')->update(['excerpt' => null]);
 
         ModerationItem::query()->where('profile_id', $profile->id)->update(['fields' => null, 'reason_note' => null]);
 

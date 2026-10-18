@@ -32,7 +32,7 @@ final class ChatImageController extends Controller
         $file = $row?->getFirstMedia(Message::IMAGE);
 
         if ($me === null || $row === null || $thread === null || $file === null || $row->type !== MessageType::Image
-            || $row->deleted_for_all_at !== null || ! $access->canRead($me, $thread)) {
+            || $row->isGone() || ! $access->canRead($me, $thread)) {
             abort(404);
         }
 

@@ -77,7 +77,7 @@ final class UnsendMessage
     /** Whether this member may still unsend this message now (for the bubble's menu). */
     public static function allowed(Message $message, Profile $me): bool
     {
-        return $message->sender_profile_id === $me->id && $message->deleted_for_all_at === null
+        return $message->sender_profile_id === $me->id && ! $message->isGone()
             && $message->type !== MessageType::System && $message->created_at !== null
             && $message->created_at->gte(now()->subMinutes(Settings::int(SettingKey::ChatUnsendWindowMinutes)));
     }

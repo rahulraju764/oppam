@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\ChatFlagImageController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
 use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
+use App\Livewire\Admin\Chat\FlaggedQueue;
+use App\Livewire\Admin\Chat\FlagReview;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\Masters\Index as MastersIndex;
 use App\Livewire\Admin\Masters\ListEditor as MastersListEditor;
@@ -72,6 +75,14 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/photos', PhotoQueueGrid::class)->name('photos');
         Route::get('/edits', EditedFieldsQueue::class)->name('edits');
         Route::get('/escalations', Escalations::class)->name('escalations');
+    });
+
+    // Chat safety (A13). Viewing needs chat.view_flagged; every decision re-checks its own permission.
+    Route::middleware('can:chat.view_flagged')->prefix('chat')->name('chat.')->group(function (): void {
+        Route::get('/flags', FlaggedQueue::class)->name('flags');
+        Route::get('/flags/{flag}', FlagReview::class)->where('flag', '[0-9A-Za-z]{26}')->name('flags.review');
+        // The flagged photo only, after this admin's audited reveal (FlagReview).
+        Route::get('/flags/{flag}/image', ChatFlagImageController::class)->where('flag', '[0-9A-Za-z]{26}')->name('flags.image');
     });
 });
 

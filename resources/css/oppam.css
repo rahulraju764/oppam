@@ -562,3 +562,10 @@ body.search-sheet-open .mobile-footer { display: none; }
 .msg-emoji { position: absolute; bottom: 100%; left: 0; z-index: var(--z-raised); display: grid; grid-template-columns: repeat(8, var(--tap-compact)); gap: var(--space-1); max-width: 100%; margin-bottom: var(--space-2); padding: var(--space-2); border: var(--border-hair); border-radius: var(--radius-md); background: var(--color-default); box-shadow: var(--shadow-md); }
 .msg-emoji-btn { width: var(--tap-compact); height: var(--tap-compact); border: 0; border-radius: var(--radius-sm); background: none; font-size: var(--text-lg); cursor: pointer; }
 .msg-emoji-btn:hover { background: var(--bg-mist); }
+
+/* ---- Chat safety (P4.3a, M09): the report dialog's message list ---- */
+.msg-report-messages { min-width: 0; margin: 0; padding: 0; border: 0; }
+.msg-report-option { padding: var(--space-2) var(--space-2) var(--space-2) var(--space-7); border-bottom: var(--border-hair); }
+.msg-report-option .form-check-label { overflow-wrap: anywhere; }
+.msg-report-time { display: block; color: var(--color-gr-dark); font-size: var(--text-xs); }
+.msg-thread-muted { margin-left: var(--space-1); color: var(--color-gr-dark); font-size: var(--text-xs); }

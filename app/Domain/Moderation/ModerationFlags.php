@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\Moderation;
 
 use App\Data\Moderation\ModerationFlag;
-use App\Domain\Masters\MasterLists;
 use App\Enums\Gender;
 use App\Enums\SettingKey;
 use App\Models\Media;
 use App\Models\Profile;
-use App\Services\Masters\Masters;
 use App\Services\Settings\SettingsRepository;
 
 /**
@@ -29,7 +27,7 @@ final class ModerationFlags
 
     public function __construct(
         private readonly SettingsRepository $settings,
-        private readonly Masters $masters,
+        private readonly ProfanityMatcher $profanity,
     ) {}
 
     /**
@@ -73,7 +71,7 @@ final class ModerationFlags
                 $flags[] = new ModerationFlag('contact_info', __('Possible contact details in :field.', ['field' => $label]));
             }
 
-            $word = $this->profanity($text);
+            $word = $this->profanity->firstMatch($text);
             if ($word !== null) {
                 $flags[] = new ModerationFlag('profanity', __('Possible abusive word in :field.', ['field' => $label]));
             }
@@ -140,22 +138,5 @@ final class ModerationFlags
             ->value('code');
 
         return is_string($code) ? $code : null;
-    }
-
-    private function profanity(string $text): ?string
-    {
-        $lower = mb_strtolower($text);
-
-        // The A11 word lists (active words only, cached by Masters, flushed on every edit).
-        foreach (array_keys(MasterLists::WORD_LISTS) as $group) {
-            foreach (array_map(fn ($item): string => $item->label, $this->masters->options($group)) as $word) {
-                // Whole words only (Unicode-aware), so "Scunthorpe"-style substrings don't trip it.
-                if (preg_match('/(?<![\p{L}\p{M}])'.preg_quote(mb_strtolower($word), '/').'(?![\p{L}\p{M}])/u', $lower) === 1) {
-                    return $word;
-                }
-            }
-        }
-
-        return null;
     }
 }

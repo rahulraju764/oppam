@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions\Chat;
 
+use App\Contracts\ContentSafety;
 use App\Domain\Chat\ChatAccess;
+use App\Domain\Chat\FlagQueue;
 use App\Domain\Chat\InboxSignals;
 use App\Enums\MessageType;
 use App\Enums\SettingKey;
@@ -43,8 +45,11 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * The decision is taken again under a lock on the thread row, so two tabs can't both spend the
  * one free reply. In one transaction: the message, the thread's last message, the recipient's
  * unread count (and their archive is undone: a new message is never hidden). After commit:
- * MessageSent on the thread, ConversationUpdated to both inboxes. Content safety (masking contact
- * details, profanity) plugs in here in P4.3. Never while an admin is impersonating the member.
+ * MessageSent on the thread, ConversationUpdated to both inboxes. A TEXT message is scanned first
+ * (ContentSafety, PRD A13): in the thread's first `chat.safety_first_messages` messages contact details,
+ * links and UPI ids are masked — the stored and broadcast text is the masked one — and every finding
+ * puts the message in the A13 flagged queue (FlagQueue). Nothing is ever dropped. Never while an admin
+ * is impersonating the member.
  */
 final class SendMessage
 {
@@ -57,6 +62,8 @@ final class SendMessage
         private readonly Impersonation $impersonation,
         private readonly RateLimiter $limiter,
         private readonly ImageSanitizer $sanitizer,
+        private readonly ContentSafety $safety,
+        private readonly FlagQueue $flags,
     ) {}
 
     /**
@@ -170,13 +177,23 @@ final class SendMessage
                 throw ChatRefused::because($state);
             }
 
+            $scan = $type === MessageType::Text && $body !== null
+                ? $this->safety->scan($body, $me->id, $locked->id, $this->early($locked))
+                : null;
+            $body = $scan === null ? $body : $scan->body;
+
             $message = new Message;
             $message->conversation_id = $locked->id;
             $message->sender_profile_id = $me->id;
             $message->client_id = $clientId;
             $message->type = $type;
             $message->body = $body;
+            $message->body_hash = $scan?->bodyHash;
             $message->save();
+
+            if ($scan !== null) {
+                $this->flags->flagAutomatically($message, $scan->findings);
+            }
 
             if ($imagePath !== null) {
                 $message->addMedia($imagePath)->preservingOriginal()->usingName('chat-image')
@@ -207,6 +224,16 @@ final class SendMessage
 
             return $message;
         });
+    }
+
+    /** Whether the next message is among the thread's first `chat.safety_first_messages` (both members). */
+    private function early(Conversation $thread): bool
+    {
+        $limit = Settings::int(SettingKey::ChatSafetyFirstMessages);
+
+        // Reads at most $limit ids (index conversation_id, id) — never a count over a long thread.
+        return $limit > 0 && DB::query()->fromSub(Message::query()->select('id')->where('conversation_id', $thread->id)
+            ->where('type', '!=', MessageType::System->value)->orderBy('id')->limit($limit), 'first_messages')->count() < $limit;
     }
 
     /** The member's own message with this client id in this thread (a retry / double click). */

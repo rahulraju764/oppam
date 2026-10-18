@@ -40,7 +40,7 @@
 
                     <span class="msg-thread-body">
                         <span class="msg-thread-top">
-                            <strong class="msg-thread-name">{{ $item->name }}</strong>
+                            <strong class="msg-thread-name">{{ $item->name }}@if ($item->muted) <i class="fa fa-bell-slash msg-thread-muted" aria-hidden="true"></i><span class="visually-hidden">{{ __('(muted)') }}</span>@endif</strong>
                             <span class="msg-thread-time">{{ $item->timeLabel() }}</span>
                         </span>
                         <span class="msg-thread-last">

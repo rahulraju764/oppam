@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Member\Chat;
 
 use App\Actions\Chat\MarkConversationRead;
+use App\Actions\Chat\ReportChatMessages;
 use App\Actions\Chat\SendIcebreaker;
 use App\Actions\Chat\SendMessage;
 use App\Actions\Chat\SetConversationMuted;
@@ -16,9 +17,11 @@ use App\Domain\Chat\ReadReceipts;
 use App\Domain\Media\PhotoUrls;
 use App\Domain\Profile\ProfileNames;
 use App\Enums\ChatSendState;
+use App\Enums\ReportReason;
 use App\Enums\SettingKey;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Chat\ChatRefused;
+use App\Exceptions\Safety\ReportRefused;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Profile;
@@ -44,7 +47,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * refusal marks the bubble "not sent" with Retry (same client id — never stored twice). Own
  * messages can be unsent within the window. Live on `chat.{conversation}`: new / delivered / read /
  * deleted messages re-read; a message from the other member while the tab is in view marks it read.
- * The composer is locked with the reason when ChatAccess says the member may not write.
+ * The composer is locked with the reason when ChatAccess says the member may not write; a freeze
+ * (`.conversation.frozen`, R-M07-5) re-reads it live. Report (M09): the member picks a reason and
+ * some of the other member's messages on screen; ReportChatMessages checks every id again.
  * Admin support session: no message text at all (R-M07-6), nothing sent, read, unsent or muted.
  */
 final class Thread extends Component
@@ -57,6 +62,14 @@ final class Thread extends Component
     /** Id cursor: the oldest message on screen (null until the first render). */
     #[Locked]
     public ?string $fromId = null;
+
+    /** The report dialog (M09): reason, optional details, the other member's message ids picked. */
+    public string $reportReason = '';
+
+    public string $reportDetails = '';
+
+    /** @var list<string> */
+    public array $reportMessages = [];
 
     /** The photo being sent (Livewire temporary upload); validated by SendMessage::image(). */
     public ?TemporaryUploadedFile $photo = null;
@@ -89,6 +102,7 @@ final class Thread extends Component
             $channel.',.message.delivered' => '$refresh',
             $channel.',.message.read' => '$refresh',
             $channel.',.message.deleted' => '$refresh',
+            $channel.',.conversation.frozen' => '$refresh',   // R-M07-5: the composer locks / unlocks live
             'realtime-reconnected' => '$refresh',   // back-fill: the window re-reads everything newer
         ];
     }
@@ -124,7 +138,12 @@ final class Thread extends Component
 
     public function send(string $clientId, string $body, SendMessage $send): void
     {
-        $this->attempt($clientId, fn () => $send->handle($this->member(), $this->other(), $body, $clientId));
+        $this->attempt($clientId, function () use ($send, $body, $clientId): void {
+            $message = $send->handle($this->member(), $this->other(), $body, $clientId);
+            if ($message->body !== trim($body)) {   // ContentSafety masked something (first messages)
+                $this->dispatch('toast', type: 'info', title: __('To keep you safe, phone numbers, emails and links are hidden in your first messages.'));
+            }
+        });
     }
 
     public function sendImage(string $clientId, SendMessage $send): void
@@ -166,6 +185,22 @@ final class Thread extends Component
         $this->dispatch('chat-inbox-changed');
     }
 
+    public function report(ReportChatMessages $report): void
+    {
+        try {
+            $report->handle($this->member(), $this->other(), $this->reportReason, $this->reportDetails,
+                array_values(array_filter($this->reportMessages, 'is_string')));
+        } catch (ReportRefused|ImpersonationRestricted $refused) {
+            $this->dispatch('toast', type: 'danger', title: $refused->getMessage());
+
+            return;
+        }
+
+        $this->reset('reportReason', 'reportDetails', 'reportMessages');
+        $this->dispatch('close-modal', name: 'report-chat');
+        $this->dispatch('toast', type: 'success', title: __('Thank you for telling us. Our safety team will review it — :name won’t be told who reported.', ['name' => $this->other()->first_name]));
+    }
+
     public function render(ChatAccess $access, ThreadWindow $window, ReadReceipts $receipts, ProfileNames $names, PhotoUrls $photos, SendIcebreaker $icebreakers, LastSeen $lastSeen): View
     {
         $thread = $this->thread();
@@ -198,6 +233,11 @@ final class Thread extends Component
             'maxLength' => Settings::int(SettingKey::ChatMaxLength),
             'imageMaxMb' => Settings::int(SettingKey::ChatImageMaxMb),
             'plansUrl' => route('plans'),
+            // The report dialog lists the other member's messages on screen (newest last, at most 20).
+            'reportable' => $support ? [] : collect($page['messages'])
+                ->filter(fn ($message): bool => ! $message->mine && ! $message->system && ! $message->deleted)
+                ->take(-20)->values()->all(),
+            'reportReasons' => ReportReason::options(),
         ]);
     }
 

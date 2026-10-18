@@ -19,7 +19,8 @@ use Livewire\Component;
  * The admin dashboard (PRD A02). For admins with `dashboard.view`: the alert strip, the KPI row
  * (from `metric_snapshots` — never a live aggregate — with a 30-day change, a definition and the
  * "as of" time; "online now" from the WebSocket server), three charts and the recent activity
- * feed (`audit.view`). Work-queue cards (count + oldest item) for admins with `moderation.view`.
+ * feed (`audit.view`). Work-queue cards (count + oldest item): the A04 queues with `moderation.view`,
+ * flagged chat messages with `chat.view_flagged` (A13).
  * Everyone else gets a welcome. Live: a queue count change (`admin.queues`) re-reads the page;
  * a KPI tick (`admin.dashboard`) changes its tile in the browser, without a query.
  * Only data that exists is shown — each later module adds its own tile, chart and card.
@@ -33,7 +34,7 @@ final class Dashboard extends Component
     public function getListeners(): array
     {
         // Subscribe only to what this admin may join — Echo would otherwise report a refused channel.
-        return $this->admin()->can('moderation.view')
+        return $this->admin()->can('moderation.view') || $this->admin()->can('chat.view_flagged')
             ? ['echo-private:admin.queues,.queue.count' => '$refresh']
             : [];
     }

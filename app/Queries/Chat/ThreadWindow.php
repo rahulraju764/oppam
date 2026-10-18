@@ -36,7 +36,7 @@ final class ThreadWindow
             ->with('media')
             ->when($fromId !== null, fn ($q) => $q->where('id', '>=', $fromId))
             ->orderByDesc('id')->limit($fromId === null ? self::PER_PAGE : self::MAX)
-            ->select(['id', 'conversation_id', 'client_id', 'sender_profile_id', 'type', 'body', 'delivered_at', 'read_at', 'deleted_for_all_at', 'created_at']);
+            ->select(['id', 'conversation_id', 'client_id', 'sender_profile_id', 'type', 'body', 'delivered_at', 'read_at', 'deleted_for_all_at', 'removed_by_admin_at', 'created_at']);
 
         /** @var Collection<int, Message> $rows */
         $rows = $query->get()->reverse()->values();
@@ -62,7 +62,7 @@ final class ThreadWindow
     private function data(Message $message, Profile $me, bool $blueTicks): MessageData
     {
         $mine = $message->sender_profile_id === $me->id;
-        $deleted = $message->deleted_for_all_at !== null;
+        $deleted = $message->isGone();
         $image = $message->type === MessageType::Image && ! $deleted && $message->media->isNotEmpty();
 
         return new MessageData(
@@ -70,7 +70,7 @@ final class ThreadWindow
             clientId: $message->client_id,
             mine: $mine,
             system: $message->type === MessageType::System,
-            text: MessageText::display($message->type, $message->body, $deleted),
+            text: MessageText::display($message->type, $message->body, $deleted, $message->removed_by_admin_at !== null),
             at: CarbonImmutable::parse($message->created_at ?? 'now')->setTimezone((string) config('oppam.display_timezone')),
             tick: $mine ? match (true) {
                 $message->read_at !== null && $blueTicks => MessageData::READ,

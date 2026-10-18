@@ -35,6 +35,10 @@
                         aria-pressed="{{ $muted ? 'true' : 'false' }}" aria-label="{{ $muted ? __('Unmute this conversation') : __('Mute this conversation') }}">
                     <i @class(['fa', 'fa-bell-slash' => $muted, 'fa-bell-o' => ! $muted]) aria-hidden="true"></i>
                 </button>
+                <button type="button" class="msg-icon-btn" x-on:click="$dispatch('open-modal', { name: 'report-chat' })"
+                        aria-label="{{ __('Report :name', ['name' => $firstName]) }}" title="{{ __('Report') }}">
+                    <i class="fa fa-flag-o" aria-hidden="true"></i>
+                </button>
             @endunless
             @if ($profileUrl)
                 <a href="{{ $profileUrl }}" class="msg-panel-view" wire:navigate>{{ __('View profile') }}</a>
@@ -190,4 +194,43 @@
             @endif
         </div>
     @endif
+
+    {{-- REPORT (M09): a reason and the messages that show the problem; the other member is never told. --}}
+    @unless ($support)
+        <x-ui.modal name="report-chat" :title="__('Report :name', ['name' => $firstName])">
+            <form wire:submit="report" id="reportChatForm" novalidate>
+                <x-ui.select :label="__('What is wrong?')" name="reportReason" id="reportReason" wire:model="reportReason"
+                             :options="$reportReasons" :placeholder="__('Choose a reason')" error="reason" required />
+
+                <fieldset class="msg-report-messages mt-3" aria-describedby="reportMessagesHint">
+                    <legend class="form-label">{{ __('Messages to include') }}</legend>
+                    <p class="form-text" id="reportMessagesHint">{{ __('Choose up to :count of :name’s messages. Our team sees only these and the few around them.', ['count' => \App\Actions\Chat\ReportChatMessages::MAX_MESSAGES, 'name' => $firstName]) }}</p>
+                    @forelse ($reportable as $message)
+                        <div class="form-check msg-report-option" wire:key="report-{{ $message->id }}">
+                            <input class="form-check-input" type="checkbox" name="reportMessages[]" id="report-{{ $message->id }}"
+                                   value="{{ $message->id }}" wire:model="reportMessages">
+                            <label class="form-check-label" for="report-{{ $message->id }}">
+                                <span class="msg-report-time">{{ $message->at->format('d M, H:i') }}</span>
+                                {{ \Illuminate\Support\Str::limit($message->text, 140) }}
+                            </label>
+                        </div>
+                    @empty
+                        <p class="form-text">{{ __(':name hasn’t written anything you can report yet.', ['name' => $firstName]) }}</p>
+                    @endforelse
+                    @error('messages')<p class="invalid-feedback d-block" role="alert">{{ $message }}</p>@enderror
+                    @error('messages.*')<p class="invalid-feedback d-block" role="alert">{{ $message }}</p>@enderror
+                </fieldset>
+
+                <div class="mt-3">
+                    <x-ui.textarea :label="__('Anything else we should know? (optional)')" name="reportDetails" id="reportDetails"
+                                   wire:model="reportDetails" error="details" rows="3" maxlength="500" />
+                </div>
+            </form>
+
+            <x-slot:footer>
+                <x-ui.button variant="ghost" type="button" x-on:click="open = false">{{ __('Cancel') }}</x-ui.button>
+                <x-ui.button variant="danger" type="submit" form="reportChatForm" loading="report" :disabled="$reportable === []">{{ __('Send report') }}</x-ui.button>
+            </x-slot:footer>
+        </x-ui.modal>
+    @endunless
 </div>

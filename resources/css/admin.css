@@ -405,3 +405,15 @@ tr[draggable="true"] { cursor: grab; }
 }
 
 .admin-nav-link.active .admin-nav-badge { background: var(--color-default); color: var(--color-primary-dark); }
+
+/* ---- Chat safety (A13) -------------------------------------------------------------------- */
+.admin-decisions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* The flagged message with its ±3 neighbours — the only part of a conversation a moderator sees. */
+.admin-chat-context { display: grid; gap: var(--space-2); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+.admin-chat-context__item { padding: var(--space-2) var(--space-3); border: var(--border-hair); border-radius: var(--radius-md); background: var(--color-default); }
+.admin-chat-context__item.is-flagged { border-color: var(--color-warning); background: var(--bg-warning); }
+.admin-chat-context__item.is-gone .admin-chat-context__text { color: var(--color-gr-dark); font-style: italic; }
+.admin-chat-context__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--color-gr-dark); font-size: var(--text-xs); }
+.admin-chat-context__text { display: block; margin-top: var(--space-1); overflow-wrap: anywhere; white-space: pre-line; }
+.admin-chat-context__img { display: block; max-width: 100%; height: auto; margin-top: var(--space-2); border-radius: var(--radius-xs); }

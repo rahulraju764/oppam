@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\ContentSafety;
 use App\Contracts\PresenceCounter;
 use App\Contracts\SmsGateway;
 use App\Domain\Billing\UsagePeriodResolver;
@@ -32,6 +33,7 @@ use App\Observers\MasterDataObserver;
 use App\Observers\NewMemberTickObserver;
 use App\Queries\Admin\WorkQueues;
 use App\Services\Admin\Impersonation;
+use App\Services\Chat\RuleBasedContentSafety;
 use App\Services\Entitlements\EntitlementService;
 use App\Services\Realtime\BroadcastPresenceCounter;
 use App\Services\Settings\FeatureFlags;
@@ -81,6 +83,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
 
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
+        $this->app->bind(ContentSafety::class, RuleBasedContentSafety::class);         // M07 send flow / A13
 
         $this->app->singleton(SmsGateway::class, function (): SmsGateway {
             $driver = (string) config('oppam.sms.driver');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ConversationStatus;
+use App\Enums\FreezeReason;
 use Database\Factories\ConversationFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $last_message_id
  * @property \Illuminate\Support\Carbon|null $last_message_at
  * @property ConversationStatus $status
+ * @property \Illuminate\Support\Carbon|null $frozen_at
+ * @property FreezeReason|null $frozen_reason
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ConversationParticipant> $participants
  */
 final class Conversation extends Model
@@ -58,6 +61,8 @@ final class Conversation extends Model
         return [
             'status' => ConversationStatus::class,
             'last_message_at' => 'datetime',
+            'frozen_at' => 'datetime',
+            'frozen_reason' => FreezeReason::class,
         ];
     }
 }

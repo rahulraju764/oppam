@@ -70,12 +70,13 @@ final class InboxList
                 name: $this->names->forViewer($other, $viewer),
                 photoUrl: $photos[(string) $other->id] ?? PhotoUrls::PLACEHOLDER,
                 preview: $hidePreviews || $type === null ? null
-                    : MessageText::preview($type, $row->getAttribute('last_body'), $row->getAttribute('last_deleted_at') !== null),
+                    : MessageText::preview($type, $row->getAttribute('last_body'), $row->getAttribute('last_deleted_at') !== null, $row->getAttribute('last_removed_at') !== null),
                 lastFromMe: $row->getAttribute('last_sender') === $me->id,
                 at: $at === null ? null : CarbonImmutable::parse((string) $at, 'UTC')->setTimezone($timezone),
                 unread: (int) $row->getAttribute('unread_count'),
                 archived: (bool) $row->getAttribute('is_archived'),
                 frozen: $row->getAttribute('thread_status') !== ConversationStatus::Open->value,
+                muted: (bool) $row->getAttribute('is_muted'),
             );
         }
 
@@ -110,9 +111,9 @@ final class InboxList
                 ->orWhere('p.last_name', 'like', $term.'%')))
             ->orderByDesc('c.last_message_at')->orderByDesc('c.id')
             ->select([
-                'me.unread_count', 'me.is_archived', 'them.profile_id as other_id',
+                'me.unread_count', 'me.is_archived', 'me.is_muted', 'them.profile_id as other_id',
                 'c.status as thread_status', 'c.last_message_at',
-                'm.type as last_type', 'm.body as last_body', 'm.sender_profile_id as last_sender', 'm.deleted_for_all_at as last_deleted_at',
+                'm.type as last_type', 'm.body as last_body', 'm.sender_profile_id as last_sender', 'm.deleted_for_all_at as last_deleted_at', 'm.removed_by_admin_at as last_removed_at',
             ]);
     }
 }

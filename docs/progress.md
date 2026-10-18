@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 4 — Chat (Phase 3 complete, 2026-10-15)
-**Next session:** P4.3 — Content safety & chat moderation (A13)
+**Next session:** P4.3a — Content safety, flags, report from chat, freeze, flagged queue (A13)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -49,8 +49,9 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Phase 4 — Chat
 - [x] P4.1 Chat core: inbox, thread, send, receipts (M07) — 2026-10-16 (reviewer READY in round 1, Minors only; owner reviewed and approved the commit — rule 5: an admin support session sees no message text and the chat / inbox channels refuse it)
-- [x] P4.2 Chat part 2: typing, history, extras (M07) — 2026-10-16 (reviewer READY in round 2 after 2 Majors fixed: the digest job re-read every member with old unread messages (now SQL-filtered, fixed query count), decisions not recorded; two decisions in decisions.md still await owner confirmation)
-- [ ] P4.3 Content safety & chat moderation (A13)
+- [x] P4.2 Chat part 2: typing, history, extras (M07) — 2026-10-16 (reviewer READY in round 2 after 2 Majors fixed: the digest job re-read every member with old unread messages (now SQL-filtered, fixed query count), decisions not recorded; owner confirmed both decisions in decisions.md)
+- [ ] P4.3a Content safety, flags, report from chat, freeze, flagged queue (A13 + M09 report)
+- [ ] P4.3b Chat overview, break-glass, signals, rules editor (A13)
 
 ## Phase 5 — Money
 - [ ] P5.1 Plans, checkout & Razorpay (M10)
@@ -88,10 +89,21 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
-- P4.2 → owner: confirm the two decisions in docs/decisions.md (2026-10-16): images reviewed after delivery (reports + P4.3
-  flags), digest only to a verified email (none until P8.2).
-- P4.2 → P4.3: the inbox "muted" icon; image moderation / flags on IMAGE messages; whether images count as "files" in the
-  first 10 messages (R-M07-4).
+ - P4.3a → P4.3b: the rules editor (today the patterns are RuleBasedContentSafety constants; per-rule mask / flag / block and
+  a dry-run tester), Overview (metadata only), BreakGlass, Signals (REPETITION flags and like / interest spam →
+  engagement_signals with one-click actions). Images are never scanned automatically — a reported photo is reviewable
+  (admin flagged-photo route, after the audited reveal). Images in the first 10 messages stay allowed (decisions 2026-10-16).
+- P4.3a → P6.2: a block freezes the pair's thread through ChatFreezer (add FreezeReason::Block) — the live
+  ConversationFrozen already locks both composers (M07 acceptance "a blocked pair's thread becomes read-only live");
+  escalated flags become A10 cases; profile reports reuse the `reports` table (source PROFILE); a blocked pair can no longer
+  report from chat (ChatAccess hides the thread: 404) — "block, then report" needs the profile report path there.
+- P4.3a → P4.3b: the MONEY pattern is broad ("need … amount", "Rs 500", IFSC-shaped tokens) — measure the queue and tune it
+  in the rules editor; the freeze reached the composers in 0.7 – 1.8 s locally without OPcache (bound 2 s) — time it with
+  OPcache / in CI.
+- P4.3a → P9.4: no claim / lock on a flag review (two moderators can open the same flag; the second decision is refused
+  409); the A13 queue count is one query per `.queue.count` refresh; ReportChatMessages counts distinct reporters on each
+  report (indexed); `chat.max_per_minute` still applies before ContentSafety's repetition query.
+- P4.3a → P9.3: admin chat screens and the report dialog at 320 / 768 / 1024 / 1440 px (checked: thread 375 px, admin 1280).
 - P4.2 → P9.4: Reverb client-event rate limiting (`config/reverb.php`, off by default) for typing whispers (§9.8);
   `ThreadWindow::MAX` (600) — "load earlier" stops working after ~20 pages and each refresh re-reads the window; the image
   route's `throttle:120,1` on image-heavy threads; image file copy / delete inside the DB transaction (orphan file on a

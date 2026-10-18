@@ -25,6 +25,9 @@ return [
         ['admin.moderation.edits', 'Edited fields', 'fa-pencil-square-o', 'moderation.view'],
         ['admin.moderation.escalations', 'Escalations', 'fa-level-up', 'moderation.view'],
     ],
+    'Chat safety' => [
+        ['admin.chat.flags', 'Flagged messages', 'fa-flag', 'chat.view_flagged'],
+    ],
     'Verification' => [
         ['admin.verification.index', 'ID verification', 'fa-id-card-o', 'verification.queue.view'],
     ],
