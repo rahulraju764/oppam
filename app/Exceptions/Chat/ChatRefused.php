@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Exceptions\Chat;
 
 use App\Enums\ChatSendState;
+use App\Enums\SafetyRule;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -21,6 +22,10 @@ final class ChatRefused extends HttpException
     public const CANNOT_UNSEND = 'cannot_unsend';
 
     public const ICEBREAKER = 'icebreaker';
+
+    public const BLOCKED = 'blocked';
+
+    public const PAUSED = 'paused';
 
     private function __construct(public readonly string $reason, int $status, string $message)
     {
@@ -51,6 +56,18 @@ final class ChatRefused extends HttpException
     public static function icebreakerUnavailable(): self
     {
         return new self(self::ICEBREAKER, 409, __('Icebreakers are for your first message.'));
+    }
+
+    /** A13 rules editor: a BLOCK rule matched — nothing was stored; the member may edit and send again. */
+    public static function blocked(SafetyRule $rule): self
+    {
+        return new self(self::BLOCKED, 422, __('This message can’t be sent: :reason. Please edit it and try again.', ['reason' => $rule->refusal()]));
+    }
+
+    /** A13: a moderator paused everything this member sends (EngagementRestrictions). */
+    public static function paused(string $until): self
+    {
+        return new self(self::PAUSED, 403, __('Sending likes, interests and messages is paused on your account until :time after a safety review. If you think this is a mistake, please contact support.', ['time' => $until]));
     }
 
     /** `chat.max_per_minute` (30, PRD M07 send flow). */

@@ -6,124 +6,224 @@ namespace App\Services\Chat;
 
 use App\Contracts\ContentSafety;
 use App\Data\Chat\SafetyFindingData;
+use App\Data\Chat\SafetyHitData;
+use App\Data\Chat\SafetyRuleData;
 use App\Data\Chat\SafetyScanData;
+use App\Domain\Chat\ChatSafetyRules;
 use App\Domain\Moderation\ProfanityMatcher;
 use App\Enums\MessageFlagRule;
+use App\Enums\SafetyAction;
+use App\Enums\SafetyRule;
 use App\Enums\SettingKey;
 use App\Models\Message;
 use App\Support\Facades\Settings;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * The built-in chat rules (PRD M07 send flow, R-M07-4, A13). In a thread's first
- * `chat.safety_first_messages` messages (both members together):
- *  - phone numbers, email addresses and @handles → masked + CONTACT_INFO;
- *  - web addresses → masked + LINK;
- *  - UPI ids (name@bank) → masked + MONEY.
- * Later in the thread the members may share contacts; links and UPI ids are still flagged (not
- * masked). Always: money / bank requests (₹ amounts, "send money", IFSC, payment apps) → MONEY;
- * a word from the A11 abuse lists → PROFANITY; the same text (at least
+ * The chat rules (PRD M07 send flow, R-M07-4, A13), applied in SafetyRule order with each rule's
+ * action for the message's position — "early" = among the thread's first `chat.safety_first_messages`
+ * messages (both members together):
+ *  - MASK: every match replaced by the mask in the stored / shown text, and flagged;
+ *  - FLAG: the text is kept, the message goes to the A13 queue;
+ *  - BLOCK: the scan names the rule — SendMessage refuses the message (nothing stored);
+ *  - OFF: ignored.
+ * The defaults (SafetyRule) are the P4.3a behaviour; the A13 rules editor changes patterns and
+ * actions (ChatSafetyRules). Links and UPI ids are looked for with email addresses taken out.
+ * PROFANITY uses the A11 word lists; REPETITION = the same text (at least
  * `chat.spam_repeat_min_length` characters) sent by the member into `chat.spam_repeat_threads`
- * different threads within `chat.spam_repeat_window_minutes` → REPETITION.
- * The patterns become editable in the A13 rules editor (P4.3b).
+ * different threads within `chat.spam_repeat_window_minutes`.
+ * A pattern that fails at run time (PCRE error) never empties or drops a message: the text stays as
+ * typed, the message is flagged for that rule so a person looks at it, and the error is logged
+ * (rule key and PCRE error only — never the text).
  */
 final class RuleBasedContentSafety implements ContentSafety
 {
     public const MASK = '••••••';
 
-    private const EMAIL = '/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu';
-
-    /** name@bank (no dot after the @): a UPI id, not an email address. */
-    private const UPI = '/(?<![\w.@])[A-Z0-9._\-]{2,64}@[A-Z]{2,32}(?![\w.@])/iu';
-
-    /** 10 or more digits, with spaces / dots / dashes / brackets between them. */
-    private const PHONE = '/(?:\+?\d[\s.\-()]*){9,}\d/u';
-
-    /** An @handle (Instagram, Telegram …): an @ that starts a word. */
-    private const HANDLE = '/(?<![\w.@])@[A-Z0-9_.]{3,30}/iu';
-
-    private const URL = '/\b(?:https?:\/\/|www\.)\S+|\b[A-Z0-9\-]{2,}\.(?:com|in|net|org|me|ly|io|co|app|link|xyz|info|site|online)\b(?:\/\S*)?/iu';
-
-    private const MONEY = '/₹\s?\d|\b(?:rs\.?|inr)\s?\d|upi:\/\/|\b[A-Z]{4}0[A-Z0-9]{6}\b|\b(?:gift\s?cards?|western\s?union|bitcoin|crypto|paytm|g\s?pay|google\s?pay|phone\s?pe|bank\s+account|account\s+number|a\/c\s*(?:no|number))\b|\b(?:send|transfer|lend|borrow|need|give)\b[^.!?\n]{0,30}\b(?:money|cash|rupees|amount|loan|lakhs?)\b/iu';
-
-    public function __construct(private readonly ProfanityMatcher $profanity) {}
+    public function __construct(
+        private readonly ChatSafetyRules $rules,
+        private readonly ProfanityMatcher $profanity,
+    ) {}
 
     public function scan(string $body, string $senderProfileId, string $conversationId, bool $early): SafetyScanData
     {
-        $findings = [];
-        $text = $body;
-
-        if ($early) {
-            // Order matters: emails before UPI ids and handles (all contain "@").
-            [$text, $contacts] = $this->mask($text, [self::EMAIL, self::PHONE, self::HANDLE]);
-            [$text, $links] = $this->mask($text, [self::URL]);
-            [$text, $upi] = $this->mask($text, [self::UPI]);
-            $this->add($findings, MessageFlagRule::ContactInfo, $contacts);
-            $this->add($findings, MessageFlagRule::ExternalLink, $links);
-            $this->add($findings, MessageFlagRule::MoneyRequest, $upi);
-        } else {
-            // An email address is neither a link ("gmail.com") nor a UPI id.
-            $withoutEmails = (string) preg_replace(self::EMAIL, ' ', $body);
-            $this->add($findings, MessageFlagRule::ExternalLink, $this->matches($withoutEmails, self::URL));
-            $this->add($findings, MessageFlagRule::MoneyRequest, $this->matches($withoutEmails, self::UPI));
-        }
-
-        $this->add($findings, MessageFlagRule::MoneyRequest, $this->matches($body, self::MONEY));
-
-        $word = $this->profanity->firstMatch($body);
-        if ($word !== null) {
-            $this->add($findings, MessageFlagRule::Profanity, [$word]);
-        }
+        $rules = $this->rules->all();
+        [$text, $findings, $hits, $blockedBy] = $this->apply($body, $early, $rules);
 
         $hash = $this->hash($body);
-        if ($hash !== null && $this->repeated($hash, $senderProfileId, $conversationId)) {
-            $this->add($findings, MessageFlagRule::Repetition, []);
+        $repetition = $rules[SafetyRule::Repetition->value]->action($early);
+        if ($repetition !== SafetyAction::Off && $hash !== null && $this->repeated($hash, $senderProfileId, $conversationId)) {
+            $hits[] = new SafetyHitData(SafetyRule::Repetition, $repetition, []);
+            if ($repetition === SafetyAction::Block) {
+                $blockedBy ??= SafetyRule::Repetition;
+            } else {
+                $this->add($findings, MessageFlagRule::Repetition, []);
+            }
         }
 
-        return new SafetyScanData($text, array_values($findings), $hash, $text !== $body);
+        return new SafetyScanData($text, array_values($findings), $hash, $text !== $body, $blockedBy, $hits);
+    }
+
+    public function dryRun(string $body, bool $early, ?SafetyRuleData $draft = null): SafetyScanData
+    {
+        $rules = $this->rules->all();
+        if ($draft !== null) {
+            $rules[$draft->rule->value] = $draft;
+        }
+
+        [$text, $findings, $hits, $blockedBy] = $this->apply($body, $early, $rules);
+
+        return new SafetyScanData($text, array_values($findings), null, $text !== $body, $blockedBy, $hits);
+    }
+
+    /**
+     * Every rule but REPETITION (which needs the database).
+     *
+     * @param  array<string, SafetyRuleData>  $rules
+     * @return array{0: string, 1: array<string, SafetyFindingData>, 2: list<SafetyHitData>, 3: SafetyRule|null}
+     */
+    private function apply(string $body, bool $early, array $rules): array
+    {
+        $text = $body;
+        $findings = [];
+        $hits = [];
+        $blockedBy = null;
+        $emails = $rules[SafetyRule::Email->value]->regex();
+        $withoutEmails = $emails === null ? $body : ($this->replace($emails, $body, ' ', SafetyRule::Email) ?? $body);
+
+        foreach ($rules as $rule) {
+            $action = $rule->action($early);
+            if ($action === SafetyAction::Off || $rule->rule === SafetyRule::Repetition) {
+                continue;
+            }
+
+            if ($rule->rule === SafetyRule::Profanity) {
+                if ($action === SafetyAction::Mask) {
+                    [$text, $found] = $this->profanity->mask($text, self::MASK);
+                } else {
+                    $word = $this->profanity->firstMatch($body);
+                    $found = $word === null ? [] : [$word];
+                }
+            } elseif ($action === SafetyAction::Mask) {
+                // Links / UPI ids leave email addresses alone ("gmail.com" is part of one, not a link).
+                $masked = $rule->rule->ignoresEmails() && $emails !== null
+                    ? $this->maskAroundEmails((string) $rule->regex(), $emails, $text, $rule->rule)
+                    : $this->mask((string) $rule->regex(), $text, $rule->rule);
+                $found = $masked === null ? null : $masked[1];
+                $text = $masked === null ? $text : $masked[0];
+            } else {
+                $found = $this->matches((string) $rule->regex(), $rule->rule->ignoresEmails() ? $withoutEmails : $body, $rule->rule);
+            }
+
+            if ($found === null) {
+                // The pattern failed: keep the text, let a person look at the message.
+                $this->add($findings, $rule->rule->flagRule(), []);
+
+                continue;
+            }
+            if ($found === []) {
+                continue;
+            }
+
+            $hits[] = new SafetyHitData($rule->rule, $action, $found);
+            if ($action === SafetyAction::Block) {
+                $blockedBy ??= $rule->rule;
+            } else {
+                $this->add($findings, $rule->rule->flagRule(), $found);
+            }
+        }
+
+        return [$text, $findings, $hits, $blockedBy];
     }
 
     /**
      * Replace every match with the mask.
      *
-     * @param  list<string>  $patterns
-     * @return array{0: string, 1: list<string>} the masked text and what was masked
+     * @return array{0: string, 1: list<string>}|null the masked text and what was masked; null on a PCRE error
      */
-    private function mask(string $text, array $patterns): array
+    private function mask(string $regex, string $text, SafetyRule $rule): ?array
     {
         $found = [];
+        $masked = @preg_replace_callback($regex, function (array $match) use (&$found): string {
+            $found[] = trim($match[0]);
 
-        foreach ($patterns as $pattern) {
-            $text = (string) preg_replace_callback($pattern, function (array $match) use (&$found): string {
-                $found[] = trim($match[0]);
+            return self::MASK;
+        }, $text);
 
-                return self::MASK;
-            }, $text);
+        if ($masked === null) {
+            $this->failed($rule);
+
+            return null;
         }
 
-        return [$text, $found];
+        return [$masked, $found];
     }
 
-    /** @return list<string> */
-    private function matches(string $text, string $pattern): array
+    /**
+     * mask(), with the email addresses still in the text set aside first and put back after.
+     *
+     * @return array{0: string, 1: list<string>}|null
+     */
+    private function maskAroundEmails(string $regex, string $emailRegex, string $text, SafetyRule $rule): ?array
     {
-        preg_match_all($pattern, $text, $all);
+        $kept = [];
+        $protected = @preg_replace_callback($emailRegex, function (array $match) use (&$kept): string {
+            $kept[] = $match[0];
+
+            return "\u{E000}".(count($kept) - 1)."\u{E001}";
+        }, $text);
+        if ($protected === null) {
+            $this->failed(SafetyRule::Email);
+
+            return null;
+        }
+
+        $masked = $this->mask($regex, $protected, $rule);
+        if ($masked === null) {
+            return null;
+        }
+
+        $restored = (string) preg_replace_callback("/\u{E000}(\\d+)\u{E001}/u", fn (array $m): string => $kept[(int) $m[1]] ?? '', $masked[0]);
+
+        return [$restored, $masked[1]];
+    }
+
+    /** @return list<string>|null null on a PCRE error */
+    private function matches(string $regex, string $text, SafetyRule $rule): ?array
+    {
+        if (@preg_match_all($regex, $text, $all) === false) {
+            $this->failed($rule);
+
+            return null;
+        }
 
         return array_map('trim', $all[0]);
     }
 
+    private function replace(string $regex, string $text, string $with, SafetyRule $rule): ?string
+    {
+        $replaced = @preg_replace($regex, $with, $text);
+        if ($replaced === null) {
+            $this->failed($rule);
+        }
+
+        return $replaced;
+    }
+
+    private function failed(SafetyRule $rule): void
+    {
+        Log::warning('Chat safety rule failed to run', ['rule' => $rule->value, 'pcre_error' => preg_last_error_msg()]);
+    }
+
     /**
-     * One finding per rule; excerpts joined (bounded).
+     * One finding per A13 reason; excerpts joined (bounded).
      *
      * @param  array<string, SafetyFindingData>  $findings
      * @param  list<string>  $excerpts
      */
     private function add(array &$findings, MessageFlagRule $rule, array $excerpts): void
     {
-        if ($excerpts === [] && $rule !== MessageFlagRule::Repetition) {
-            return;
-        }
-
         $previous = $findings[$rule->value]->excerpt ?? null;
         $joined = implode(', ', array_filter([$previous, ...array_unique($excerpts)]));
         $findings[$rule->value] = new SafetyFindingData($rule, $joined === '' ? null : Str::limit($joined, 300));

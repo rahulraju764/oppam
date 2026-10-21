@@ -44,6 +44,13 @@ enum SettingKey: string
     case ChatAutoFreezeReports = 'chat.auto_freeze_reports';
     case ChatAutoFreezeWindowDays = 'chat.auto_freeze_window_days';
     case ChatReportsMaxPerHour = 'chat.reports_max_per_hour';
+    case ChatBreakGlassMinutes = 'chat.break_glass_minutes';
+    case ChatOneSidedThreshold = 'chat.one_sided_threshold';
+    case SignalsInterestSpamMinSent = 'signals.interest_spam_min_sent';
+    case SignalsInterestSpamWindowDays = 'signals.interest_spam_window_days';
+    case SignalsInterestSpamMaxAcceptPct = 'signals.interest_spam_max_accept_pct';
+    case SignalsNewAccountDays = 'signals.new_account_days';
+    case SignalsNewAccountThreadsPerDay = 'signals.new_account_threads_per_day';
     case DailyMatchCount = 'matching.daily_match_count';
     case PhotosMaxAdditional = 'photos.max_additional';
     case PhotosMaxUploadMb = 'photos.max_upload_mb';
@@ -107,6 +114,13 @@ enum SettingKey: string
             self::ChatAutoFreezeReports => 3,       // M09: reported from chat by this many different members …
             self::ChatAutoFreezeWindowDays => 30,   // … within this window → the sender's threads freeze pending review (decisions 2026-10-16)
             self::ChatReportsMaxPerHour => 5,       // M09 / rule 10: chat reports per member per hour
+            self::ChatBreakGlassMinutes => 30,      // A13: a break-glass read of a conversation ends after this
+            self::ChatOneSidedThreshold => 20,      // A13: this many messages in a row without a reply = harassment signal
+            self::SignalsInterestSpamMinSent => 30, // A13 interest spam: at least this many interests sent …
+            self::SignalsInterestSpamWindowDays => 7, // … within this window …
+            self::SignalsInterestSpamMaxAcceptPct => 5, // … and at most this share accepted
+            self::SignalsNewAccountDays => 7,       // A13: an account this young …
+            self::SignalsNewAccountThreadsPerDay => 15, // … writing in this many conversations in 24 h = signal
             self::DailyMatchCount => 10,
             self::PhotosMaxAdditional => 9,
             self::PhotosMaxUploadMb => 8,
@@ -164,6 +178,13 @@ enum SettingKey: string
             self::ChatAutoFreezeReports => ['required', 'integer', 'min:2', 'max:20'],
             self::ChatAutoFreezeWindowDays => ['required', 'integer', 'min:1', 'max:365'],
             self::ChatReportsMaxPerHour => ['required', 'integer', 'min:1', 'max:50'],
+            self::ChatBreakGlassMinutes => ['required', 'integer', 'min:5', 'max:120'],
+            self::ChatOneSidedThreshold => ['required', 'integer', 'min:5', 'max:200'],
+            self::SignalsInterestSpamMinSent => ['required', 'integer', 'min:5', 'max:500'],
+            self::SignalsInterestSpamWindowDays => ['required', 'integer', 'min:1', 'max:30'],
+            self::SignalsInterestSpamMaxAcceptPct => ['required', 'integer', 'min:0', 'max:50'],
+            self::SignalsNewAccountDays => ['required', 'integer', 'min:1', 'max:90'],
+            self::SignalsNewAccountThreadsPerDay => ['required', 'integer', 'min:3', 'max:200'],
             self::DailyMatchCount => ['required', 'integer', 'min:1', 'max:50'],
             self::PhotosMaxAdditional => ['required', 'integer', 'min:0', 'max:20'],
             self::PhotosMaxUploadMb => ['required', 'integer', 'min:1', 'max:20'],

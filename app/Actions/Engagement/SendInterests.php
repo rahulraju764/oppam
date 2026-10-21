@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Engagement;
 
 use App\Domain\Engagement\Connections;
+use App\Domain\Engagement\EngagementRestrictions;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Billing\QuotaExceeded;
 use App\Exceptions\Engagement\EngagementRefused;
@@ -29,6 +30,7 @@ final class SendInterests
         private readonly SendInterest $send,
         private readonly Connections $connections,
         private readonly Impersonation $impersonation,
+        private readonly EngagementRestrictions $restrictions,
     ) {}
 
     /**
@@ -49,6 +51,9 @@ final class SendInterests
         $result = ['sent' => 0, 'skipped' => 0, 'quotaReached' => false];
 
         $own = $member->profile;
+        if ($own !== null) {
+            $this->restrictions->assertCanSend($own);   // paused: say so, rather than "all skipped"
+        }
         $targets = Profile::query()->whereIn('code', $codes)->with(['privacySetting', 'partnerPreference'])->get();
         $states = $own !== null ? $this->connections->statesFor($own, $targets->pluck('id')->all()) : [];
 

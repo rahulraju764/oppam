@@ -108,7 +108,13 @@
                 @if (! $revealed)
                     <p>{{ __('Messages are private. Reveal only this message and the three messages around it — your view is recorded in the audit log.') }}</p>
                     <x-ui.button type="button" wire:click="reveal" loading="reveal" icon="fa-eye">{{ __('Reveal message') }}</x-ui.button>
-                @else
+                @endif
+                @if ($breakGlassUrl)
+                    <p class="small mt-3 mb-0">
+                        <a href="{{ $breakGlassUrl }}" wire:navigate><i class="fa fa-unlock-alt" aria-hidden="true"></i> {{ __('Read the whole conversation (break-glass, audited)') }}</a>
+                    </p>
+                @endif
+                @if ($revealed)
                     @if ($context->excerpt)
                         <x-ui.alert type="warning">
                             <strong>{{ __('Matched / hidden text:') }}</strong> {{ $context->excerpt }}

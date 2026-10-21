@@ -247,7 +247,8 @@ final class Thread extends Component
         try {
             $send();
         } catch (ChatRefused|ImpersonationRestricted $refused) {
-            $this->failed($clientId, $refused->getMessage());
+            // A safety rule's refusal: the member edits the text rather than retrying it unchanged.
+            $this->failed($clientId, $refused->getMessage(), $refused instanceof ChatRefused && $refused->reason === ChatRefused::BLOCKED);
 
             return;
         } catch (ValidationException $invalid) {
@@ -263,9 +264,9 @@ final class Thread extends Component
         $this->dispatch('chat-inbox-changed');
     }
 
-    private function failed(string $clientId, string $reason): void
+    private function failed(string $clientId, string $reason, bool $editable = false): void
     {
-        $this->dispatch('chat-send-failed', clientId: $clientId, message: $reason);
+        $this->dispatch('chat-send-failed', clientId: $clientId, message: $reason, editable: $editable);
     }
 
     private function thread(): Conversation

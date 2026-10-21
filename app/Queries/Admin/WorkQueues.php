@@ -9,6 +9,7 @@ use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
 use App\Enums\SettingKey;
 use App\Models\AdminUser;
+use App\Models\EngagementSignal;
 use App\Models\MessageFlag;
 use App\Models\ModerationItem;
 use App\Support\Facades\Settings;
@@ -18,7 +19,8 @@ use Illuminate\Support\Collection;
 /**
  * The work queues an admin may open (PRD A02 work-queue cards, §11.0 sidebar badges): waiting
  * count and oldest item for the three A04 queues and the escalations list — one grouped query
- * for all of them — and the A13 flagged chat messages (`chat.view_flagged`, one query). Verification,
+ * for all of them — and the A13 flagged chat messages and abuse signals (`chat.view_flagged`, one
+ * query each). Verification,
  * reports, broker KYC, stuck orders and tickets add
  * themselves here with their modules (owner decision 2026-10-11: only queues that exist are shown).
  * Memoised for the request: the layout's sidebar and the dashboard ask the same thing.
@@ -32,6 +34,8 @@ final class WorkQueues
 
     private ?WorkQueueData $chat = null;
 
+    private ?WorkQueueData $signals = null;
+
     /**
      * @return list<WorkQueueData> only the queues this admin may open
      */
@@ -44,6 +48,7 @@ final class WorkQueues
         $queues = $admin->can('moderation.view') ? ($this->moderation ??= $this->moderation()) : [];
         if ($admin->can('chat.view_flagged')) {
             $queues[] = $this->chat ??= $this->chat();
+            $queues[] = $this->signals ??= $this->signals();
         }
 
         return $queues;
@@ -73,6 +78,16 @@ final class WorkQueues
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
 
         return new WorkQueueData(MessageFlag::QUEUE_KEY, __('Flagged messages'), 'admin.chat.flags', 'fa-flag', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
+    }
+
+    /** A13: abuse signals waiting for a moderator, the oldest first raised. */
+    private function signals(): WorkQueueData
+    {
+        $row = EngagementSignal::query()->open()->selectRaw('count(*) as waiting, min(created_at) as oldest')->toBase()->first();
+        $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
+        $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
+
+        return new WorkQueueData(EngagementSignal::QUEUE_KEY, __('Abuse signals'), 'admin.chat.signals', 'fa-bolt', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
     }
 
     /** @return list<WorkQueueData> */

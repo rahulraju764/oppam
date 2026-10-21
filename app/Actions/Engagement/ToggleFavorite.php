@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Engagement;
 
+use App\Domain\Engagement\EngagementRestrictions;
+use App\Domain\Engagement\EngagementSignals;
 use App\Domain\Matching\DailyBatch;
 use App\Domain\Profile\ProfileVisibility;
+use App\Enums\EngagementSignalType;
 use App\Enums\Entitlement;
 use App\Enums\ProfileStatus;
 use App\Enums\SettingKey;
@@ -38,6 +41,8 @@ final class ToggleFavorite
         private readonly EntitlementService $entitlements,
         private readonly RateLimiter $limiter,
         private readonly Impersonation $impersonation,
+        private readonly EngagementRestrictions $restrictions,
+        private readonly EngagementSignals $signals,
     ) {}
 
     /**
@@ -60,6 +65,10 @@ final class ToggleFavorite
 
         $key = 'favorites:'.$own->id;
         if ($this->limiter->tooManyAttempts($key, Settings::int(SettingKey::FavoritesMaxPerMinute))) {
+            // A13 "mass favourites via automation": a member who keeps hitting the limit is a signal.
+            $this->signals->raise($own->id, EngagementSignalType::FavoriteSpam,
+                ['changes_per_minute' => Settings::int(SettingKey::FavoritesMaxPerMinute)]);
+
             throw EngagementRefused::tooFast();
         }
         $this->limiter->hit($key, 60);
@@ -76,6 +85,8 @@ final class ToggleFavorite
         if ($own->status !== ProfileStatus::Active) {
             throw EngagementRefused::profileNotActive();
         }
+
+        $this->restrictions->assertCanSend($own);
 
         DB::transaction(function () use ($own, $target): void {
             $inserted = Favorite::query()->insertOrIgnore([

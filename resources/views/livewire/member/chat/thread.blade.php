@@ -128,6 +128,7 @@
                         <span x-show="! item.failed">{{ __('Sending…') }}</span>
                         <span x-show="item.failed" x-text="item.error"></span>
                         <button type="button" class="msg-retry" x-show="item.failed && item.retry" x-on:click="retry(item)">{{ __('Retry') }}</button>
+                        <button type="button" class="msg-retry" x-show="item.failed && item.editable" x-on:click="edit(item)">{{ __('Edit message') }}</button>
                     </p>
                 </div>
             </template>

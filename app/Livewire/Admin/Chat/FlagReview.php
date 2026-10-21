@@ -150,6 +150,8 @@ final class FlagReview extends Component
                 : Conversation::query()->whereIn('id', ConversationParticipant::query()->select('conversation_id')->where('profile_id', $flag->sender_profile_id))
                     ->where('status', ConversationStatus::Frozen->value)->where('frozen_reason', FreezeReason::Reports->value)->count(),
             'senderUrl' => $flag->sender !== null && $admin->can('members.view') ? route('admin.members.show', ['profile' => $flag->sender->code]) : null,
+            // A13 break-glass: the whole conversation, with this flag as the reference (super admins by default).
+            'breakGlassUrl' => $admin->can('chat.read_conversation') && $thread !== null ? route('admin.chat.break-glass', ['flag' => $flag->id]) : null,
         ]);
     }
 

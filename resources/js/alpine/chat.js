@@ -10,7 +10,8 @@
      - submit(): the message shows AT ONCE as a grey bubble with a fresh client id, then
        $wire.send(clientId, text). The re-render brings the stored message (it carries the same
        data-client-id) and the bubble is dropped. A refusal ('chat-send-failed') marks the bubble
-       "not sent" with Retry — the same client id, so a retry never stores it twice.
+       "not sent" with Retry — the same client id, so a retry never stores it twice. A message a safety
+       rule refused (editable) offers "Edit message" instead: the text goes back into the composer.
      - stays scrolled to the newest message while the member is at the bottom.
      - a message from the other member ('chat-message-arrived') is marked read when the tab is in
        view, otherwise as soon as it comes back into view.
@@ -189,11 +190,21 @@ document.addEventListener('alpine:init', () => {
             if (scroll && scroll.scrollTop < NEAR_TOP_PX && scroll.querySelector('.msg-earlier')) this.earlier();
         },
 
-        fail({ clientId, message }) {
+        fail({ clientId, message, editable }) {
             const item = this.pending.find((p) => p.clientId === clientId);
             if (!item) return;
             item.failed = true;
             item.error = typeof message === 'string' && message !== '' ? message : (texts.notSent ?? '');
+            if (editable === true) {
+                item.retry = false;   // sending it unchanged would be refused again
+                item.editable = true;
+            }
+        },
+
+        edit(item) {
+            this.pending = this.pending.filter((p) => p.clientId !== item.clientId);
+            this.body = item.text;
+            this.$nextTick(() => this.$refs.input?.focus());
         },
 
         prune() {

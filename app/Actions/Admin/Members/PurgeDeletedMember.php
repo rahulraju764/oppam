@@ -25,6 +25,7 @@ use App\Models\Like;
 use App\Models\LoginEvent;
 use App\Models\MatchScore;
 use App\Models\Media;
+use App\Models\MemberRestriction;
 use App\Models\MessageFlag;
 use App\Models\ModerationItem;
 use App\Models\NotificationPreference;
@@ -158,6 +159,8 @@ final class PurgeDeletedMember
             Profile::withTrashed()->whereKey($ids)->get(['id'])
                 ->each(fn (Profile $owner) => $this->entitlements->release($owner, Entitlement::FavoritesTotal));
         }
+        // A13 pauses on the member go before their signals (a pause names its signal).
+        MemberRestriction::query()->where('profile_id', $profile->id)->delete();
         EngagementSignal::query()->where('profile_id', $profile->id)->delete();
 
         // Chat (P4.1, R-M07-6): messages are deleted once BOTH members are gone — a thread whose

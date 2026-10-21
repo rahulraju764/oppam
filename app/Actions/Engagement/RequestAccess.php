@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Engagement;
 
+use App\Domain\Engagement\EngagementRestrictions;
 use App\Domain\Media\HoroscopeAccess;
 use App\Domain\Media\PhotoAccess;
 use App\Domain\Profile\ProfileVisibility;
@@ -39,6 +40,7 @@ final class RequestAccess
         private readonly HoroscopeAccess $horoscopes,
         private readonly RateLimiter $limiter,
         private readonly Impersonation $impersonation,
+        private readonly EngagementRestrictions $restrictions,
     ) {}
 
     /**
@@ -60,6 +62,8 @@ final class RequestAccess
         if ($own->status !== ProfileStatus::Active) {
             throw EngagementRefused::profileNotActive();
         }
+
+        $this->restrictions->assertCanSend($own);
 
         if (! $this->requestable($owner, $member, $type)) {
             throw EngagementRefused::notRequestable();

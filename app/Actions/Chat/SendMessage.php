@@ -8,6 +8,9 @@ use App\Contracts\ContentSafety;
 use App\Domain\Chat\ChatAccess;
 use App\Domain\Chat\FlagQueue;
 use App\Domain\Chat\InboxSignals;
+use App\Domain\Engagement\EngagementRestrictions;
+use App\Domain\Engagement\EngagementSignals;
+use App\Enums\EngagementSignalType;
 use App\Enums\MessageType;
 use App\Enums\SettingKey;
 use App\Events\Chat\MessageSent;
@@ -48,8 +51,12 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * MessageSent on the thread, ConversationUpdated to both inboxes. A TEXT message is scanned first
  * (ContentSafety, PRD A13): in the thread's first `chat.safety_first_messages` messages contact details,
  * links and UPI ids are masked — the stored and broadcast text is the masked one — and every finding
- * puts the message in the A13 flagged queue (FlagQueue). Nothing is ever dropped. Never while an admin
- * is impersonating the member.
+ * puts the message in the A13 flagged queue (FlagQueue); a match of a BLOCK rule (A13 rules editor)
+ * refuses the message — nothing is stored, the member is told why and may edit it (422, decisions
+ * 2026-10-18). A member a moderator paused (EngagementRestrictions) can't send (403). Each send counts
+ * the sender's messages in a row without a reply (`unanswered_count`); reaching
+ * `chat.one_sided_threshold` raises an A13 one-sided-messaging signal. Never while an admin is
+ * impersonating the member.
  */
 final class SendMessage
 {
@@ -64,6 +71,8 @@ final class SendMessage
         private readonly ImageSanitizer $sanitizer,
         private readonly ContentSafety $safety,
         private readonly FlagQueue $flags,
+        private readonly EngagementRestrictions $restrictions,
+        private readonly EngagementSignals $signals,
     ) {}
 
     /**
@@ -147,6 +156,11 @@ final class SendMessage
             throw new NotFoundHttpException;
         }
 
+        $paused = $this->restrictions->pausedUntil($me);
+        if ($paused !== null) {
+            throw ChatRefused::paused($this->restrictions->untilLabel($paused));
+        }
+
         return [$me, $thread];
     }
 
@@ -180,6 +194,9 @@ final class SendMessage
             $scan = $type === MessageType::Text && $body !== null
                 ? $this->safety->scan($body, $me->id, $locked->id, $this->early($locked))
                 : null;
+            if ($scan?->blockedBy !== null) {
+                throw ChatRefused::blocked($scan->blockedBy);   // rolls back: nothing is stored
+            }
             $body = $scan === null ? $body : $scan->body;
 
             $message = new Message;
@@ -204,10 +221,12 @@ final class SendMessage
             $locked->last_message_at = $message->created_at;
             $locked->save();
 
+            // The recipient's reply streak ends; the sender's grows (A13 one-sided messaging).
             ConversationParticipant::query()->where('conversation_id', $locked->id)->where('profile_id', $other->id)
-                ->update(['unread_count' => DB::raw('unread_count + 1'), 'is_archived' => false, 'updated_at' => now()]);
+                ->update(['unread_count' => DB::raw('unread_count + 1'), 'unanswered_count' => 0, 'is_archived' => false, 'updated_at' => now()]);
             ConversationParticipant::query()->where('conversation_id', $locked->id)->where('profile_id', $me->id)
-                ->update(['last_read_message_id' => $message->id, 'updated_at' => now()]);
+                ->update(['last_read_message_id' => $message->id, 'unanswered_count' => DB::raw('unanswered_count + 1'), 'updated_at' => now()]);
+            $this->oneSided($me, $locked);
 
             LiveSignal::afterCommit(new MessageSent(
                 conversationId: $locked->id,
@@ -224,6 +243,17 @@ final class SendMessage
 
             return $message;
         });
+    }
+
+    /** A13: the sender just reached `chat.one_sided_threshold` messages in a row without a reply. */
+    private function oneSided(Profile $me, Conversation $thread): void
+    {
+        $threshold = Settings::int(SettingKey::ChatOneSidedThreshold);
+        $streak = (int) ConversationParticipant::query()->where('conversation_id', $thread->id)->where('profile_id', $me->id)->value('unanswered_count');
+
+        if ($streak === $threshold) {
+            $this->signals->raise($me->id, EngagementSignalType::OneSidedChat, ['unanswered' => $streak]);
+        }
     }
 
     /** Whether the next message is among the thread's first `chat.safety_first_messages` (both members). */

@@ -27,6 +27,10 @@ return [
     ],
     'Chat safety' => [
         ['admin.chat.flags', 'Flagged messages', 'fa-flag', 'chat.view_flagged'],
+        ['admin.chat.signals', 'Abuse signals', 'fa-bolt', 'chat.view_flagged'],
+        ['admin.chat.overview', 'Conversation overview', 'fa-bar-chart', 'chat.view_flagged'],
+        ['admin.chat.rules', 'Rules & word lists', 'fa-sliders', 'chat.view_flagged'],
+        ['admin.chat.break-glass', 'Break-glass read', 'fa-unlock-alt', 'chat.read_conversation'],
     ],
     'Verification' => [
         ['admin.verification.index', 'ID verification', 'fa-id-card-o', 'verification.queue.view'],

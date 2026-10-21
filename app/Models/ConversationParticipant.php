@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $profile_id
  * @property string|null $last_read_message_id
  * @property int $unread_count
+ * @property int $unanswered_count messages this member sent in a row without a reply (A13 one-sided messaging)
  * @property bool $is_muted
  * @property bool $is_archived
  * @property-read Conversation|null $conversation

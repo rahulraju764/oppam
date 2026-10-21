@@ -5,22 +5,29 @@ declare(strict_types=1);
 namespace App\Domain\Chat;
 
 use App\Data\Chat\SafetyFindingData;
+use App\Domain\Engagement\EngagementSignals;
+use App\Enums\EngagementSignalType;
 use App\Enums\MessageFlagRule;
 use App\Enums\MessageFlagSource;
 use App\Enums\MessageFlagStatus;
+use App\Enums\SettingKey;
 use App\Events\Admin\AdminQueueCountChanged;
 use App\Models\Message;
 use App\Models\MessageFlag;
 use App\Models\Report;
+use App\Support\Facades\Settings;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Puts chat messages in the A13 flagged queue (PRD A13) — the one place that writes message_flags
- * rows — and keeps the admins' "Flagged messages" badge live: after the transaction commits, the
+ * rows — and keeps the admins' "Flagged messages" badge live (a repeated message also raises an A13
+ * abuse signal on its sender): after the transaction commits, the
  * waiting count goes out on admin.queues (AdminQueueCountChanged, best-effort).
  */
 final class FlagQueue
 {
+    public function __construct(private readonly EngagementSignals $signals) {}
+
     /**
      * ContentSafety's findings on a message just sent.
      *
@@ -34,6 +41,14 @@ final class FlagQueue
 
         foreach ($findings as $finding) {
             $this->write($message, MessageFlagSource::Auto, $finding->rule, $finding->excerpt);
+
+            // The same text into many threads is also an A13 abuse signal on the sender.
+            if ($finding->rule === MessageFlagRule::Repetition && $message->sender_profile_id !== null) {
+                $this->signals->raise($message->sender_profile_id, EngagementSignalType::MessageRepetition, [
+                    'threads' => Settings::int(SettingKey::ChatSpamRepeatThreads),
+                    'window_minutes' => Settings::int(SettingKey::ChatSpamRepeatWindowMinutes),
+                ]);
+            }
         }
 
         $this->markFlagged($message);

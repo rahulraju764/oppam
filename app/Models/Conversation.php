@@ -43,6 +43,14 @@ final class Conversation extends Model
         return implode('|', $ids);
     }
 
+    /** "OPM1 · OPM2": the members of this thread by profile code (admin audit labels, A13 screens). */
+    public function memberCodesLabel(): string
+    {
+        return Profile::withTrashed()
+            ->whereIn('id', ConversationParticipant::query()->select('profile_id')->where('conversation_id', $this->id))
+            ->orderBy('code')->pluck('code')->implode(' · ');
+    }
+
     /** @return HasMany<ConversationParticipant, $this> */
     public function participants(): HasMany
     {

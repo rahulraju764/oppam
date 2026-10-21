@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\BreakGlassImageController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
@@ -9,8 +10,13 @@ use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
+use App\Livewire\Admin\Chat\BreakGlass;
+use App\Livewire\Admin\Chat\BreakGlassViewer;
 use App\Livewire\Admin\Chat\FlaggedQueue;
 use App\Livewire\Admin\Chat\FlagReview;
+use App\Livewire\Admin\Chat\Overview as ChatOverview;
+use App\Livewire\Admin\Chat\Rules as ChatRules;
+use App\Livewire\Admin\Chat\Signals as ChatSignals;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\Masters\Index as MastersIndex;
 use App\Livewire\Admin\Masters\ListEditor as MastersListEditor;
@@ -83,6 +89,17 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/flags/{flag}', FlagReview::class)->where('flag', '[0-9A-Za-z]{26}')->name('flags.review');
         // The flagged photo only, after this admin's audited reveal (FlagReview).
         Route::get('/flags/{flag}/image', ChatFlagImageController::class)->where('flag', '[0-9A-Za-z]{26}')->name('flags.image');
+        Route::get('/signals', ChatSignals::class)->name('signals');
+        Route::get('/overview', ChatOverview::class)->name('overview');
+        Route::get('/rules', ChatRules::class)->name('rules');
+    });
+
+    // Break-glass reads (A13): super admins by default; each page read is audited inside its Action.
+    Route::middleware('can:chat.read_conversation')->prefix('chat/break-glass')->name('chat.')->group(function (): void {
+        Route::get('/', BreakGlass::class)->name('break-glass');
+        Route::get('/{grant}', BreakGlassViewer::class)->where('grant', '[0-9A-Za-z]{26}')->name('break-glass.read');
+        Route::get('/{grant}/media/{message}', BreakGlassImageController::class)
+            ->where(['grant' => '[0-9A-Za-z]{26}', 'message' => '[0-9A-Za-z]{26}'])->name('break-glass.image');
     });
 });
 

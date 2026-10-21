@@ -417,3 +417,19 @@ tr[draggable="true"] { cursor: grab; }
 .admin-chat-context__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--color-gr-dark); font-size: var(--text-xs); }
 .admin-chat-context__text { display: block; margin-top: var(--space-1); overflow-wrap: anywhere; white-space: pre-line; }
 .admin-chat-context__img { display: block; max-width: 100%; height: auto; margin-top: var(--space-2); border-radius: var(--radius-xs); }
+
+/* Break-glass viewer (A13): the transcript sits under a watermark naming the admin, time and session. */
+.admin-break-glass { position: relative; overflow: hidden; }
+.admin-break-glass .admin-chat-context { position: relative; z-index: var(--z-raised); }
+.admin-break-glass__watermark {
+    position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: flex-start; gap: var(--space-8) var(--space-6);
+    padding: var(--space-4); color: var(--color-primary); opacity: 0.12; font-size: var(--text-xs); font-weight: var(--fw-semibold);
+    pointer-events: none; user-select: none; transform: rotate(-12deg) scale(1.2); z-index: calc(var(--z-raised) + 1);
+}
+.admin-break-glass__clock { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.admin-break-glass__clock strong { font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+
+/* Rules editor (A13). */
+.admin-rule-pattern { overflow-wrap: anywhere; font-family: var(--font-mono, monospace); font-size: var(--text-xs); }
+.admin-rule-result { padding: var(--space-3); border: var(--border-hair); border-radius: var(--radius-md); background: var(--color-default); }
+.admin-rule-result__text { margin-bottom: var(--space-2); overflow-wrap: anywhere; white-space: pre-line; }

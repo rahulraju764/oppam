@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Engagement;
 
 use App\Data\Engagement\LikeResult;
+use App\Domain\Engagement\EngagementRestrictions;
 use App\Domain\Engagement\LikeSpamGuard;
 use App\Domain\Matching\DailyBatch;
 use App\Domain\Profile\ProfileVisibility;
@@ -51,6 +52,7 @@ final class ToggleLike
         private readonly LikeSpamGuard $spam,
         private readonly OncePerDay $once,
         private readonly Impersonation $impersonation,
+        private readonly EngagementRestrictions $restrictions,
     ) {}
 
     /**
@@ -81,6 +83,8 @@ final class ToggleLike
         if ($own->status !== ProfileStatus::Active) {
             throw EngagementRefused::profileNotActive();
         }
+
+        $this->restrictions->assertCanSend($own);
 
         if ($this->exists($own, $target)) {
             return new LikeResult(liked: true, mutual: $this->exists($target, $own), changed: false);

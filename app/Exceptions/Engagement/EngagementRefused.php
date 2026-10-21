@@ -30,6 +30,8 @@ final class EngagementRefused extends RuntimeException
 
     public const NOT_REQUESTABLE = 'not_requestable';
 
+    public const PAUSED = 'paused';
+
     private function __construct(public readonly string $reason, string $message)
     {
         parent::__construct($message);
@@ -83,6 +85,12 @@ final class EngagementRefused extends RuntimeException
     public static function notRequestable(): self
     {
         return new self(self::NOT_REQUESTABLE, __('There is nothing to request here right now.'));
+    }
+
+    /** A13: a moderator paused everything this member sends, until the given time (IST). */
+    public static function paused(string $until): self
+    {
+        return new self(self::PAUSED, __('Sending likes, interests and messages is paused on your account until :time after a safety review. If you think this is a mistake, please contact support.', ['time' => $until]));
     }
 
     public static function tooFast(): self

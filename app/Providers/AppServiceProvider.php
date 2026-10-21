@@ -8,7 +8,9 @@ use App\Contracts\ContentSafety;
 use App\Contracts\PresenceCounter;
 use App\Contracts\SmsGateway;
 use App\Domain\Billing\UsagePeriodResolver;
+use App\Domain\Chat\ChatSafetyRules;
 use App\Domain\Engagement\Connections;
+use App\Domain\Engagement\EngagementRestrictions;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
@@ -80,6 +82,8 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(Impersonation::class);
         $this->app->scoped(Connections::class);   // memoises "who is connected" for the request (P3.4)
         $this->app->scoped(WorkQueues::class);    // the sidebar and the dashboard ask for the same counts (P3.5)
+        $this->app->scoped(ChatSafetyRules::class);         // A13 rules: cached overrides, memoised per request / job (P4.3b)
+        $this->app->scoped(EngagementRestrictions::class);  // A13 "pause sending": one look-up per member per request (P4.3b)
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
 
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"

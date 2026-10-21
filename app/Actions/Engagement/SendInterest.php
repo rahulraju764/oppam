@@ -6,6 +6,7 @@ namespace App\Actions\Engagement;
 
 use App\Data\Engagement\InterestResult;
 use App\Domain\Engagement\Connections;
+use App\Domain\Engagement\EngagementRestrictions;
 use App\Domain\Engagement\InterestMessages;
 use App\Domain\Engagement\InterestSignals;
 use App\Domain\Matching\DailyBatch;
@@ -69,6 +70,7 @@ final class SendInterest
         private readonly RateLimiter $limiter,
         private readonly OncePerDay $once,
         private readonly Impersonation $impersonation,
+        private readonly EngagementRestrictions $restrictions,
     ) {}
 
     /**
@@ -91,6 +93,8 @@ final class SendInterest
         if ($own->status !== ProfileStatus::Active) {
             throw EngagementRefused::profileNotActive();
         }
+
+        $this->restrictions->assertCanSend($own);
 
         $state = $this->connections->stateWith($own, $target);
 

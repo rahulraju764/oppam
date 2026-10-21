@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
+use App\Jobs\Engagement\DetectEngagementSignals;
 use App\Jobs\Engagement\ExpireInterests;
 use App\Jobs\Matching\GenerateDailyMatches;
 use App\Jobs\Members\PurgeDeletedMembers;
@@ -34,6 +35,9 @@ Schedule::command('metrics:snapshot --yesterday')->timezone('Asia/Kolkata')->dai
 
 // F02: pending interests past their 30 days become EXPIRED, every hour.
 Schedule::job(new ExpireInterests)->hourly()->onOneServer()->withoutOverlapping();
+
+// A13 abuse monitors that look back over time: interest spam, new accounts messaging many members.
+Schedule::job(new DetectEngagementSignals)->hourlyAt(20)->onOneServer()->withoutOverlapping();
 
 // R-M08-4: in-app notifications older than 180 days. 21:45 UTC = 03:15 IST.
 Schedule::job(new PruneOldNotifications)->dailyAt('21:45')->onOneServer()->withoutOverlapping();
