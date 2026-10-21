@@ -244,9 +244,10 @@ it('the queue counts for the sidebar and the dashboard are read once per request
     $cards = $queues->for($admin);
     $moderation = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $q): bool => str_contains($q, 'moderation_items'));
 
-    // Four A04 queues + the A13 flagged messages (moderators hold chat.view_flagged, P4.3a).
-    expect($moderation)->toHaveCount(1)->and($cards)->toHaveCount(5)
+    // Four A04 queues + the A13 flagged messages and abuse signals (moderators hold chat.view_flagged, P4.3a / P4.3b).
+    expect($moderation)->toHaveCount(1)->and($cards)->toHaveCount(6)
         ->and($badges['admin.chat.flags'])->toBe(['key' => 'chat.flags', 'count' => 0])
+        ->and($badges['admin.chat.signals'])->toBe(['key' => 'chat.signals', 'count' => 0])
         ->and($badges['admin.moderation.profiles'])->toBe(['key' => 'moderation.profiles', 'count' => 2])
         ->and($badges['admin.moderation.photos']['count'])->toBe(1)            // an escalated photo still waits in its queue
         ->and($badges['admin.moderation.escalations'])->toBe(['key' => null, 'count' => 1])
