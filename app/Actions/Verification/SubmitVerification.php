@@ -123,7 +123,7 @@ final class SubmitVerification
         ], [
             'docType' => ['required', Rule::enum(VerificationDocType::class)],
             'number' => ['required', 'string', 'max:30'],
-            'nameOnDocument' => ['required', 'string', 'min:2', 'max:100', "regex:/^[\\p{L}\\p{M}][\\p{L}\\p{M} .'\\-]*$/u"],
+            'nameOnDocument' => ['required', 'string', 'min:2', 'max:100', "regex:/^[\\p{L}\\p{M}][\\p{L}\\p{M} .'’\\-]*$/u"],   // ’: phones type D’Souza
             'front' => ['required', ...$file],
             'back' => ['nullable', ...$file],
             'consent' => ['accepted'],

@@ -214,3 +214,9 @@ it('a deleted profile has no upload', function (): void {
 
     expect(fn () => submitId($member->refresh()))->toThrow(NotFoundHttpException::class);
 });
+
+it('accepts names typed with a curly apostrophe (phones type D’Souza)', function (): void {
+    $member = verificationMember(['first_name' => 'Maria', 'last_name' => 'D’Souza']);
+
+    expect(submitId($member, ['nameOnDocument' => 'Maria D’Souza'])->name_on_document)->toBe('Maria D’Souza');
+});
