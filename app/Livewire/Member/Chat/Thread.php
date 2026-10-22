@@ -103,6 +103,8 @@ final class Thread extends Component
             $channel.',.message.read' => '$refresh',
             $channel.',.message.deleted' => '$refresh',
             $channel.',.conversation.frozen' => '$refresh',   // R-M07-5: the composer locks / unlocks live
+            // F04: a payment activated a plan — the "Upgrade to chat" composer unlocks without a reload.
+            'echo-private:App.Models.User.'.$this->member()->id.',.entitlements.changed' => '$refresh',
             'realtime-reconnected' => '$refresh',   // back-fill: the window re-reads everything newer
         ];
     }

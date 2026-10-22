@@ -21,11 +21,16 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $profile_id
  * @property string $plan_id
+ * @property string|null $order_id the paid order (P5.1); null for a complimentary grant
  * @property SubscriptionStatus $status
  * @property SubscriptionSource $source
+ * @property int|null $duration_months
  * @property Carbon $starts_at
  * @property Carbon $ends_at
+ * @property Carbon|null $cancelled_at an upgrade replaced it (P5.1), or a refund (A06)
  * @property Carbon|null $paused_at paused while the member is suspended (A03)
+ * @property Carbon|null $reminded_7d_at the 7-day expiry reminder went out (P5.2)
+ * @property Carbon|null $reminded_1d_at the 1-day expiry reminder went out (P5.2)
  */
 final class Subscription extends Model
 {
@@ -43,8 +48,18 @@ final class Subscription extends Model
             'source' => SubscriptionSource::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+            'reminded_7d_at' => 'datetime',
+            'reminded_1d_at' => 'datetime',
             'paused_at' => 'datetime',
+            'duration_months' => 'integer',
         ];
+    }
+
+    /** @return BelongsTo<Order, $this> */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     /**

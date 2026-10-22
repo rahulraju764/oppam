@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Jobs\Billing\ExpireSubscriptions;
+use App\Jobs\Billing\ExpireUnpaidOrders;
+use App\Jobs\Billing\SendPlanExpiryReminders;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
 use App\Jobs\Engagement\DetectEngagementSignals;
@@ -45,3 +48,10 @@ Schedule::job(new PruneOldNotifications)->dailyAt('21:45')->onOneServer()->witho
 // Chat (M07, P4.2): the offline message digest every 5 minutes; retention (R-M07-6) nightly.
 Schedule::job(new SendChatDigests)->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::job(new PruneChatHistory)->dailyAt('21:50')->onOneServer()->withoutOverlapping();
+
+// M10: unpaid checkout orders past their expiry (a late capture still activates them).
+Schedule::job(new ExpireUnpaidOrders)->hourlyAt(40)->onOneServer()->withoutOverlapping();
+
+// M10 expiry (P5.2): ended plans → Free limits + flags + plan_expired; reminders 7 days / 1 day before, 10:00 IST.
+Schedule::job(new ExpireSubscriptions)->everyTenMinutes()->onOneServer()->withoutOverlapping();
+Schedule::job(new SendPlanExpiryReminders)->timezone('Asia/Kolkata')->dailyAt('10:00')->onOneServer()->withoutOverlapping();

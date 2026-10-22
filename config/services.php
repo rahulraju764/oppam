@@ -53,6 +53,20 @@ return [
         ]),
     ],
 
+    // Payments (PRD §4, M10). The `payments.razorpay_live` feature flag picks live or test keys.
+    'razorpay' => [
+        'live' => [
+            'key_id' => env('RAZORPAY_KEY_ID', ''),
+            'key_secret' => env('RAZORPAY_KEY_SECRET', ''),
+            'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET', ''),
+        ],
+        'test' => [
+            'key_id' => env('RAZORPAY_TEST_KEY_ID', ''),
+            'key_secret' => env('RAZORPAY_TEST_KEY_SECRET', ''),
+            'webhook_secret' => env('RAZORPAY_TEST_WEBHOOK_SECRET', ''),
+        ],
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

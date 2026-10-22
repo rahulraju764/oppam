@@ -284,8 +284,12 @@
 .daily-head { flex-wrap: wrap; gap: var(--space-2); }
 .daily-head__expiry { margin: 0; font-size: var(--text-sm); color: var(--color-bltxt); }
 
-.visitor-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
-.visitor-tab {
+/* Pill switches: visitors tabs (M15), plan durations on /plans and checkout (M10). */
+.visitor-tabs,
+.pill-switch { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+.pill-switch { justify-content: center; }
+.visitor-tab,
+.pill-option {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -297,8 +301,11 @@
   color: var(--color-bltxt);
   font-size: var(--text-sm);
 }
-.visitor-tab[aria-pressed="true"] { border-color: var(--color-primary); color: var(--color-primary); font-weight: var(--fw-semibold); }
-.visitor-tab:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.visitor-tab[aria-pressed="true"],
+.pill-option[aria-pressed="true"] { border-color: var(--color-primary); color: var(--color-primary); font-weight: var(--fw-semibold); }
+.visitor-tab:focus-visible,
+.pill-option:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.pill-option__note { font-size: var(--text-xs); color: var(--color-gr-dark); }
 
 .visit-time { font-size: var(--text-xs); color: var(--color-gr-dark); }
 
@@ -569,3 +576,47 @@ body.search-sheet-open .mobile-footer { display: none; }
 .msg-report-option .form-check-label { overflow-wrap: anywhere; }
 .msg-report-time { display: block; color: var(--color-gr-dark); font-size: var(--text-xs); }
 .msg-thread-muted { margin-left: var(--space-1); color: var(--color-gr-dark); font-size: var(--text-xs); }
+
+/* ---- Membership (P5.1, M10): plans comparison, checkout extras ---- */
+.plan-compare { margin-top: var(--space-8); }
+.plan-compare h2 { text-align: center; margin-bottom: var(--space-5); }
+/* The visually-hidden caption is position: absolute — without a positioned scroll wrapper it escapes
+   the overflow clip and widens the page on phones. */
+.plan-compare .table-responsive { position: relative; }
+.plan-compare table { min-width: 560px; margin: 0; background: var(--color-default); font-size: var(--text-sm); }
+.plan-compare th,
+.plan-compare td { padding: var(--space-3); text-align: center; vertical-align: middle; }
+.plan-compare th[scope="row"] { text-align: start; font-weight: var(--fw-medium); color: var(--color-bltxt); }
+.plan-compare .is-featured { background: var(--bg-rose); }
+.plan-compare .fa-check { color: var(--color-success); }
+.plan-compare .fa-minus { color: var(--color-gr-dark); }
+.plan-price-note { font-size: var(--text-xs); color: var(--color-gr-dark); text-align: center; }
+.checkout-durations { justify-content: flex-start; margin: var(--space-4) 0 0; }
+.checkout-coupon { margin-bottom: var(--space-4); }
+.checkout-coupon-applied { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-success); }
+.checkout-line-discount dd { color: var(--color-success); }
+.checkout-test { margin-top: var(--space-4); display: grid; gap: var(--space-2); }
+.billing-status { text-align: center; }
+.billing-status .fa { font-size: var(--text-3xl); margin-bottom: var(--space-3); }
+.billing-status .fa-check-circle { color: var(--color-success); }
+.billing-status .fa-times-circle { color: var(--color-primary-dark); }
+.billing-status-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-5); }
+
+/* ---- §7.3 "highlighted in search" (P5.2): Gold / Diamond result rows ---- */
+.profiles.is-featured { box-shadow: 0 0 0 2px var(--color-primary), var(--shadow-card); }
+.profile-featured { margin-left: var(--space-2); vertical-align: middle; }
+
+/* ---- /billing (P5.2, M10): usage meters, orders ---- */
+.billing-title { margin-bottom: var(--space-5); font-size: var(--text-2xl); }
+.checkout-features li.is-off { color: var(--color-gr-dark); }
+.checkout-features li.is-off .fa-minus { color: var(--color-gr-dark); }
+.usage-meter { padding: var(--space-3) 0; border-bottom: var(--border-hair); }
+.usage-meter:last-child { border-bottom: 0; }
+.usage-meter__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); }
+.usage-meter__label { font-weight: var(--fw-semibold); color: var(--color-bltxt); }
+.usage-meter__value { color: var(--color-gr-dark); }
+.usage-meter__bar { height: var(--space-2); margin-top: var(--space-2); border-radius: var(--radius-pill); background: var(--bg-mist); overflow: hidden; }
+.usage-meter__bar > span { display: block; width: var(--progress, 0%); height: 100%; background: var(--color-primary); }
+.usage-meter__reset { margin: var(--space-1) 0 0; font-size: var(--text-xs); color: var(--color-gr-dark); }
+.billing-orders { position: relative; }
+.billing-orders table { min-width: 640px; margin: 0; font-size: var(--text-sm); }

@@ -66,16 +66,17 @@ it('escapes member-supplied text in every profile component (stored XSS)', funct
 })->with(['row', 'tile', 'member-card']);
 
 it('renders a pricing card from paise without floats and only links a CTA that exists', function (): void {
-    $plan = new PlanCardData('GOLD', 'Gold', Money::rupees(999), Money::rupees(11988), ['Chat'], isFeatured: true, badge: 'Most Popular');
+    $plan = new PlanCardData('GOLD', 'Gold', 12, Money::rupees(8991), Money::rupees(749), 25, ['Chat'], isFeatured: true, badge: 'Most Popular');
 
     $html = Blade::render('<x-pricing.card :plan="$plan" />', ['plan' => $plan]);
 
     expect($html)->toContain('pricing-card featured')
-        ->and($html)->toContain('<span>999</span>')
-        ->and($html)->toContain('₹11,988')
+        ->and($html)->toContain('<span>749</span>')
+        ->and($html)->toContain('₹8,991 for 12 months')
+        ->and($html)->toContain('save 25%')
         ->and($html)->not->toContain('Purchase Now');
 
-    $withCta = new PlanCardData('GOLD', 'Gold', Money::rupees(999), Money::rupees(11988), [], ctaUrl: '/plans');
+    $withCta = new PlanCardData('GOLD', 'Gold', 1, Money::rupees(999), Money::rupees(999), null, [], ctaUrl: '/plans');
 
     expect(Blade::render('<x-pricing.card :plan="$plan" />', ['plan' => $withCta]))->toContain('href="/plans" class="btn-purchase"');
 });

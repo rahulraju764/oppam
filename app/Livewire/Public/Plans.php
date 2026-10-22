@@ -7,20 +7,31 @@ namespace App\Livewire\Public;
 use App\Data\Content\SeoData;
 use App\Queries\Billing\PlanCatalog;
 use App\Support\DemoContent;
-use App\Support\Navigation\Navigation;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Membership plans + FAQ (template package.php, PRD M10/M12). "Purchase Now" goes to checkout
- * with the plan KEY once checkout exists (P5.1) — never a price. Until then there is no button.
+ * Membership plans + FAQ (template package.php, PRD M10/M12): Silver / Gold (Most Popular) /
+ * Diamond for 1 / 3 / 6 / 12 months with the saving on longer durations, and the comparison table
+ * from plan_features. "Purchase Now" opens checkout with the plan KEY and duration — never a price
+ * (guests are sent to sign in first by the member route).
  */
 final class Plans extends Component
 {
-    public function render(): View
+    #[Url]
+    public int $duration = PlanCatalog::DEFAULT_DURATION;
+
+    public function render(PlanCatalog $catalog): View
     {
+        $durations = $catalog->durations();
+        $duration = in_array($this->duration, $durations, true) ? $this->duration : ($durations[0] ?? PlanCatalog::DEFAULT_DURATION);
+
         return view('livewire.public.plans', [
-            'plans' => app(PlanCatalog::class)->cards(ctaUrl: app(Navigation::class)->url('member.checkout')),
+            'plans' => $catalog->cards(ctaUrl: null, duration: $duration, toCheckout: true),
+            'durations' => $durations,
+            'selectedDuration' => $duration,
+            'comparison' => $catalog->comparison(),
             'faqs' => DemoContent::faqs(),
         ])->layout('layouts::public', ['seo' => new SeoData(
             title: 'Membership Packages & FAQ | Oppam Matrimony',

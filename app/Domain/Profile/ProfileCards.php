@@ -84,6 +84,7 @@ final class ProfileCards
             height: $profile->height_cm !== null ? HeightCm::of($profile->height_cm)->label() : null,
             place: $profile->district_id !== null ? ($districts[$profile->district_id] ?? null) : null,
             isNew: $profile->published_at?->greaterThan($newSince) === true,
+            isFeatured: $profile->highlighted_until?->isFuture() === true,
             liked: $state !== null ? isset($state['liked'][(string) $profile->id]) : null,
             favorited: $showFavorites ? isset($state['favorited'][(string) $profile->id]) : null,
             interest: $interests !== null ? ($interests[(string) $profile->id] ?? Connections::NONE) : null,

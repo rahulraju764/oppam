@@ -23,7 +23,7 @@ final class DatabaseSeeder extends Seeder
         ]);
 
         if (app()->environment('local')) {
-            $this->call([DemoProfilesSeeder::class, AdminUsersSeeder::class]);
+            $this->call([DemoProfilesSeeder::class, AdminUsersSeeder::class, DemoCouponsSeeder::class]);
         }
     }
 }

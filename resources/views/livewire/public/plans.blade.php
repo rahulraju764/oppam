@@ -1,6 +1,8 @@
 {{--
     Membership plans + FAQ (template package.php; faq.php 301s to #faq). Full-bleed: the 3-up
-    pricing grid earns the width. "Purchase Now" appears once checkout exists (P5.1).
+    pricing grid earns the width. A duration switch (1 / 3 / 6 / 12 months, ?duration=) re-prices
+    the cards; "Purchase Now" opens checkout with the plan key + duration. Below: the comparison
+    table built from plan_features (PRD §7.3).
 --}}
 @php($faqColumns = array_chunk($faqs, (int) ceil(count($faqs) / 2)))
 
@@ -31,7 +33,56 @@
                 </div>
             </div>
 
-            <x-pricing.cards :plans="$plans" />
+            @if (count($durations) > 1)
+                <div class="pill-switch" role="group" aria-label="{{ __('Plan duration') }}">
+                    @foreach ($durations as $months)
+                        <button type="button" class="pill-option" wire:click="$set('duration', {{ $months }})"
+                                aria-pressed="{{ $months === $selectedDuration ? 'true' : 'false' }}">
+                            {{ trans_choice(':count month|:count months', $months, ['count' => $months]) }}
+                        </button>
+                    @endforeach
+                </div>
+            @endif
+
+            <div wire:loading.class="opacity-50" wire:target="duration">
+                <x-pricing.cards :plans="$plans" />
+            </div>
+            <p class="plan-price-note">{{ __('Prices are before GST (18%), which is added at checkout.') }}</p>
+
+            <div class="plan-compare">
+                <h2>{{ __('Compare plans') }}</h2>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <caption class="visually-hidden">{{ __('What each membership plan includes') }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ __('Feature') }}</th>
+                                @foreach ($comparison->plans as $index => $name)
+                                    <th scope="col" @class(['is-featured' => $index === $comparison->featuredColumn])>{{ $name }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($comparison->rows as $row)
+                                <tr>
+                                    <th scope="row">{{ $row['label'] }}</th>
+                                    @foreach ($row['cells'] as $index => $cell)
+                                        <td @class(['is-featured' => $index === $comparison->featuredColumn])>
+                                            @if ($cell === true)
+                                                <i class="fa fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Included') }}</span>
+                                            @elseif ($cell === false)
+                                                <i class="fa fa-minus" aria-hidden="true"></i><span class="visually-hidden">{{ __('Not included') }}</span>
+                                            @else
+                                                {{ $cell }}
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </section>
 

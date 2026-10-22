@@ -5,12 +5,16 @@ declare(strict_types=1);
 use App\Http\Controllers\Member\ChatImageController;
 use App\Http\Controllers\Member\HoroscopeController;
 use App\Http\Controllers\Member\ImpersonationController;
+use App\Http\Controllers\Member\InvoiceDownloadController;
 use App\Http\Controllers\Member\UnsubscribeSavedSearchController;
 use App\Livewire\Member\Activity\Visitors;
 use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
 use App\Livewire\Member\Auth\VerifyOtp;
+use App\Livewire\Member\Billing\Checkout;
+use App\Livewire\Member\Billing\CheckoutSuccess;
+use App\Livewire\Member\Billing\History;
 use App\Livewire\Member\Browse\AllProfiles;
 use App\Livewire\Member\Chat\Messages;
 use App\Livewire\Member\Dashboard\Dashboard;
@@ -94,6 +98,13 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         Route::get('/search', Search::class)->name('member.search');
         Route::get('/profiles', AllProfiles::class)->name('member.profiles');
         Route::get('/profile/{profile}', Show::class)->where('profile', 'OPM[0-9]+')->name('member.profile.show');
+
+        // Membership (M10, F04): checkout by plan KEY (+ ?duration=), the success page polls the order.
+        Route::get('/billing', History::class)->name('member.billing');
+        Route::get('/checkout/{plan}', Checkout::class)->where('plan', '[a-z]{3,10}')->name('member.checkout');
+        Route::get('/billing/success/{order}', CheckoutSuccess::class)->where('order', 'ORD[0-9]+')->name('member.billing.success');
+        Route::get('/billing/invoices/{invoice}', InvoiceDownloadController::class)
+            ->where('invoice', 'OPM-[0-9]{4}-[0-9]{6}')->middleware('throttle:30,1')->name('member.billing.invoice');
     });
 
     // WebSocket channel sign-in for the member site (PRD §9): routes/channels.php decides per channel.

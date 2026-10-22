@@ -84,7 +84,15 @@ it('builds the pricing cards for purchasable plans from the database', function 
     expect(collect($cards)->pluck('key')->all())->toBe(['SILVER', 'GOLD', 'DIAMOND'])
         ->and($cards[1]->isFeatured)->toBeTrue()
         ->and($cards[1]->badge)->toBe('Most Popular')
-        ->and($cards[2]->yearlyPrice->format())->toBe('23,988');
+        ->and($cards[2]->price->format())->toBe('1,999')
+        ->and($cards[2]->savingsPercent)->toBeNull();
+
+    // decisions 2026-10-21: 3 / 6 / 12 months at 10 / 15 / 25 % off, whole rupees.
+    $yearly = app(PlanCatalog::class)->cards(ctaUrl: null, duration: 12);
+    expect($yearly[2]->price->format())->toBe('17,991')
+        ->and($yearly[2]->perMonth->format())->toBe('1,499')
+        ->and($yearly[2]->savingsPercent)->toBe(25)
+        ->and(app(PlanCatalog::class)->durations())->toBe([1, 3, 6, 12]);
 });
 
 it('hides a deactivated plan from the pricing cards', function (): void {

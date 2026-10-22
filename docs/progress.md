@@ -4,8 +4,9 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 4 — Chat (Phase 3 complete, 2026-10-15)
-**Next session:** P4.3b — Chat overview, break-glass, signals, rules editor (A13)
+**Current phase:** 5 — Money (Phase 4 complete, 2026-10-21)
+**Next session:** P5.3 — Admin billing (A06) — plan written, waiting on 3 owner answers (second-level checks, refund scope,
+refund categories); first run P5.2's Dusk step
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -51,11 +52,15 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 - [x] P4.1 Chat core: inbox, thread, send, receipts (M07) — 2026-10-16 (reviewer READY in round 1, Minors only; owner reviewed and approved the commit — rule 5: an admin support session sees no message text and the chat / inbox channels refuse it)
 - [x] P4.2 Chat part 2: typing, history, extras (M07) — 2026-10-16 (reviewer READY in round 2 after 2 Majors fixed: the digest job re-read every member with old unread messages (now SQL-filtered, fixed query count), decisions not recorded; owner confirmed both decisions in decisions.md)
 - [x] P4.3a Content safety, flags, report from chat, freeze, flagged queue (A13 + M09 report) — 2026-10-18 (committed by the owner in bd6fbc8 after reviewer round 1; confirming review NOT READY with 2 Majors fixed: a moderator's freeze on a report-frozen thread was later undone, two simultaneous reports could miss the auto-freeze (profile-row locks); round 2 READY, Dusk freeze 1.1–1.6 s + live badge)
-- [ ] P4.3b Chat overview, break-glass, signals, rules editor (A13)
+- [x] P4.3b Chat overview, break-glass, signals, rules editor (A13) — 2026-10-21 (built 2026-10-18, committed by the owner in cb7a604 + 165284a without a review; reviewed afterwards: READY TO COMMIT in round 1, 0 Blockers / 0 Majors, 7 Minors open — see Notes; Dusk / browser widths not run)
 
 ## Phase 5 — Money
-- [ ] P5.1 Plans, checkout & Razorpay (M10)
-- [ ] P5.2 Entitlement sweep, billing history & expiry
+- [x] P5.1 Plans, checkout & Razorpay (M10) — 2026-10-21 (reviewer READY in round 2 after 1 Major fixed: SimulateTestPayment's refusals untested; Dusk: composer unlocks live 1.4–3.0 s after a fake-gateway payment; NOT committed — payments change, owner review first (rule 5))
+- [ ] P5.2 Entitlement sweep, billing history & expiry — 2026-10-22: reviewer READY in round 2 after 1 Major fixed (ExpireSubscriptions
+  expired PAUSED plans + resume didn't re-sync flags); round-2 Minors fixed (EntitlementsChanged `until` on pause / resume, event asserted).
+  NOT ticked yet: Dusk unrun (tests/Browser/Mobile/BillingTest.php /billing step — dev servers were stopped for low memory) and NOT
+  committed (ActivateSubscription edit → owner review with P5.1, rule 5). Open Minors: matrix lacks "limit−1 allowed" for favourites / contacts; `isFeatured` shows on every
+  card list, not only search; /billing no loading state on pagination, query count unmeasured; migration down() not executed.
 - [ ] P5.3 Admin billing (A06)
 
 ## Phase 6 — Trust & support
@@ -89,6 +94,36 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
+- P5.1 → before launch (P9.5): the owner supplies the seller's legal name, GSTIN, address and SAC (A15 `billing.seller_*` —
+  placeholders today; an invoice without a GSTIN says it is not a valid tax invoice); Razorpay live + test keys, webhook URL
+  `/webhooks/razorpay` (payment.captured, payment.failed, order.paid) and **automatic capture** on; register the MSG91
+  `payment_success` template (variables: plan name, end date); `PAYMENT_DRIVER=razorpay` in production.
+- P5.1 review Minors, open: (1) the coupon field is checked live (400 ms debounce) and every pause counts against
+  `billing.coupon_attempts_per_hour` — check on blur / an Apply button, or count only plausible codes; (2) the invoice prints
+  the letter state code ("KL") — GST invoices use the numeric state code (Kerala 32): add it to master_states or a setting.
+- P5.1 → P5.2: billing history (orders, invoice downloads — the route exists), usage meters, expiry reminders + the job that
+  ends subscriptions and clears `is_premium` (today `is_premium` is set on activation and never cleared), `highlighted_until`.
+- P5.1 → P5.3 (A06): stuck orders (`failure_reason` amount_mismatch, logs `billing.amount_mismatch` / `billing.extra_payment` /
+  `billing.coupon_over_limit`), raw webhook viewer (`payment_webhook_events`, payer details redacted), refunds, coupon admin,
+  monthly GST CSV, reconciliation job; P7.8: the `OrderPaid` listener (broker commission).
+- P5.1 → P8.2 (M14): the invoice email (no email before verification, 2026-10-06); today the invoice is downloaded from
+  `/billing/success/{order}`.
+- P5.1 → P9.3 / P9.4: real Razorpay test-mode keys not yet exercised end to end (fake gateway only); time the live unlock
+  with OPcache (1.4–3.0 s locally without it, through `queue:listen`); a member with no profile on SimulateTestPayment untested
+  (trivial 404).
+- P5.1 local setup: `php artisan migrate` and `php artisan db:seed --class=PlansSeeder` (insert-only: adds the 3 / 6 / 12-month
+  prices) and `--class=SettingsSeeder` (billing settings) — run on the local database 2026-10-21; `DemoCouponsSeeder`
+  (WELCOME10, FLAT200) runs only on a fresh local seed.
+- P4.3b review Minors (round 1, 2026-10-21), open: (1) `EngagementSignals::raise()` reads then inserts / increments with no
+  lock — parallel requests can make two OPEN rows or lose a count (lock or `increment()`); (2) `DetectEngagementSignals` takes
+  `limit(200)` before filtering already-raised members, unordered — 200+ standing offenders hide new ones (filter in SQL);
+  (3) `ProfanityMatcher` casts a failed `preg_replace` (null) to "" — keep the text and flag, as `mask()` does; (4) BreakGlass
+  shows the editable codes A · B but opens the locked `threadId` — render the found thread's codes or reset on edit; (5)
+  `Signals::$selected` id is not `#[Locked]` (re-read + re-authorized on every action; record or pass as an argument);
+  (6) every refused favourite writes to `engagement_signals` — raise once per window; (7) the break-glass watermark is 24 fixed
+  spans from the top — long transcripts may be unmarked lower down (repeating background) — check with a Dusk screenshot.
+- P4.3b not verified in a browser: no Dusk test for the A13 admin screens; widths 320–1440 px → P9.3. The decisions row of
+  2026-10-18 is still marked "owner to confirm".
  - P4.3a → P4.3b: the rules editor (today the patterns are RuleBasedContentSafety constants; per-rule mask / flag / block and
   a dry-run tester), Overview (metadata only), BreakGlass, Signals (REPETITION flags and like / interest spam →
   engagement_signals with one-click actions). Images are never scanned automatically — a reported photo is reviewable

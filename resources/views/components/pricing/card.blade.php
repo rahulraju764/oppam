@@ -1,6 +1,7 @@
 {{--
-    One membership pricing card (template pricing-cards.php). The CTA goes to the plans page
-    from the home teaser and to checkout (P5.1) from /plans; with no URL the button is omitted.
+    One membership pricing card (template pricing-cards.php) for one duration: the per-month
+    equivalent, what is billed, and the saving against paying monthly. The CTA goes to the plans
+    page from the home teaser and to checkout (plan key + duration) from /plans.
     plan   App\Data\Billing\PlanCardData
 --}}
 @props(['plan'])
@@ -13,9 +14,18 @@
         <h3 class="plan-name">{{ $plan->name }}</h3>
         <hr>
         <div class="plan-price">
-            <sup>&#8377;</sup><span>{{ $plan->monthlyPrice->format() }}</span><sub>{{ __('/mo') }}</sub>
+            <sup>&#8377;</sup><span>{{ $plan->perMonth->format() }}</span><sub>{{ __('/mo') }}</sub>
         </div>
-        <p class="billed-text">{{ __('Billed as ₹:amount per year', ['amount' => $plan->yearlyPrice->format()]) }}</p>
+        <p class="billed-text">
+            @if ($plan->durationMonths === 1)
+                {{ __('Billed monthly') }}
+            @else
+                {{ __('Billed as ₹:amount for :months months', ['amount' => $plan->price->format(), 'months' => $plan->durationMonths]) }}
+                @if ($plan->savingsPercent)
+                    · {{ __('save :percent%', ['percent' => $plan->savingsPercent]) }}
+                @endif
+            @endif
+        </p>
         <hr>
         <p class="unlock-title">{{ __('Unlock Features :') }}</p>
         <ul class="feature-list">

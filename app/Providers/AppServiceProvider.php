@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Contracts\ContentSafety;
+use App\Contracts\InvoiceRenderer;
+use App\Contracts\PaymentGateway;
 use App\Contracts\PresenceCounter;
 use App\Contracts\SmsGateway;
+use App\Domain\Billing\FinancialYear;
 use App\Domain\Billing\UsagePeriodResolver;
 use App\Domain\Chat\ChatSafetyRules;
 use App\Domain\Engagement\Connections;
 use App\Domain\Engagement\EngagementRestrictions;
+use App\Enums\Flag;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
@@ -35,15 +39,20 @@ use App\Observers\MasterDataObserver;
 use App\Observers\NewMemberTickObserver;
 use App\Queries\Admin\WorkQueues;
 use App\Services\Admin\Impersonation;
+use App\Services\Billing\DompdfInvoiceRenderer;
 use App\Services\Chat\RuleBasedContentSafety;
 use App\Services\Entitlements\EntitlementService;
+use App\Services\Payments\FakePaymentGateway;
+use App\Services\Payments\RazorpayGateway;
 use App\Services\Realtime\BroadcastPresenceCounter;
 use App\Services\Settings\FeatureFlags;
 use App\Services\Settings\SettingsRepository;
 use App\Services\Sms\LogSmsGateway;
 use App\Services\Sms\Msg91Gateway;
+use App\Support\Facades\Feature;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Pagination\Paginator;
@@ -88,6 +97,34 @@ final class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
         $this->app->bind(ContentSafety::class, RuleBasedContentSafety::class);         // M07 send flow / A13
+        $this->app->bind(InvoiceRenderer::class, DompdfInvoiceRenderer::class);        // M10 GST invoice PDF
+
+        $this->app->singleton(FinancialYear::class, fn (): FinancialYear => new FinancialYear(config('oppam.display_timezone')));
+
+        // Payments (M10): Razorpay, or the fake gateway (local / tests / Dusk) — never fake in production.
+        $this->app->singleton(FakePaymentGateway::class, fn (): FakePaymentGateway => new FakePaymentGateway(
+            $this->app->make(CacheRepository::class),
+            hash_hmac('sha256', 'fake-payment-gateway', (string) config('app.key')),
+        ));
+        $this->app->singleton(PaymentGateway::class, function (): PaymentGateway {
+            $driver = (string) config('oppam.payments.driver');
+
+            if ($driver === 'fake' && $this->app->isProduction()) {
+                throw new RuntimeException('PAYMENT_DRIVER=fake is not allowed in production.');
+            }
+
+            if ($driver === 'fake') {
+                return $this->app->make(FakePaymentGateway::class);
+            }
+
+            if ($driver !== 'razorpay') {
+                throw new RuntimeException("Unknown PAYMENT_DRIVER [{$driver}].");
+            }
+
+            $keys = (array) config('services.razorpay.'.(Feature::active(Flag::PaymentsRazorpayLive) ? 'live' : 'test'));
+
+            return new RazorpayGateway((string) ($keys['key_id'] ?? ''), (string) ($keys['key_secret'] ?? ''), (string) ($keys['webhook_secret'] ?? ''));
+        });
 
         $this->app->singleton(SmsGateway::class, function (): SmsGateway {
             $driver = (string) config('oppam.sms.driver');

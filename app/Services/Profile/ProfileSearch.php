@@ -123,7 +123,7 @@ final class ProfileSearch
     {
         // The sort key as an SQL expression (with its bindings); published_at then id break ties.
         [$keySql, $keyBindings] = match ($criteria->sort) {
-            SearchSort::Relevance => $this->relevance($searcher),
+            SearchSort::Relevance => $this->relevance($searcher, topPlacement: true),
             SearchSort::Newest => ['profiles.published_at', []],
             SearchSort::LastActive => ['COALESCE(profiles.last_active_at, ?)', [self::EPOCH]],
             SearchSort::Verified => ['(CASE WHEN profiles.is_verified THEN 1 ELSE 0 END)', []],
@@ -343,11 +343,15 @@ final class ProfileSearch
 
     /**
      * Relevance: the searcher's partner preferences that a profile meets on its own columns,
-     * ×10, + 5 when highlighted, + 3 when premium. Returns SQL with ? placeholders and bindings.
+     * ×10, + 5 when highlighted (Gold / Diamond, §7.3), + 3 when premium. On the search page
+     * (`$topPlacement`) a Diamond profile's "top placement" adds 1000 — above any count of matched
+     * preferences — so Diamond profiles that pass the filters come first (decisions 2026-10-22); the
+     * daily-matches pool ranks by fit alone. Every column is in profiles_search_cover_index.
+     * Returns SQL with ? placeholders and bindings.
      *
      * @return array{0: string, 1: list<mixed>}
      */
-    private function relevance(Profile $searcher): array
+    private function relevance(Profile $searcher, bool $topPlacement = false): array
     {
         $pref = $searcher->partnerPreference()->first();
         $parts = [];
@@ -379,8 +383,13 @@ final class ProfileSearch
 
         $matches = $parts === [] ? '0' : implode(' + ', array_map(fn (string $p): string => "(CASE WHEN {$p} THEN 1 ELSE 0 END)", $parts));
         $bindings[] = now()->toDateTimeString();
+        $placement = '';
+        if ($topPlacement) {
+            $placement = ' + (CASE WHEN profiles.top_placement_until > ? THEN 1000 ELSE 0 END)';
+            $bindings[] = now()->toDateTimeString();
+        }
 
-        return ["(({$matches}) * 10 + (CASE WHEN profiles.highlighted_until > ? THEN 5 ELSE 0 END) + (CASE WHEN profiles.is_premium THEN 3 ELSE 0 END))", $bindings];
+        return ["(({$matches}) * 10 + (CASE WHEN profiles.highlighted_until > ? THEN 5 ELSE 0 END) + (CASE WHEN profiles.is_premium THEN 3 ELSE 0 END){$placement})", $bindings];
     }
 
     /**

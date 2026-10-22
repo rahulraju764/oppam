@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace App\Actions\Admin\Members;
 
 use App\Actions\Admin\Members\Concerns\ChangesMemberState;
+use App\Actions\Billing\SyncMembershipFlags;
 use App\Enums\PlanCode;
 use App\Enums\SubscriptionSource;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
+use App\Events\Billing\EntitlementsChanged;
 use App\Exceptions\Admin\MemberStateConflict;
 use App\Models\AdminUser;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
-use App\Services\Entitlements\EntitlementService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -24,8 +25,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Grant a complimentary plan (A03 quick action): a COMPLIMENTARY subscription to a paid plan for
  * 1–365 days from now — no order, no payment. Needs `billing.force_activate` (it hands out paid
- * features; decision 2026-10-02). Active accounts with a verified phone only. The profile is marked premium; the
- * expiry sweep that clears it again arrives with P5.2. Typed reason, audited.
+ * features; decision 2026-10-02). Active accounts with a verified phone only. The plan flags are re-synced
+ * (SyncMembershipFlags) and ExpireSubscriptions clears them when it ends. Typed reason, audited.
  */
 final class GrantComplimentaryPlan
 {
@@ -35,7 +36,7 @@ final class GrantComplimentaryPlan
 
     public function __construct(
         private readonly AuditLogger $audit,
-        private readonly EntitlementService $entitlements,
+        private readonly SyncMembershipFlags $flags,
     ) {}
 
     /**
@@ -82,8 +83,11 @@ final class GrantComplimentaryPlan
                 'ends_at' => now()->addDays($days),
             ])->save();
 
-            $profile->forceFill(['is_premium' => true])->save();
-            $this->entitlements->forget($profile);
+            // P5.2: is_premium / highlight / top placement from the plan now in force; the member's
+            // open pages (chat composer, quotas) update live.
+            $inForce = $this->flags->handle($profile);
+            EntitlementsChanged::dispatch($member->id, $inForce->code->value, $inForce->name,
+                $subscription->ends_at->copy()->timezone((string) config('oppam.display_timezone'))->format('j M Y'));
 
             $this->audit->record('members.plan_granted', $subscription, after: [
                 'plan' => $plan->code->value, 'days' => $days, 'ends_at' => $subscription->ends_at->toIso8601String(),

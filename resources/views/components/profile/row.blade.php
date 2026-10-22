@@ -13,7 +13,7 @@
 --}}
 @props(['profile', 'hideInterest' => false])
 
-<div {{ $attributes->class('profiles') }}>
+<div {{ $attributes->class(['profiles', 'is-featured' => $profile->isFeatured]) }}>
     <div class="profile-img">
         {{-- alt="" — the name is the adjacent <h2>; a filled alt would be read twice. --}}
         <img src="{{ $profile->photoUrl }}" class="img-fluid" alt="" width="600" height="600" loading="lazy" decoding="async">
@@ -46,6 +46,9 @@
 
         <h3 class="pf-dt-m">
             {{ $profile->code }}
+            @if ($profile->isFeatured)
+                <x-ui.badge variant="premium" icon="fa-star" class="profile-featured">{{ __('Featured') }}</x-ui.badge>
+            @endif
             @if ($profile->meta)
                 <span>{{ $profile->meta }}</span>
             @endif

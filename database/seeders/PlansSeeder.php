@@ -10,8 +10,9 @@ use App\Models\Plan;
 use Illuminate\Database\Seeder;
 
 /**
- * The four plans and the PRD §7.3 entitlement matrix. Prices in paise, monthly only for now
- * (3/6/12-month discounts are an open business decision, PRD §19 #7). FREE is a real row so its
+ * The four plans and the PRD §7.3 entitlement matrix. Prices in paise (before GST) for 1 / 3 / 6 /
+ * 12 months at 0 / 10 / 15 / 25 % off the monthly price, rounded to whole rupees (PRD §19 #7 —
+ * decisions 2026-10-21; edited in A06 afterwards). FREE is a real row so its
  * limits are editable in A06 like any other plan; it is never purchasable.
  * INSERT-ONLY: plans, prices and entitlements are created when missing and never updated, so a
  * re-seed can't overwrite an A06 price or limit. After the first run they are edited only in A06.
@@ -27,8 +28,8 @@ final class PlansSeeder extends Seeder
             $plan = Plan::query()->firstWhere('code', $definition['code']->value)
                 ?? $this->createPlan($definition, $order);
 
-            if ($definition['monthly_paise'] !== null) {
-                $plan->prices()->firstOrCreate(['duration_months' => 1], ['price_paise' => $definition['monthly_paise'], 'is_active' => true]);
+            foreach ($definition['prices'] as $months => $paise) {
+                $plan->prices()->firstOrCreate(['duration_months' => $months], ['price_paise' => $paise, 'is_active' => true]);
             }
 
             foreach ($definition['features'] as $entitlement => $value) {
@@ -61,7 +62,7 @@ final class PlansSeeder extends Seeder
     /**
      * PRD §7.3. Quotas: an int limit, or UNLIMITED. Flags: true / false.
      *
-     * @return list<array{code: PlanCode, name: string, badge?: string, featured?: bool, monthly_paise: int|null, display: list<string>, features: array<string, int|bool|null>}>
+     * @return list<array{code: PlanCode, name: string, badge?: string, featured?: bool, prices: array<int, int>, display: list<string>, features: array<string, int|bool|null>}>
      */
     private function plans(): array
     {
@@ -69,7 +70,7 @@ final class PlansSeeder extends Seeder
             [
                 'code' => PlanCode::Free,
                 'name' => 'Free',
-                'monthly_paise' => null,
+                'prices' => [],
                 'display' => ['Search and view profiles', 'Daily match recommendations', 'Send 3 interests a month'],
                 'features' => [
                     'likes_per_day' => 10,
@@ -87,7 +88,7 @@ final class PlansSeeder extends Seeder
             [
                 'code' => PlanCode::Silver,
                 'name' => 'Silver',
-                'monthly_paise' => 49_900,
+                'prices' => [1 => 49_900, 3 => 134_700, 6 => 254_500, 12 => 449_100],
                 'display' => ['Send 25 interests a month', 'View 10 verified mobile numbers', 'Chat with accepted matches', 'Daily match recommendations'],
                 'features' => [
                     'likes_per_day' => 50,
@@ -107,7 +108,7 @@ final class PlansSeeder extends Seeder
                 'name' => 'Gold',
                 'badge' => 'Most Popular',
                 'featured' => true,
-                'monthly_paise' => 99_900,
+                'prices' => [1 => 99_900, 3 => 269_700, 6 => 509_500, 12 => 899_100],
                 'display' => ['Send 100 interests a month', 'View 50 verified mobile numbers', 'Unlimited chat and messages', 'Profile highlighted in search'],
                 'features' => [
                     'likes_per_day' => self::UNLIMITED,
@@ -125,7 +126,7 @@ final class PlansSeeder extends Seeder
             [
                 'code' => PlanCode::Diamond,
                 'name' => 'Diamond',
-                'monthly_paise' => 199_900,
+                'prices' => [1 => 199_900, 3 => 539_700, 6 => 1_019_500, 12 => 1_799_100],
                 // The template listed "Dedicated relationship manager" — a v2 feature (PRD §7.3), so it
                 // is not advertised on a v1 card; top placement is Diamond's real v1 extra.
                 'display' => ['Unlimited interests', 'Unlimited verified mobile numbers', 'Unlimited chat and messages', 'Top placement in search results'],

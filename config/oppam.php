@@ -91,6 +91,13 @@ return [
         'driver' => env('SMS_DRIVER', 'log'),
     ],
 
+    'payments' => [
+        // razorpay | fake (local / testing / Dusk: simulated payments, no money). Bound in
+        // AppServiceProvider; `fake` is refused in production. Defaults to fake only in local / testing.
+        'driver' => env('PAYMENT_DRIVER', in_array(env('APP_ENV'), ['local', 'testing'], true) ? 'fake' : 'razorpay'),
+        'checkout_script' => 'https://checkout.razorpay.com/v1/checkout.js',
+    ],
+
     // Member / broker sign-in (M01, PRD §8.2). Security policy, so config rather than admin settings
     // (same reasoning as the admin block above). OTP send limits and TTL are A15 settings (SettingKey::Otp*).
     'auth' => [

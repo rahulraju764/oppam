@@ -24,6 +24,8 @@ final readonly class ProfileCardData
         /** "Last seen …" tail, or a context line such as "3 days ago" on the interests page. */
         public ?string $meta = null,
         public bool $isNew = false,
+        /** §7.3 "profile highlighted in search" (Gold / Diamond): a Featured mark on the card. */
+        public bool $isFeatured = false,
         /** The viewer's own like / bookmark on this profile; null = no engagement buttons on this card. */
         public ?bool $liked = null,
         public ?bool $favorited = null,

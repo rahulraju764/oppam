@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Admin\Members\Concerns;
 
+use App\Actions\Billing\SyncMembershipFlags;
 use App\Enums\ModerationHold;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
@@ -12,10 +13,12 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Events\Account\ForceLogout;
 use App\Events\Admin\ModerationQueueChanged;
+use App\Events\Billing\EntitlementsChanged;
 use App\Models\ModerationItem;
 use App\Models\Profile;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Queries\Billing\CurrentMembership;
 use App\Support\Realtime\LiveSignal;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -147,15 +150,21 @@ trait ChangesMemberState
         return $count;
     }
 
-    /** Pause the member's running plans (A03 "pauses subscription"). */
+    /** Pause the member's running plans (A03 "pauses subscription"); ExpireSubscriptions skips paused plans. */
     private function pauseSubscriptions(Profile $profile): int
     {
-        return Subscription::query()
+        $paused = Subscription::query()
             ->where('profile_id', $profile->id)
             ->where('status', SubscriptionStatus::Active->value)
             ->whereNull('paused_at')
             ->where('ends_at', '>', now())
             ->update(['paused_at' => now(), 'updated_at' => now()]);
+
+        if ($paused > 0) {
+            $this->syncPlanFlags($profile);
+        }
+
+        return $paused;
     }
 
     /** Resume paused plans: each ends later by exactly the time it was paused. */
@@ -173,7 +182,27 @@ trait ChangesMemberState
                 $resumed++;
             });
 
+        if ($resumed > 0) {
+            $this->syncPlanFlags($profile);
+        }
+
         return $resumed;
+    }
+
+    /**
+     * P5.2: is_premium / highlight / top placement follow a pause or resume (SyncMembershipFlags), and
+     * the member's open pages are told (after commit) — a resumed plan's highlight runs to its new end.
+     */
+    private function syncPlanFlags(Profile $profile): void
+    {
+        $plan = app(SyncMembershipFlags::class)->handle($profile);
+
+        if ($profile->user_id !== null) {
+            // Same meaning as everywhere else: the end of the plan in force ('' on Free / while paused).
+            $endsAt = app(CurrentMembership::class)->current($profile)?->ends_at;
+            EntitlementsChanged::dispatch($profile->user_id, $plan->code->value, $plan->name,
+                $endsAt?->copy()->timezone((string) config('oppam.display_timezone'))->format('j M Y') ?? '');
+        }
     }
 
     private function announceQueues(int $changed): void

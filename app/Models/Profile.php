@@ -58,7 +58,9 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
  * @property ProfileStatus $status
  * @property ProfileStatus|null $previous_status before an admin suspended / hid / deleted it (A03)
  * @property bool $is_verified
- * @property bool $is_premium
+ * @property bool $is_premium a paid / complimentary plan is in force (SyncMembershipFlags)
+ * @property \Illuminate\Support\Carbon|null $highlighted_until Gold / Diamond "highlighted in search" (§7.3)
+ * @property \Illuminate\Support\Carbon|null $top_placement_until Diamond "top placement in search" (§7.3)
  * @property int $completeness
  * @property string|null $about
  * @property string|null $sub_caste
@@ -112,6 +114,7 @@ final class Profile extends Model implements HasMedia
             'is_verified' => 'boolean',
             'is_premium' => 'boolean',
             'highlighted_until' => 'datetime',
+            'top_placement_until' => 'datetime',
             'published_at' => 'datetime',
             'last_active_at' => 'datetime',
         ];

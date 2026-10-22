@@ -73,12 +73,25 @@ enum SettingKey: string
     case OtpMaxSendsPerPhonePerDay = 'otp.max_sends_per_phone_per_day';
     case OtpMaxSendsPerIpPerDay = 'otp.max_sends_per_ip_per_day';
 
+    // ---- Billing (M10, A06, A15) ----
+    case BillingGstRateBps = 'billing.gst_rate_bps';
+    case BillingOrderTtlMinutes = 'billing.order_ttl_minutes';
+    case BillingCheckoutsMaxPerHour = 'billing.checkouts_max_per_hour';
+    case BillingCouponAttemptsPerHour = 'billing.coupon_attempts_per_hour';
+    case BillingSellerName = 'billing.seller_name';
+    case BillingSellerGstin = 'billing.seller_gstin';
+    case BillingSellerAddress = 'billing.seller_address';
+    case BillingSellerStateCode = 'billing.seller_state_code';
+    case BillingSacCode = 'billing.sac_code';
+
     public function type(): SettingType
     {
         return match ($this) {
             self::SeoIndexable => SettingType::Boolean,
             self::SiteSupportEmail, self::SiteInfoEmail, self::SitePhoneDisplay, self::SitePhoneDial,
-            self::SiteAddress, self::SiteHours, self::SiteMaintenanceMessage => SettingType::Text,
+            self::SiteAddress, self::SiteHours, self::SiteMaintenanceMessage,
+            self::BillingSellerName, self::BillingSellerGstin, self::BillingSellerAddress,
+            self::BillingSellerStateCode, self::BillingSacCode => SettingType::Text,
             default => SettingType::Integer,
         };
     }
@@ -144,6 +157,17 @@ enum SettingKey: string
             // PRD §8.2 says 10/IP/day; Indian carriers put many users behind one IP (CGNAT), so the
             // per-phone limits do the real work and this is an abuse backstop (docs/decisions.md 2026-09-29).
             self::OtpMaxSendsPerIpPerDay => 200,
+            self::BillingGstRateBps => 1800,        // M10: GST 18 % (basis points) on the pre-GST price after any coupon
+            self::BillingOrderTtlMinutes => 30,     // an unpaid checkout order expires after this (a late capture still activates)
+            self::BillingCheckoutsMaxPerHour => 20, // rule 10: orders a member may start per hour
+            self::BillingCouponAttemptsPerHour => 20, // rule 10: coupon codes a member may try per hour (no guessing)
+            // Seller details printed on GST invoices — PLACEHOLDERS until the owner supplies the legal
+            // entity (decisions 2026-10-21). An invoice issued without a GSTIN says so on its face.
+            self::BillingSellerName => 'Oppam Matrimony',
+            self::BillingSellerGstin => '',
+            self::BillingSellerAddress => "1st floor 272-3, near St George Basilica church,\nAngamaly, Kerala 683572",
+            self::BillingSellerStateCode => 'KL',   // master_states.code — decides CGST + SGST vs IGST
+            self::BillingSacCode => '',
         };
     }
 
@@ -204,6 +228,14 @@ enum SettingKey: string
             self::OtpMaxAttempts, self::OtpMaxSendsPer15Minutes => ['required', 'integer', 'min:1', 'max:10'],
             self::OtpMaxSendsPerPhonePerDay => ['required', 'integer', 'min:1', 'max:50'],
             self::OtpMaxSendsPerIpPerDay => ['required', 'integer', 'min:10', 'max:5000'],
+            self::BillingGstRateBps => ['required', 'integer', 'min:0', 'max:2800'],
+            self::BillingOrderTtlMinutes => ['required', 'integer', 'min:5', 'max:1440'],
+            self::BillingCheckoutsMaxPerHour, self::BillingCouponAttemptsPerHour => ['required', 'integer', 'min:3', 'max:200'],
+            self::BillingSellerName => ['required', 'string', 'max:150'],
+            self::BillingSellerGstin => ['nullable', 'string', 'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/'],
+            self::BillingSellerAddress => ['required', 'string', 'max:300'],
+            self::BillingSellerStateCode => ['required', 'string', 'regex:/^[A-Z]{2}$/'],
+            self::BillingSacCode => ['nullable', 'string', 'regex:/^[0-9]{6}$/'],
         };
     }
 

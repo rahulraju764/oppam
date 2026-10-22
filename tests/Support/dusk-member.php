@@ -170,6 +170,12 @@ function duskChatCleanup(): void
     App\Jobs\Chat\PruneChatHistory::deleteThreads(App\Models\ConversationParticipant::query()->whereIn('profile_id', $ids)
         ->pluck('conversation_id')->map(fn (mixed $id): string => (string) $id)->unique()->values()->all());
     App\Models\Subscription::query()->whereIn('profile_id', $ids)->delete();
+    // P5.1: billing rows restrict-delete their profile (financial records) — Dusk members' only.
+    $orders = App\Models\Order::query()->whereIn('profile_id', $ids)->pluck('id');
+    App\Models\Invoice::query()->whereIn('order_id', $orders)->delete();
+    App\Models\CouponRedemption::query()->whereIn('order_id', $orders)->delete();
+    App\Models\Payment::query()->whereIn('order_id', $orders)->delete();
+    App\Models\Order::query()->whereIn('id', $orders)->delete();
 
     duskMemberCleanup();
     duskMemberCleanup(DUSK_SECOND_PHONE);

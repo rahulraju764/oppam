@@ -93,13 +93,14 @@ it('keeps the contact form disabled until its handler exists (P8.1)', function (
         ->assertSee('<button type="submit" disabled>', false);
 });
 
-it('shows the three plans with server-formatted rupee prices and no purchase link before checkout exists', function (): void {
+it('M10: shows the three plans with server-formatted rupee prices; Purchase Now opens checkout with the plan key and duration only', function (): void {
     $this->get('/plans')
         ->assertSeeInOrder(['plan-name">Silver', 'plan-name">Gold', 'plan-name">Diamond'], false)
         ->assertSee('Most Popular')
         ->assertSee('<span>1,999</span>', false)
-        ->assertSee('Billed as ₹23,988 per year')
-        ->assertDontSee('Purchase Now');
+        ->assertSee('Billed monthly')
+        ->assertSee('href="'.route('member.checkout', ['plan' => 'gold', 'duration' => 1]).'"', false)
+        ->assertDontSee('price_paise');
 });
 
 it('links the home plans teaser to the plans page', function (): void {
