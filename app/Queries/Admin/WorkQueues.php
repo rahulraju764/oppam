@@ -12,6 +12,7 @@ use App\Models\AdminUser;
 use App\Models\EngagementSignal;
 use App\Models\MessageFlag;
 use App\Models\ModerationItem;
+use App\Models\VerificationRequest;
 use App\Support\Facades\Settings;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -20,8 +21,8 @@ use Illuminate\Support\Collection;
  * The work queues an admin may open (PRD A02 work-queue cards, §11.0 sidebar badges): waiting
  * count and oldest item for the three A04 queues and the escalations list — one grouped query
  * for all of them — and the A13 flagged chat messages and abuse signals (`chat.view_flagged`, one
- * query each). Verification,
- * reports, broker KYC, stuck orders and tickets add
+ * query each), and the A05 ID verification queue (`verification.queue.view`, P6.1; breached after
+ * `verification.aging_breach_hours`). Reports, broker KYC, stuck orders and tickets add
  * themselves here with their modules (owner decision 2026-10-11: only queues that exist are shown).
  * Memoised for the request: the layout's sidebar and the dashboard ask the same thing.
  */
@@ -36,6 +37,8 @@ final class WorkQueues
 
     private ?WorkQueueData $signals = null;
 
+    private ?WorkQueueData $verification = null;
+
     /**
      * @return list<WorkQueueData> only the queues this admin may open
      */
@@ -46,6 +49,9 @@ final class WorkQueues
         }
 
         $queues = $admin->can('moderation.view') ? ($this->moderation ??= $this->moderation()) : [];
+        if ($admin->can('verification.queue.view')) {
+            $queues[] = $this->verification ??= $this->verification();
+        }
         if ($admin->can('chat.view_flagged')) {
             $queues[] = $this->chat ??= $this->chat();
             $queues[] = $this->signals ??= $this->signals();
@@ -78,6 +84,16 @@ final class WorkQueues
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
 
         return new WorkQueueData(MessageFlag::QUEUE_KEY, __('Flagged messages'), 'admin.chat.flags', 'fa-flag', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
+    }
+
+    /** A05: ID requests waiting (escalated ones included), the oldest first sent. */
+    private function verification(): WorkQueueData
+    {
+        $row = VerificationRequest::query()->waiting()->selectRaw('count(*) as waiting, min(submitted_at) as oldest')->toBase()->first();
+        $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
+        $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::VerificationAgingBreachHours));
+
+        return new WorkQueueData(VerificationRequest::QUEUE_KEY, __('ID verification'), 'admin.verification.index', 'fa-id-card-o', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
     }
 
     /** A13: abuse signals waiting for a moderator, the oldest first raised. */

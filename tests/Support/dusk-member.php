@@ -176,6 +176,9 @@ function duskChatCleanup(): void
     App\Models\CouponRedemption::query()->whereIn('order_id', $orders)->delete();
     App\Models\Payment::query()->whereIn('order_id', $orders)->delete();
     App\Models\Order::query()->whereIn('id', $orders)->delete();
+    // P6.1: the Dusk members' ID files leave the vault (the rows cascade with the profiles).
+    App\Models\VerificationRequest::query()->whereIn('profile_id', $ids)->get()
+        ->each(fn (App\Models\VerificationRequest $request) => app(App\Actions\Verification\PurgeVerificationDocuments::class)->handle($request));
 
     duskMemberCleanup();
     duskMemberCleanup(DUSK_SECOND_PHONE);

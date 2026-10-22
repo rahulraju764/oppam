@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Admin\Members;
 
+use App\Actions\Verification\PurgeVerificationDocuments;
 use App\Enums\Entitlement;
 use App\Enums\SettingKey;
 use App\Enums\UserRole;
+use App\Enums\VerificationStatus;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Models\AccessRequest;
 use App\Models\ContactDetail;
@@ -37,6 +39,7 @@ use App\Models\ProfileView;
 use App\Models\Report;
 use App\Models\SavedSearch;
 use App\Models\User;
+use App\Models\VerificationRequest;
 use App\Services\Audit\AuditLogger;
 use App\Services\Entitlements\EntitlementService;
 use App\Support\Facades\Settings;
@@ -44,6 +47,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * Stage two of the two-stage deletion (A03, owner decision 2026-10-02 "anonymise, keep a
@@ -53,7 +57,8 @@ use Illuminate\Support\Str;
  * photos and the horoscope file, sign-in history, OTP challenges, sessions, profile and contact
  * views, likes, favourites, interests and photo / horoscope requests (both directions), chat reports about them (reports they filed stay,
  * without their text) and the excerpts of their flagged messages, in-app notifications (theirs, and others' that
- * name them), and held moderation text. Chat threads (R-M07-6) stay for the other member — they read "Deleted Member" —
+ * name them), held moderation text, and ID documents (P6.1: files deleted and verified gone at once,
+ * open requests cancelled; the decision and the masked number stay). Chat threads (R-M07-6) stay for the other member — they read "Deleted Member" —
  * until that member is purged too; then the thread and its messages are deleted. The account and profile rows stay as a tombstone (code, gender, status DELETED) so
  * subscriptions, orders (P5) and audit rows keep pointing at something. Idempotent: an
  * anonymised or not-yet-due member is skipped. Run by PurgeDeletedMembers (daily).
@@ -63,6 +68,7 @@ final class PurgeDeletedMember
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly EntitlementService $entitlements,
+        private readonly PurgeVerificationDocuments $verificationFiles,
     ) {}
 
     /** @return bool whether this member was anonymised now */
@@ -79,6 +85,14 @@ final class PurgeDeletedMember
         if ($profile !== null) {
             Media::query()->where('model_type', $profile->getMorphClass())->where('model_id', $profile->id)->get()
                 ->each(fn (Media $media) => $media->delete());
+
+            // ID documents (M09): never kept for a purged member, whatever the 90-day clock says.
+            VerificationRequest::query()->where('profile_id', $profile->id)->whereNull('documents_purged_at')->get()
+                ->each(function (VerificationRequest $request): void {
+                    if (! $this->verificationFiles->handle($request)) {
+                        throw new RuntimeException('An ID document could not be confirmed deleted; the purge will run again.');
+                    }
+                });
         }
 
         return DB::transaction(function () use ($member, $profile): bool {
@@ -186,6 +200,11 @@ final class PurgeDeletedMember
         MessageFlag::query()->where('sender_profile_id', $profile->id)->whereNotNull('excerpt')->update(['excerpt' => null]);
 
         ModerationItem::query()->where('profile_id', $profile->id)->update(['fields' => null, 'reason_note' => null]);
+
+        // ID verification (P6.1): a waiting request closes; the name typed for the document goes.
+        VerificationRequest::query()->where('profile_id', $profile->id)->whereIn('status', VerificationStatus::open())
+            ->update(['status' => VerificationStatus::Cancelled->value, 'decided_at' => now(), 'claimed_by_admin_id' => null, 'claimed_until' => null]);
+        VerificationRequest::query()->where('profile_id', $profile->id)->update(['name_on_document' => null, 'flags' => null, 'member_note' => null]);
 
         $profile->forceFill([
             'first_name' => 'Deleted',

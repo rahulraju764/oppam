@@ -27,6 +27,18 @@ use Livewire\Component;
  */
 final class MyProfile extends Component
 {
+    /**
+     * M09 / F05: the Verified badge appears (or goes) without a reload.
+     *
+     * @return array<string, string>
+     */
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:App.Models.User.'.$this->member()->id.',.verification.changed' => '$refresh',
+        ];
+    }
+
     public function render(
         CompletenessCalculator $completeness,
         ProfileFacts $facts,

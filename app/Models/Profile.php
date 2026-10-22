@@ -270,6 +270,12 @@ final class Profile extends Model implements HasMedia
         return $this->hasOne(PrivacySetting::class);
     }
 
+    /** @return HasMany<VerificationRequest, $this> ID submissions (M09 / A05), newest first */
+    public function verificationRequests(): HasMany
+    {
+        return $this->hasMany(VerificationRequest::class)->latest('submitted_at');
+    }
+
     /** @return HasMany<SavedSearch, $this> */
     public function savedSearches(): HasMany
     {

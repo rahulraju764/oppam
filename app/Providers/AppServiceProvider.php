@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Contracts\ContentSafety;
+use App\Contracts\DocumentVault;
 use App\Contracts\InvoiceRenderer;
 use App\Contracts\PaymentGateway;
 use App\Contracts\PresenceCounter;
@@ -49,6 +50,7 @@ use App\Services\Settings\FeatureFlags;
 use App\Services\Settings\SettingsRepository;
 use App\Services\Sms\LogSmsGateway;
 use App\Services\Sms\Msg91Gateway;
+use App\Services\Verification\EncryptedDocumentVault;
 use App\Support\Facades\Feature;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
@@ -98,6 +100,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
         $this->app->bind(ContentSafety::class, RuleBasedContentSafety::class);         // M07 send flow / A13
         $this->app->bind(InvoiceRenderer::class, DompdfInvoiceRenderer::class);        // M10 GST invoice PDF
+        $this->app->bind(DocumentVault::class, EncryptedDocumentVault::class);         // M09 ID documents, encrypted
 
         $this->app->singleton(FinancialYear::class, fn (): FinancialYear => new FinancialYear(config('oppam.display_timezone')));
 

@@ -1,6 +1,6 @@
 {{--
     <x-ui.badge> — a .chip with a mapped colour. Colour is never the only signal: the slot text
-    says what it means. variant: default | verified | premium | muted | success | warning
+    says what it means. variant: default | verified | premium | muted | success | warning | danger
 --}}
 @props(['variant' => 'default', 'icon' => null])
 
@@ -11,6 +11,7 @@
         'muted' => 'chip--muted',
         'success' => 'chip--success',
         'warning' => 'chip--warning',
+        'danger' => 'chip--danger',
         default => null,
     };
 @endphp

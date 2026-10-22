@@ -160,6 +160,7 @@
 .chip.chip--muted { background: var(--bg-mist); color: var(--color-gr-dark); }
 .chip.chip--success { background: var(--bg-success); color: var(--color-success); }
 .chip.chip--warning { background: var(--bg-warning); color: var(--color-warning); }
+.chip.chip--danger { background: var(--bg-rose); color: var(--color-primary-dark); }
 
 /* ---- Modal: <x-ui.modal> (Alpine) ---- */
 .ui-modal {

@@ -26,6 +26,8 @@ final readonly class ProfileCardData
         public bool $isNew = false,
         /** §7.3 "profile highlighted in search" (Gold / Diamond): a Featured mark on the card. */
         public bool $isFeatured = false,
+        /** M09: government ID verified — the Verified badge ("on your profile and in every search result"). */
+        public bool $isVerified = false,
         /** The viewer's own like / bookmark on this profile; null = no engagement buttons on this card. */
         public ?bool $liked = null,
         public ?bool $favorited = null,

@@ -29,7 +29,7 @@ use Livewire\Component;
 /**
  * A03 member detail: header + quick actions (suspend / reactivate, hide / unhide, delete with the
  * typed code / restore, grant a complimentary plan — each with a typed reason, each authorized
- * again in its Action) and lazy tabs: Profile, Photos, Subscriptions, Engagement, Activity, Notes, Timeline.
+ * again in its Action) and lazy tabs: Profile, Photos, Verification (P6.1), Subscriptions, Engagement, Activity, Notes, Timeline.
  * Tabs for modules not built yet are added by those modules (owner decision 2026-10-02).
  */
 #[Layout('layouts::admin', ['title' => 'Member'])]
@@ -37,7 +37,7 @@ final class Show extends Component
 {
     use LoadsMember;
 
-    public const TABS = ['overview', 'profile', 'photos', 'subscriptions', 'engagement', 'activity', 'notes', 'timeline'];
+    public const TABS = ['overview', 'profile', 'photos', 'verification', 'subscriptions', 'engagement', 'activity', 'notes', 'timeline'];
 
     #[Url(except: 'overview')]
     public string $tab = 'overview';

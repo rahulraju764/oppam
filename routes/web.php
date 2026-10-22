@@ -29,6 +29,7 @@ use App\Livewire\Member\Onboarding\Wizard;
 use App\Livewire\Member\Profile\MyProfile;
 use App\Livewire\Member\Profile\Show;
 use App\Livewire\Member\Search\Search;
+use App\Livewire\Member\Verification\Upload as VerificationUpload;
 use App\Livewire\Public\About;
 use App\Livewire\Public\Branches;
 use App\Livewire\Public\Contact;
@@ -101,6 +102,9 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
 
         // Membership (M10, F04): checkout by plan KEY (+ ?duration=), the success page polls the order.
         Route::get('/billing', History::class)->name('member.billing');
+
+        // ID verification (M09): upload + status; documents are never served back to the member.
+        Route::get('/verify', VerificationUpload::class)->name('member.verification');
         Route::get('/checkout/{plan}', Checkout::class)->where('plan', '[a-z]{3,10}')->name('member.checkout');
         Route::get('/billing/success/{order}', CheckoutSuccess::class)->where('order', 'ORD[0-9]+')->name('member.billing.success');
         Route::get('/billing/invoices/{invoice}', InvoiceDownloadController::class)

@@ -119,6 +119,7 @@
                 ['member.profile.me', 'Edit Profile & Preferences', 'fa-pencil', ['member.onboarding']],
                 ['member.messages', 'Messages', 'fa-envelope-o', ['member.messages']],
                 ['member.billing', 'Membership & billing', 'fa-credit-card', ['member.billing', 'member.billing.*', 'member.checkout']],
+                ['member.verification', 'Verify profile', 'fa-id-card-o', ['member.verification']],
                 ['plans', 'Packages & FAQ', 'fa-question-circle-o', ['plans'], '#faq'],
                 ['contact', 'Contact', 'fa-phone', ['contact']],
                 ['privacy', 'Privacy Policy', 'fa-shield', ['privacy']],

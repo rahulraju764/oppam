@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BreakGlassImageController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
+use App\Http\Controllers\Admin\VerificationDocumentController;
 use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
@@ -30,6 +31,8 @@ use App\Livewire\Admin\Moderation\ProfileReview;
 use App\Livewire\Admin\Roles\Editor as RolesEditor;
 use App\Livewire\Admin\Sessions\Index as SessionsIndex;
 use App\Livewire\Admin\Staff\Index as StaffIndex;
+use App\Livewire\Admin\Verification\Queue as VerificationQueue;
+use App\Livewire\Admin\Verification\Review as VerificationReview;
 use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
 
@@ -81,6 +84,17 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/photos', PhotoQueueGrid::class)->name('photos');
         Route::get('/edits', EditedFieldsQueue::class)->name('edits');
         Route::get('/escalations', Escalations::class)->name('escalations');
+    });
+
+    // ID verification (A05). The queue and review need verification.queue.view; decisions re-check
+    // verification.approve in their Actions. Documents: a 10-minute signed link bound to the session
+    // that opened the viewer (verification.document.view), audited on every fetch — never a file URL.
+    Route::middleware('can:verification.queue.view')->prefix('verification')->name('verification.')->group(function (): void {
+        Route::get('/', VerificationQueue::class)->name('index');
+        Route::get('/{profile}', VerificationReview::class)->where('profile', 'OPM[0-9]+')->name('review');
+        Route::get('/{profile}/document/{side}', VerificationDocumentController::class)
+            ->where(['profile' => 'OPM[0-9]+', 'side' => 'front|back'])
+            ->middleware(['signed', 'can:verification.document.view', 'throttle:60,1'])->name('document');
     });
 
     // Chat safety (A13). Viewing needs chat.view_flagged; every decision re-checks its own permission.

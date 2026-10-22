@@ -19,6 +19,7 @@ import { startEcho } from './echo';
 import './alpine/master-sort';
 import './alpine/photo-moderation';
 import './alpine/admin-chart';
+import './alpine/pdf-document';
 
 window.bootstrap = bootstrap;
 

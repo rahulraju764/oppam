@@ -86,6 +86,16 @@ return [
         'watermark_font' => resource_path('fonts/DejaVuSans-Bold.ttf'),
     ],
 
+    // ID verification (M09 / A05, P6.1). Documents are encrypted (APP_KEY) on the private disk and
+    // only ever streamed by the admin viewer: a 10-minute signed link bound to the admin's session.
+    // Business thresholds (aging, purge window, resubmission) are A15 settings (verification.*).
+    'verification' => [
+        'disk' => env('VERIFICATION_DISK', env('MEDIA_PRIVATE_DISK', 'local')),
+        'max_kb' => 5120,                                          // JPG / PNG / PDF ≤ 5 MB (M09)
+        'link_minutes' => 10,                                      // A05: 10-minute signed URLs
+        'claim_minutes' => 15,                                     // A05 claim lock, as A04
+    ],
+
     'sms' => [
         // log (local/testing) | msg91 (production). Bound in AppServiceProvider; `log` is refused in production.
         'driver' => env('SMS_DRIVER', 'log'),

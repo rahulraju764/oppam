@@ -64,7 +64,8 @@ refund categories); first run P5.2's Dusk step
 - [ ] P5.3 Admin billing (A06)
 
 ## Phase 6 — Trust & support
-- [ ] P6.1 ID verification (M09 + A05)
+- [ ] P6.1 ID verification (M09 + A05) — 2026-10-22: built with Claude's defaults (decisions 2026-10-22, owner to confirm);
+  see the completion report. NOT ticked: reviewer verdict + Dusk pending (dev servers stopped); NOT committed.
 - [ ] P6.2 Block, ignore, report, safety centre, support desk (M09 + A10)
 
 ## Phase 7 — Broker module (PRD §11A)

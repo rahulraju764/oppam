@@ -40,6 +40,14 @@
                         <div class="profile-tittle">
                             <h1 class="pf-tt">{{ $profile->fullName() }}</h1>
                             <p class="pf-dt-n">{{ $profile->code }}<span>{{ $profile->status->label() }}</span></p>
+                            {{-- M09: the Verified badge (live after an officer approves) or the way to get it. --}}
+                            <div class="profile-badges">
+                                @if ($profile->is_verified)
+                                    <x-ui.badge variant="verified" icon="fa-check-circle">{{ __('Verified') }}</x-ui.badge>
+                                @else
+                                    <a href="{{ route('member.verification') }}" class="chip" wire:navigate><i class="fa fa-id-card-o" aria-hidden="true"></i> {{ __('Get verified') }}</a>
+                                @endif
+                            </div>
 
                             <div class="profile-list">
                                 <ul class="list">

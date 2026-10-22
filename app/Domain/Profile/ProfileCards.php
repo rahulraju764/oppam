@@ -85,6 +85,7 @@ final class ProfileCards
             place: $profile->district_id !== null ? ($districts[$profile->district_id] ?? null) : null,
             isNew: $profile->published_at?->greaterThan($newSince) === true,
             isFeatured: $profile->highlighted_until?->isFuture() === true,
+            isVerified: $profile->is_verified,
             liked: $state !== null ? isset($state['liked'][(string) $profile->id]) : null,
             favorited: $showFavorites ? isset($state['favorited'][(string) $profile->id]) : null,
             interest: $interests !== null ? ($interests[(string) $profile->id] ?? Connections::NONE) : null,

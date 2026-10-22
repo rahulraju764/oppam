@@ -13,6 +13,7 @@ use App\Jobs\Matching\GenerateDailyMatches;
 use App\Jobs\Members\PurgeDeletedMembers;
 use App\Jobs\Notifications\PruneOldNotifications;
 use App\Jobs\Search\SendSavedSearchAlerts;
+use App\Jobs\Verification\PurgeExpiredVerificationDocuments;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -55,3 +56,6 @@ Schedule::job(new ExpireUnpaidOrders)->hourlyAt(40)->onOneServer()->withoutOverl
 // M10 expiry (P5.2): ended plans → Free limits + flags + plan_expired; reminders 7 days / 1 day before, 10:00 IST.
 Schedule::job(new ExpireSubscriptions)->everyTenMinutes()->onOneServer()->withoutOverlapping();
 Schedule::job(new SendPlanExpiryReminders)->timezone('Asia/Kolkata')->dailyAt('10:00')->onOneServer()->withoutOverlapping();
+
+// M09 / A05 (P6.1): ID files deleted (and the deletion verified) 90 days after the decision, 03:30 IST.
+Schedule::job(new PurgeExpiredVerificationDocuments)->timezone('Asia/Kolkata')->dailyAt('03:30')->onOneServer()->withoutOverlapping();

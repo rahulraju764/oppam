@@ -27,7 +27,7 @@
             <button type="button" class="admin-tab @if ($tab === $key) active @endif" wire:click="$set('tab', '{{ $key }}')"
                     @if ($tab === $key) aria-current="page" @endif>
                 {{ match ($key) {
-                    'overview' => __('Overview'), 'profile' => __('Profile'), 'photos' => __('Photos'),
+                    'overview' => __('Overview'), 'profile' => __('Profile'), 'photos' => __('Photos'), 'verification' => __('Verification'),
                     'subscriptions' => __('Subscriptions'), 'engagement' => __('Engagement'), 'activity' => __('Activity'), 'notes' => __('Notes'), default => __('Timeline'),
                 } }}
             </button>
@@ -150,6 +150,8 @@
         <livewire:admin.members.tabs.profile-tab :code="$code" :key="'tab-profile-'.$code" lazy />
     @elseif ($tab === 'photos')
         <livewire:admin.members.tabs.photos-tab :code="$code" :key="'tab-photos-'.$code" lazy />
+    @elseif ($tab === 'verification')
+        <livewire:admin.members.tabs.verification-tab :code="$code" :key="'tab-verification-'.$code" lazy />
     @elseif ($tab === 'subscriptions')
         <livewire:admin.members.tabs.subscriptions-tab :code="$code" :key="'tab-subs-'.$code" lazy />
     @elseif ($tab === 'engagement')

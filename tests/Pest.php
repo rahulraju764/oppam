@@ -26,6 +26,7 @@ require_once __DIR__.'/Support/profile.php';
 require_once __DIR__.'/Support/broadcasting.php';
 require_once __DIR__.'/Support/chat.php';
 require_once __DIR__.'/Support/billing.php';
+require_once __DIR__.'/Support/verification.php';
 pest()->extend(Tests\DuskTestCase::class)->in('Browser/Admin', 'Browser/Member');
 require_once __DIR__.'/Support/dusk.php';
 require_once __DIR__.'/Support/dusk-member.php';

@@ -84,6 +84,14 @@ enum SettingKey: string
     case BillingSellerStateCode = 'billing.seller_state_code';
     case BillingSacCode = 'billing.sac_code';
 
+    // ---- ID verification (M09, A05, P6.1) ----
+    case VerificationAgingWarnHours = 'verification.aging_warn_hours';
+    case VerificationAgingBreachHours = 'verification.aging_breach_hours';
+    case VerificationPurgeAfterDays = 'verification.purge_after_days';
+    case VerificationMaxSubmissionsPerDay = 'verification.max_submissions_per_day';
+    case VerificationRapidResubmitCount = 'verification.rapid_resubmit_count';
+    case VerificationRapidResubmitDays = 'verification.rapid_resubmit_days';
+
     public function type(): SettingType
     {
         return match ($this) {
@@ -168,6 +176,12 @@ enum SettingKey: string
             self::BillingSellerAddress => "1st floor 272-3, near St George Basilica church,\nAngamaly, Kerala 683572",
             self::BillingSellerStateCode => 'KL',   // master_states.code — decides CGST + SGST vs IGST
             self::BillingSacCode => '',
+            self::VerificationAgingWarnHours => 48,     // A05 aging colours: amber after this long in the queue …
+            self::VerificationAgingBreachHours => 72,   // … red (and the A02 card breaches) after this
+            self::VerificationPurgeAfterDays => 90,     // M09: originals deleted this long after the decision (never later)
+            self::VerificationMaxSubmissionsPerDay => 3, // rule 10: ID submissions per member per day
+            self::VerificationRapidResubmitCount => 3,  // A05 fraud signal "rapid resubmission": this many submissions …
+            self::VerificationRapidResubmitDays => 7,   // … within this window
         };
     }
 
@@ -236,6 +250,12 @@ enum SettingKey: string
             self::BillingSellerAddress => ['required', 'string', 'max:300'],
             self::BillingSellerStateCode => ['required', 'string', 'regex:/^[A-Z]{2}$/'],
             self::BillingSacCode => ['nullable', 'string', 'regex:/^[0-9]{6}$/'],
+            self::VerificationAgingWarnHours, self::VerificationAgingBreachHours => ['required', 'integer', 'min:1', 'max:720'],
+            // M09 "originals deleted 90 days after decision": an admin may shorten it, never lengthen it.
+            self::VerificationPurgeAfterDays => ['required', 'integer', 'min:7', 'max:90'],
+            self::VerificationMaxSubmissionsPerDay => ['required', 'integer', 'min:1', 'max:20'],
+            self::VerificationRapidResubmitCount => ['required', 'integer', 'min:2', 'max:20'],
+            self::VerificationRapidResubmitDays => ['required', 'integer', 'min:1', 'max:90'],
         };
     }
 
