@@ -7,6 +7,7 @@ namespace App\Jobs\Verification;
 use App\Actions\Verification\PurgeVerificationDocuments;
 use App\Enums\SettingKey;
 use App\Enums\VerificationStatus;
+use App\Models\Profile;
 use App\Models\VerificationRequest;
 use App\Services\Audit\AuditLogger;
 use App\Support\Facades\Settings;
@@ -47,6 +48,8 @@ final class PurgeExpiredVerificationDocuments implements ShouldBeUnique, ShouldQ
             ->whereNull('documents_purged_at')
             ->whereNotIn('status', VerificationStatus::open())
             ->where('decided_at', '<=', now()->subDays(Settings::int(SettingKey::VerificationPurgeAfterDays)))
+            // A10 legal hold (P6.2, decisions 2026-10-23): a held member's documents wait for the hold to lift.
+            ->whereNotIn('profile_id', Profile::withTrashed()->whereNotNull('legal_hold_at')->select('id'))
             ->lazyById(100)
             ->each(function (VerificationRequest $request) use ($purge, &$purged, &$failed): void {
                 try {

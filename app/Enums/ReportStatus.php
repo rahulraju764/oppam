@@ -14,4 +14,13 @@ enum ReportStatus: string
     case Open = 'OPEN';
     case Actioned = 'ACTIONED';
     case Dismissed = 'DISMISSED';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Open => __('Open'),
+            self::Actioned => __('Actioned'),
+            self::Dismissed => __('Dismissed'),
+        };
+    }
 }

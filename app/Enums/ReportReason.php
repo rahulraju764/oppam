@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-/** Why a member reports another (PRD M09 report reasons). Reports go to A13 (chat) and A10 (P6.2). */
+/**
+ * Why a member reports another (PRD M09 report reasons). Chat reports go to A13 as flags; every
+ * report joins the reported member's A10 abuse case, whose priority follows priority() below.
+ */
 enum ReportReason: string
 {
     case FakeProfile = 'FAKE_PROFILE';
@@ -25,6 +28,16 @@ enum ReportReason: string
             self::AskingForMoney => __('Asking for money'),
             self::Spam => __('Spam'),
             self::Other => __('Something else'),
+        };
+    }
+
+    /** A10 triage (decisions 2026-10-23): money = P0, abuse / photos / fake = P1, the rest = P2. */
+    public function priority(): CasePriority
+    {
+        return match ($this) {
+            self::AskingForMoney => CasePriority::P0,
+            self::AbusiveMessages, self::InappropriatePhotos, self::FakeProfile => CasePriority::P1,
+            self::AlreadyMarried, self::Spam, self::Other => CasePriority::P2,
         };
     }
 

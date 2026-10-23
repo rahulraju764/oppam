@@ -12,11 +12,12 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * One profile ignoring another (M09 "Ignore"): the ignored profile no longer appears in the
  * ignorer's search and lists. One-directional and silent — the other member is unaffected (a block
- * is the two-way version). Created by the ignore Action (P6.2) only.
+ * is the two-way version). Created by IgnoreProfile, removed by UnignoreProfile only.
  *
  * @property string $id
  * @property string $ignorer_profile_id
  * @property string $ignored_profile_id
+ * @property \Illuminate\Support\Carbon|null $created_at
  */
 final class Ignore extends Model
 {

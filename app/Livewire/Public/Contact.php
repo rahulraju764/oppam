@@ -10,9 +10,9 @@ use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
- * Contact page (template contact.php, PRD M12). The form becomes <livewire:public.contact-form>
- * in P8.1 (stored, emailed to support, Turnstile); until then its submit is disabled and says
- * so. Contact details come from SiteContactData (A15 settings) — one source for this page and the footer.
+ * Contact page (template contact.php, PRD M12). The form is <livewire:public.contact-form>: it
+ * opens an A10 support ticket (P6.2); Turnstile and the A08 inbox come with P8.1. Contact details
+ * come from SiteContactData (A15 settings) — one source for this page and the footer.
  */
 final class Contact extends Component
 {

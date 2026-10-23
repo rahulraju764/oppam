@@ -451,3 +451,19 @@ tr[draggable="true"] { cursor: grab; }
     pointer-events: none; user-select: none; transform: rotate(-20deg) scale(1.3);
 }
 @media print { .vf-viewer { display: none; } }
+
+/* ---------- Safety cases & support desk (P6.2, A10) ---------- */
+.case-count { display: flex; flex-direction: column; gap: var(--space-1); }
+.case-count__n { font-size: var(--text-xl); }
+.case-filter { min-width: 12rem; }
+.admin-table tr.is-breach td:first-child { box-shadow: inset 3px 0 0 var(--color-primary); }
+.case-reports { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.case-reports__item { padding: var(--space-3); border: var(--border-hair); border-radius: var(--radius-md); }
+.case-reports__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+.case-reports__details { margin: var(--space-2) 0 0; white-space: pre-line; overflow-wrap: anywhere; }
+.ticket-thread { margin: 0; padding: 0; list-style: none; }
+.ticket-thread__item { margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--bg-mist); }
+.ticket-thread__item.is-staff { background: var(--bg-teal); }
+.ticket-thread__item.is-note { background: var(--bg-sand); border: 1px dashed var(--border-color); }
+.ticket-thread__meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-1); color: var(--color-gr-dark); font-size: var(--text-xs); }
+.ticket-thread__body { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }

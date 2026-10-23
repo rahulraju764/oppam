@@ -1,8 +1,7 @@
 {{--
     Contact (template contact.php): form (7) beside the details (5), .is-readable so fields don't
-    stretch to 1800px. The form becomes <livewire:public.contact-form> in P8.1 (stored, emailed,
-    Turnstile). Until then its submit is disabled and says so — a disabled default button also
-    blocks Enter-to-submit.
+    stretch to 1800px. The form is <livewire:public.contact-form> (P6.2): it opens a support ticket.
+    Turnstile and the A08 contact inbox come with P8.1.
 --}}
 @php($social = $site->social)
 
@@ -17,44 +16,7 @@
 
             <div class="row g-4">
                 <div class="col-lg-7">
-                    <form class="matrimony-forms" method="post">
-                        @csrf
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label class="mat-label" for="contact-first-name">{{ __('First name') }}</label>
-                                <input type="text" class="form-control mat-text" id="contact-first-name" name="first_name" placeholder="{{ __('First name') }}" autocomplete="given-name" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="mat-label" for="contact-last-name">{{ __('Last name') }}</label>
-                                <input type="text" class="form-control mat-text" id="contact-last-name" name="last_name" placeholder="{{ __('Last name') }}" autocomplete="family-name">
-                            </div>
-                            <div class="col-12">
-                                <label class="mat-label" for="contact-email">{{ __('Email') }}</label>
-                                <input type="email" class="form-control mat-text" id="contact-email" name="email" placeholder="you@example.com" autocomplete="email" required>
-                            </div>
-                            <div class="col-12">
-                                <label class="mat-label" for="contact-subject">{{ __('Subject') }}</label>
-                                <select class="form-select mat-text" id="contact-subject" name="subject">
-                                    <option>{{ __('General enquiry') }}</option>
-                                    <option>{{ __('Registration help') }}</option>
-                                    <option>{{ __('Membership & payments') }}</option>
-                                    <option>{{ __('Report a profile') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label class="mat-label" for="contact-message">{{ __('Message') }}</label>
-                                <textarea class="form-control mat-text" id="contact-message" name="message" rows="5" placeholder="{{ __('How can we help?') }}" required></textarea>
-                            </div>
-                        </div>
-
-                        <div class="contact-button">
-                            <button type="submit" disabled>
-                                <i class="fa fa-paper-plane" aria-hidden="true"></i>
-                                {{ __('Send Message') }}
-                            </button>
-                        </div>
-                        <p class="form-pending-note">{{ __('The online form opens soon. Until then, please call or email us using the details on this page.') }}</p>
-                    </form>
+                    <livewire:public.contact-form />
                 </div>
 
                 <div class="col-lg-5">

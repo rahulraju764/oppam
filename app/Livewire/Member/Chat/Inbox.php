@@ -47,6 +47,7 @@ final class Inbox extends Component
 
         return [
             'echo-private:inbox.'.$this->me()->id.',.conversation.updated' => '$refresh',
+            'echo-private:App.Models.User.'.$this->member()->id.',.connections.changed' => '$refresh',   // a block hides the thread (P6.2)
             'realtime-reconnected' => '$refresh',
             'chat-inbox-changed' => '$refresh',   // the open thread sent / read something
         ];

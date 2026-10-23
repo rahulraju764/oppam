@@ -50,6 +50,8 @@ return [
             'plan_expiring' => env('MSG91_TPL_PLAN_EXPIRING'),
             'plan_expired' => env('MSG91_TPL_PLAN_EXPIRED'),
             'safety_warning' => env('MSG91_TPL_SAFETY_WARNING'),
+            // A10 P0 page to on-call admins: "Urgent Oppam safety case {#var#} — open the admin panel." (P6.2)
+            'safety_p0_case' => env('MSG91_TPL_SAFETY_P0_CASE'),
         ]),
     ],
 

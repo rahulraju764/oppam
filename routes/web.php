@@ -29,12 +29,16 @@ use App\Livewire\Member\Onboarding\Wizard;
 use App\Livewire\Member\Profile\MyProfile;
 use App\Livewire\Member\Profile\Show;
 use App\Livewire\Member\Search\Search;
+use App\Livewire\Member\Settings\BlockedProfiles;
+use App\Livewire\Member\Support\Help;
+use App\Livewire\Member\Support\TicketThread;
 use App\Livewire\Member\Verification\Upload as VerificationUpload;
 use App\Livewire\Public\About;
 use App\Livewire\Public\Branches;
 use App\Livewire\Public\Contact;
 use App\Livewire\Public\Home;
 use App\Livewire\Public\Plans;
+use App\Livewire\Public\SafetyCentre;
 use App\Livewire\Public\SuccessStories;
 use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +56,7 @@ Route::get('/branches', Branches::class)->name('branches');
 Route::get('/success-stories', SuccessStories::class)->name('success-stories');
 Route::get('/plans', Plans::class)->name('plans');
 Route::get('/contact', Contact::class)->name('contact');
+Route::get('/safety', SafetyCentre::class)->name('safety');
 Route::view('/privacy', 'pages.privacy')->name('privacy');
 Route::view('/terms', 'pages.terms')->name('terms');
 
@@ -109,6 +114,11 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         Route::get('/billing/success/{order}', CheckoutSuccess::class)->where('order', 'ORD[0-9]+')->name('member.billing.success');
         Route::get('/billing/invoices/{invoice}', InvoiceDownloadController::class)
             ->where('invoice', 'OPM-[0-9]{4}-[0-9]{6}')->middleware('throttle:30,1')->name('member.billing.invoice');
+
+        // Safety & support (M09, A10): own blocks / ignores, in-app help and own requests only.
+        Route::get('/settings/blocked', BlockedProfiles::class)->name('member.settings.blocked');
+        Route::get('/help', Help::class)->name('member.help');
+        Route::get('/help/{ticket}', TicketThread::class)->where('ticket', 'TKT[0-9]+')->name('member.help.ticket');
     });
 
     // WebSocket channel sign-in for the member site (PRD §9): routes/channels.php decides per channel.

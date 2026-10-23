@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Chat;
 
+use App\Domain\Safety\BlockList;
 use App\Enums\ConversationStatus;
 use App\Enums\FreezeReason;
 use App\Events\Chat\ConversationFrozen;
@@ -20,18 +21,22 @@ use App\Support\Realtime\LiveSignal;
  */
 final class ChatFreezer
 {
-    public function __construct(private readonly ReportFreezeRule $rule) {}
+    public function __construct(
+        private readonly ReportFreezeRule $rule,
+        private readonly BlockList $blocks,
+    ) {}
 
     /**
-     * Freeze an OPEN thread. A moderator freezing a thread the automatic freeze after reports already
-     * closed takes it over: the reason becomes MODERATION, so dismissing the reports later never opens
-     * it (decisions 2026-10-16 (d)). Nothing goes out live then — the thread was already read-only.
+     * Freeze an OPEN thread. A moderator freezing a thread that froze automatically (after reports,
+     * or because of a block) takes it over: the reason becomes MODERATION, so dismissing the reports
+     * or an unblock later never opens it (decisions 2026-10-16 (d), 2026-10-23). Nothing goes out
+     * live then — the thread was already read-only.
      *
-     * @return bool whether the thread changed (OPEN → FROZEN, or REPORTS → MODERATION)
+     * @return bool whether the thread changed (OPEN → FROZEN, or REPORTS / BLOCK → MODERATION)
      */
     public function freeze(Conversation $thread, FreezeReason $reason): bool
     {
-        if ($thread->status === ConversationStatus::Frozen && $thread->frozen_reason === FreezeReason::Reports && $reason === FreezeReason::Moderation) {
+        if ($thread->status === ConversationStatus::Frozen && in_array($thread->frozen_reason, [FreezeReason::Reports, FreezeReason::Block], true) && $reason === FreezeReason::Moderation) {
             $thread->frozen_reason = FreezeReason::Moderation;
             $thread->save();
 
@@ -72,6 +77,13 @@ final class ChatFreezer
         foreach ($threads as $thread) {
             $other = $others->get($thread->id);
             if ($other !== null && $this->rule->reached((string) $other)) {
+                continue;
+            }
+            // A blocked pair's thread stays frozen as a block freeze (unblocking opens it then).
+            if ($other !== null && $this->blocks->isBlockedPair($profileId, (string) $other)) {
+                $thread->frozen_reason = FreezeReason::Block;
+                $thread->save();
+
                 continue;
             }
             $opened += $this->unfreeze($thread) ? 1 : 0;

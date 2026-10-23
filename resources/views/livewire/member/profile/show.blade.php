@@ -69,6 +69,10 @@
                                                     </button>
                                                 @endif
                                             @endforeach
+                                            @unless ($preview)
+                                                {{-- M09: block / ignore / report (P6.2). --}}
+                                                <livewire:member.profile.safety-menu :profile-code="$profile->code" :name="$name" :key="'safety-'.$profile->code" />
+                                            @endunless
                                         </div>
                                         @if ($requestNotice)
                                             <p class="form-text mb-0" role="status">{{ $requestNotice }}</p>

@@ -61,6 +61,7 @@ final class Interests extends Component
     {
         return [
             'echo-private:App.Models.User.'.$this->member()->id.',.interest.changed' => '$refresh',
+            'echo-private:App.Models.User.'.$this->member()->id.',.connections.changed' => '$refresh',   // a block withdrew interests (R-M06-4)
             'realtime-reconnected' => '$refresh',   // back-fill anything missed while offline (PRD §9.7)
         ];
     }

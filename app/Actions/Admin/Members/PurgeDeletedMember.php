@@ -195,7 +195,10 @@ final class PurgeDeletedMember
         // harassed member often deletes their account) and point at this tombstone; only the text they
         // typed goes. Reports ABOUT the member go (their REPORT flags with them, cascade). The masked /
         // matched excerpts of the member's own flagged messages are wiped.
-        Report::query()->where('reporter_profile_id', $profile->id)->whereNotNull('details')->update(['details' => null]);
+        // A10 legal hold (P6.2): details of reports about a member under legal hold are evidence — they stay.
+        Report::query()->where('reporter_profile_id', $profile->id)->whereNotNull('details')
+            ->whereNotIn('reported_profile_id', Profile::withTrashed()->whereNotNull('legal_hold_at')->select('id'))
+            ->update(['details' => null]);
         Report::query()->where('reported_profile_id', $profile->id)->delete();
         MessageFlag::query()->where('sender_profile_id', $profile->id)->whereNotNull('excerpt')->update(['excerpt' => null]);
 

@@ -484,7 +484,9 @@ it('M05 dashboard "Liked you": the number behind an upgrade prompt for Free, the
         ->assertSee($liker->first_name)->assertSeeLivewire(LikeButton::class);
 
     expect($strip->instance()->getListeners())->toHaveKey('echo-private:App.Models.User.'.$me->id.',.like.changed')
-        ->and(Livewire::withoutLazyLoading()->test(Strip::class, ['kind' => 'new'])->instance()->getListeners())->toBe([]);
+        // Other strips listen only for a block / unblock (P6.2) — never for likes.
+        ->and(Livewire::withoutLazyLoading()->test(Strip::class, ['kind' => 'new'])->instance()->getListeners())
+        ->toBe(['echo-private:App.Models.User.'.$me->id.',.connections.changed' => '$refresh']);
 });
 
 it('list cards carry the viewer\'s like / bookmark state, so a page of rows needs no query per button', function (): void {

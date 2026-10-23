@@ -35,7 +35,8 @@ use Livewire\Component;
  * see it get anything (ProfileVisibility: ACTIVE, opposite gender, not blocked — else 404,
  * R-M03-1/3); the owner always may, and ?preview=1 shows them what others see. Photos through
  * PhotoUrls, contact details only through ViewContact (R-M03-2), name masked (ProfileNames).
- * Like / Favorite (P3.3), Send Interest → Chat and photo / horoscope requests (P3.4) are live.
+ * Like / Favorite (P3.3), Send Interest → Chat and photo / horoscope requests (P3.4) are live;
+ * Block / Ignore / Report (SafetyMenu, P6.2) — a block either way takes the page away live.
  */
 final class Show extends Component
 {
@@ -66,6 +67,25 @@ final class Show extends Component
         $this->preview = $visibility->isOwner($target, $viewer) && request()->boolean('preview');
 
         $record->handle($viewer, $target);
+    }
+
+    /**
+     * Live (P6.2): a block or unblock between this member and someone (`.connections.changed`, no
+     * payload) — if this profile is no longer visible, the page leaves for the dashboard.
+     *
+     * @return array<string, string>
+     */
+    public function getListeners(): array
+    {
+        return ['echo-private:App.Models.User.'.$this->viewer()->id.',.connections.changed' => 'recheck'];
+    }
+
+    public function recheck(ProfileVisibility $visibility): void
+    {
+        $target = Profile::query()->where('code', $this->code)->first();
+        if ($target === null || ! $visibility->canView($target, $this->viewer())) {
+            $this->redirectRoute('member.dashboard', navigate: true);
+        }
     }
 
     /** "View contact" after the member confirmed: uses one contact view the first time (R-M03-2). */

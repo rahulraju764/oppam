@@ -7,18 +7,17 @@ namespace App\Actions\Admin\Chat;
 use App\Actions\Admin\Members\SuspendMember;
 use App\Domain\Chat\ChatFreezer;
 use App\Domain\Chat\FlagQueue;
-use App\Domain\Chat\InboxSignals;
+use App\Domain\Chat\MessageRemoval;
 use App\Domain\Chat\ReportFreezeRule;
+use App\Domain\Safety\AbuseCases;
 use App\Enums\FreezeReason;
 use App\Enums\MessageFlagDecision;
 use App\Enums\MessageFlagStatus;
 use App\Enums\ReportStatus;
-use App\Events\Chat\MessageDeleted;
 use App\Exceptions\Admin\MemberStateConflict;
 use App\Exceptions\Chat\MessageFlagUnavailable;
 use App\Models\AdminUser;
 use App\Models\Conversation;
-use App\Models\ConversationParticipant;
 use App\Models\Message;
 use App\Models\MessageFlag;
 use App\Models\Profile;
@@ -26,7 +25,6 @@ use App\Models\Report;
 use App\Models\User;
 use App\Notifications\Chat\ChatWarning;
 use App\Services\Audit\AuditLogger;
-use App\Support\Realtime\LiveSignal;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -43,7 +41,7 @@ use Illuminate\Validation\ValidationException;
  *  - Warn sender: a fixed-wording ChatWarning (in-app + email), never quoting the message.
  *  - Freeze conversation: the thread turns read-only for both, live (ConversationFrozen).
  *  - Suspend sender: the A03 flow (SuspendMember: typed reason, sessions end, audited).
- *  - Escalate: waits for a super admin (the A10 case arrives with P6.2).
+ *  - Escalate: waits for a super admin, and the sender's A10 abuse case becomes P0 (AbuseCases).
  * Optional note (≤ 500). Audited ("chat.flag.decided"); the flag's report closes when its flags are
  * decided (ACTIONED if any led to an action, DISMISSED if all were dismissed). When a dismissal takes the
  * reported member back below the auto-freeze rule, every thread the automatic freeze closed opens again
@@ -56,8 +54,9 @@ final class DecideMessageFlag
         private readonly ChatFreezer $freezer,
         private readonly ReportFreezeRule $rule,
         private readonly FlagQueue $queue,
-        private readonly InboxSignals $inbox,
+        private readonly MessageRemoval $removal,
         private readonly SuspendMember $suspend,
+        private readonly AbuseCases $cases,
     ) {}
 
     /**
@@ -99,7 +98,8 @@ final class DecideMessageFlag
                 MessageFlagDecision::FreezeConversation => $this->freeze($message),
                 MessageFlagDecision::SuspendSender => $this->suspend->handle($admin, $sender->user ?? throw MemberStateConflict::notActive(), (string) $note),
                 MessageFlagDecision::WarnSender => $warn = $sender?->user,
-                MessageFlagDecision::Dismiss, MessageFlagDecision::Escalate => null,
+                MessageFlagDecision::Escalate => $locked->sender_profile_id !== null ? $this->cases->escalateProfile($locked->sender_profile_id) : null,
+                MessageFlagDecision::Dismiss => null,
             };
 
             // Deleting the message settles every open flag on it; anything else settles this flag.
@@ -142,22 +142,7 @@ final class DecideMessageFlag
 
     private function remove(Message $message): void
     {
-        if ($message->isGone()) {
-            return;
-        }
-
-        $message->body = null;
-        $message->removed_by_admin_at = now();
-        $message->save();
-        // The file goes once the wipe is committed: a rollback must not leave a restored message without its photo.
-        DB::afterCommit(static fn () => $message->clearMediaCollection(Message::IMAGE));
-
-        LiveSignal::afterCommit(new MessageDeleted($message->conversation_id, $message->id));
-        $thread = Conversation::query()->find($message->conversation_id);
-        if ($thread !== null) {
-            $this->inbox->changed($thread, ConversationParticipant::query()->where('conversation_id', $thread->id)
-                ->pluck('profile_id')->map(fn (mixed $id): string => (string) $id)->all());
-        }
+        $this->removal->remove($message);
     }
 
     private function freeze(Message $message): void

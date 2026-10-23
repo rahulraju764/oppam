@@ -10,12 +10,15 @@ use App\Enums\KycSubmissionStatus;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
 use App\Enums\SettingKey;
+use App\Enums\TicketStatus;
+use App\Models\AbuseCase;
 use App\Models\AdminUser;
 use App\Models\Broker;
 use App\Models\BrokerKyc;
 use App\Models\EngagementSignal;
 use App\Models\MessageFlag;
 use App\Models\ModerationItem;
+use App\Models\SupportTicket;
 use App\Models\VerificationRequest;
 use App\Support\Facades\Settings;
 use Carbon\CarbonImmutable;
@@ -26,8 +29,10 @@ use Illuminate\Support\Collection;
  * count and oldest item for the three A04 queues and the escalations list — one grouped query
  * for all of them — and the A13 flagged chat messages and abuse signals (`chat.view_flagged`, one
  * query each), and the A05 ID verification queue (`verification.queue.view`, P6.1; breached after
- * `verification.aging_breach_hours`). Reports, broker KYC, stuck orders and tickets add
- * themselves here with their modules (owner decision 2026-10-11: only queues that exist are shown).
+ * `verification.aging_breach_hours`), broker KYC (P7.1), A10 safety cases (`safety.reports.view`,
+ * breached when one is past its SLA) and support tickets (`support.view`, breached when a first reply
+ * is overdue) — P6.2. Stuck orders add themselves with their module (owner decision 2026-10-11: only
+ * queues that exist are shown).
  * Memoised for the request: the layout's sidebar and the dashboard ask the same thing.
  */
 final class WorkQueues
@@ -44,6 +49,10 @@ final class WorkQueues
     private ?WorkQueueData $verification = null;
 
     private ?WorkQueueData $brokerKyc = null;
+
+    private ?WorkQueueData $cases = null;
+
+    private ?WorkQueueData $tickets = null;
 
     /**
      * @return list<WorkQueueData> only the queues this admin may open
@@ -64,6 +73,12 @@ final class WorkQueues
         if ($admin->can('chat.view_flagged')) {
             $queues[] = $this->chat ??= $this->chat();
             $queues[] = $this->signals ??= $this->signals();
+        }
+        if ($admin->can('safety.reports.view')) {
+            $queues[] = $this->cases ??= $this->cases();
+        }
+        if ($admin->can('support.view')) {
+            $queues[] = $this->tickets ??= $this->tickets();
         }
 
         return $queues;
@@ -114,6 +129,28 @@ final class WorkQueues
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
 
         return new WorkQueueData(KycQueue::QUEUE_KEY, __('Bureau KYC'), 'admin.brokers.kyc', 'fa-building-o', KycQueue::waitingCount(), $oldest, $oldest !== null && $oldest->lt($breach));
+    }
+
+    /** A10 (P6.2): open abuse cases; breached when any is past its P0/P1/P2 SLA. */
+    private function cases(): WorkQueueData
+    {
+        $row = AbuseCase::query()->open()->selectRaw('count(*) as waiting, min(created_at) as oldest, min(sla_due_at) as due')->toBase()->first();
+        $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
+        $due = $row?->due !== null ? CarbonImmutable::parse((string) $row->due) : null;
+
+        return new WorkQueueData(AbuseCase::QUEUE_KEY, __('Safety cases'), 'admin.safety.cases', 'fa-shield', (int) ($row->waiting ?? 0), $oldest, $due !== null && $due->isPast());
+    }
+
+    /** A10 (P6.2): tickets waiting for us; breached when a first reply is overdue. */
+    private function tickets(): WorkQueueData
+    {
+        $row = SupportTicket::query()->where('status', TicketStatus::Open->value)
+            ->selectRaw('count(*) as waiting, min(created_at) as oldest')->toBase()->first();
+        $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
+        $overdue = SupportTicket::query()->whereNull('first_responded_at')->whereIn('status', [TicketStatus::Open->value, TicketStatus::PendingMember->value])
+            ->where('first_response_due_at', '<', now())->exists();
+
+        return new WorkQueueData(SupportTicket::QUEUE_KEY, __('Open tickets'), 'admin.support.tickets', 'fa-life-ring', (int) ($row->waiting ?? 0), $oldest, $overdue);
     }
 
     /** A13: abuse signals waiting for a moderator, the oldest first raised. */

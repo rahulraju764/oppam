@@ -16,9 +16,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A member reporting another (PRD M09). From chat (P4.3a) it names the thread and the messages the
- * member selected; each selected message is also a REPORT flag in the A13 queue. Profile reports
- * and the A10 desk extend this in P6.2. The reported member is never told.
+ * A member reporting another (PRD M09) — the PRD's `abuse_reports`. From chat it names the thread
+ * and the messages the member selected (each also a REPORT flag in the A13 queue); from a profile
+ * page it carries the reason and details only. Every report joins the reported member's open A10
+ * abuse case (AbuseCases). The reported member is never told.
  *
  * @property string $id
  * @property string $reporter_profile_id
@@ -27,10 +28,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ReportReason $reason
  * @property string|null $details
  * @property string|null $conversation_id
+ * @property string|null $abuse_case_id
  * @property ReportStatus $status
  * @property \Illuminate\Support\Carbon|null $decided_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property-read Profile|null $reporter
+ * @property-read Profile|null $reported
+ * @property-read AbuseCase|null $abuseCase
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Message> $messages
  * @property-read \Illuminate\Database\Eloquent\Collection<int, MessageFlag> $flags
  */
@@ -46,6 +50,18 @@ final class Report extends Model
     public function reporter(): BelongsTo
     {
         return $this->belongsTo(Profile::class, 'reporter_profile_id')->withTrashed();
+    }
+
+    /** @return BelongsTo<Profile, $this> */
+    public function reported(): BelongsTo
+    {
+        return $this->belongsTo(Profile::class, 'reported_profile_id')->withTrashed();
+    }
+
+    /** @return BelongsTo<AbuseCase, $this> */
+    public function abuseCase(): BelongsTo
+    {
+        return $this->belongsTo(AbuseCase::class);
     }
 
     /** @return BelongsToMany<Message, $this> */

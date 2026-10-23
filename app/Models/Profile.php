@@ -78,6 +78,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
  * @property string|null $sub_caste
  * @property \Illuminate\Support\Carbon|null $published_at
  * @property \Illuminate\Support\Carbon|null $last_active_at
+ * @property \Illuminate\Support\Carbon|null $legal_hold_at A10 legal hold: purges skip this profile (PlaceLegalHold)
  * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 final class Profile extends Model implements HasMedia
@@ -133,6 +134,7 @@ final class Profile extends Model implements HasMedia
             'top_placement_until' => 'datetime',
             'published_at' => 'datetime',
             'last_active_at' => 'datetime',
+            'legal_hold_at' => 'datetime',
         ];
     }
 

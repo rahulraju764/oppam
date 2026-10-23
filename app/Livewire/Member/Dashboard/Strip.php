@@ -48,9 +48,12 @@ final class Strip extends Component
     /** @return array<string, string> */
     public function getListeners(): array
     {
+        // A block either way (P6.2) can take a profile out of any strip.
+        $channel = 'echo-private:App.Models.User.'.$this->member()->id;
+
         return $this->kind === 'liked'
-            ? ['echo-private:App.Models.User.'.$this->member()->id.',.like.changed' => '$refresh']
-            : [];
+            ? [$channel.',.like.changed' => '$refresh', $channel.',.connections.changed' => '$refresh']
+            : [$channel.',.connections.changed' => '$refresh'];
     }
 
     public function placeholder(): View

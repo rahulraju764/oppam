@@ -44,6 +44,10 @@ return [
     'member.notifications' => ['title' => 'Notifications', 'back' => ['member.dashboard', 'Dashboard']],
     'member.verification' => ['title' => 'Verify Profile', 'back' => ['member.profile.me', 'My Profile']],
     'member.checkout' => ['title' => 'Checkout', 'back' => ['plans', 'Membership Plans']],
+    'member.settings.blocked' => ['title' => 'Blocked & ignored', 'back' => ['member.dashboard', 'Dashboard']],
+    'member.help' => ['title' => 'Help & support', 'back' => ['member.dashboard', 'Dashboard']],
+    'member.help.ticket' => ['title' => 'Your request', 'back' => ['member.help', 'Help & support']],
+    'safety' => ['title' => 'Safety Centre'],
 
     // ---- Static / support: reachable from both chromes, so Back is the viewer's home ----
     'plans' => ['title' => 'Membership Plans'],

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Moderation;
 
 use App\Data\Moderation\ModerationFlag;
+use App\Domain\Safety\BanList;
 use App\Enums\Gender;
 use App\Enums\SettingKey;
 use App\Models\Media;
@@ -28,6 +29,7 @@ final class ModerationFlags
     public function __construct(
         private readonly SettingsRepository $settings,
         private readonly ProfanityMatcher $profanity,
+        private readonly BanList $bans,
     ) {}
 
     /**
@@ -89,6 +91,11 @@ final class ModerationFlags
     {
         if ($photo->phash === null) {
             return [];
+        }
+
+        // A10 ban blocklist (P6.2): a photo close to a banned member's photo — likely ban evasion.
+        if ($this->bans->isBannedPhoto($photo->phash)) {
+            return [new ModerationFlag('banned_photo', __('Looks like a photo of a banned member.'))];
         }
 
         $distance = (int) config('moderation.duplicate_photo_distance');

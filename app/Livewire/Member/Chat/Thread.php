@@ -95,18 +95,35 @@ final class Thread extends Component
             return [];
         }
 
-        $channel = 'echo-private:chat.'.$this->thread()->id;
+        // P6.2: a block either way — the thread is gone for this member, the page leaves live.
+        $connections = ['echo-private:App.Models.User.'.$this->member()->id.',.connections.changed' => 'recheck'];
+        $thread = $this->openThread();
+        if ($thread === null) {
+            return $connections;
+        }
+
+        $channel = 'echo-private:chat.'.$thread->id;
 
         return [
+            ...$connections,
             $channel.',.message.sent' => 'onMessage',
             $channel.',.message.delivered' => '$refresh',
             $channel.',.message.read' => '$refresh',
             $channel.',.message.deleted' => '$refresh',
-            $channel.',.conversation.frozen' => '$refresh',   // R-M07-5: the composer locks / unlocks live
+            $channel.',.conversation.frozen' => 'recheck',   // R-M07-5: the composer locks / unlocks live (a block freezes too)
             // F04: a payment activated a plan — the "Upgrade to chat" composer unlocks without a reload.
             'echo-private:App.Models.User.'.$this->member()->id.',.entitlements.changed' => '$refresh',
             'realtime-reconnected' => '$refresh',   // back-fill: the window re-reads everything newer
         ];
+    }
+
+    /** Re-read after a freeze or a block: a thread this member may no longer open leaves for the inbox. */
+    public function recheck(): void
+    {
+        $this->resolvedThread = null;
+        if ($this->openThread() === null) {
+            $this->redirectRoute('member.messages', navigate: true);
+        }
     }
 
     /** @param  array<string, mixed>  $payload */
@@ -273,7 +290,13 @@ final class Thread extends Component
 
     private function thread(): Conversation
     {
-        return $this->resolvedThread ??= app(ChatAccess::class)->threadWith($this->me(), $this->other()) ?? abort(404);
+        return $this->openThread() ?? abort(404);
+    }
+
+    /** The thread, or null when this member may no longer open it (closed, blocked either way). */
+    private function openThread(): ?Conversation
+    {
+        return $this->resolvedThread ??= app(ChatAccess::class)->threadWith($this->me(), $this->other());
     }
 
     private function other(): Profile

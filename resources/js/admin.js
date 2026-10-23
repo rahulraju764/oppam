@@ -9,6 +9,7 @@
      $store.adminLive.status     'off' | 'connecting' | 'up' | 'down'
      $store.adminQueues          live waiting counts by queue key (sidebar badges, cards)
    `admin.queues`    (.queue.count)     → adminQueues, only if the admin may join it
+                     (.case.urgent)     → an urgent toast linking to the P0 safety case (P6.2)
    `admin.dashboard` (.dashboard.tick)  → window event `dashboard-tick` { metric, value }
 ============================================================================= */
 
@@ -59,9 +60,18 @@ document.addEventListener('alpine:initialized', () => {
     }
 
     if (meta('oppam-admin-queues') === 'on') {
-        echo.private('admin.queues').listen('.queue.count', (event) => {
-            window.Alpine.store('adminQueues').set(event?.queue, event?.count);
-        });
+        echo.private('admin.queues')
+            .listen('.queue.count', (event) => {
+                window.Alpine.store('adminQueues').set(event?.queue, event?.count);
+            })
+            // A10 (P6.2): a case became P0 — an urgent toast linking to it, on every open admin page.
+            .listen('.case.urgent', (event) => {
+                const code = typeof event?.case === 'string' && /^CASE[0-9]+$/.test(event.case) ? event.case : null;
+                if (!code || meta('oppam-urgent-cases') !== 'on') return;   // only admins who can open the case
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: { type: 'danger', sticky: true, message: `${meta('oppam-urgent-case-label') ?? 'Urgent safety case'} ${code}`, url: `/safety/cases/${code}` },
+                }));
+            });
     }
 
     if (meta('oppam-admin-dashboard') === 'on') {

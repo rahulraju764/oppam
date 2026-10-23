@@ -61,6 +61,7 @@
                 ['success-stories', 'Wedding Success Stories'],
                 ['plans', 'FAQ', '#faq'],
                 ['contact', 'Contact Us'],
+                ['safety', 'Safety Centre'],
                 ['plans', 'Membership Benefits'],
                 ['about', 'About Us'],
                 ['terms', 'Terms of Use'],

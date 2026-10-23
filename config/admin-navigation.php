@@ -25,6 +25,10 @@ return [
         ['admin.moderation.edits', 'Edited fields', 'fa-pencil-square-o', 'moderation.view'],
         ['admin.moderation.escalations', 'Escalations', 'fa-level-up', 'moderation.view'],
     ],
+    'Safety & support' => [
+        ['admin.safety.cases', 'Safety cases', 'fa-shield', 'safety.reports.view'],
+        ['admin.support.tickets', 'Support tickets', 'fa-life-ring', 'support.view'],
+    ],
     'Chat safety' => [
         ['admin.chat.flags', 'Flagged messages', 'fa-flag', 'chat.view_flagged'],
         ['admin.chat.signals', 'Abuse signals', 'fa-bolt', 'chat.view_flagged'],

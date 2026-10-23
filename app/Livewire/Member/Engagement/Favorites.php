@@ -45,7 +45,11 @@ final class Favorites extends Component
     /** @return array<string, string> */
     public function getListeners(): array
     {
-        return ['favorite-changed' => 'favoriteChanged'];   // a bookmark removed with the button on a row
+        return [
+            'favorite-changed' => 'favoriteChanged',   // a bookmark removed with the button on a row
+            // A block either way removed favourites (R-M06-4): the list re-reads.
+            'echo-private:App.Models.User.'.$this->member()->id.',.connections.changed' => '$refresh',
+        ];
     }
 
     /** A row's own star changed: it can't stay ticked for "remove selected". */

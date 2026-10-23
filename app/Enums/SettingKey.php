@@ -92,6 +92,22 @@ enum SettingKey: string
     case VerificationRapidResubmitCount = 'verification.rapid_resubmit_count';
     case VerificationRapidResubmitDays = 'verification.rapid_resubmit_days';
 
+    // ---- Safety & support (P6.2, M09 / A10, decisions 2026-10-23) ----
+    case SafetyP0SlaHours = 'safety.p0_sla_hours';
+    case SafetyP1SlaHours = 'safety.p1_sla_hours';
+    case SafetyP2SlaHours = 'safety.p2_sla_hours';
+    case SafetyEscalateReporters = 'safety.escalate_reporters';
+    case SafetyEscalateWindowDays = 'safety.escalate_window_days';
+    case SafetyReportsMaxPerHour = 'safety.reports_max_per_hour';
+    case SafetyBlocksMaxPerHour = 'safety.blocks_max_per_hour';
+    case SafetyEvidenceContextMessages = 'safety.evidence_context_messages';
+    case SafetyPhashBanDistance = 'safety.phash_ban_distance';
+    case SafetyOncallPhones = 'safety.oncall_phones';
+    case SupportSlaSafetyHours = 'support.sla_safety_hours';
+    case SupportSlaPaymentsHours = 'support.sla_payments_hours';
+    case SupportSlaDefaultHours = 'support.sla_default_hours';
+    case SupportTicketsMaxPerHour = 'support.tickets_max_per_hour';
+
     public function type(): SettingType
     {
         return match ($this) {
@@ -99,7 +115,7 @@ enum SettingKey: string
             self::SiteSupportEmail, self::SiteInfoEmail, self::SitePhoneDisplay, self::SitePhoneDial,
             self::SiteAddress, self::SiteHours, self::SiteMaintenanceMessage,
             self::BillingSellerName, self::BillingSellerGstin, self::BillingSellerAddress,
-            self::BillingSellerStateCode, self::BillingSacCode => SettingType::Text,
+            self::BillingSellerStateCode, self::BillingSacCode, self::SafetyOncallPhones => SettingType::Text,
             default => SettingType::Integer,
         };
     }
@@ -182,6 +198,20 @@ enum SettingKey: string
             self::VerificationMaxSubmissionsPerDay => 3, // rule 10: ID submissions per member per day
             self::VerificationRapidResubmitCount => 3,  // A05 fraud signal "rapid resubmission": this many submissions …
             self::VerificationRapidResubmitDays => 7,   // … within this window
+            self::SafetyP0SlaHours => 4,                // A10 triage SLAs (decisions 2026-10-23): P0 asking for money / escalated …
+            self::SafetyP1SlaHours => 24,               // … P1 abuse, photos, fake profile …
+            self::SafetyP2SlaHours => 72,               // … P2 the rest
+            self::SafetyEscalateReporters => 3,         // A10 auto-escalation: this many different reporters …
+            self::SafetyEscalateWindowDays => 7,        // … within this window → P0
+            self::SafetyReportsMaxPerHour => 5,         // M09 / rule 10: profile reports per member per hour
+            self::SafetyBlocksMaxPerHour => 30,         // rule 10: blocks + ignores per member per hour
+            self::SafetyEvidenceContextMessages => 3,   // A10 reveal: messages shown either side of each reported one
+            self::SafetyPhashBanDistance => 6,          // a new photo this close (Hamming bits) to a banned one is flagged for moderation
+            self::SafetyOncallPhones => '',             // A10 P0 paging: comma-separated mobile numbers (admins have no phone)
+            self::SupportSlaSafetyHours => 4,           // A10 support SLAs (first reply): safety …
+            self::SupportSlaPaymentsHours => 24,        // … payments …
+            self::SupportSlaDefaultHours => 48,         // … everything else
+            self::SupportTicketsMaxPerHour => 5,        // rule 10: tickets per member / visitor per hour
         };
     }
 
@@ -256,6 +286,17 @@ enum SettingKey: string
             self::VerificationMaxSubmissionsPerDay => ['required', 'integer', 'min:1', 'max:20'],
             self::VerificationRapidResubmitCount => ['required', 'integer', 'min:2', 'max:20'],
             self::VerificationRapidResubmitDays => ['required', 'integer', 'min:1', 'max:90'],
+            self::SafetyP0SlaHours => ['required', 'integer', 'min:1', 'max:48'],
+            self::SafetyP1SlaHours, self::SafetyP2SlaHours => ['required', 'integer', 'min:1', 'max:336'],
+            self::SafetyEscalateReporters => ['required', 'integer', 'min:2', 'max:20'],
+            self::SafetyEscalateWindowDays => ['required', 'integer', 'min:1', 'max:90'],
+            self::SafetyReportsMaxPerHour => ['required', 'integer', 'min:1', 'max:50'],
+            self::SafetyBlocksMaxPerHour => ['required', 'integer', 'min:5', 'max:500'],
+            self::SafetyEvidenceContextMessages => ['required', 'integer', 'min:0', 'max:10'],
+            self::SafetyPhashBanDistance => ['required', 'integer', 'min:0', 'max:16'],
+            self::SafetyOncallPhones => ['nullable', 'string', 'max:300', 'regex:/^(\+?[0-9]{10,15})?(\s*,\s*\+?[0-9]{10,15})*$/'],
+            self::SupportSlaSafetyHours, self::SupportSlaPaymentsHours, self::SupportSlaDefaultHours => ['required', 'integer', 'min:1', 'max:336'],
+            self::SupportTicketsMaxPerHour => ['required', 'integer', 'min:1', 'max:50'],
         };
     }
 

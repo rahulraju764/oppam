@@ -7,8 +7,10 @@ namespace App\Jobs\Chat;
 use App\Enums\MessageType;
 use App\Enums\SettingKey;
 use App\Models\Conversation;
+use App\Models\ConversationParticipant;
 use App\Models\Media;
 use App\Models\Message;
+use App\Models\Profile;
 use App\Support\Facades\Settings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -38,6 +40,9 @@ final class PruneChatHistory implements ShouldBeUnique, ShouldQueue
             $ids = Conversation::query()
                 ->where(fn ($q) => $q->where('last_message_at', '<', $cutoff)
                     ->orWhere(fn ($none) => $none->whereNull('last_message_at')->where('created_at', '<', $cutoff)))
+                // A10 legal hold (P6.2): threads of a held member are kept until the hold is lifted.
+                ->whereNotIn('id', ConversationParticipant::query()->select('conversation_id')
+                    ->whereIn('profile_id', Profile::withTrashed()->whereNotNull('legal_hold_at')->select('id')))
                 ->limit(self::BATCH)->pluck('id')->all();
 
             if ($ids !== []) {

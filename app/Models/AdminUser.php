@@ -95,6 +95,21 @@ final class AdminUser extends Authenticatable
         return $this->hasRole('super_admin');
     }
 
+    /**
+     * Whether this admin may watch `admin.queues` (PRD §9.3): one place for the channel
+     * (AdminQueuesChannel) and the layout's real-time switch — any queue they may open.
+     */
+    public function watchesQueues(): bool
+    {
+        foreach (['moderation.view', 'verification.queue.view', 'chat.view_flagged', 'brokers.kyc', 'safety.reports.view', 'support.view'] as $permission) {
+            if ($this->can($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @return HasMany<AdminSession, $this> */
     public function sessions(): HasMany
     {

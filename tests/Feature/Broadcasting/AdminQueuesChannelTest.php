@@ -17,7 +17,7 @@ beforeEach(function (): void {
 
 it('lets moderators, verification officers and super admins join', function (string $role): void {
     expect((new AdminQueuesChannel)->join(adminWithRole($role)))->toBeTrue();
-})->with(['super_admin', 'moderator', 'verification_officer']);
+})->with(['super_admin', 'moderator', 'verification_officer', 'support']);   // support: A10 tickets + safety cases (P6.2)
 
 it('refuses admins without a queue permission', function (string $role): void {
     expect((new AdminQueuesChannel)->join(adminWithRole($role)))->toBeFalse();

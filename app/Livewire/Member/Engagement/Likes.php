@@ -58,6 +58,7 @@ final class Likes extends Component
     {
         return [
             'echo-private:App.Models.User.'.$this->member()->id.',.like.changed' => 'refreshLikes',
+            'echo-private:App.Models.User.'.$this->member()->id.',.connections.changed' => 'refreshLikes',   // a block removed likes (R-M06-4)
             'realtime-reconnected' => 'refreshLikes',   // back-fill anything missed while offline (PRD §9.7)
             'like-changed' => '$refresh',               // a like made or taken back on this page
         ];

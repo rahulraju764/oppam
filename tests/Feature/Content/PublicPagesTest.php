@@ -87,10 +87,12 @@ it('renders the hero register form as the live QuickRegister component (P1.1 rep
         ->and($html)->not->toMatch('/<button type="submit"\s+disabled>/');
 });
 
-it('keeps the contact form disabled until its handler exists (P8.1)', function (): void {
+it('the contact form is live: a Livewire form that opens a support ticket (P6.2, decisions 2026-10-23)', function (): void {
     $this->get('/contact')
-        ->assertSee('The online form opens soon')
-        ->assertSee('<button type="submit" disabled>', false);
+        ->assertDontSee('The online form opens soon')
+        ->assertDontSee('<button type="submit" disabled>', false)
+        ->assertSeeLivewire(App\Livewire\Public\ContactForm::class)
+        ->assertSee('wire:submit="send"', false);
 });
 
 it('M10: shows the three plans with server-formatted rupee prices; Purchase Now opens checkout with the plan key and duration only', function (): void {

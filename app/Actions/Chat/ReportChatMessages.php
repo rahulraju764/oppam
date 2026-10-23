@@ -8,6 +8,7 @@ use App\Domain\Chat\ChatAccess;
 use App\Domain\Chat\ChatFreezer;
 use App\Domain\Chat\FlagQueue;
 use App\Domain\Chat\ReportFreezeRule;
+use App\Domain\Safety\AbuseCases;
 use App\Enums\ConversationStatus;
 use App\Enums\FreezeReason;
 use App\Enums\MessageType;
@@ -41,7 +42,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *  - 1 – 10 messages, each one the OTHER member wrote in this thread (not SYSTEM, not unsent or
  *    removed) — anything else is refused and nothing is written;
  *  - `chat.reports_max_per_hour` per member (429); one OPEN chat report per member reported (409).
- * In one transaction: the report, its messages, one REPORT flag per message in the A13 queue.
+ * In one transaction: the report, its messages, one REPORT flag per message in the A13 queue, and
+ * the report joins the reported member's A10 abuse case (AbuseCases, P6.2).
  * Reporting freezes nothing (M09) — unless the reported member has now been reported from chat by
  * `chat.auto_freeze_reports` (3) different members within `chat.auto_freeze_window_days` (30, dismissed
  * reports don't count): then all of their OPEN threads freeze pending review (decisions 2026-10-16),
@@ -56,6 +58,7 @@ final class ReportChatMessages
         private readonly FlagQueue $flags,
         private readonly ChatFreezer $freezer,
         private readonly ReportFreezeRule $rule,
+        private readonly AbuseCases $cases,
         private readonly Impersonation $impersonation,
         private readonly RateLimiter $limiter,
         private readonly AuditLogger $audit,
@@ -130,6 +133,7 @@ final class ReportChatMessages
                 $this->flags->flagReported($message, $report);
             }
             $this->flags->announce();
+            $this->cases->attach($report);   // A10: the reported member's case (F07)
 
             $this->autoFreeze($other);
 

@@ -7,7 +7,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 **Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
 **Next session:** P7.2 — Referral program & materials. Open first: P7.1 reviewer verdict; P6.1 re-review after its Blocker fix;
 P5.3 — Admin billing (A06), plan written, waiting on 3 owner answers (second-level checks, refund scope, refund categories);
-Dusk for P5.2 / P6.1 / P7.1 once the dev servers run
+Dusk for P5.2 / P6.1 / P7.1 / P6.2 once the dev servers run; P6.2 reviewer verdict + owner review (auth change)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -74,7 +74,15 @@ Dusk for P5.2 / P6.1 / P7.1 once the dev servers run
   the PDF active-content check is marker-based (mitigated by no-eval pdf.js + sandbox CSP); Livewire temp uploads that are never
   submitted wait for Livewire's 24 h cleanup (production tmp disk must be private); the number HMAC follows APP_KEY (a rotation
   breaks duplicate-number matching for older requests); a hard profile delete would orphan vault files. Dusk not run.
-- [ ] P6.2 Block, ignore, report, safety centre, support desk (M09 + A10)
+- [ ] P6.2 Block, ignore, report, safety centre, support desk (M09 + A10) — 2026-10-23: built in one session (owner: not split;
+  decisions 2026-10-23). Block / unblock / ignore, profile reports, A10 cases (triage P0/P1/P2, 3-reporter escalation, P0
+  paging), Admin\Safety case queue + review (audited reveal, outcomes incl. ban blocklist, legal hold + evidence pack),
+  support desk (contact form → ticket, /help, canned responses, internal notes, SLA), /safety. Reviewer READY TO COMMIT in
+  round 3 (round 1: lint + "block, then report" gap fixed; round 2: build-prompts.md P6.2 block restored after an outside
+  corruption, Dusk re-run). Suite 2163 passed (BillingTest.php excluded — P5.3 contract change breaks its fake); Dusk
+  BlockLiveTest + SafetyPagesResponsiveTest passed. NOT committed — RegisterMember (ban check) is an auth change → owner
+  review (rule 5); the index must be re-staged (build-prompts.md) and P5.3 unstaged first. Minors open: CaseReview
+  re-renders on every queue ping; reveal-before-decide is UI-only; admin pages not in the responsive Dusk run.
 
 ## Phase 7 — Broker module (PRD §11A)
 - [ ] P7.1 Broker foundation, application & KYC — 2026-10-23: built (decisions 2026-10-23); reviewer round 1 NOT READY (0 Blockers in code;

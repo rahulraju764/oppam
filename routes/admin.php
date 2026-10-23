@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Admin\BreakGlassImageController;
 use App\Http\Controllers\Admin\BrokerKycDocumentController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
+use App\Http\Controllers\Admin\EvidencePackController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
 use App\Http\Controllers\Admin\VerificationDocumentController;
@@ -31,8 +32,13 @@ use App\Livewire\Admin\Moderation\PhotoQueueGrid;
 use App\Livewire\Admin\Moderation\ProfileQueue;
 use App\Livewire\Admin\Moderation\ProfileReview;
 use App\Livewire\Admin\Roles\Editor as RolesEditor;
+use App\Livewire\Admin\Safety\CaseQueue;
+use App\Livewire\Admin\Safety\CaseReview;
 use App\Livewire\Admin\Sessions\Index as SessionsIndex;
 use App\Livewire\Admin\Staff\Index as StaffIndex;
+use App\Livewire\Admin\Support\CannedResponses;
+use App\Livewire\Admin\Support\TicketQueue;
+use App\Livewire\Admin\Support\TicketShow;
 use App\Livewire\Admin\Verification\Queue as VerificationQueue;
 use App\Livewire\Admin\Verification\Review as VerificationReview;
 use Illuminate\Broadcasting\BroadcastController;
@@ -105,6 +111,22 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/kyc', BrokerKycQueue::class)->name('kyc');
         Route::get('/kyc/{broker}/pan', BrokerKycDocumentController::class)->where('broker', 'BRK[0-9]+')
             ->middleware(['signed', 'throttle:60,1'])->name('kyc.pan');
+    });
+
+    // Safety cases (A10, P6.2). Viewing needs safety.reports.view; every decision re-checks its own
+    // permission. The evidence pack: a 5-minute signed link, super admin + legal hold (ExportEvidencePack).
+    Route::middleware('can:safety.reports.view')->prefix('safety')->name('safety.')->group(function (): void {
+        Route::get('/cases', CaseQueue::class)->name('cases');
+        Route::get('/cases/{case}', CaseReview::class)->where('case', 'CASE[0-9]+')->name('cases.show');
+        Route::get('/cases/{case}/evidence-pack', EvidencePackController::class)->where('case', 'CASE[0-9]+')
+            ->middleware(['signed', 'throttle:10,1'])->name('cases.evidence-pack');
+    });
+
+    // Support desk (A10, P6.2). Viewing needs support.view; replies and changes re-check support.respond.
+    Route::middleware('can:support.view')->prefix('support')->name('support.')->group(function (): void {
+        Route::get('/tickets', TicketQueue::class)->name('tickets');
+        Route::get('/tickets/{ticket}', TicketShow::class)->where('ticket', 'TKT[0-9]+')->name('tickets.show');
+        Route::get('/canned', CannedResponses::class)->middleware('can:support.respond')->name('canned');
     });
 
     // Chat safety (A13). Viewing needs chat.view_flagged; every decision re-checks its own permission.

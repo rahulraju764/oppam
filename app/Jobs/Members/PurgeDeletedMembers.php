@@ -7,6 +7,7 @@ namespace App\Jobs\Members;
 use App\Actions\Admin\Members\PurgeDeletedMember;
 use App\Enums\SettingKey;
 use App\Enums\UserRole;
+use App\Models\Profile;
 use App\Models\User;
 use App\Support\Facades\Settings;
 use Illuminate\Bus\Queueable;
@@ -42,6 +43,8 @@ final class PurgeDeletedMembers implements ShouldBeUnique, ShouldQueue
             ->where('role', UserRole::Member->value)
             ->whereNull('anonymised_at')
             ->where('deleted_at', '<=', now()->subDays(Settings::int(SettingKey::MembersPurgeAfterDays)))
+            // A10 legal hold (P6.2): a held member's data is kept until a super admin lifts the hold.
+            ->whereNotIn('id', Profile::withTrashed()->whereNotNull('legal_hold_at')->whereNotNull('user_id')->select('user_id'))
             ->lazyById(100)
             ->each(function (User $member) use ($purge): void {
                 try {

@@ -24,7 +24,9 @@
          only when this admin may join it (the channel classes re-check on the server). --}}
     @if ($admin)
         <meta name="oppam-realtime" content="on">
-        <meta name="oppam-admin-queues" content="{{ $admin->can('moderation.view') || $admin->can('verification.queue.view') || $admin->can('chat.view_flagged') || $admin->can('brokers.kyc') ? 'on' : 'off' }}">
+        <meta name="oppam-admin-queues" content="{{ $admin->watchesQueues() ? 'on' : 'off' }}">
+        <meta name="oppam-urgent-cases" content="{{ $admin->can('safety.reports.view') ? 'on' : 'off' }}">
+        <meta name="oppam-urgent-case-label" content="{{ __('Urgent safety case') }}">
         <meta name="oppam-admin-dashboard" content="{{ $admin->can('dashboard.view') ? 'on' : 'off' }}">
     @endif
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])

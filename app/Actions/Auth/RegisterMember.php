@@ -7,6 +7,8 @@ namespace App\Actions\Auth;
 use App\Contracts\SmsGateway;
 use App\Data\Auth\RegistrationData;
 use App\Data\Auth\RegistrationResult;
+use App\Domain\Safety\BanList;
+use App\Enums\BannedIdentifierType;
 use App\Enums\OtpPurpose;
 use App\Enums\ProfileStatus;
 use App\Enums\UserRole;
@@ -42,6 +44,8 @@ use Illuminate\Support\Str;
  * - A number held by an account that never verified it is released: that ordinary ACTIVE member
  *   self-registration and its draft are removed, so typing someone else's number can't lock the
  *   real owner out. Suspended/banned or broker accounts are never released (isReleasable).
+ * - A mobile on the A10 ban blocklist creates nothing (same screen as a taken number); a banned
+ *   email is simply not attached (P6.2, decisions 2026-10-23).
  * - Role and status are fixed here (MEMBER / ACTIVE) — never taken from input.
  * - Registrations per IP are capped (config) to stop account-creation floods.
  */
@@ -52,6 +56,7 @@ final class RegisterMember
         private readonly ProfileCodeGenerator $codes,
         private readonly SendOtp $sendOtp,
         private readonly SmsGateway $sms,
+        private readonly BanList $bans,
     ) {}
 
     /** @throws RegistrationFailed only for the per-IP registration cap */
@@ -73,6 +78,12 @@ final class RegisterMember
         $outcome = DB::transaction(function () use ($data, $email, $passwordHash): array {
             $holder = User::withTrashed()->where('phone', $data->phone->e164())->lockForUpdate()->first();
 
+            // A10 ban blocklist (P6.2): a banned mobile gets the usual "enter the code" screen and
+            // no account — the same answer as a taken number, so nothing reveals the ban.
+            if ($holder === null && $this->bans->isBanned(BannedIdentifierType::Phone, $data->phone->e164())) {
+                return [null, null];
+            }
+
             if ($holder !== null) {
                 if (! self::isReleasable($holder)) {
                     return [null, $holder];
@@ -84,7 +95,7 @@ final class RegisterMember
             $user = new User;
             $user->forceFill([
                 'phone' => $data->phone->e164(),
-                'email' => $email !== null && $this->emailIsFree($email) ? $email : null,
+                'email' => $email !== null && ! $this->bans->isBanned(BannedIdentifierType::Email, $email) && $this->emailIsFree($email) ? $email : null,
                 'password' => $passwordHash,   // already hashed: the cast keeps it as is
                 'created_for' => $data->createdFor,
                 'role' => UserRole::Member,
