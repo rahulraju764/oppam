@@ -74,7 +74,7 @@ Dusk for P5.2 / P6.1 / P7.1 / P6.2 once the dev servers run; P6.2 reviewer verdi
   the PDF active-content check is marker-based (mitigated by no-eval pdf.js + sandbox CSP); Livewire temp uploads that are never
   submitted wait for Livewire's 24 h cleanup (production tmp disk must be private); the number HMAC follows APP_KEY (a rotation
   breaks duplicate-number matching for older requests); a hard profile delete would orphan vault files. Dusk not run.
-- [ ] P6.2 Block, ignore, report, safety centre, support desk (M09 + A10) — 2026-10-23: built in one session (owner: not split;
+- [x] P6.2 Block, ignore, report, safety centre, support desk (M09 + A10) — 2026-10-23, committed 35cc753 by the owner's request (built in one session; owner: not split;
   decisions 2026-10-23). Block / unblock / ignore, profile reports, A10 cases (triage P0/P1/P2, 3-reporter escalation, P0
   paging), Admin\Safety case queue + review (audited reveal, outcomes incl. ban blocklist, legal hold + evidence pack),
   support desk (contact form → ticket, /help, canned responses, internal notes, SLA), /safety. Reviewer READY TO COMMIT in
