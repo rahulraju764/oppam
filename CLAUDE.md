@@ -45,8 +45,17 @@ stop, tell the user, and fix the one that is wrong.
 
 ## Start of every session
 
-1. Read `docs/progress.md` — find the current phase and the next unchecked item.
-2. Read only the PRD sections that item names (don't load the whole PRD; it is ~2,700 lines).
+**`docs/build-prompts.md` is the session playbook — use it for every request.** Whenever the user
+names a session (P7.2, "next phase", "start phase 8" …) or asks for any build, fix, review or
+explanation, find the matching prompt in `docs/build-prompts.md` (the session's own block, or a
+Utility prompt such as Resume / Debug / Review / Security check / Explain) and follow it together
+with the **Session Starter** — even if the user doesn't paste it. Its `Read:` list says which PRD
+sections to open and its `Done when:` is the finish line the reviewer checks. If the user says they
+are away / unattended, use the **Unattended Session Starter** in that file instead.
+
+1. Read `docs/progress.md` — find the current phase and the next unchecked item, then its prompt in
+   `docs/build-prompts.md`.
+2. Read only the PRD sections that item's prompt names (don't load the whole PRD; it is ~2,700 lines).
 3. Load the skills that apply: always `oppam-code-standards` + `oppam-testing`; add
    `oppam-ui-standards` when views/CSS/JS change; `oppam-review-gate` before finishing.
 4. **Plan before coding** for anything bigger than a one-file fix. List migrations, models,
