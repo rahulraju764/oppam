@@ -5,9 +5,9 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
-**Next session:** P7.2 — Referral program & materials. Open first: P7.1 reviewer verdict; P6.1 re-review after its Blocker fix;
-P5.3 — Admin billing (A06), plan written, waiting on 3 owner answers (second-level checks, refund scope, refund categories);
-Dusk for P5.2 / P6.1 / P7.1 / P6.2 once the dev servers run; P6.2 reviewer verdict + owner review (auth change)
+**Next session:** P7.2 — Referral program & materials. Open first: commit the P7.1 drawer fix; P6.1 re-review after its Blocker fix;
+P5.3 — Admin billing (A06), groundwork committed in e13f771 (breaks BillingTest.php's fake gateway), screens not built;
+Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -85,10 +85,16 @@ Dusk for P5.2 / P6.1 / P7.1 / P6.2 once the dev servers run; P6.2 reviewer verdi
   re-renders on every queue ping; reveal-before-decide is UI-only; admin pages not in the responsive Dusk run.
 
 ## Phase 7 — Broker module (PRD §11A)
-- [ ] P7.1 Broker foundation, application & KYC — 2026-10-23: built (decisions 2026-10-23); reviewer round 1 NOT READY (0 Blockers in code;
-  3 Majors: PAN held by unproved applications, unproved applications in the A07 queue, 4 missing tests) — all 3 fixed (decisions
-  2026-10-23 "review round 1 fixes"), 10 Minors open; re-review pending; NOT committed
-  (SignInMember + device OTP = auth change → owner review, rule 5). Dusk tests/Browser/Mobile/BrokerPortalTest.php not run (dev servers stopped).
+- [x] P7.1 Broker foundation, application & KYC — 2026-10-23: built (decisions 2026-10-23); committed by the owner in 0ee451b.
+  Reviewer round 1 NOT READY (3 Majors: PAN held by unproved applications, unproved applications in the A07 queue, 4 missing
+  tests) — all fixed. Round 2 READY TO COMMIT: suite 2164 passed (BillingTest.php excluded — P5.3 e13f771 contract change
+  breaks its fake), lint + analyse clean, Dusk BrokerPortalTest passed after a fix found by it: phones (< 768 px, sidebar
+  hidden) could not reach KYC / staff / sign-out — the header drawer now carries the whole bureau menu, locked items and
+  sign-out (header-broker-nav.blade.php; drawer fix NOT yet committed). Owner review of the auth parts still due (SignInMember
+  device trust, BROKER_DEVICE OTP — rule 5). Minors open: the 10 from round 1; mobile proof doesn't announce the A07 count live
+  (CompleteRegistration → KycQueue::announce, an auth file); WorkQueues SLA not tested against an older unproved application;
+  the hold-window PAN message can be probed / re-held every 30 min (owner to confirm); locked items always say "after KYC"
+  (also BROKER_INACTIVE); drawer logout button look unchecked by eye; 320/768/1024/1440 px not run in a browser.
 - [ ] P7.2 Referral program & materials
 - [ ] P7.3 Managed profiles: create, manage, assign, notes
 - [ ] P7.4 Client inbox, claim flow & exports

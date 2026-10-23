@@ -12,6 +12,7 @@ use App\Models\AuditLog;
 use App\Models\BrokerKyc;
 use Database\Seeders\PlansSeeder;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
@@ -59,6 +60,21 @@ it('B.11: the sidebar shows only permitted items; before KYC the data items are 
         ->assertSee('after KYC')
         ->assertDontSeeHtml('href="'.brokerUrl('/profiles/create').'"')
         ->assertSeeHtml('href="'.brokerUrl('/kyc').'"');
+});
+
+it('B.11 phones: the header drawer carries the whole permitted menu, locked items with the reason, and sign-out', function (): void {
+    actingAsBureau(applicantOwner());
+    $html = (string) $this->get(brokerUrl(''))->assertOk()->getContent();
+    $drawer = Str::between($html, '<ul class="navbar-nav ms-auto menus">', '</ul>');
+
+    // The sidebar is hidden below 768 px: the unlocked links, the locked items with their reason
+    // and sign-out all live in the drawer list too.
+    expect($drawer)->toContain('href="'.brokerUrl('/kyc').'"')
+        ->and($drawer)->toContain('broker-nav-locked')
+        ->and($drawer)->toContain('Add a profile')
+        ->and($drawer)->toContain('after KYC')
+        ->and($drawer)->toContain('broker-nav-logout')
+        ->and($drawer)->not->toContain('href="'.brokerUrl('/profiles/create').'"');
 });
 
 it('/broker/kyc: the Owner sends KYC; secrets never come back; staff get 403', function (): void {

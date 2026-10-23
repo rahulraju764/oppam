@@ -48,8 +48,15 @@ it('P7.1: apply, dashboard and device check work at 375px without sideways scrol
             ->type('#loginPassword', TEST_MEMBER_PASSWORD)
             ->click('.login-form button[type="submit"]')
             ->waitForLocation('/broker')
-            ->waitForText('Managed profiles')
-            ->assertSee('Add a profile');
+            ->waitForText('Managed profiles');
+        assertNoHorizontalScroll($browser);
+
+        // The sidebar is hidden on phones: the drawer carries the bureau menu and sign-out.
+        $browser->click('.custom-toggler')
+            ->waitFor('#navbarSupportedContent.open')
+            ->within('#navbarSupportedContent', fn (Browser $drawer) => $drawer
+                ->assertSeeLink('Add a profile')
+                ->assertSee('Logout'));
         assertNoHorizontalScroll($browser);
 
         // The same login promoted to Manager: the next page asks to confirm the device.

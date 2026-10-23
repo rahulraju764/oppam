@@ -629,6 +629,10 @@ body.search-sheet-open .mobile-footer { display: none; }
 .broker-sidebar__status { margin: var(--space-2) 0 0; }
 .sidebar-menu .broker-sidebar__locked { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3) 0; border-bottom: var(--border-hair); color: var(--color-gr-dark); font-size: var(--text-sm); cursor: not-allowed; }
 .sidebar-menu .broker-sidebar__locked small { margin-left: auto; font-size: var(--text-xs); }
+/* Drawer copy of the bureau menu (below lg): locked items explain why in text, never colour only. */
+.broker-nav-locked { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--color-gr-dark); cursor: not-allowed; }
+.broker-nav-locked small { margin-left: auto; font-size: var(--text-xs); }
+.broker-nav-logout { padding: var(--space-2) 0; }
 .sidebar-menu a.active { color: var(--color-primary-dark); font-weight: var(--fw-semibold); }
 .broker-sidebar__logout { margin-top: var(--space-4); }
 .broker-chip { white-space: nowrap; }
