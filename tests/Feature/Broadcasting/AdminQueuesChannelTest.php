@@ -49,3 +49,11 @@ it('refuses a locked admin', function (): void {
 
     expect((new AdminQueuesChannel)->join($admin))->toBeFalse();
 });
+
+it('P7.1: an admin holding only brokers.kyc joins for the bureau KYC badge', function (): void {
+    $admin = adminWithRole('finance');
+    $admin->syncRoles([]);
+    $admin->givePermissionTo('brokers.kyc');
+
+    expect((new AdminQueuesChannel)->join($admin->refresh()))->toBeTrue();
+});

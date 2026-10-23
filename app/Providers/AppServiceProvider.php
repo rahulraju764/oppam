@@ -12,16 +12,23 @@ use App\Contracts\PresenceCounter;
 use App\Contracts\SmsGateway;
 use App\Domain\Billing\FinancialYear;
 use App\Domain\Billing\UsagePeriodResolver;
+use App\Domain\Broker\BureauGate;
 use App\Domain\Chat\ChatSafetyRules;
 use App\Domain\Engagement\Connections;
 use App\Domain\Engagement\EngagementRestrictions;
+use App\Enums\BureauPermission;
 use App\Enums\Flag;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
+use App\Http\Middleware\EnsureBrokerDeviceTrusted;
+use App\Http\Middleware\EnsureBrokerIsActive;
+use App\Http\Middleware\EnsureBrokerStaffIsActive;
+use App\Http\Middleware\EnsureBureauPermission;
 use App\Http\Middleware\EnsurePhoneIsVerified;
 use App\Http\Middleware\EnsureProfileOnboarded;
 use App\Http\Middleware\EnsureTwoFactorConfirmed;
+use App\Http\Middleware\EnsureUserRole;
 use App\Models\AdminUser;
 use App\Models\Masters\Caste;
 use App\Models\Masters\Country;
@@ -52,6 +59,7 @@ use App\Services\Sms\LogSmsGateway;
 use App\Services\Sms\Msg91Gateway;
 use App\Services\Verification\EncryptedDocumentVault;
 use App\Support\Facades\Feature;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -190,6 +198,20 @@ final class AppServiceProvider extends ServiceProvider
             EnsurePhoneIsVerified::class,
             EnsureProfileOnboarded::class,
         ]);
+
+        // Broker portal (P7.1): the same, for bureau status, login status, device and permission.
+        Livewire::addPersistentMiddleware([
+            EnsureUserRole::class,
+            EnsureBrokerIsActive::class,
+            EnsureBrokerStaffIsActive::class,
+            EnsureBrokerDeviceTrusted::class,
+            EnsureBureauPermission::class,
+        ]);
+
+        // `@can('bureau', 'profiles.import')` / Gate::forUser($u)->allows('bureau', …): BureauGate decides (§8.1).
+        Gate::define('bureau', fn (User $user, string $permission): Response => ($key = BureauPermission::tryFrom($permission)) !== null
+            ? app(BureauGate::class)->inspect($user, $key)
+            : Response::deny());
     }
 
     /** Admin panel security wiring (PRD §8.1, §8.4, A01). */

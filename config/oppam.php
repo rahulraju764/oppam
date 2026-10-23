@@ -86,6 +86,15 @@ return [
         'watermark_font' => resource_path('fonts/DejaVuSans-Bold.ttf'),
     ],
 
+    // Broker / bureau portal (PRD §11A, P7.1). Business limits (seats, import caps, commission) are
+    // A15 settings or per-bureau columns; these are abuse limits and security windows.
+    'broker' => [
+        'applications_per_ip_per_hour' => 5,
+        'kyc_submissions_per_day' => 5,
+        'unverified_pan_hold_minutes' => 30,                       // an application never proved by SMS holds its PAN this long
+        'kyc_link_minutes' => 10,                                  // A07: PAN image viewer links (signed, audited)
+    ],
+
     // ID verification (M09 / A05, P6.1). Documents are encrypted (APP_KEY) on the private disk and
     // only ever streamed by the admin viewer: a 10-minute signed link bound to the admin's session.
     // Business thresholds (aging, purge window, resubmission) are A15 settings (verification.*).

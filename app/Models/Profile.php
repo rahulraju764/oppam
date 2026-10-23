@@ -8,6 +8,7 @@ use App\Domain\Profile\AgeCalculator;
 use App\Enums\Gender;
 use App\Enums\MaritalStatus;
 use App\Enums\PhysicalStatus;
+use App\Enums\ProfileOwnerType;
 use App\Enums\ProfileStatus;
 use App\Models\Masters\Caste;
 use App\Models\Masters\District;
@@ -38,6 +39,17 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
  *
  * @property string $id
  * @property string|null $user_id
+ * @property string|null $broker_id referral attribution (§11A B.5)
+ * @property string|null $broker_code_raw
+ * @property bool $broker_verified
+ * @property ProfileOwnerType $owner_type
+ * @property string|null $managed_by_broker_id the bureau running this profile until it is claimed (§11A B.6)
+ * @property \Illuminate\Support\Carbon|null $broker_consent_confirmed_at
+ * @property string|null $consent_confirmed_by_user_id
+ * @property string|null $created_by_user_id
+ * @property string|null $assigned_staff_id
+ * @property string|null $import_batch_id
+ * @property \Illuminate\Support\Carbon|null $claimed_at
  * @property string $code
  * @property Gender $gender
  * @property string $first_name
@@ -113,6 +125,10 @@ final class Profile extends Model implements HasMedia
             'caste_no_bar' => 'boolean',
             'is_verified' => 'boolean',
             'is_premium' => 'boolean',
+            'broker_verified' => 'boolean',
+            'owner_type' => ProfileOwnerType::class,
+            'broker_consent_confirmed_at' => 'datetime',
+            'claimed_at' => 'datetime',
             'highlighted_until' => 'datetime',
             'top_placement_until' => 'datetime',
             'published_at' => 'datetime',

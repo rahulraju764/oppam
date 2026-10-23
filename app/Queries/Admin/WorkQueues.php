@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Queries\Admin;
 
 use App\Data\Admin\WorkQueueData;
+use App\Domain\Broker\KycQueue;
+use App\Enums\KycSubmissionStatus;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
 use App\Enums\SettingKey;
 use App\Models\AdminUser;
+use App\Models\Broker;
+use App\Models\BrokerKyc;
 use App\Models\EngagementSignal;
 use App\Models\MessageFlag;
 use App\Models\ModerationItem;
@@ -39,6 +43,8 @@ final class WorkQueues
 
     private ?WorkQueueData $verification = null;
 
+    private ?WorkQueueData $brokerKyc = null;
+
     /**
      * @return list<WorkQueueData> only the queues this admin may open
      */
@@ -51,6 +57,9 @@ final class WorkQueues
         $queues = $admin->can('moderation.view') ? ($this->moderation ??= $this->moderation()) : [];
         if ($admin->can('verification.queue.view')) {
             $queues[] = $this->verification ??= $this->verification();
+        }
+        if ($admin->can('brokers.kyc')) {
+            $queues[] = $this->brokerKyc ??= $this->brokerKyc();
         }
         if ($admin->can('chat.view_flagged')) {
             $queues[] = $this->chat ??= $this->chat();
@@ -94,6 +103,17 @@ final class WorkQueues
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::VerificationAgingBreachHours));
 
         return new WorkQueueData(VerificationRequest::QUEUE_KEY, __('ID verification'), 'admin.verification.index', 'fa-id-card-o', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
+    }
+
+    /** A07 (P7.1): bureau applications without KYC + KYC submissions waiting, the oldest first. */
+    private function brokerKyc(): WorkQueueData
+    {
+        $oldestKyc = BrokerKyc::query()->where('status', KycSubmissionStatus::Pending)->min('created_at');
+        $oldestApplication = Broker::query()->applicationsToReview()->min('created_at');
+        $oldest = collect([$oldestKyc, $oldestApplication])->filter()->map(fn (mixed $at): CarbonImmutable => CarbonImmutable::parse((string) $at))->min();
+        $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
+
+        return new WorkQueueData(KycQueue::QUEUE_KEY, __('Bureau KYC'), 'admin.brokers.kyc', 'fa-building-o', KycQueue::waitingCount(), $oldest, $oldest !== null && $oldest->lt($breach));
     }
 
     /** A13: abuse signals waiting for a moderator, the oldest first raised. */

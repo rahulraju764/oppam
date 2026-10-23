@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\BreakGlassImageController;
+use App\Http\Controllers\Admin\BrokerKycDocumentController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
@@ -11,6 +12,7 @@ use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
+use App\Livewire\Admin\Brokers\KycQueue as BrokerKycQueue;
 use App\Livewire\Admin\Chat\BreakGlass;
 use App\Livewire\Admin\Chat\BreakGlassViewer;
 use App\Livewire\Admin\Chat\FlaggedQueue;
@@ -95,6 +97,14 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/{profile}/document/{side}', VerificationDocumentController::class)
             ->where(['profile' => 'OPM[0-9]+', 'side' => 'front|back'])
             ->middleware(['signed', 'can:verification.document.view', 'throttle:60,1'])->name('document');
+    });
+
+    // Bureaus (A07, §11A B.12). P7.1: the applications & KYC queue; the PAN image only through a
+    // 10-minute signed link bound to the session that opened it, audited on every fetch.
+    Route::middleware('can:brokers.kyc')->prefix('brokers')->name('brokers.')->group(function (): void {
+        Route::get('/kyc', BrokerKycQueue::class)->name('kyc');
+        Route::get('/kyc/{broker}/pan', BrokerKycDocumentController::class)->where('broker', 'BRK[0-9]+')
+            ->middleware(['signed', 'throttle:60,1'])->name('kyc.pan');
     });
 
     // Chat safety (A13). Viewing needs chat.view_flagged; every decision re-checks its own permission.

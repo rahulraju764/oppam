@@ -86,7 +86,8 @@ it('A02: KPI tiles come from snapshots, with the change, the definition and "as 
         ->assertSeeHtml('dashboard-tick.window');                     // "New today" follows the live tick
 
     $queries = collect(DB::getQueryLog())->pluck('query');
-    expect($queries->filter(fn (string $q): bool => str_contains($q, 'from `users`') && str_contains($q, 'count(')))->toHaveCount(0)
+    // A count FROM users (a tile counted live); the bureau KYC badge's `exists (… from users …)` is a broker count.
+    expect($queries->filter(fn (string $q): bool => preg_match('/^select count\(.*?\) as aggregate from `users`/', $q) === 1))->toHaveCount(0)
         ->and($queries->filter(fn (string $q): bool => str_contains($q, 'from `metric_snapshots`')))->toHaveCount(1);
 });
 

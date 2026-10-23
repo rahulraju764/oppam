@@ -82,6 +82,12 @@ final class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
+    /** @return HasOne<BrokerStaff, $this> the bureau this BROKER login acts for (§11A B.2; one per login) */
+    public function brokerStaff(): HasOne
+    {
+        return $this->hasOne(BrokerStaff::class);
+    }
+
     /** @return HasMany<NotificationPreference, $this> */
     public function notificationPreferences(): HasMany
     {

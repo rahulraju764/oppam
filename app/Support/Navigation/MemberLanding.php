@@ -12,8 +12,8 @@ use Illuminate\Routing\Router;
 /**
  * Where a member goes after signing in (M01): the wizard while the profile is a DRAFT or was
  * REJECTED ("Edit & resubmit", R-M02-5), the "under review" page while PENDING_REVIEW
- * (R-M02-2), otherwise the dashboard — or the home page until the dashboard is built (P2.3). Brokers land
- * on the home page until the broker portal exists (P7.1).
+ * (R-M02-2), otherwise the dashboard — or the home page until the dashboard is built (P2.3). Bureau logins
+ * land on the broker portal (P7.1).
  */
 final class MemberLanding
 {
@@ -21,8 +21,12 @@ final class MemberLanding
 
     public function url(mixed $user): string
     {
-        if (! $user instanceof User || $user->role !== UserRole::Member) {
+        if (! $user instanceof User) {
             return route('home');
+        }
+
+        if ($user->role === UserRole::Broker) {
+            return $this->router->has('broker.dashboard') ? route('broker.dashboard') : route('home');
         }
 
         $status = $user->profile?->status;

@@ -35,6 +35,9 @@ return [
     'Verification' => [
         ['admin.verification.index', 'ID verification', 'fa-id-card-o', 'verification.queue.view'],
     ],
+    'Brokers' => [
+        ['admin.brokers.kyc', 'Applications & KYC', 'fa-building-o', 'brokers.kyc'],
+    ],
     'Master data' => [
         ['admin.masters.index', 'Master data', 'fa-list', 'masters.view'],
     ],

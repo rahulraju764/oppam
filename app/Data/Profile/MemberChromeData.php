@@ -42,7 +42,7 @@ final readonly class MemberChromeData
             code: $profile->code,
             planLabel: app(EntitlementService::class)->plan($profile)->name,
             photoUrl: asset(self::PLACEHOLDER_PHOTO),
-            isPremium: $profile->is_premium,
+            isPremium: $profile->is_premium === true,
         );
     }
 }

@@ -7,12 +7,17 @@ use App\Http\Middleware\ConfigureAdminSession;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
 use App\Http\Middleware\EnsureAdminSessionIsValid;
+use App\Http\Middleware\EnsureBrokerDeviceTrusted;
+use App\Http\Middleware\EnsureBrokerIsActive;
+use App\Http\Middleware\EnsureBrokerStaffIsActive;
+use App\Http\Middleware\EnsureBureauPermission;
 use App\Http\Middleware\EnsureImpersonationIsValid;
 use App\Http\Middleware\EnsureLivewireComponentHost;
 use App\Http\Middleware\EnsureMemberSessionIsValid;
 use App\Http\Middleware\EnsurePhoneIsVerified;
 use App\Http\Middleware\EnsureProfileOnboarded;
 use App\Http\Middleware\EnsureTwoFactorConfirmed;
+use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\RecordMemberActivity;
 use App\Support\Navigation\MemberLanding;
 use Illuminate\Foundation\Application;
@@ -94,6 +99,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'ip.allowlist' => EnsureAdminIpAllowed::class,
             'verified.phone' => EnsurePhoneIsVerified::class,
             'profile.onboarded' => EnsureProfileOnboarded::class,
+            // Broker portal (§8.1, §11A B.11).
+            'role' => EnsureUserRole::class,
+            'broker.active' => EnsureBrokerIsActive::class,
+            'broker.staff.active' => EnsureBrokerStaffIsActive::class,
+            'broker.device' => EnsureBrokerDeviceTrusted::class,
+            'bureau' => EnsureBureauPermission::class,
         ]);
 
         // Guests go to the login page of the surface they tried to reach.

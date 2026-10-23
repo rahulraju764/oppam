@@ -11,6 +11,7 @@ enum OtpPurpose: string
     case Login = 'LOGIN';
     case PasswordReset = 'PASSWORD_RESET';
     case ChangePhone = 'CHANGE_PHONE';
+    case BrokerDevice = 'BROKER_DEVICE';   // §8.1: bureau Owner / Manager on a new device
 
     public function label(): string
     {
@@ -19,6 +20,7 @@ enum OtpPurpose: string
             self::Login => __('Login'),
             self::PasswordReset => __('Password reset'),
             self::ChangePhone => __('Change mobile number'),
+            self::BrokerDevice => __('New device check'),
         };
     }
 

@@ -198,6 +198,17 @@ it('§7.3: a highlighted profile carries the Featured mark on result cards; an e
         ->and($cards[$ended->code]->isFeatured)->toBeFalse();
 });
 
+it('M09 / decision (l): result cards carry the Verified badge; a profile without is_verified loaded is not verified (P6.1 round 1)', function (): void {
+    $viewer = groom('+919877700022');
+    $verified = Profile::factory()->female()->active()->create(['is_verified' => true]);
+    $plain = Profile::factory()->female()->active()->create();          // is_verified never set in memory
+
+    $cards = collect(app(App\Domain\Profile\ProfileCards::class)->forViewers(collect([$verified, $plain]), $viewer))->keyBy('code');
+
+    expect($cards[$verified->code]->isVerified)->toBeTrue()
+        ->and($cards[$plain->code]->isVerified)->toBeFalse();
+});
+
 it('A03 + M10 review round 1: a suspension past the plan end does not expire it; reactivation extends it and its highlight', function (): void {
     seedAdminRoles();
     Event::fake([EntitlementsChanged::class]);

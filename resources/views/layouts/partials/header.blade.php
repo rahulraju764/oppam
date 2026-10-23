@@ -1,6 +1,7 @@
 {{--
     Site header (template header.php): skip link, sticky navbar, off-canvas drawer, page-nav bar.
     $member: ?App\Data\Profile\MemberChromeData — null renders the public (logged-out) nav.
+    $broker: ?App\Data\Broker\BrokerChromeData — the bureau portal nav (P7.1), when given.
     $pageNav: ?App\Support\Navigation\PageNav — rendered INSIDE .sticky-nav on purpose (it
     inherits the bar's sticky / hide-on-scroll behaviour). Drawer rules: template-notes.md.
 --}}
@@ -58,6 +59,8 @@
                     <ul class="navbar-nav ms-auto menus">
                         @if ($member)
                             @include('layouts.partials.header-member-nav', ['member' => $member])
+                        @elseif (($broker ?? null) !== null)
+                            @include('layouts.partials.header-broker-nav', ['broker' => $broker])
                         @else
                             @include('layouts.partials.header-public-nav')
                         @endif

@@ -8,7 +8,7 @@ use App\Models\AdminUser;
 
 /**
  * `admin.queues` (PRD §9.3): live queue counts. Any ACTIVE, unlocked admin with 2FA confirmed who holds
- * `moderation.view`, `verification.queue.view` or `chat.view_flagged` (A13). Re-checked against the database on every join.
+ * `moderation.view`, `verification.queue.view`, `chat.view_flagged` (A13) or `brokers.kyc` (A07, P7.1). Re-checked against the database on every join.
  */
 final class AdminQueuesChannel
 {
@@ -24,6 +24,6 @@ final class AdminQueuesChannel
             && $admin->isActive()
             && ! $admin->isLocked()
             && $admin->hasConfirmedTwoFactor()
-            && ($admin->can('moderation.view') || $admin->can('verification.queue.view') || $admin->can('chat.view_flagged'));
+            && ($admin->can('moderation.view') || $admin->can('verification.queue.view') || $admin->can('chat.view_flagged') || $admin->can('brokers.kyc'));
     }
 }

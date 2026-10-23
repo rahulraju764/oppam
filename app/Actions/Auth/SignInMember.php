@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Domain\Broker\TrustedDevices;
 use App\Enums\LoginMethod;
+use App\Enums\UserRole;
+use App\Models\BrokerStaff;
 use App\Models\LoginEvent;
 use App\Models\User;
 use App\Notifications\Auth\NewDeviceSignIn;
@@ -21,6 +24,9 @@ use Illuminate\Support\Str;
  * - Records a login_events row keyed by a random device cookie, and emails a new-device alert
  *   when the device has never signed in to this account before — only to a VERIFIED email
  *   (email verification arrives with M14; a stranger's address must not get security mail).
+ * - Bureau logins (P7.1): stamps `broker_staff.last_login_at`, and a code proven on this device
+ *   (OTP sign-in, registration / application) makes it a trusted device — Owners and Managers
+ *   signing in with a password elsewhere must pass the device OTP (§8.1, EnsureBrokerDeviceTrusted).
  */
 final class SignInMember
 {
@@ -30,6 +36,7 @@ final class SignInMember
         private readonly AuthFactory $auth,
         private readonly CookieJar $cookies,
         private readonly Session $session,
+        private readonly TrustedDevices $devices,
     ) {}
 
     /** $request supplies the IP, user agent and device cookie for the login record. */
@@ -68,6 +75,14 @@ final class SignInMember
 
         if (! $knownDevice && ! $firstSignIn && $user->email !== null && $user->email_verified_at !== null) {
             $user->notify(new NewDeviceSignIn($event));
+        }
+
+        if ($user->role === UserRole::Broker) {
+            BrokerStaff::query()->where('user_id', $user->id)->update(['last_login_at' => now()]);
+
+            if (in_array($method, [LoginMethod::Otp, LoginMethod::Registration], true)) {
+                $this->devices->trust($user, $deviceHash);
+            }
         }
     }
 }

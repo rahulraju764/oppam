@@ -4,9 +4,10 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 5 — Money (Phase 4 complete, 2026-10-21)
-**Next session:** P5.3 — Admin billing (A06) — plan written, waiting on 3 owner answers (second-level checks, refund scope,
-refund categories); first run P5.2's Dusk step
+**Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
+**Next session:** P7.2 — Referral program & materials. Open first: P7.1 reviewer verdict; P6.1 re-review after its Blocker fix;
+P5.3 — Admin billing (A06), plan written, waiting on 3 owner answers (second-level checks, refund scope, refund categories);
+Dusk for P5.2 / P6.1 / P7.1 once the dev servers run
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -64,12 +65,22 @@ refund categories); first run P5.2's Dusk step
 - [ ] P5.3 Admin billing (A06)
 
 ## Phase 6 — Trust & support
-- [ ] P6.1 ID verification (M09 + A05) — 2026-10-22: built with Claude's defaults (decisions 2026-10-22, owner to confirm);
-  see the completion report. NOT ticked: reviewer verdict + Dusk pending (dev servers stopped); NOT committed.
+- [ ] P6.1 ID verification (M09 + A05) — 2026-10-22: built with Claude's defaults (decisions 2026-10-22, owner to confirm).
+  Committed by the owner (d608ce4, a4f1b54) before the reviewer finished. Reviewer round 1 (2026-10-23): NOT READY — 1 Blocker
+  (ProfileCards passed a null `is_verified` into the bool `isVerified` → TypeError on card lists from partial models), fixed
+  (`=== true`), NOT yet committed. Round 2 (2026-10-23): READY TO COMMIT for the fix (commit `ProfileCards.php` alone — the
+  SubmitVerification / WorkQueues / AdminQueuesChannel / Profile diffs belong to P7.1); its 2 Minors fixed (direct Verified-badge
+  card test in MembershipLifecycleTest, same `=== true` in MemberChromeData::isPremium). Minors open: PDF watermark is client-side only (pdf.js);
+  the PDF active-content check is marker-based (mitigated by no-eval pdf.js + sandbox CSP); Livewire temp uploads that are never
+  submitted wait for Livewire's 24 h cleanup (production tmp disk must be private); the number HMAC follows APP_KEY (a rotation
+  breaks duplicate-number matching for older requests); a hard profile delete would orphan vault files. Dusk not run.
 - [ ] P6.2 Block, ignore, report, safety centre, support desk (M09 + A10)
 
 ## Phase 7 — Broker module (PRD §11A)
-- [ ] P7.1 Broker foundation, application & KYC
+- [ ] P7.1 Broker foundation, application & KYC — 2026-10-23: built (decisions 2026-10-23); reviewer round 1 NOT READY (0 Blockers in code;
+  3 Majors: PAN held by unproved applications, unproved applications in the A07 queue, 4 missing tests) — all 3 fixed (decisions
+  2026-10-23 "review round 1 fixes"), 10 Minors open; re-review pending; NOT committed
+  (SignInMember + device OTP = auth change → owner review, rule 5). Dusk tests/Browser/Mobile/BrokerPortalTest.php not run (dev servers stopped).
 - [ ] P7.2 Referral program & materials
 - [ ] P7.3 Managed profiles: create, manage, assign, notes
 - [ ] P7.4 Client inbox, claim flow & exports

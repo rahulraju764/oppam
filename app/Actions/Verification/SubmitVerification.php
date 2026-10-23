@@ -21,16 +21,13 @@ use App\Models\VerificationDocument;
 use App\Models\VerificationRequest;
 use App\Services\Admin\Impersonation;
 use App\Services\Audit\AuditLogger;
-use App\Services\Media\ImageSanitizer;
+use App\Services\Documents\DocumentUploadReader;
 use App\Support\Facades\Settings;
-use finfo;
 use Illuminate\Cache\RateLimiter;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -40,19 +37,16 @@ use Throwable;
  *    member's behalf); one open request at a time; not while already verified;
  *  - the number must have the document's shape (Aadhaar: 12 digits + Verhoeff check) — only its
  *    last 4 and a keyed hash are kept (DocumentNumber);
- *  - files are sniffed (never the browser's word); images are re-encoded (EXIF / GPS dropped,
- *    scripts refused), PDFs must be plain (no password, JavaScript or launch actions);
+ *  - files are read by DocumentUploadReader: sniffed, images re-encoded, PDFs plain;
  *  - files are encrypted into the DocumentVault before the row exists, removed again if it fails;
  *  - fraud flags are computed once (VerificationFlags); the A05 badge goes up live;
  *  - `verification.max_submissions_per_day` per member (rule 10).
  */
 final class SubmitVerification
 {
-    private const MIMES = ['image/jpeg', 'image/png', 'application/pdf'];
-
     public function __construct(
         private readonly DocumentVault $vault,
-        private readonly ImageSanitizer $sanitizer,
+        private readonly DocumentUploadReader $reader,
         private readonly VerificationFlags $flags,
         private readonly VerificationQueue $queue,
         private readonly RateLimiter $limiter,
@@ -85,7 +79,7 @@ final class SubmitVerification
         $files = array_filter([DocumentSide::Front->value => $data->front, DocumentSide::Back->value => $data->back]);
         $prepared = [];
         foreach ($files as $side => $file) {
-            $prepared[$side] = $this->prepare($file, $side === DocumentSide::Front->value ? 'front' : 'back');
+            $prepared[$side] = $this->reader->read($file, $side === DocumentSide::Front->value ? 'front' : 'back');
         }
 
         $stored = [];
@@ -111,7 +105,7 @@ final class SubmitVerification
     /** @throws ValidationException */
     private function validate(VerificationSubmissionData $data): VerificationDocType
     {
-        $file = ['file', 'mimes:jpg,jpeg,png,pdf', 'mimetypes:'.implode(',', self::MIMES), 'max:'.(int) config('oppam.verification.max_kb')];
+        $file = ['file', 'mimes:jpg,jpeg,png,pdf', 'mimetypes:'.implode(',', DocumentUploadReader::MIMES), 'max:'.(int) config('oppam.verification.max_kb')];
 
         Validator::make([
             'docType' => $data->docType,
@@ -136,56 +130,6 @@ final class SubmitVerification
         ])->validate();
 
         return VerificationDocType::from($data->docType);
-    }
-
-    /**
-     * Sniff, clean and hash one upload. sha256 is of the file AS SENT (the duplicate-document flag).
-     *
-     * @return array{bytes: string, mime: string, sha256: string}
-     *
-     * @throws ValidationException
-     */
-    private function prepare(UploadedFile $file, string $field): array
-    {
-        $path = (string) $file->getRealPath();
-        $original = (string) file_get_contents($path);
-        $mime = (new finfo(FILEINFO_MIME_TYPE))->buffer($original);
-        $refuse = ValidationException::withMessages([$field => __('Please upload a JPG, PNG or PDF of your document.')]);
-
-        if (! in_array($mime, self::MIMES, true)) {
-            throw $refuse;
-        }
-
-        if ($mime === 'application/pdf') {
-            if (! str_starts_with($original, '%PDF-')) {
-                throw $refuse;
-            }
-
-            // Password-protected PDFs can't be reviewed; active content has no place in an ID scan.
-            foreach (['/Encrypt', '/JavaScript', '/Launch', '/EmbeddedFile'] as $marker) {
-                if (str_contains($original, $marker)) {
-                    throw ValidationException::withMessages([$field => __('This PDF is password-protected or contains active content. Please upload a plain scan or a photo.')]);
-                }
-            }
-
-            return ['bytes' => $original, 'mime' => $mime, 'sha256' => hash('sha256', $original)];
-        }
-
-        try {
-            $clean = $this->sanitizer->sanitize($path);
-        } catch (InvalidArgumentException) {
-            throw $refuse;
-        }
-
-        try {
-            if ($clean['width'] < 300 || $clean['height'] < 200) {
-                throw ValidationException::withMessages([$field => __('This photo is too small to read. Please upload a sharper one.')]);
-            }
-
-            return ['bytes' => (string) file_get_contents($clean['path']), 'mime' => 'image/jpeg', 'sha256' => hash('sha256', $original)];
-        } finally {
-            @unlink($clean['path']);
-        }
     }
 
     /**
