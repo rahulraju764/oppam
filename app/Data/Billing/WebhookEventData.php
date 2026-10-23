@@ -11,5 +11,6 @@ final readonly class WebhookEventData
         public string $event,
         public ?string $gatewayOrderId,
         public ?GatewayPaymentData $payment,
+        public ?GatewayRefundData $refund = null,
     ) {}
 }

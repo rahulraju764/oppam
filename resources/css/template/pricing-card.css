@@ -1,0 +1,187 @@
+/*
+ * Membership pricing cards (template pricing-cards.php) — moved verbatim out of style.css so
+ * the admin plan editor (A06) shows the very same card as its live preview. Imported right after
+ * style.css by app.css (cascade position unchanged for every other rule) and by admin.css.
+ */
+
+/* Pricing cards sit on the teal band, so they use the shared card surface tokens
+   (radius / padding / shadow) rather than a shell of their own. */
+.pricing-card {
+  background: var(--color-default);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--pad-card) var(--pad-card-sm);
+  text-align: center;
+  position: relative;
+  z-index: 5;
+  max-width: 320px;
+  margin: 0 auto 0 auto;
+  transition: var(--transition);
+}
+
+.pricing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* The recommended tier — brand-accent fill, same geometry as the others. */
+.pricing-card.featured {
+  background: var(--color-primary);
+  color: var(--color-default);
+  z-index: 1;
+}
+
+.plan-badge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--color-default);
+  color: var(--color-primary);
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+}
+
+.plan-name {
+  font-family: var(--font-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary);
+}
+
+.featured .plan-name {
+  color: var(--color-default);
+}
+
+.plan-price {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.plan-price sup {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-regular);
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-5);
+  color: var(--color-gr-dark);
+}
+
+.plan-price span {
+  font-family: var(--font-primary);
+  font-size: var(--text-3xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--leading-tight);
+}
+
+.plan-price sub {
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  margin-bottom: var(--space-2);
+  color: var(--color-gr-dark);
+}
+
+.featured .plan-price sup,
+.featured .plan-price span,
+.featured .plan-price sub {
+  color: var(--color-default);
+}
+
+.billed-text {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-regular);
+  font-size: var(--text-sm);
+  color: var(--color-gr-dark);
+  margin-bottom: var(--space-4);
+}
+
+.featured .billed-text {
+  color: var(--color-default);
+}
+
+.pricing-card hr {
+  border-color: var(--border-color);
+  margin: 0;
+}
+
+.featured hr {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.unlock-title {
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary);
+  margin: var(--space-5) 0 var(--space-3);
+}
+
+.featured .unlock-title {
+  color: var(--color-default);
+}
+
+.feature-list {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-regular);
+  list-style: none;
+  padding: 0;
+  /* Holds the three cards' buttons on one line despite uneven feature counts. */
+  min-height: 150px;
+}
+
+.feature-list li {
+  font-size: var(--text-sm);
+  color: var(--color-bltxt);
+  margin-bottom: var(--space-3);
+}
+
+.feature-list li i {
+  color: var(--color-primary);
+  margin-right: var(--space-2);
+}
+
+.featured .feature-list li,
+.featured .feature-list li i {
+  color: var(--color-default);
+}
+
+.btn-purchase {
+  display: block;
+  background: var(--color-primary);
+  color: var(--color-default);
+  padding: 14px 30px;
+  border-radius: var(--radius-pill);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-base);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.btn-purchase:hover {
+  background: var(--color-primary-dark);
+  color: var(--color-default);
+}
+
+.featured .btn-purchase {
+  font-family: var(--font-primary);
+  background: var(--color-default);
+  color: var(--color-primary);
+}
+
+.featured .btn-purchase:hover {
+  background: var(--color-default);
+  color: var(--color-primary-dark);
+}
+
+/* The brand-panel texture (see BRAND-PANEL TEXTURE in style.css) — after the `background`
+   shorthand of .pricing-card.featured above, which would otherwise reset it. */
+.pricing-card.featured {
+  background-image: url("/images/home/pattern-22.png");
+  background-repeat: repeat;
+  background-position: center;
+  background-size: auto;
+}

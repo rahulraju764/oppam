@@ -202,6 +202,16 @@ it('a gateway outage leaves a FAILED order and a friendly refusal (no gateway te
         {
             return [];
         }
+
+        public function paymentsBetween(Carbon\CarbonInterface $from, Carbon\CarbonInterface $to): array
+        {
+            return [];
+        }
+
+        public function refund(string $paymentId, int $amountPaise, string $receipt): App\Data\Billing\GatewayRefundData
+        {
+            throw PaymentGatewayUnavailable::because('timeout');
+        }
     });
 
     try {

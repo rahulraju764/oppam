@@ -41,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $failure_reason
  * @property Carbon $expires_at
  * @property Carbon|null $paid_at
+ * @property string|null $paid_payment_id the captured payment that activated it (A06 refunds)
  * @property Carbon $created_at
  */
 final class Order extends Model
@@ -107,5 +108,17 @@ final class Order extends Model
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class);
+    }
+
+    /** @return BelongsTo<Payment, $this> */
+    public function paidPayment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class, 'paid_payment_id');
+    }
+
+    /** @return HasMany<Refund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
     }
 }

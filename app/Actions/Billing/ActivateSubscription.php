@@ -27,6 +27,7 @@ use App\Services\Entitlements\EntitlementService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use LogicException;
 
 /**
  * A captured payment activates its order (F04: "DB transaction: order PAID, payment row,
@@ -103,13 +104,27 @@ final class ActivateSubscription
                 return self::AMOUNT_MISMATCH;
             }
 
-            $this->activate($order);
+            $this->activate($order, $row);
 
             return self::ACTIVATED;
         });
     }
 
-    private function activate(Order $order): void
+    /**
+     * A06 force-activate (super admin, P5.3): activate an order whose captured payment was held
+     * back (amount mismatch) after finance checked it. Same lock and same path as a webhook.
+     * Call inside a transaction with the order row locked; $payment is captured and belongs to it.
+     */
+    public function activateWith(Order $order, Payment $payment): void
+    {
+        if (DB::transactionLevel() === 0 || $order->status === OrderStatus::Paid || $payment->order_id !== $order->id || $payment->status !== PaymentStatus::Captured) {
+            throw new LogicException('Force-activation needs a locked unpaid order and its captured payment.');
+        }
+
+        $this->activate($order, $payment);
+    }
+
+    private function activate(Order $order, Payment $payment): void
     {
         $now = CarbonImmutable::now();
         $profile = Profile::withTrashed()->whereKey($order->profile_id)->lockForUpdate()->firstOrFail();
@@ -142,7 +157,7 @@ final class ActivateSubscription
         ])->save();
 
         $this->flags->handle($profile, $now);   // is_premium, highlighted_until, top_placement_until
-        $order->forceFill(['status' => OrderStatus::Paid, 'paid_at' => $now, 'failure_reason' => null])->save();
+        $order->forceFill(['status' => OrderStatus::Paid, 'paid_at' => $now, 'paid_payment_id' => $payment->id, 'failure_reason' => null])->save();
 
         if ($order->coupon_id !== null) {
             // Lock the coupon BEFORE inserting the redemption: the insert's foreign-key check takes a

@@ -7,9 +7,12 @@ namespace App\Services\Payments;
 use App\Contracts\PaymentGateway;
 use App\Data\Billing\GatewayOrderData;
 use App\Data\Billing\GatewayPaymentData;
+use App\Data\Billing\GatewayRefundData;
 use App\Exceptions\Billing\PaymentGatewayUnavailable;
+use Carbon\CarbonInterface;
 use Razorpay\Api\Api;
 use Razorpay\Api\Order as RazorpayOrder;
+use Razorpay\Api\Payment as RazorpayPayment;
 use Throwable;
 
 /**
@@ -89,6 +92,54 @@ final class RazorpayGateway implements PaymentGateway
         }
 
         return $payments;
+    }
+
+    public function paymentsBetween(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $payments = [];
+        $skip = 0;
+
+        do {
+            try {
+                new Api($this->keyId, $this->keySecret);
+                $items = (new RazorpayPayment)->all(['from' => $from->getTimestamp(), 'to' => $to->getTimestamp() - 1, 'count' => 100, 'skip' => $skip])->toArray()['items'] ?? [];
+            } catch (Throwable $e) {
+                throw PaymentGatewayUnavailable::because('payments list failed', $e);
+            }
+
+            $items = is_array($items) ? $items : [];
+            foreach ($items as $item) {
+                $payment = is_array($item) ? RazorpayWebhookPayload::payment($item) : null;
+                if ($payment instanceof GatewayPaymentData) {
+                    $payments[] = $payment;
+                }
+            }
+            $skip += 100;
+        } while (count($items) === 100 && $skip < 10_000);   // a day's payments; the cap keeps a bad loop finite
+
+        return $payments;
+    }
+
+    public function refund(string $paymentId, int $amountPaise, string $receipt): GatewayRefundData
+    {
+        try {
+            new Api($this->keyId, $this->keySecret);
+            $refund = (new RazorpayPayment)->fetch($paymentId)->refund([
+                'amount' => $amountPaise,
+                'speed' => 'normal',
+                'receipt' => $receipt,
+                'notes' => ['refund_code' => $receipt],
+            ])->toArray();
+        } catch (Throwable $e) {
+            throw PaymentGatewayUnavailable::because('refund create failed', $e);
+        }
+
+        $data = RazorpayWebhookPayload::refund($refund);
+        if ($data === null || $data->amountPaise !== $amountPaise || $data->paymentId !== $paymentId) {
+            throw PaymentGatewayUnavailable::because('unexpected refund response');
+        }
+
+        return $data;
     }
 
     /**

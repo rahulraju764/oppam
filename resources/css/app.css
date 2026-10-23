@@ -23,6 +23,7 @@
 /* ---- ours — last, so it wins ---- */
 @import './tokens.css';
 @import './template/style.css';
+@import './template/pricing-card.css';
 @import './template/responsive.css';
 @import './oppam.css';
 @import './ui-kit.css';

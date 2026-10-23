@@ -6,7 +6,9 @@ namespace App\Contracts;
 
 use App\Data\Billing\GatewayOrderData;
 use App\Data\Billing\GatewayPaymentData;
+use App\Data\Billing\GatewayRefundData;
 use App\Exceptions\Billing\PaymentGatewayUnavailable;
+use Carbon\CarbonInterface;
 
 /**
  * The payment gateway (PRD §4: Razorpay orders + webhooks; hosted checkout, no card fields on our
@@ -45,4 +47,21 @@ interface PaymentGateway
      * @throws PaymentGatewayUnavailable
      */
     public function paymentsForOrder(string $gatewayOrderId): array;
+
+    /**
+     * Every payment the gateway created in [$from, $to) — the daily reconciliation (A06).
+     *
+     * @return list<GatewayPaymentData>
+     *
+     * @throws PaymentGatewayUnavailable
+     */
+    public function paymentsBetween(CarbonInterface $from, CarbonInterface $to): array;
+
+    /**
+     * Refund part or all of a captured payment (A06). $receipt is our RFD… code (also put in the
+     * notes, so the refund's webhook can be matched); the amount is in paise, GST included.
+     *
+     * @throws PaymentGatewayUnavailable the gateway refused or could not be reached — nothing was refunded
+     */
+    public function refund(string $paymentId, int $amountPaise, string $receipt): GatewayRefundData;
 }

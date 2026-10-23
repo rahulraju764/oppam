@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Payments;
 
 use App\Data\Billing\GatewayPaymentData;
+use App\Data\Billing\GatewayRefundData;
 use App\Data\Billing\WebhookEventData;
 use App\Enums\PaymentStatus;
+use App\Enums\RefundStatus;
 use InvalidArgumentException;
 use JsonException;
 
@@ -31,12 +33,42 @@ final class RazorpayWebhookPayload
 
         $paymentEntity = $data['payload']['payment']['entity'] ?? null;
         $orderEntity = $data['payload']['order']['entity'] ?? null;
+        $refundEntity = $data['payload']['refund']['entity'] ?? null;
         $payment = is_array($paymentEntity) ? self::payment($paymentEntity) : null;
         $orderId = $payment !== null
             ? $payment->orderId
             : (is_array($orderEntity) && is_string($orderEntity['id'] ?? null) ? $orderEntity['id'] : null);
 
-        return new WebhookEventData(event: $data['event'], gatewayOrderId: $orderId, payment: $payment);
+        return new WebhookEventData(
+            event: $data['event'],
+            gatewayOrderId: $orderId,
+            payment: $payment,
+            refund: is_array($refundEntity) ? self::refund($refundEntity) : null,
+        );
+    }
+
+    /** @param  array<mixed>  $entity  a Razorpay refund entity (create response or refund.* webhook) */
+    public static function refund(array $entity): ?GatewayRefundData
+    {
+        $id = $entity['id'] ?? null;
+        $paymentId = $entity['payment_id'] ?? null;
+        if (! is_string($id) || ! is_string($paymentId) || ! is_numeric($entity['amount'] ?? null)) {
+            return null;
+        }
+
+        $code = $entity['notes']['refund_code'] ?? ($entity['receipt'] ?? null);
+
+        return new GatewayRefundData(
+            id: substr($id, 0, 64),
+            paymentId: $paymentId,
+            amountPaise: (int) $entity['amount'],
+            status: match ($entity['status'] ?? null) {
+                'processed' => RefundStatus::Processed,
+                'failed' => RefundStatus::Failed,
+                default => RefundStatus::Processing,   // "pending": accepted, money on its way
+            },
+            refundCode: is_string($code) && preg_match('/^RFD[0-9]{6,9}$/', $code) === 1 ? $code : null,
+        );
     }
 
     /** Payer details Razorpay includes in a payment entity — never stored (no PII outside the member record). */

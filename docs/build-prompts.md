@@ -456,7 +456,7 @@ Done when: A10 + M09 acceptance tests pass; block effects visible live on both s
 
 ### P7.1 — Broker foundation, application & KYC
 ```
-Read: PRD §11A B.1–B.4, B.13, B.14, B.16 (R-M13-18..25), §8.1.
+Read: PRD §11A B.1–B.4, B.13, B.14, B.16 (R-M13-18..25), §8.1. 
 Build: all broker migrations from B.13 (brokers, broker_kyc, broker_staff, invitations,
 referrals, payouts, exports, notes, import batches/rows, profile columns), models, enums;
 BureauGate (role ceiling ∩ Owner switch-offs, re-checked per request), middleware broker.active +

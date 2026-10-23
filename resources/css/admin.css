@@ -11,6 +11,7 @@
 
 @import './tokens.css';
 @import './ui-kit.css';
+@import './template/pricing-card.css';   /* A06 plan editor preview */
 
 body.is-admin {
   background: var(--admin-bg);
