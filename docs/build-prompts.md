@@ -15,6 +15,9 @@ time. Session IDs (P0.1 …) match the checklist in `docs/progress.md`.
    line-by-line review (they are on the "never allow unreviewed" list).
 5. If a session runs long or goes off track: ask for a summary of what's done/not done, commit
    what works, `/clear`, and continue with the **Resume** prompt.
+6. **Away from your PC?** Push to `phase-1`, then send the **Unattended Session Starter** (below)
+   in a Claude chat that has the repo attached. You don't need to paste the session prompt — CLAUDE.md
+   tells Claude to look it up here for every request.
 
 PRD = `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`. Section numbers below refer to it.
 
@@ -35,6 +38,34 @@ When building: follow the skills, write Pest tests for success paths and the sec
 oppam-review-gate, then run the oppam-reviewer agent and give me the completion report in the
 oppam-review-gate format. Update docs/progress.md. Do not commit unless I ask.
 ```
+
+### Unattended Session Starter (when you are away — Claude on claude.ai / cloud)
+
+Use this instead of the Session Starter when you won't be around to approve a plan (travel,
+overnight runs). Claude works in its cloud workspace on the GitHub repo, so everything you want
+it to build on must be **committed and pushed to `phase-1` first**. Replace `<IDs>` with one
+session or a chain, e.g. `P7.2` or `P7.2 → P7.3 → P7.4`.
+
+```
+Pull the latest phase-1 from rahulraju764/oppam. Read CLAUDE.md and docs/progress.md. We are doing
+session(s) <IDs> from docs/build-prompts.md, in order, one at a time.
+For each session: read ONLY the PRD sections in its Read: list; load oppam-code-standards and
+oppam-testing (plus oppam-ui-standards if views/CSS/JS change); inspect the existing code.
+I am away: do NOT wait for plan approval. Write the plan into the PR description instead. Where
+the PRD is silent or unclear, choose the safest sensible default, record it in docs/decisions.md
+marked "Claude's default — owner to confirm", and continue. Stop only for a decision that can't
+be undone and could reasonably go either way; set it out and move to the next session.
+Build → Pest tests (success + security matrix, PRD rule ids) → pint → phpstan → pest →
+oppam-review-gate self-check → oppam-reviewer agent, fixing Blockers/Majors until READY TO COMMIT.
+Then update docs/progress.md, commit on a new branch claude/<id> (stack each session's branch on
+the previous one), push, and open a PR into phase-1 with the completion report. Never merge,
+never push to phase-1, never force-push. Say which commands could not run here (Dusk, Reverb)
+so I can run them on XAMPP.
+Login/OTP/2FA/sessions/payments/refunds changes: mark the PR "OWNER REVIEW REQUIRED (rule 5)".
+```
+
+When you're back: review each PR on GitHub, run `php artisan dusk` locally for the items the
+report lists, merge in order, then pull `phase-1` on your PC.
 
 ---
 
