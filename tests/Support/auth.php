@@ -40,6 +40,8 @@ function registrationData(array $overrides = []): RegistrationData
         phone: $overrides['phone'] ?? PhoneNumber::fromParts('91', '9876543210'),
         email: array_key_exists('email', $overrides) ? $overrides['email'] : 'anjali@example.com',
         password: $overrides['password'] ?? TEST_MEMBER_PASSWORD,
+        referralCode: $overrides['referralCode'] ?? null,
+        referralCookie: $overrides['referralCookie'] ?? null,
     );
 }
 

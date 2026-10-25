@@ -29,12 +29,19 @@ final readonly class RealtimeContextData
         public bool $pollingFallback,
     ) {}
 
-    /** Null for guests and non-members: the page opens no socket. */
+    /**
+     * Null for guests: the page opens no socket. Bureau logins (§11A B.11 live toasts, P7.2) get
+     * their own user channel only — never the online roster.
+     */
     public static function current(): ?self
     {
         $user = auth('web')->user();
-        if (! $user instanceof User || $user->role !== UserRole::Member || ! $user->isActive()) {
+        if (! $user instanceof User || ! $user->isActive() || ! in_array($user->role, [UserRole::Member, UserRole::Broker], true)) {
             return null;
+        }
+
+        if ($user->role === UserRole::Broker) {
+            return new self((string) $user->id, false, false, Feature::active(Flag::RealtimePollingFallback));
         }
 
         $impersonating = app(Impersonation::class)->isActive();

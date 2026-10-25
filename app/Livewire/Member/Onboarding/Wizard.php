@@ -4,33 +4,25 @@ declare(strict_types=1);
 
 namespace App\Livewire\Member\Onboarding;
 
-use App\Actions\Profile\SaveAboutDetails;
-use App\Actions\Profile\SaveBasicDetails;
-use App\Actions\Profile\SaveCareerDetails;
-use App\Actions\Profile\SaveContactDetails;
-use App\Actions\Profile\SaveFamilyDetails;
-use App\Actions\Profile\SavePartnerPreferences;
+use App\Actions\Broker\EnterReferralCode;
 use App\Actions\Profile\SubmitProfile;
+use App\Data\Broker\ReferralCodeHintData;
 use App\Data\Content\SeoData;
+use App\Domain\Broker\BrokerCodeLookup;
 use App\Domain\Profile\PendingTextEdits;
 use App\Domain\Profile\ProfileRules;
 use App\Domain\Profile\WizardProgress;
 use App\Enums\Gender;
-use App\Enums\MaritalStatus;
 use App\Enums\ProfileStatus;
 use App\Enums\UserRole;
 use App\Enums\WizardStep;
 use App\Exceptions\Profile\ProfileNotSubmittable;
-use App\Livewire\Forms\Wizard\AboutForm;
-use App\Livewire\Forms\Wizard\BasicForm;
-use App\Livewire\Forms\Wizard\CareerForm;
-use App\Livewire\Forms\Wizard\ContactForm;
-use App\Livewire\Forms\Wizard\FamilyForm;
-use App\Livewire\Forms\Wizard\PreferenceForm;
+use App\Livewire\Concerns\EditsWizardSections;
+use App\Models\Broker;
 use App\Models\ModerationItem;
 use App\Models\Profile;
 use App\Models\User;
-use App\Services\Masters\Masters;
+use App\Services\Admin\Impersonation;
 use App\Support\Navigation\MemberLanding;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\RateLimiter;
@@ -43,31 +35,25 @@ use Livewire\Component;
  * /onboarding/{step} — the profile wizard (M02, template profile-creation.php … profile-photos.php).
  * One component, one Form Object per step, each step saved by its own Action (which authorizes
  * and re-validates). Saves on Continue/Back and autosaves after 20 s without typing (Alpine →
- * autosave(), partial rules). Dependent lists are reactive. Step 6 submits for review
+ * autosave(), partial rules). Dependent lists are reactive. Sections, their dependencies and saves are
+ * shared with the bureau form (EditsWizardSections). Step 6 submits for review
  * (SubmitProfile, R-M02-2). The profile is always the signed-in member's own. Option lists are
  * built by WizardOptions.
  */
 final class Wizard extends Component
 {
+    use EditsWizardSections;
+
     private const AUTOSAVES_PER_MINUTE = 30;
 
     #[Locked]
     public int $step = 1;
 
-    public BasicForm $basic;
-
-    public CareerForm $career;
-
-    public FamilyForm $family;
-
-    public PreferenceForm $preference;
-
-    public ContactForm $contact;
-
-    public AboutForm $about;
-
     /** Last successful autosave (IST "h:i A"), shown as "Saved at …". */
     public ?string $savedAt = null;
+
+    /** Step 1: bureau referral code (§11A B.5) — only while EnterReferralCode::canEnter. */
+    public string $referralCode = '';
 
     public function mount(int $step, MemberLanding $landing): mixed
     {
@@ -92,58 +78,10 @@ final class Wizard extends Component
         }
 
         $this->step = $requested->value;
-        foreach ([$this->basic, $this->career, $this->family, $this->preference, $this->contact, $this->about] as $form) {
-            $form->load($profile);
-        }
-
-        $this->showPendingText($profile);
+        $this->loadSections($profile);
+        $this->referralCode = (string) $profile->broker_code_raw;
 
         return null;
-    }
-
-    /** A live profile's held text edits (R-M02-4) are what the owner last typed: show those. */
-    private function showPendingText(Profile $profile): void
-    {
-        $pending = app(PendingTextEdits::class)->pending($profile);
-
-        $this->basic->first_name = $pending['profiles.first_name'] ?? $this->basic->first_name;
-        $this->basic->last_name = $pending['profiles.last_name'] ?? $this->basic->last_name;
-        $this->about->about = $pending['profiles.about'] ?? $this->about->about;
-        $this->family->about_family = $pending['family_details.about_family'] ?? $this->family->about_family;
-        $this->preference->about_partner = $pending['partner_preferences.about_partner'] ?? $this->preference->about_partner;
-    }
-
-    // ---- Dependent fields -----------------------------------------------------------------------
-
-    public function updated(string $property, mixed $value): void
-    {
-        match ($property) {
-            'basic.religion_id' => $this->basic->caste_id = '',
-            'basic.marital_status' => $value === MaritalStatus::NeverMarried->value ? $this->basic->children_count = '0' : null,
-            'career.current_country_id' => [$this->career->current_state_id, $this->career->current_district_id] = ['', ''],
-            'career.current_state_id' => $this->career->current_district_id = '',
-            'career.permanent_country_id' => [$this->career->permanent_state_id, $this->career->permanent_district_id] = ['', ''],
-            'career.permanent_state_id' => $this->career->permanent_district_id = '',
-            'contact.country_id' => $this->contact->countryChanged(),
-            'contact.state_id' => $this->contact->stateChanged(),
-            default => null,
-        };
-    }
-
-    /** Partner-preference option buttons (multi-select). The list name is allow-listed by the form. */
-    public function toggleChoice(string $list, string $value, Masters $masters): void
-    {
-        $this->preference->toggle($list, $value);
-        $this->preference->keepCastesOfReligions($masters);
-    }
-
-    public function clearChoice(string $list): void
-    {
-        $this->preference->clear($list);
-
-        if ($list === 'religion_ids') {
-            $this->preference->clear('caste_ids');
-        }
     }
 
     /** The photo manager (step 6) changed photos: re-render so progress and completeness follow. */
@@ -234,26 +172,19 @@ final class Wizard extends Component
 
         $step = WizardStep::from($this->step);
 
-        // Full saves validate the form first so errors appear under the fields.
-        if (! $partial) {
-            match ($step) {
-                WizardStep::Basic => $this->basic->validate(),
-                WizardStep::Career => $this->career->validate(),
-                WizardStep::Family => $this->family->validate(),
-                WizardStep::Preferences => $this->preference->validate($this->preference->rulesFor($profile->gender)),
-                WizardStep::Contact => $this->contact->validate(),
-                WizardStep::Photos => $this->about->validate(),
-            };
+        // The referral code is resolved on "Continue" only — never by autosave / Back: a matching
+        // code attributes for good (R-M13-3), so a half-typed one must not. Not in a support session.
+        if ($step === WizardStep::Basic && ! $partial && ! app(Impersonation::class)->isActive()) {
+            $this->validateOnly('referralCode', ['referralCode' => ['nullable', 'string', 'max:30']]);
+
+            $code = BrokerCodeLookup::normalise($this->referralCode);
+
+            if ($code !== null && $code !== $profile->broker_code_raw && EnterReferralCode::canEnter($profile)) {
+                app(EnterReferralCode::class)->handle($user, $profile, $code);
+            }
         }
 
-        match ($step) {
-            WizardStep::Basic => app(SaveBasicDetails::class)->handle($user, $profile, $this->basic->toData(), $partial),
-            WizardStep::Career => app(SaveCareerDetails::class)->handle($user, $profile, $this->career->toData(), $partial),
-            WizardStep::Family => app(SaveFamilyDetails::class)->handle($user, $profile, $this->family->toData(), $partial),
-            WizardStep::Preferences => app(SavePartnerPreferences::class)->handle($user, $profile, $this->preference->toData(), $partial),
-            WizardStep::Contact => app(SaveContactDetails::class)->handle($user, $profile, $this->contact->toData(), $partial),
-            WizardStep::Photos => app(SaveAboutDetails::class)->handle($user, $profile, $this->about->toData(), $partial),
-        };
+        $this->saveSection($user, $profile, $step, $partial);
     }
 
     // ---- View ---------------------------------------------------------------------------------
@@ -272,6 +203,7 @@ final class Wizard extends Component
             'rejectionNote' => $this->rejectionNote($profile),
             'pendingFields' => $this->pendingFieldLabels($profile),
             'phone' => $this->member()->phone,
+            'referral' => $this->referralView($current, $profile),
             ...$options->forStep($current, $profile->gender ?? Gender::Female, $this->basic, $this->career, $this->preference, $this->contact),
         ])->layout('layouts::member', ['seo' => SeoData::private('Create your profile | Oppam Matrimony')]);
     }
@@ -293,6 +225,31 @@ final class Wizard extends Component
             fn (string $key): string => $names[substr($key, (int) strpos($key, '.') + 1)] ?? $key,
             array_keys(app(PendingTextEdits::class)->pending($profile)),
         );
+    }
+
+    /**
+     * Step 1's referral block: editable with a live hint, or the bureau the member was referred by
+     * (read-only, R-M13-3), or nothing.
+     *
+     * @return array{editable: bool, hint: ReferralCodeHintData|null, bureau: string|null}|null
+     */
+    private function referralView(WizardStep $current, ?Profile $profile): ?array
+    {
+        if ($current !== WizardStep::Basic || $profile === null) {
+            return null;
+        }
+
+        if (EnterReferralCode::canEnter($profile) && ! app(Impersonation::class)->isActive()) {
+            $hint = trim($this->referralCode) === '' ? null : app(BrokerCodeLookup::class)->hint($this->referralCode);
+
+            return ['editable' => true, 'hint' => $hint, 'bureau' => null];
+        }
+
+        $bureau = $profile->broker_verified && $profile->broker_id !== null
+            ? Broker::query()->whereKey($profile->broker_id)->first()?->displayName()
+            : null;
+
+        return $bureau === null ? null : ['editable' => false, 'hint' => null, 'bureau' => $bureau];
     }
 
     /** The moderator's note for a rejected profile (R-M02-5), or null. */

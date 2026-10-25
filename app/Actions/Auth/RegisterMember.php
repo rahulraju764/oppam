@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Actions\Broker\ResolveBrokerCode;
 use App\Contracts\SmsGateway;
 use App\Data\Auth\RegistrationData;
 use App\Data\Auth\RegistrationResult;
@@ -16,6 +17,7 @@ use App\Enums\UserStatus;
 use App\Exceptions\Auth\OtpThrottled;
 use App\Exceptions\Auth\RegistrationFailed;
 use App\Exceptions\Sms\SmsDeliveryFailed;
+use App\Models\BrokerReferral;
 use App\Models\Profile;
 use App\Models\User;
 use App\Services\Profile\ProfileCodeGenerator;
@@ -46,6 +48,8 @@ use Illuminate\Support\Str;
  *   real owner out. Suspended/banned or broker accounts are never released (isReleasable).
  * - A mobile on the A10 ban blocklist creates nothing (same screen as a taken number); a banned
  *   email is simply not attached (P6.2, decisions 2026-10-23).
+ * - A broker referral code (typed, else the `?ref=` cookie) is resolved by ResolveBrokerCode
+ *   inside the same transaction; it never blocks registration (R-M13-1, P7.2).
  * - Role and status are fixed here (MEMBER / ACTIVE) — never taken from input.
  * - Registrations per IP are capped (config) to stop account-creation floods.
  */
@@ -57,6 +61,7 @@ final class RegisterMember
         private readonly SendOtp $sendOtp,
         private readonly SmsGateway $sms,
         private readonly BanList $bans,
+        private readonly ResolveBrokerCode $referrals,
     ) {}
 
     /** @throws RegistrationFailed only for the per-IP registration cap */
@@ -113,6 +118,9 @@ final class RegisterMember
                 'dob' => $data->dob,
                 'status' => ProfileStatus::Draft,
             ])->save();
+
+            // §11A B.5: broker referral code — typed beats the `?ref=` cookie; never blocks (R-M13-1).
+            $this->referrals->handle($profile, $data->referralCode, $data->referralCookie);
 
             return [$user, null];
         });
@@ -182,6 +190,8 @@ final class RegisterMember
     /** An account that never verified its mobile has nothing worth keeping: remove it for good. */
     private function removeUnverified(User $user): void
     {
+        // Its referral row goes too (P7.2): an unproved sign-up never counted for a bureau.
+        BrokerReferral::query()->whereIn('profile_id', Profile::withTrashed()->where('user_id', $user->id)->select('id'))->delete();
         Profile::withTrashed()->where('user_id', $user->id)->forceDelete();
         $user->forceDelete();
     }

@@ -26,7 +26,8 @@ trait SubmitsRegistration
 
     public function register(RegisterMember $register): mixed
     {
-        $data = $this->form->toData();
+        $cookie = request()->cookie((string) config('oppam.auth.referral_cookie'));
+        $data = $this->form->toData(is_string($cookie) ? $cookie : null);
 
         try {
             $result = $register->handle($data, (string) request()->ip());

@@ -44,6 +44,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
  * @property bool $broker_verified
  * @property ProfileOwnerType $owner_type
  * @property string|null $managed_by_broker_id the bureau running this profile until it is claimed (§11A B.6)
+ * @property string|null $client_phone managed profiles: the client's mobile, E.164 — the future claim key (B.6, P7.3)
  * @property \Illuminate\Support\Carbon|null $broker_consent_confirmed_at
  * @property string|null $consent_confirmed_by_user_id
  * @property string|null $created_by_user_id
@@ -80,6 +81,8 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
  * @property \Illuminate\Support\Carbon|null $last_active_at
  * @property \Illuminate\Support\Carbon|null $legal_hold_at A10 legal hold: purges skip this profile (PlaceLegalHold)
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Broker|null $managedBy
+ * @property-read BrokerStaff|null $assignedStaff
  */
 final class Profile extends Model implements HasMedia
 {
@@ -136,6 +139,24 @@ final class Profile extends Model implements HasMedia
             'last_active_at' => 'datetime',
             'legal_hold_at' => 'datetime',
         ];
+    }
+
+    /** Run by a bureau and not (yet) claimed by the client (§11A B.6). */
+    public function isBrokerManaged(): bool
+    {
+        return $this->owner_type === ProfileOwnerType::BrokerManaged && $this->managed_by_broker_id !== null && $this->claimed_at === null;
+    }
+
+    /** @return BelongsTo<Broker, $this> */
+    public function managedBy(): BelongsTo
+    {
+        return $this->belongsTo(Broker::class, 'managed_by_broker_id');
+    }
+
+    /** @return BelongsTo<BrokerStaff, $this> */
+    public function assignedStaff(): BelongsTo
+    {
+        return $this->belongsTo(BrokerStaff::class, 'assigned_staff_id');
     }
 
     /** Public URLs resolve profiles by code (CLAUDE.md "URLs use codes, never ULIDs"). */

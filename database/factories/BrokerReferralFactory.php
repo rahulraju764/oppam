@@ -8,6 +8,7 @@ use App\Enums\ReferralSource;
 use App\Enums\ReferralStatus;
 use App\Models\Broker;
 use App\Models\BrokerReferral;
+use App\Models\Order;
 use App\Models\Profile;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -25,5 +26,24 @@ final class BrokerReferralFactory extends Factory
             'source' => ReferralSource::Referral,
             'status' => ReferralStatus::Pending,
         ];
+    }
+
+    /** Earned from $order at the default 10 % (B.10). */
+    public function earned(Order $order, int $bps = 1000): static
+    {
+        return $this->state(fn (): array => [
+            'profile_id' => $order->profile_id,
+            'order_id' => $order->id,
+            'base_paise' => $order->taxable_paise,
+            'commission_bps' => $bps,
+            'commission_paise' => intdiv($order->taxable_paise * $bps + 5_000, 10_000),
+            'status' => ReferralStatus::Earned,
+            'earned_at' => now(),
+        ]);
+    }
+
+    public function managed(): static
+    {
+        return $this->state(['source' => ReferralSource::Managed]);
     }
 }

@@ -20,6 +20,14 @@ const BUREAU_ROUTES = [
     '/kyc' => ['kyc.manage', ['OWNER']],
     '/profiles/create' => ['profiles.create', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
     '/import' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
+    // P7.3 managed profiles (the per-profile routes: IdorScopingTest + ManagedProfileScreensTest)
+    '/profiles' => ['profiles.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
+    // P7.2 referral program
+    '/referrals' => ['referrals.view', ['OWNER', 'MANAGER']],
+    '/materials' => ['materials.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
+    '/materials/qr.svg' => ['materials.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
+    '/materials/qr.png' => ['materials.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
+    '/materials/poster.pdf' => ['materials.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
 ];
 
 /** The B.2 matrix, row by row (true = in the role's ceiling). Owner | Manager | Data entry | Telecaller. */
@@ -121,6 +129,9 @@ it('B.3 before KYC: the applicant Owner reaches the dashboard and KYC, nothing t
 
     $this->get(brokerUrl(''))->assertOk()->assertSee('Next: KYC');
     $this->get(brokerUrl('/kyc'))->assertOk()->assertSee('Send KYC');
+    // P7.2: materials are open before KYC (with a note); the referral list is not.
+    $this->get(brokerUrl('/materials'))->assertOk()->assertSee('Referrals start counting once your bureau');
+    $this->get(brokerUrl('/referrals'))->assertForbidden();
 });
 
 it('§8.1 middleware: guests log in, members get 404, a suspended / closed / rejected bureau or a deactivated login is signed out', function (): void {

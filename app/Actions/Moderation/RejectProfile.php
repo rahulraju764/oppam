@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Moderation;
 
+use App\Actions\Broker\ManagedProfiles\AnnounceModerationDecision;
 use App\Actions\Moderation\Concerns\DecidesModerationItems;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
@@ -32,7 +33,10 @@ final class RejectProfile
 {
     use DecidesModerationItems;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly AnnounceModerationDecision $bureau,
+    ) {}
 
     /**
      * @throws AuthorizationException
@@ -70,5 +74,9 @@ final class RejectProfile
 
         ModerationQueueChanged::dispatch(ModerationItemType::ProfileNew);
         $profile->load('user')->user?->notify(new ProfileNeedsChanges($reason, $note, $step));
+
+        // §11A B.6 / B.15: a managed client's bureau sees the reason and edits & resubmits.
+        $this->bureau->handle($profile, approved: false,
+            reason: trim($reason->memberMessage().(filled($note) ? ' '.__('Reviewer’s note: :note', ['note' => $note]) : '')));
     }
 }

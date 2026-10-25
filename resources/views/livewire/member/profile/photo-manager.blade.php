@@ -1,5 +1,6 @@
 {{--
-    <livewire:member.profile.photo-manager /> — own photos + horoscope (M11; template profile-photos.php
+    <livewire:member.profile.photo-manager /> — own photos + horoscope (M11; template profile-photos.php;
+    also rendered by the bureau's <livewire:broker.managed-profiles.photos>, P7.3
     "Profile Photo / Additional Photos / Photo Caption"). First photo = primary. Drag (wire:sort) or the
     Move buttons reorder; the cropper (resources/js/alpine/photo-cropper.js) uploads with progress.
 --}}
@@ -90,13 +91,18 @@
 
     <div class="form-group">
         <span class="form-label d-block">{{ __('Horoscope') }}</span>
-        @if ($horoscopeLink)
+        @if ($hasHoroscope)
             <p class="mb-2">
-                <a href="{{ $horoscopeLink }}" target="_blank" rel="noopener"><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ __('View your horoscope') }}</a>
+                @if ($horoscopeLink)
+                    <a href="{{ $horoscopeLink }}" target="_blank" rel="noopener"><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ __('View your horoscope') }}</a>
+                @else
+                    {{-- Bureau form (P7.3): the file is kept, but only members open horoscopes. --}}
+                    <span><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ __('Horoscope uploaded') }}</span>
+                @endif
                 <button type="button" class="ui-link-btn ms-2" wire:click="deleteHoroscope">{{ __('Remove') }}</button>
             </p>
         @endif
-        <label for="horoscope-input" class="form-text d-block">{{ $horoscopeLink ? __('Replace with a new file (PDF, JPG or PNG, up to 5 MB)') : __('Upload a horoscope (PDF, JPG or PNG, up to 5 MB) — optional') }}</label>
+        <label for="horoscope-input" class="form-text d-block">{{ $hasHoroscope ? __('Replace with a new file (PDF, JPG or PNG, up to 5 MB)') : __('Upload a horoscope (PDF, JPG or PNG, up to 5 MB) — optional') }}</label>
         <input id="horoscope-input" name="horoscope-input" type="file" class="form-control" wire:model="horoscope" accept="application/pdf,image/jpeg,image/png">
         <span class="form-text" wire:loading wire:target="horoscope">{{ __('Uploading…') }}</span>
         @error('horoscope') <p class="invalid-feedback d-block" role="alert">{{ $message }}</p> @enderror

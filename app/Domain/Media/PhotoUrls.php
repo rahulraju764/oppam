@@ -51,6 +51,20 @@ final class PhotoUrls
     }
 
     /**
+     * The managing bureau's view of a client's photos (§11A B.6, P7.3) — like the owner's own: every
+     * photo, clear, with its moderation status. The caller has already scoped the profile to the
+     * bureau (ManagedProfileScope); this never decides access itself.
+     *
+     * @return list<PhotoView>
+     */
+    public function forManagingBureau(Profile $managed): array
+    {
+        return $this->photos($managed, approvedOnly: false)
+            ->map(fn (Media $media): PhotoView => $this->view($media, true, true))
+            ->values()->all();
+    }
+
+    /**
      * "Preview as others see it" for the owner (M03): approved photos only, clear when visible to
      * all members, otherwise blurred — what a typical signed-in member without extra access sees.
      *

@@ -78,3 +78,15 @@
         <x-wizard.select :label="__('Papa Dosham')" model="basic.papa_dosham" :options="$doshams" />
     </div>
 </div>
+
+@if ($referral !== null)
+    @if ($referral['editable'])
+        <x-broker.referral-code-field id="wizardReferral" model="referralCode" :hint="$referral['hint']"
+            wrapper-class="form-group" input-class="form-control" label-class="" />
+    @else
+        <p class="form-text referral-code-field__hint">
+            <i class="fa fa-handshake-o" aria-hidden="true"></i>
+            {{ __('Referred by :bureau', ['bureau' => $referral['bureau']]) }}
+        </p>
+    @endif
+@endif

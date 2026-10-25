@@ -2,11 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Broker\MaterialsController;
+use App\Http\Controllers\Broker\ReferralCodeController;
 use App\Livewire\Broker\Apply;
 use App\Livewire\Broker\Auth\VerifyDevice;
 use App\Livewire\Broker\ComingSoon;
 use App\Livewire\Broker\Dashboard;
 use App\Livewire\Broker\Kyc;
+use App\Livewire\Broker\ManagedProfiles;
+use App\Livewire\Broker\Materials;
+use App\Livewire\Broker\Referrals;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 // Public application (B.3), behind the broker.self_apply flag (the component 404s without it).
 Route::get('/apply', Apply::class)->middleware(['guest', 'throttle:30,1'])->name('apply');
 
+// Referral code check (B.5): {valid, name, district} only — public, for the registration / wizard hint.
+Route::get('/validate', ReferralCodeController::class)->middleware('throttle:30,1')->name('validate');
+
 Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'])->group(function (): void {
     Route::get('/verify-device', VerifyDevice::class)->middleware('throttle:30,1')->name('device');
 
@@ -31,9 +39,28 @@ Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'
         Route::get('/', Dashboard::class)->middleware('bureau:bureau.dashboard.view')->name('dashboard');
         Route::get('/kyc', Kyc::class)->middleware('bureau:kyc.manage')->name('kyc');
 
+        // Referral program (B.5, P7.2): own referrals only; materials are the caller's own bureau.
+        Route::get('/referrals', Referrals::class)->middleware('bureau:referrals.view')->name('referrals');
+        Route::get('/materials', Materials::class)->middleware('bureau:materials.view')->name('materials');
+        Route::middleware(['bureau:materials.view', 'throttle:20,1'])->prefix('materials')->name('materials.')
+            ->controller(MaterialsController::class)->group(function (): void {
+                Route::get('/qr.svg', 'qrSvg')->name('qr.svg');
+                Route::get('/qr.png', 'qrPng')->name('qr.png');
+                Route::get('/poster.pdf', 'poster')->name('poster');
+            });
+
+        // Managed profiles (B.6, P7.3): always the caller's ManagedProfileScope — a foreign or
+        // unassigned code is 404 (R-M13-6 / R-M13-20).
+        Route::prefix('profiles')->name('profiles.')->group(function (): void {
+            Route::get('/', ManagedProfiles\Index::class)->middleware('bureau:profiles.view')->name('index');
+            Route::get('/create', ManagedProfiles\Form::class)->middleware('bureau:profiles.create')->name('create');
+            Route::get('/{code}', ManagedProfiles\Show::class)->middleware('bureau:profiles.view')->where('code', 'OPM[0-9]+')->name('show');
+            Route::get('/{code}/edit', ManagedProfiles\Form::class)->middleware('bureau:profiles.edit')->where('code', 'OPM[0-9]+')->name('edit');
+            Route::get('/{code}/notes', ManagedProfiles\Notes::class)->middleware('bureau:client_notes.write')->where('code', 'OPM[0-9]+')->name('notes');
+        });
+
         // B.11 screens of later sessions, registered now with their real gate (decisions 2026-10-23):
-        // P7.3 / P7.6 swap the component.
-        Route::get('/profiles/create', ComingSoon::class)->middleware('bureau:profiles.create')->name('profiles.create');
+        // P7.6 swaps the component.
         Route::get('/import', ComingSoon::class)->middleware('bureau:profiles.import')->name('import');
     });
 });

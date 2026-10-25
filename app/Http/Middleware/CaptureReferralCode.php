@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domain\Broker\BrokerCodeLookup;
 use Closure;
 use Illuminate\Cookie\CookieJar;
 use Illuminate\Http\Request;
@@ -12,8 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * `?ref=BRK1042` on any public page sets a 30-day FIRST-TOUCH cookie (R-M13-9): an existing
  * cookie is never overwritten. The code is only normalised here (upper-case, spaces removed —
- * R-M13-2); it is resolved against brokers at registration from P7.2, and an unknown code never
- * blocks anything (R-M13-1).
+ * R-M13-2, BrokerCodeLookup); it is resolved at registration by ResolveBrokerCode (P7.2), and an
+ * unknown code never blocks anything (R-M13-1).
  */
 final class CaptureReferralCode
 {
@@ -25,9 +26,9 @@ final class CaptureReferralCode
         $ref = $request->query('ref');
 
         if ($request->isMethod('GET') && is_string($ref) && $request->cookie($cookieName) === null) {
-            $code = strtoupper((string) preg_replace('/\s+/', '', $ref));
+            $code = BrokerCodeLookup::normalise($ref);
 
-            if (preg_match('/^[A-Z0-9]{1,20}$/', $code) === 1) {
+            if ($code !== null) {
                 $this->cookies->queue($this->cookies->make(
                     $cookieName,
                     $code,

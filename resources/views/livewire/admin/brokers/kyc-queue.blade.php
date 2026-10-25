@@ -30,7 +30,7 @@
                     <tr wire:key="br-{{ $row->code }}" @class(['is-selected' => $row->code === $selected])>
                         <td><strong>{{ $row->code }}</strong><div class="small">{{ $row->displayName() }}</div></td>
                         <td>{{ $row->name }}</td>
-                        <td>{{ $row->district?->name }}</td>
+                        <td>{{ $row->district?->label }}</td>
                         <td>
                             <x-ui.badge :variant="$row->status === \App\Enums\BrokerStatus::Active ? 'verified' : 'default'">{{ $row->status->label() }}</x-ui.badge>
                             <div class="small text-muted-brand">{{ __('KYC: :s', ['s' => $row->kyc_status->label()]) }}</div>
@@ -57,7 +57,7 @@
                         <div><dt>{{ __('Owner') }}</dt><dd>{{ $broker->name }}</dd></div>
                         <div><dt>{{ __('Mobile') }}</dt><dd>{{ $broker->phone }}</dd></div>
                         <div><dt>{{ __('Email') }}</dt><dd>{{ $broker->email ?? '—' }}</dd></div>
-                        <div><dt>{{ __('District') }}</dt><dd>{{ $broker->district?->name ?? '—' }}</dd></div>
+                        <div><dt>{{ __('District') }}</dt><dd>{{ $broker->district?->label ?? '—' }}</dd></div>
                         <div><dt>{{ __('PAN (application)') }}</dt><dd>{{ $broker->pan_last4 ? 'XXXXXX'.$broker->pan_last4 : '—' }}</dd></div>
                         <div><dt>{{ __('Applied') }}</dt><dd>{{ $broker->created_at->timezone($timezone)->format('d M Y, g:i a') }}</dd></div>
                         @if ($kyc)

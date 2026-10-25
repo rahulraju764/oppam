@@ -17,10 +17,15 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     @include('layouts.partials.head', ['seo' => $seo])
+    @include('layouts.partials.realtime-meta')
 </head>
 <body class="is-broker">
     @include('layouts.partials.preloader')
     @include('layouts.partials.header', ['member' => null, 'broker' => $bureau, 'pageNav' => $nav->pageNav($pageNav)])
+    {{-- PRD §9.7: shown while the live connection is being re-established (resources/js/realtime.js). --}}
+    <div class="realtime-status" role="status" x-data x-show="$store.realtime && $store.realtime.status === 'reconnecting'" x-cloak>
+        <i class="fa fa-refresh fa-spin" aria-hidden="true"></i> {{ __('Reconnecting… live updates will resume shortly.') }}
+    </div>
     <x-ui.toast-stack />
 
     <main id="main" tabindex="-1">

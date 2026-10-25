@@ -40,6 +40,16 @@
                                     <div><dt>{{ $label }}</dt><dd>{{ $value }}</dd></div>
                                 @endforeach
                             </dl>
+                        @elseif (($widget['items'] ?? []) !== [])
+                            {{-- P7.3: moderation feed / follow-ups — profile codes linking to the scoped detail page. --}}
+                            <ul class="broker-feed">
+                                @foreach ($widget['items'] as $item)
+                                    <li>
+                                        <a href="{{ $item['url'] }}" wire:navigate>{{ $item['label'] }}</a>
+                                        <x-ui.badge :variant="$item['variant']">{{ $item['badge'] }}</x-ui.badge>
+                                    </li>
+                                @endforeach
+                            </ul>
                         @else
                             <p class="text-muted-brand mb-0">{{ $widget['empty'] }}</p>
                         @endif

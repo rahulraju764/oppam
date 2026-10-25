@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
-**Next session:** P7.2 — Referral program & materials. Open first: commit the P7.1 drawer fix; P6.1 re-review after its Blocker fix;
+**Next session:** P7.3 — Managed profiles (after P7.2's review / commit). Open first: P6.1 re-review after its Blocker fix;
 P5.3 — Admin billing (A06), groundwork committed in e13f771 (breaks BillingTest.php's fake gateway), screens not built;
 Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
 
@@ -95,7 +95,20 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   (CompleteRegistration → KycQueue::announce, an auth file); WorkQueues SLA not tested against an older unproved application;
   the hold-window PAN message can be probed / re-held every 30 min (owner to confirm); locked items always say "after KYC"
   (also BROKER_INACTIVE); drawer logout button look unchecked by eye; 320/768/1024/1440 px not run in a browser.
-- [ ] P7.2 Referral program & materials
+- [ ] P7.2 Referral program & materials — 2026-10-24: built (decisions 2026-10-24; owner: base = taxable, any refund voids,
+  paid-before-approval earns on first approval). ResolveBrokerCode at registration + wizard step 1, validate endpoint,
+  EarnReferralCommission (OrderPaid / first approval / A07 link), VoidReferralOnRefund on the new RefundProcessed event (P5.3
+  must dispatch it), /broker/referrals, /broker/materials (QR SVG / PNG, A4 poster), A07 unverified codes, `broker-owner`
+  channel + live toast for bureau logins. Fixed on the way: P7.1 KYC queue `district:id,name` → `label`. Reviewer round 1:
+  READY TO COMMIT (0 Blockers / 0 Majors); 3 of its 9 Minors fixed after (wizard code resolves on Continue only, never
+  autosave / Back; no field + no write in a support session; stage mapped in the query, not Blade). Then: suite 2280 passed
+  (BillingTest.php excluded — P5.3 fake), lint + analyse clean, Dusk BrokerPortalTest passed. NOT committed — RegisterMember /
+  registration form, UserChannel / BrokerOwnerChannel / RealtimeContextData → owner review (rule 5). Minors open: hint lookups
+  on /register + wizard not rate-limited (validate endpoint is); RefundProcessed dispatched by nothing until P5.3 (make it a
+  P5.3 Done-when); UserChannel admits a bureau login whose staff row is deactivated (own channel only; signed out next page);
+  BrokerOwnerChannel admits SUSPENDED / KYC_PENDING Owners (no events today — revisit in P7.8); "Profile live" shown for
+  later-hidden profiles; poster PDF rendered in the request (throttled); widths 320/768/1024/1440 and the register / wizard /
+  A07 screens not browser-checked.
 - [ ] P7.3 Managed profiles: create, manage, assign, notes
 - [ ] P7.4 Client inbox, claim flow & exports
 - [ ] P7.5 Staff accounts

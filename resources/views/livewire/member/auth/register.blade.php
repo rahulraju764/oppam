@@ -114,6 +114,10 @@
                                             @error('form.password')<p class="invalid-feedback d-block" id="regPassword-error">{{ $message }}</p>@enderror
                                         </div>
                                     </div>
+
+                                    <div class="col-12">
+                                        <x-broker.referral-code-field id="regReferral" model="form.referralCode" :hint="$referralHint" />
+                                    </div>
                                 </div>
 
                                 <div class="login-meta reg-meta">

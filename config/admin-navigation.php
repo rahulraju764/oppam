@@ -41,6 +41,7 @@ return [
     ],
     'Brokers' => [
         ['admin.brokers.kyc', 'Applications & KYC', 'fa-building-o', 'brokers.kyc'],
+        ['admin.brokers.unverified', 'Unverified codes', 'fa-question-circle-o', 'brokers.edit'],
     ],
     'Master data' => [
         ['admin.masters.index', 'Master data', 'fa-list', 'masters.view'],

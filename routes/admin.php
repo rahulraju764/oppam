@@ -14,6 +14,7 @@ use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
 use App\Livewire\Admin\Brokers\KycQueue as BrokerKycQueue;
+use App\Livewire\Admin\Brokers\UnverifiedCodesQueue as BrokerUnverifiedCodesQueue;
 use App\Livewire\Admin\Chat\BreakGlass;
 use App\Livewire\Admin\Chat\BreakGlassViewer;
 use App\Livewire\Admin\Chat\FlaggedQueue;
@@ -112,6 +113,9 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/kyc/{broker}/pan', BrokerKycDocumentController::class)->where('broker', 'BRK[0-9]+')
             ->middleware(['signed', 'throttle:60,1'])->name('kyc.pan');
     });
+
+    // P7.2: mistyped / unknown referral codes — link or clear, audited (R-M13-3).
+    Route::get('/brokers/unverified-codes', BrokerUnverifiedCodesQueue::class)->middleware('can:brokers.edit')->name('brokers.unverified');
 
     // Safety cases (A10, P6.2). Viewing needs safety.reports.view; every decision re-checks its own
     // permission. The evidence pack: a 5-minute signed link, super admin + legal hold (ExportEvidencePack).

@@ -8,6 +8,7 @@ use App\Data\Moderation\ModerationFlag;
 use App\Domain\Safety\BanList;
 use App\Enums\Gender;
 use App\Enums\SettingKey;
+use App\Models\Broker;
 use App\Models\Media;
 use App\Models\Profile;
 use App\Services\Settings\SettingsRepository;
@@ -49,6 +50,12 @@ final class ModerationFlags
         $twin = $this->sameNameAndDob($profile);
         if ($twin !== null) {
             $flags[] = new ModerationFlag('duplicate_identity', __('Same name and date of birth as :code.', ['code' => $twin]));
+        }
+
+        // §11A B.6 / R-M13-14: entered by a bureau — reviewed like any profile, provenance shown to A04 only.
+        if ($profile->isBrokerManaged()) {
+            $code = Broker::query()->whereKey($profile->managed_by_broker_id)->value('code');
+            $flags[] = new ModerationFlag('broker_managed', __('Added by broker :code.', ['code' => (string) $code]));
         }
 
         return $flags;

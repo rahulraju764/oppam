@@ -7,7 +7,10 @@ namespace Database\Factories;
 use App\Enums\Gender;
 use App\Enums\MaritalStatus;
 use App\Enums\PhysicalStatus;
+use App\Enums\ProfileOwnerType;
 use App\Enums\ProfileStatus;
+use App\Models\Broker;
+use App\Models\BrokerStaff;
 use App\Models\Masters\Caste;
 use App\Models\Masters\MotherTongue;
 use App\Models\Profile;
@@ -21,7 +24,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * real ProfileCodeGenerator so tests exercise it.
  *
  * States: active(), pendingReview(), draft(), rejected(), suspended(), male(), female(),
- * verified(), premium(), incomplete(), withAge(n).
+ * verified(), premium(), incomplete(), withAge(n), brokerManaged($broker, $assigned) (§11A B.6).
  *
  * @extends Factory<Profile>
  */
@@ -113,6 +116,21 @@ final class ProfileFactory extends Factory
     public function incomplete(): static
     {
         return $this->state(['completeness' => 40]);
+    }
+
+    /** A client profile run by $broker (§11A B.6, P7.3): no login, consent stamped, a unique client mobile. */
+    public function brokerManaged(Broker $broker, ?BrokerStaff $assigned = null): static
+    {
+        return $this->state(fn (): array => [
+            'user_id' => null,
+            'owner_type' => ProfileOwnerType::BrokerManaged,
+            'managed_by_broker_id' => $broker->id,
+            'broker_id' => $broker->id,
+            'broker_verified' => true,
+            'client_phone' => '+9197'.$this->faker->unique()->numerify('########'),
+            'broker_consent_confirmed_at' => now(),
+            'assigned_staff_id' => $assigned?->id,
+        ]);
     }
 
     public function withAge(int $years): static

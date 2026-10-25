@@ -113,11 +113,13 @@ it('A07 KYC queue: lists, opens a bureau, views the PAN on demand (audited), app
     $broker = $owner->brokerStaff->broker;
     $photo = idPhoto();
     BrokerKyc::factory()->create(['broker_id' => $broker->id, 'pan_image_path' => app(App\Contracts\DocumentVault::class)->put((string) file_get_contents((string) $photo->getRealPath())), 'pan_image_mime' => 'image/jpeg']);
-    $broker->forceFill(['status' => App\Enums\BrokerStatus::KycPending, 'kyc_status' => App\Enums\BrokerKycStatus::Pending])->save();
+    // With a district (P7.2 fix: the queue eager-loaded a `name` column master districts don't have).
+    $broker->forceFill(['status' => App\Enums\BrokerStatus::KycPending, 'kyc_status' => App\Enums\BrokerKycStatus::Pending, 'district_id' => keralaDistrictId()])->save();
     $this->actingAs(adminWithRole('super_admin'), 'admin');
 
     Livewire::test(KycQueue::class)
         ->assertSee($broker->code)
+        ->assertSee('Ernakulam')
         ->call('select', $broker->code)
         ->assertSee('XXXX9012')
         ->assertDontSeeHtml('/pan?')

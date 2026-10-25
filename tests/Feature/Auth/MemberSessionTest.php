@@ -164,7 +164,7 @@ it('ignores malformed referral codes', function (string $ref): void {
     $response = $this->get(memberUrl('/?ref='.urlencode($ref)));
 
     expect(collect($response->headers->getCookies())->first(fn ($c) => $c->getName() === config('oppam.auth.referral_cookie')))->toBeNull();
-})->with(['<script>', 'BRK-1042', str_repeat('A', 21)]);
+})->with(['<script>', 'BRK_1042', str_repeat('A', 21)]);   // P7.2: "BRK-1042" is normalised to BRK1042 (B.19)
 
 it('refuses an old "stay logged in" cookie after log out other devices', function (): void {
     $user = memberWithPhone(status: ProfileStatus::Draft);

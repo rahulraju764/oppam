@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\BureauRole;
 use App\Enums\BureauStaffStatus;
 use App\Enums\ProfileScope;
+use App\ValueObjects\PhoneNumber;
 use Database\Factories\BrokerStaffFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -63,6 +64,22 @@ final class BrokerStaff extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * How the bureau sees this login in lists (assign menus, note authors). Logins carry no name of
+     * their own yet (P7.5 invitations add one): the Owner shows the bureau owner's name, staff their
+     * role and masked mobile. Needs `broker` / `user` loaded.
+     */
+    public function displayName(): string
+    {
+        if ($this->isOwner() && $this->broker !== null) {
+            return $this->broker->name;
+        }
+
+        $phone = $this->user !== null ? PhoneNumber::tryParse($this->user->phone)?->masked() : null;
+
+        return trim($this->role->label().' '.($phone ?? ''));
     }
 
     public function isOwner(): bool

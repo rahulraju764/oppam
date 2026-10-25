@@ -23,7 +23,8 @@ use Illuminate\Support\Facades\Gate;
  * Submit the finished wizard for review (R-M02-2): DRAFT or REJECTED → PENDING_REVIEW, plus one
  * PROFILE_NEW item in the A04 queue (paid members in the priority lane). The profile row is
  * locked, so a double click can't create two queue items. ProfileSubmitted fires after commit
- * and pushes the new queue count to admins.
+ * and pushes the new queue count to admins. A bureau submits its managed client the same way
+ * (SubmitManagedProfile, R-M13-14).
  */
 final class SubmitProfile
 {
@@ -35,7 +36,7 @@ final class SubmitProfile
      */
     public function handle(User $actor, Profile $profile): ModerationItem
     {
-        Gate::forUser($actor)->authorize('editWizard', $profile);
+        Gate::forUser($actor)->authorize('submitForReview', $profile);
 
         return DB::transaction(function () use ($profile): ModerationItem {
             $locked = Profile::query()->whereKey($profile->id)->lockForUpdate()->firstOrFail();

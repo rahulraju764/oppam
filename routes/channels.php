@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Broadcasting\AdminDashboardChannel;
 use App\Broadcasting\AdminQueuesChannel;
+use App\Broadcasting\BrokerChannel;
+use App\Broadcasting\BrokerOwnerChannel;
 use App\Broadcasting\ChatChannel;
 use App\Broadcasting\InboxChannel;
 use App\Broadcasting\OnlinePresenceChannel;
@@ -18,7 +20,7 @@ use Illuminate\Support\Facades\Broadcast;
 | Every callback must re-check the database (participant, not blocked, active staff,
 | admin permission). A channel is never protected by its name alone. Member channels use the
 | `web` guard (the member site's /broadcasting/auth), admin channels the `admin` guard.
-| Broker channels arrive with the broker module (P7).
+| Broker channels: `broker-owner.{broker}` from P7.2 (commission); `broker.{broker}` from P7.3 (moderation).
 */
 
 // Notifications, signals and forced logout for one member.
@@ -41,3 +43,11 @@ Broadcast::channel('admin.queues', AdminQueuesChannel::class, ['guards' => ['adm
 // Live KPI ticks on the admin dashboard (PRD §9.3, A02). Admin guard only; AdminDashboardChannel
 // re-checks status, 2FA and `dashboard.view` against the database.
 Broadcast::channel('admin.dashboard', AdminDashboardChannel::class, ['guards' => ['admin']]);
+
+// A bureau's Owner-only events (§11A B.15): commission earned (B.10). BrokerOwnerChannel re-checks
+// that the caller is that bureau's ACTIVE Owner on an open bureau.
+Broadcast::channel('broker-owner.{broker}', BrokerOwnerChannel::class, ['guards' => ['web']]);
+
+// A bureau's shared events (§11A B.15): managed-profile moderation (P7.3), later imports and the
+// client inbox. BrokerChannel re-checks an ACTIVE staff row of that bureau on an open bureau.
+Broadcast::channel('broker.{broker}', BrokerChannel::class, ['guards' => ['web']]);

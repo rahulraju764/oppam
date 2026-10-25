@@ -33,6 +33,12 @@ enum NotificationEvent: string
     case AccountStatus = 'account_status';
     case AdminAnnouncement = 'admin_announcement';
     case SafetyWarning = 'safety_warning';
+    /** A bureau Owner earned commission (§11A B.10, P7.2): in-app only. */
+    case CommissionEarned = 'commission_earned';
+    /** A04 approved / rejected a bureau-managed profile (§11A B.15, P7.3): in-app only, to bureau logins. */
+    case ManagedProfileReviewed = 'managed_profile_reviewed';
+    /** Client follow-ups due today (§11A B.15 FollowUpDue, 08:30 IST, P7.3): in-app only, to bureau logins. */
+    case FollowUpDue = 'follow_up_due';
 
     /** The /notifications filter this event belongs to. */
     public function group(): NotificationGroup
@@ -58,7 +64,8 @@ enum NotificationEvent: string
     {
         return match ($this) {
             // digests (P8.3) or in-app only
-            self::InterestDeclined, self::ProfileLiked, self::MutualLike, self::ProfileViewed => false,
+            self::InterestDeclined, self::ProfileLiked, self::MutualLike, self::ProfileViewed,
+            self::CommissionEarned, self::ManagedProfileReviewed, self::FollowUpDue => false,
             self::NewMessage => true,   // the offline digest only (P4.2, SendChatDigests) — never one mail per message
             default => true,
         };

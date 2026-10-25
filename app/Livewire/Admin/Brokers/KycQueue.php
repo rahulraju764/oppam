@@ -130,7 +130,7 @@ final class KycQueue extends Component
     #[Computed]
     public function brokers(): LengthAwarePaginator
     {
-        $query = Broker::query()->with(['district:id,name', 'latestKyc']);
+        $query = Broker::query()->with(['district:id,label', 'latestKyc']);
 
         $query = match ($this->list) {
             'applications' => $query->applicationsToReview()->orderBy('created_at'),
@@ -180,7 +180,7 @@ final class KycQueue extends Component
 
     private function selectedBroker(): ?Broker
     {
-        return $this->selected === '' ? null : Broker::query()->where('code', $this->selected)->with('district:id,name')->first();
+        return $this->selected === '' ? null : Broker::query()->where('code', $this->selected)->with('district:id,label')->first();
     }
 
     private function pendingKyc(): ?BrokerKyc

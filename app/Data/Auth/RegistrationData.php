@@ -26,5 +26,8 @@ final readonly class RegistrationData
         public PhoneNumber $phone,
         public ?string $email,
         #[SensitiveParameter] public string $password,
+        // §11A B.5: the code typed on /register, and the `?ref=` first-touch cookie (the typed one wins).
+        public ?string $referralCode = null,
+        public ?string $referralCookie = null,
     ) {}
 }

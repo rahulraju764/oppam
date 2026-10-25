@@ -89,3 +89,40 @@ function flagOn(App\Enums\Flag $flag): void
     app(App\Services\Settings\FeatureFlags::class)->flush();
     app()->forgetInstance(App\Services\Settings\FeatureFlags::class);   // not forgetScopedInstances(): that drops the test's withoutDefer() swap
 }
+
+// ---- P7.3 managed profiles -------------------------------------------------------------------
+
+/** The bureau login's staff row (fresh). */
+function staffOf(User $login): BrokerStaff
+{
+    return BrokerStaff::query()->where('user_id', $login->id)->with(['broker', 'user'])->firstOrFail();
+}
+
+/** A client profile managed by $broker (ACTIVE by default), optionally assigned to a staff row. */
+function managedProfile(Broker $broker, array $attributes = [], ?BrokerStaff $assigned = null): App\Models\Profile
+{
+    return App\Models\Profile::factory()->brokerManaged($broker, $assigned)->female()->create($attributes)->refresh();
+}
+
+function managedData(string $phone = '9876512345', bool $consent = true): App\Data\Broker\ManagedProfileData
+{
+    return new App\Data\Broker\ManagedProfileData($phone, $consent);
+}
+
+/** A managed DRAFT created by $login through the real Actions, every section done incl. one photo (ready to submit). */
+function managedClientReadyToSubmit(User $login, string $phone = '9876512345'): App\Models\Profile
+{
+    $profile = app(App\Actions\Broker\ManagedProfiles\CreateManagedProfile::class)->handle($login, managedData($phone), basicData());
+
+    app(App\Actions\Profile\SaveCareerDetails::class)->handle($login, $profile->refresh(), careerData());
+    app(App\Actions\Profile\SaveFamilyDetails::class)->handle($login, $profile->refresh(), familyData());
+    app(App\Actions\Profile\SavePartnerPreferences::class)->handle($login, $profile->refresh(), preferenceData());
+    app(App\Actions\Profile\SaveContactDetails::class)->handle($login, $profile->refresh(), contactData());
+    app(App\Actions\Profile\SaveAboutDetails::class)->handle($login, $profile->refresh(), aboutData());
+
+    fakeMediaDisks();
+    Illuminate\Support\Facades\Bus::fake([Spatie\MediaLibrary\Conversions\Jobs\PerformConversionsJob::class]);
+    app(App\Actions\Profile\Photos\UploadProfilePhoto::class)->handle($login, $profile->refresh(), Illuminate\Http\UploadedFile::fake()->image('photo.jpg', 600, 800));
+
+    return $profile->refresh();
+}

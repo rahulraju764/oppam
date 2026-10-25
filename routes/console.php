@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Jobs\Billing\ExpireSubscriptions;
 use App\Jobs\Billing\ExpireUnpaidOrders;
 use App\Jobs\Billing\SendPlanExpiryReminders;
+use App\Jobs\Broker\PurgeDeletedManagedProfiles;
+use App\Jobs\Broker\SendFollowUpReminders;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
 use App\Jobs\Engagement\DetectEngagementSignals;
@@ -59,3 +61,9 @@ Schedule::job(new SendPlanExpiryReminders)->timezone('Asia/Kolkata')->dailyAt('1
 
 // M09 / A05 (P6.1): ID files deleted (and the deletion verified) 90 days after the decision, 03:30 IST.
 Schedule::job(new PurgeExpiredVerificationDocuments)->timezone('Asia/Kolkata')->dailyAt('03:30')->onOneServer()->withoutOverlapping();
+
+// §11A B.15 FollowUpDue: bureau client follow-ups due today, at 08:30 IST (P7.3).
+Schedule::job(new SendFollowUpReminders)->timezone('Asia/Kolkata')->dailyAt('08:30')->onOneServer()->withoutOverlapping();
+
+// §11A B.6: managed profiles deleted longer than the 30-day recovery are purged (21:40 UTC = 03:10 IST).
+Schedule::job(new PurgeDeletedManagedProfiles)->dailyAt('21:40')->onOneServer()->withoutOverlapping();

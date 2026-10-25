@@ -1,5 +1,7 @@
-{{-- Step 5 — contact details (template contact-details.php; city → country/state/district + city). --}}
+{{-- Step 5 — contact details (template contact-details.php; city → country/state/district + city).
+     $phone: the member's verified mobile, read-only; null in the bureau form (P7.3), which asks for the client mobile itself. --}}
 <div class="row">
+    @if ($phone !== null)
     <div class="col-lg-6 col-md-6 col-12">
         <div class="form-group">
             <label for="contact-mobile">{{ __('Mobile Number') }} *</label>
@@ -10,6 +12,7 @@
             </small>
         </div>
     </div>
+    @endif
     <div class="col-lg-6 col-md-6 col-12">
         <x-wizard.input :label="__('Email Address')" model="contact.contact_email" type="email" required maxlength="255"
             autocomplete="email" :placeholder="__('Enter Email Address')" />

@@ -93,6 +93,8 @@ return [
         'kyc_submissions_per_day' => 5,
         'unverified_pan_hold_minutes' => 30,                       // an application never proved by SMS holds its PAN this long
         'kyc_link_minutes' => 10,                                  // A07: PAN image viewer links (signed, audited)
+        'managed_profiles_per_hour' => 60,                         // P7.3: "Add profile" saves per bureau login per hour
+        'managed_restore_days' => 30,                              // B.6: a deleted managed profile can be restored this long, then purged
     ],
 
     // ID verification (M09 / A05, P6.1). Documents are encrypted (APP_KEY) on the private disk and

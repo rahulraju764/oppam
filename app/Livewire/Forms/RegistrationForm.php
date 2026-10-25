@@ -54,6 +54,9 @@ final class RegistrationForm extends Form
 
     public bool $terms = false;
 
+    /** Broker referral code (§11A B.5) — optional, /register only; pre-filled from the `?ref=` cookie. */
+    public string $referralCode = '';
+
     /** @return array<string, mixed> */
     protected function rules(): array
     {
@@ -69,6 +72,8 @@ final class RegistrationForm extends Form
             'email' => ['nullable', 'string', 'email:rfc', 'max:255'],
             'password' => ['required', 'string', 'max:72', MemberPassword::rule()],
             'terms' => ['accepted'],
+            // Length only: an unknown, inactive or garbled code never blocks registration (R-M13-1).
+            'referralCode' => ['nullable', 'string', 'max:30'],
         ];
     }
 
@@ -80,6 +85,7 @@ final class RegistrationForm extends Form
             'dob' => __('date of birth'),
             'countryCode' => __('country code'),
             'mobile' => __('mobile number'),
+            'referralCode' => __('referral code'),
         ];
     }
 
@@ -108,7 +114,7 @@ final class RegistrationForm extends Form
         return CreatedFor::tryFrom($this->createdFor)?->derivedGender() !== null;
     }
 
-    public function toData(): RegistrationData
+    public function toData(?string $referralCookie = null): RegistrationData
     {
         $this->applyDerivedGender();
         $this->dob = $this->withDob ? $this->composeDob() : '';
@@ -126,6 +132,8 @@ final class RegistrationForm extends Form
             phone: PhoneNumber::fromParts($this->countryCode, $this->mobile),
             email: trim($this->email) !== '' ? trim($this->email) : null,
             password: $this->password,
+            referralCode: trim($this->referralCode) !== '' ? trim($this->referralCode) : null,
+            referralCookie: $referralCookie,
         );
     }
 

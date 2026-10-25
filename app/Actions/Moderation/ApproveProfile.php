@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Moderation;
 
+use App\Actions\Broker\EarnReferralCommission;
+use App\Actions\Broker\ManagedProfiles\AnnounceModerationDecision;
 use App\Actions\Moderation\Concerns\DecidesModerationItems;
 use App\Domain\Moderation\ModerationFlags;
 use App\Enums\ModerationItemType;
@@ -33,6 +35,8 @@ final class ApproveProfile
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly ModerationFlags $flags,
+        private readonly EarnReferralCommission $commission,
+        private readonly AnnounceModerationDecision $bureau,
     ) {}
 
     /**
@@ -73,8 +77,12 @@ final class ApproveProfile
 
         ModerationQueueChanged::dispatch(ModerationItemType::ProfileNew);
         $profile->load('user')->user?->notify(new ProfileApproved($profile->code));
+        $this->bureau->handle($profile, approved: true);   // §11A B.15: a managed client's bureau
 
         // A04 "approve → match generation": the member's first daily matches, without waiting for 05:00.
         GenerateDailyMatchesChunk::dispatch([$profile->id]);
+
+        // §11A B.10: a referred member who paid before approval earns the bureau its commission now.
+        $this->commission->handle($profile->id);
     }
 }

@@ -1,5 +1,10 @@
 {{-- Step 6 — photos & about (template profile-photos.php + ➕ about me, lifestyle). Photos + horoscope: M11. --}}
-<livewire:member.profile.photo-manager />
+{{-- $managedCode: the bureau form (§11A B.6, P7.3) manages its client's photos; otherwise the member's own. --}}
+@isset($managedCode)
+    <livewire:broker.managed-profiles.photos :profile-code="$managedCode" :key="'managed-photos-'.$managedCode" />
+@else
+    <livewire:member.profile.photo-manager />
+@endisset
 
 <x-wizard.select :label="__('Photo Visibility')" model="about.photo_visibility" :options="$photoVisibilities" required />
 

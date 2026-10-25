@@ -644,6 +644,47 @@ body.search-sheet-open .mobile-footer { display: none; }
 .broker-help__steps { padding-left: var(--space-5); font-size: var(--text-sm); }
 .broker-help__steps li + li { margin-top: var(--space-2); }
 .broker-kyc__status { margin-bottom: var(--space-3); }
+/* P7.2 referrals, materials and the referral-code field (§11A B.5). */
+.broker-filter { max-width: 20rem; }
+.broker-table th { font-size: var(--text-xs); font-weight: var(--fw-semibold); color: var(--color-gr-dark); white-space: nowrap; }
+.broker-table td { font-size: var(--text-sm); }
+.dashboard-content.is-loading { opacity: .6; }
+.broker-materials__code { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4); }
+.broker-materials__label { font-size: var(--text-sm); color: var(--color-gr-dark); }
+.broker-materials__value { font-size: var(--text-2xl); letter-spacing: .08em; color: var(--color-secondary-dark); }
+.broker-materials__qr { text-align: center; }
+.broker-materials__qr img { max-width: 100%; height: auto; margin-bottom: var(--space-4); }
+.broker-materials__downloads { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.referral-code-field__hint { margin-bottom: 0; color: var(--color-gr-dark); }
+.referral-code-field__hint .fa-check-circle { color: var(--color-secondary-dark); }
+/* P7.3 managed profiles (§11A B.6): the one-sitting form (accordion), list, detail and notes. */
+.managed-form__heading { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
+.managed-form__section .managed-form__heading { margin: 0; }
+.managed-form__toggle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); width: 100%; min-height: 44px; padding: 0; border: 0; background: none; color: var(--color-secondary-dark); font: inherit; text-align: left; }
+.managed-form__toggle[aria-expanded="true"] { margin-bottom: var(--space-4); }
+.managed-form__toggle:disabled { cursor: default; }
+.managed-form__toggle:disabled:not([aria-expanded="true"]) { color: var(--color-gr-dark); }
+.managed-form__step { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); background: var(--bg-rose); color: var(--color-primary-dark); font-size: var(--text-sm); }
+.managed-form__locked { flex-basis: 100%; font-size: var(--text-xs); font-weight: normal; color: var(--color-gr-dark); }
+.managed-list__select { min-width: 44px; }
+.managed-list__bulk { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-top: var(--space-3); }
+.managed-list__filters { display: grid; gap: var(--space-3); }
+.managed-detail__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-3); margin: 0; }
+.managed-detail__facts dt { font-size: var(--text-xs); font-weight: normal; color: var(--color-gr-dark); }
+.managed-detail__facts dd { margin: 0; overflow-wrap: anywhere; }
+.managed-detail__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.client-notes { margin: 0; padding: 0; list-style: none; }
+.client-notes__item { padding: var(--space-3) 0; border-bottom: var(--border-hair); }
+.client-notes__item:last-child { border-bottom: 0; }
+.client-notes__meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-1); color: var(--color-gr-dark); font-size: var(--text-xs); }
+.client-notes__body { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.client-notes__follow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); font-size: var(--text-sm); }
+.broker-feed { margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.broker-feed li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: var(--border-hair); }
+.broker-feed li:last-child { border-bottom: 0; }
+@media (min-width: 768px) {
+    .managed-list__filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 /* ---------- Safety & support (P6.2, M09 / A10) ---------- */
 .safety-menu { position: relative; display: inline-block; }
