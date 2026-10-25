@@ -12,7 +12,9 @@ namespace App\Enums;
  *  - UPGRADE: Free, and the free reply in this conversation is used (or the plan allows none);
  *  - FROZEN: the thread is frozen (block, moderation — R-M07-5): readable, nobody writes;
  *  - UNAVAILABLE: the other member's profile is gone (deleted, suspended) or the pair is no
- *    longer connected (R-M07-1).
+ *    longer connected (R-M07-1);
+ *  - MANAGED: the other profile is run by a registered bureau and not claimed yet — nobody
+ *    writes until the client joins (§11A B.6, R-M13-34).
  */
 enum ChatSendState: string
 {
@@ -21,6 +23,7 @@ enum ChatSendState: string
     case Upgrade = 'UPGRADE';
     case Frozen = 'FROZEN';
     case Unavailable = 'UNAVAILABLE';
+    case Managed = 'MANAGED';
 
     public function canSend(): bool
     {
@@ -36,6 +39,7 @@ enum ChatSendState: string
             self::Upgrade => __('You have used your free reply in this conversation. Upgrade to chat.'),
             self::Frozen => __('This conversation is closed for new messages.'),
             self::Unavailable => __('This member is no longer available.'),
+            self::Managed => __('This profile is managed by a registered bureau. They will contact you or you can reach them after the client joins.'),
         };
     }
 }

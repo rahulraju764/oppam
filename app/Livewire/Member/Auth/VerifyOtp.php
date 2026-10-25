@@ -6,6 +6,7 @@ namespace App\Livewire\Member\Auth;
 
 use App\Actions\Auth\CompleteRegistration;
 use App\Actions\Auth\SendOtp;
+use App\Actions\Broker\ClaimManagedProfile;
 use App\Data\Content\SeoData;
 use App\Enums\OtpPurpose;
 use App\Exceptions\Auth\LoginFailed;
@@ -50,7 +51,7 @@ final class VerifyOtp extends Component
         return null;
     }
 
-    public function verify(CompleteRegistration $complete, MemberLanding $landing): mixed
+    public function verify(CompleteRegistration $complete, MemberLanding $landing, ClaimManagedProfile $claim): mixed
     {
         $this->validate(['code' => ['required', 'string', 'regex:/^\d{6}$/']], [
             'code.required' => __('Enter the 6-digit code from the SMS.'),
@@ -73,6 +74,13 @@ final class VerifyOtp extends Component
         }
 
         session()->forget(self::PENDING_SESSION_KEY);
+
+        // §11A B.6 claim flow: a bureau stored this mobile for a client — ask "Is this you?" first.
+        if ($claim->candidateFor($user) !== null) {
+            session()->put(ClaimProfile::OFFER_SESSION_KEY, true);
+
+            return $this->redirectRoute('register.claim', navigate: false);
+        }
 
         return $this->redirect($landing->url($user), navigate: false);
     }

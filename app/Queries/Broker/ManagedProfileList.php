@@ -6,10 +6,12 @@ namespace App\Queries\Broker;
 
 use App\Domain\Broker\ManagedProfileScope;
 use App\Enums\BureauStaffStatus;
+use App\Enums\InterestStatus;
 use App\Enums\ModerationItemType;
 use App\Enums\ProfileStatus;
 use App\Models\BrokerClientNote;
 use App\Models\BrokerStaff;
+use App\Models\Interest;
 use App\Models\ModerationItem;
 use App\Models\Profile;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -66,8 +68,9 @@ final class ManagedProfileList
     }
 
     /**
-     * B.4 "Managed profiles" widget: total, draft, in review, active, rejected — the caller's scope.
-     * ("Claimed" arrives with the claim flow, P7.4.)
+     * B.4 "Managed profiles" widget: total, draft, in review, active, rejected — the caller's scope —
+     * and how many of the bureau's clients have claimed their profile (P7.4: once claimed it is out
+     * of every scope; the bureau keeps only the count, via the referral attribution `broker_id`).
      *
      * @return array<string, int>
      */
@@ -85,7 +88,18 @@ final class ManagedProfileList
             'review' => $byStatus[ProfileStatus::PendingReview->value] ?? 0,
             'active' => $byStatus[ProfileStatus::Active->value] ?? 0,
             'rejected' => $byStatus[ProfileStatus::Rejected->value] ?? 0,
+            'claimed' => Profile::query()->where('broker_id', $staff->broker_id)->whereNotNull('claimed_at')->count(),
         ];
+    }
+
+    /** B.4 "Client inbox": interests waiting for an answer on the clients in the caller's scope. */
+    public function pendingInterests(BrokerStaff $staff): int
+    {
+        return Interest::query()
+            ->whereIn('to_profile_id', $this->scope->query($staff)->select('profiles.id'))
+            ->where('status', InterestStatus::Pending->value)
+            ->where('expires_at', '>', now())
+            ->count();
     }
 
     /**

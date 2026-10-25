@@ -8,6 +8,7 @@ use App\Actions\Broker\ManagedProfiles\AssignManagedProfiles;
 use App\Actions\Broker\ManagedProfiles\SetManagedProfileStatus;
 use App\Actions\Broker\ManagedProfiles\SubmitManagedProfile;
 use App\Data\Content\SeoData;
+use App\Domain\Broker\BiodataBuilder;
 use App\Domain\Broker\BureauGate;
 use App\Domain\Broker\ManagedProfileScope;
 use App\Domain\Profile\WizardProgress;
@@ -20,6 +21,7 @@ use App\Models\ModerationItem;
 use App\Models\Profile;
 use App\Models\User;
 use App\Queries\Broker\ManagedProfileList;
+use App\Queries\Engagement\InterestLists;
 use App\ValueObjects\PhoneNumber;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
@@ -30,7 +32,9 @@ use Livewire\Component;
  * moderation status and the moderator's reason, and the actions the caller's role allows — edit,
  * submit for review, deactivate / activate, delete / restore (30 days), assign. Every action is
  * an Action that checks its own permission and the scope again; the code is locked. Deleted
- * profiles stay viewable here for restore. Refreshes live on `profile.moderated`.
+ * profiles stay viewable here for restore. Refreshes live on `profile.moderated` and
+ * `client.interest`; leaves for the list on `profile.claimed` (P7.4). Links to the Client Inbox and
+ * the exports (B.7) when the role allows them.
  */
 final class Show extends Component
 {
@@ -51,7 +55,27 @@ final class Show extends Component
     {
         $staff = app(BureauGate::class)->staff($this->user());
 
-        return $staff !== null ? ['echo-private:broker.'.$staff->broker_id.',.profile.moderated' => '$refresh'] : [];
+        return $staff !== null ? [
+            'echo-private:broker.'.$staff->broker_id.',.profile.moderated' => '$refresh',
+            'echo-private:broker.'.$staff->broker_id.',.client.interest' => '$refresh',
+            'echo-private:broker.'.$staff->broker_id.',.profile.claimed' => 'claimed',
+        ] : [];
+    }
+
+    /**
+     * B.15 ProfileClaimed: when it is this client, the bureau's access is gone — leave the page.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function claimed(array $payload): mixed
+    {
+        if (($payload['profile'] ?? null) !== $this->code) {
+            return null;
+        }
+
+        session()->flash('status', __('Profile :code was claimed by the client. Your bureau no longer has access to it.', ['code' => $this->code]));
+
+        return $this->redirectRoute('broker.profiles.index', navigate: true);
     }
 
     public function change(string $change, SetManagedProfileStatus $status): void
@@ -95,7 +119,7 @@ final class Show extends Component
         $this->dispatch('toast', type: 'success', message: __('Assignment saved.'));
     }
 
-    public function render(BureauGate $gate, ManagedProfileList $list): View
+    public function render(BureauGate $gate, ManagedProfileList $list, InterestLists $inbox, BiodataBuilder $builder): View
     {
         $user = $this->user();
         $staff = $gate->authorize($user, BureauPermission::ProfilesView);
@@ -120,6 +144,10 @@ final class Show extends Component
             'canSubmit' => ! $deleted && in_array($profile->status, [ProfileStatus::Draft, ProfileStatus::Rejected], true) && $can(BureauPermission::ProfilesSubmit),
             'canNotes' => ! $deleted && $can(BureauPermission::ClientNotesWrite),
             'canAssign' => ! $deleted && $can(BureauPermission::ProfilesAssign),
+            'canInbox' => ! $deleted && $can(BureauPermission::ClientInboxRespond),
+            'pendingInterests' => ! $deleted && $can(BureauPermission::ClientInboxRespond) ? ($inbox->counts($profile)[InterestLists::RECEIVED]['pending'] ?? 0) : 0,
+            'canExport' => ! $deleted && $can(BureauPermission::ProfilesExport),
+            'approvedPhotos' => ! $deleted && $can(BureauPermission::ProfilesExport) ? count($builder->photoFiles($profile)) : 0,
             'assignees' => $can(BureauPermission::ProfilesAssign) ? $list->assignees($staff)->mapWithKeys(fn ($s): array => [$s->id => $s->displayName()])->all() : [],
             'actions' => $actions,
             'restoreUntil' => $deleted ? $profile->deleted_at?->addDays((int) config('oppam.broker.managed_restore_days')) : null,

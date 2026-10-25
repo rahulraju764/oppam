@@ -13,13 +13,37 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 
 /*
-| P7.1 / P7.2 / P7.3 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
+| P7.1 – P7.4 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
 | /broker/apply, the dashboard of a Data-entry login (no device challenge), materials, the device
 | check an Owner / Manager meets on a new device and, once trusted, the referral list — none scroll
 | sideways, the main actions are reachable.
 */
 
 const DUSK_BROKER_PHONE = '+919999900031';
+
+/**
+ * P7.4: threads opened by the Client Inbox (accepting creates the pair's conversation) go before
+ * their profiles.
+ *
+ * @param  list<string>  $profileIds
+ */
+function duskConversationsCleanup(array $profileIds): void
+{
+    $threads = App\Models\ConversationParticipant::query()->whereIn('profile_id', $profileIds)->pluck('conversation_id')->unique()->all();
+    App\Models\Conversation::query()->whereKey($threads)->update(['last_message_id' => null]);
+    App\Models\Message::query()->whereIn('conversation_id', $threads)->delete();
+    App\Models\ConversationParticipant::query()->whereIn('conversation_id', $threads)->delete();
+    App\Models\Conversation::query()->whereKey($threads)->delete();
+}
+
+/** P7.4: the claiming client and the suitor (both member numbers in the fake 99999 block), threads first. */
+function duskClaimCleanup(): void
+{
+    $users = User::withTrashed()->whereIn('phone', [DUSK_MEMBER_PHONE, '+919999900042'])->pluck('id');
+    duskConversationsCleanup(App\Models\Profile::withTrashed()->whereIn('user_id', $users)->pluck('id')->all());
+    duskMemberCleanup();
+    duskMemberCleanup('+919999900042');
+}
 
 function duskBrokerCleanup(): void
 {
@@ -33,12 +57,19 @@ function duskBrokerCleanup(): void
     App\Models\ModerationItem::query()->whereIn('profile_id', $profiles->modelKeys())->delete();
     App\Models\BrokerReferral::query()->whereIn('broker_id', $brokers)->delete();
     App\Models\BrokerClientNote::query()->whereIn('broker_id', $brokers)->delete();
+    duskConversationsCleanup($profiles->modelKeys());
     App\Models\Profile::withTrashed()->whereKey($profiles->modelKeys())->forceDelete();
     BrokerStaff::query()->whereIn('broker_id', $brokers)->delete();
     Broker::query()->whereIn('id', $brokers)->delete();
     User::withTrashed()->whereIn('id', $users)->forceDelete();
     FeatureFlag::query()->where('key', Flag::BrokerSelfApply->value)->delete();
     app(App\Services\Settings\FeatureFlags::class)->flush();
+}
+
+/** Each journey starts signed out: the browser is shared between tests (an old "intended" URL would leak in). */
+function duskFreshSession(Browser $browser): void
+{
+    $browser->visit('/')->driver->manage()->deleteAllCookies();
 }
 
 beforeEach(fn () => duskBrokerCleanup());
@@ -96,6 +127,7 @@ it('P7.3: a Data-entry login adds a client at 375px; the A04 decision reaches th
     $this->browse(function (Browser $browser) use ($hindu, $caste, $malayalam): void {
         $staff = bureauLogin(BureauRole::DataEntry);
         $staff->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+        duskFreshSession($browser);
         $browser->visit('/login')
             ->type('#loginId', '9999900031')
             ->type('#loginPassword', TEST_MEMBER_PASSWORD)
@@ -148,10 +180,73 @@ it('P7.3: a Data-entry login adds a client at 375px; the A04 decision reaches th
 
         $started = microtime(true);
         app(App\Actions\Moderation\ApproveProfile::class)->handle(duskAdmin(), $item);
-        $browser->waitUntilMissingText('Our team is reviewing this profile', 15)->assertSee('Active')->assertSee('Deactivate');
+        $browser->waitUntilMissingText('Our team is reviewing this profile', 15)->assertSee('Active');   // Data entry: no Deactivate (B.2)
         fwrite(STDERR, sprintf("\n[P7.3] approval → live status on the bureau page in %.1f s\n", microtime(true) - $started));
     });
 
     duskBrokerCleanup();   // the decided A04 item points at the Dusk admin: bureau rows first
     duskAdminCleanup();
+});
+
+it('P7.4: a Telecaller answers the Client Inbox at 375px; the client then registers with the stored mobile and claims the profile', function (): void {
+    duskClaimCleanup();
+
+    $this->browse(function (Browser $bureau, Browser $client): void {
+        $staff = bureauLogin(BureauRole::Telecaller);
+        $staff->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+        $profile = managedProfile($staff->brokerStaff->broker, ['client_phone' => DUSK_MEMBER_PHONE, 'first_name' => 'Dusk', 'last_name' => 'Client']);
+        $suitor = groom('+919999900042');
+        app(App\Actions\Engagement\SendInterest::class)->handle($suitor, $profile, null);
+
+        duskFreshSession($bureau);
+        duskFreshSession($client);
+        $bureau->visit('/login')
+            ->type('#loginId', '9999900031')
+            ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/broker');
+
+        // Client Inbox: the waiting interest, accepted on the client's behalf.
+        $bureau->visit('/broker/profiles/'.$profile->code.'/inbox')->waitForText('Accept for client')
+            ->assertSee('Chat stays closed until the client joins');
+        assertNoHorizontalScroll($bureau);
+        $bureau->press('Accept for client')
+            ->waitUsing(10, 100, fn (): bool => App\Models\Interest::query()->where('to_profile_id', $profile->id)->value('status') === App\Enums\InterestStatus::Accepted)
+            ->waitForText('Nothing here');   // the waiting list is empty again
+        assertNoHorizontalScroll($bureau);
+
+        // The client registers with the same mobile + OTP: "Is this you?" at phone width.
+        $masked = '+91 99•••••001';
+        $previous = duskLatestOtp($masked);
+        $client->visit('/register')
+            ->waitUntilMissing('#preloader', 10)
+            ->select('#profileFor', 'SELF')
+            ->radio('gender', 'FEMALE')
+            ->type('#regName', 'Dusk Client')
+            ->type('#regMobile', '9999900001')
+            ->type('#regPassword', TEST_MEMBER_PASSWORD)
+            ->check('#regTerms')
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/verify-otp')
+            ->waitUsing(10, 100, fn (): bool => duskLatestOtp($masked) !== null && duskLatestOtp($masked) !== $previous)
+            ->type('#otpCode', (string) duskLatestOtp($masked))
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/register/claim')
+            ->waitForText('Is this you?')
+            ->assertSee('Dusk C.')
+            ->assertSee($profile->code);
+        assertNoHorizontalScroll($client);
+
+        $client->click('.claim-card button.login-btn')->waitUntilMissingText('Is this you?', 15);
+
+        $profile->refresh();
+        expect($profile->owner_type)->toBe(App\Enums\ProfileOwnerType::Self)
+            ->and($profile->user_id)->toBe(User::query()->where('phone', DUSK_MEMBER_PHONE)->value('id'))
+            ->and($profile->managed_by_broker_id)->toBeNull();
+
+        // The bureau's access is gone at once.
+        $bureau->visit('/broker/profiles/'.$profile->code)->waitForText('We couldn’t find that page');
+    });
+
+    duskClaimCleanup();
 });

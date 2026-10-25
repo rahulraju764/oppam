@@ -682,6 +682,27 @@ body.search-sheet-open .mobile-footer { display: none; }
 .broker-feed { margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
 .broker-feed li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: var(--border-hair); }
 .broker-feed li:last-child { border-bottom: 0; }
+/* Client inbox (P7.4, §11A B.6) */
+.client-inbox__tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-4) 0; }
+.client-inbox__tab { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: var(--space-2) var(--space-4); border: var(--border-card); border-radius: var(--radius-pill); background: var(--color-default); color: var(--color-bltxt); font-size: var(--text-sm); }
+.client-inbox__tab.is-active { border-color: var(--color-primary); background: var(--bg-rose); color: var(--color-primary-dark); }
+.client-inbox__tab:focus-visible { box-shadow: var(--ring-focus); outline: 0; }
+.client-inbox__count { font-weight: 600; }
+.client-inbox { margin: 0; padding: 0; list-style: none; }
+.client-inbox__item { padding: var(--space-3) 0; border-bottom: var(--border-hair); }
+.client-inbox__item:last-child { border-bottom: 0; }
+.client-inbox__who { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.client-inbox__code, .client-inbox__meta { color: var(--color-gr-dark); font-size: var(--text-xs); }
+.client-inbox__facts { margin: var(--space-1) 0 0; font-size: var(--text-sm); overflow-wrap: anywhere; }
+.client-inbox__message { margin: var(--space-1) 0 0; font-size: var(--text-sm); font-style: italic; overflow-wrap: anywhere; }
+.client-inbox__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+.client-inbox__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+/* "Is this you?" claim card (P7.4) */
+.claim-card-profile { margin: 0 0 var(--space-3); font-size: var(--text-lg); overflow-wrap: anywhere; }
+.claim-card-code { color: var(--color-gr-dark); font-size: var(--text-sm); }
+.claim-card-note { margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--color-gr-dark); }
+.claim-card-actions { display: flex; flex-direction: column; gap: var(--space-3); }
+.claim-card-no { min-height: 44px; border-radius: var(--radius-pill); }
 @media (min-width: 768px) {
     .managed-list__filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

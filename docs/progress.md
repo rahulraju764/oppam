@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
-**Next session:** P7.3 — Managed profiles (after P7.2's review / commit). Open first: P6.1 re-review after its Blocker fix;
+**Next session:** P7.5 — Staff accounts (after P7.4's owner review / commit). Open first: P6.1 re-review after its Blocker fix;
 P5.3 — Admin billing (A06), groundwork committed in e13f771 (breaks BillingTest.php's fake gateway), screens not built;
 Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
 
@@ -109,8 +109,25 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   BrokerOwnerChannel admits SUSPENDED / KYC_PENDING Owners (no events today — revisit in P7.8); "Profile live" shown for
   later-hidden profiles; poster PDF rendered in the request (throttled); widths 320/768/1024/1440 and the register / wizard /
   A07 screens not browser-checked.
-- [ ] P7.3 Managed profiles: create, manage, assign, notes
-- [ ] P7.4 Client inbox, claim flow & exports
+- [x] P7.3 Managed profiles: create, manage, assign, notes — 2026-10-25: built (decisions 2026-10-25); committed by the owner
+  together with P7.2 in c558048. Re-verified with P7.4: IdorScopingTest ★, the R-M13-14 A04 test and the R-M13-20 assigned-only
+  tests pass; its Dusk journey (Data-entry create at 375 px, A04 approval live in 5.5 s) passed once 3 test-only issues were
+  fixed (shared browser session → fresh cookies; Data entry has no Deactivate; cleanup removes conversations first).
+- [ ] P7.4 Client inbox, claim flow & exports — 2026-10-25: built (decisions 2026-10-25; owner: send by profile code, Noto
+  fonts). ClientInbox (accept / decline for the client, send against the bureau's monthly allowance in
+  `broker_interest_usage`), ChatSendState::MANAGED (the PRD notice; SendMessage refuses), ClaimManagedProfile after the
+  registration OTP ("Is this you?" /register/claim, one transaction, same row lock as exports, ProfileClaimed + Owner /
+  assignee note), ExportManagedProfile + DompdfBiodataRenderer (A4, Noto Sans + Malayalam, bureau footer, watermark) +
+  PhotoPackageBuilder (approved originals) via ManagedProfileExportController, a broker_profile_exports row on every attempt
+  (append-only model guards). Member engagement Actions got profile-level cores (behaviour unchanged). Tests:
+  ExportAuthorizationTest ★ 21, ClaimFlowTest ★ 15 (incl. the export race), ClientInboxTest 22 + Livewire 14, IDOR matrix
+  + inbox; suite run in serial groups (memory): all passed except the pre-existing BillingTest.php fatal (P5.3 fake lacks
+  paymentsBetween / refund since e13f771); lint + analyse clean; Dusk BrokerPortalTest 3/3. Reviewer: READY TO COMMIT
+  (0 Blockers / 0 Majors); Minors fixed after: route throttle removed from exports (the Action's logged hourly cap
+  remains), photo-package docblock corrected, inbox added to the IDOR matrix. Minors open: refused downloads show no
+  in-page error (plain links); SUSPENDED managed profiles can still be claimed (owner question); BiodataBuilder uses the
+  Livewire-namespaced ProfileFacts; export race proven sequentially, not under true concurrency. NOT committed — the
+  post-OTP registration redirect + ownership transfer need the owner's review (rule 5).
 - [ ] P7.5 Staff accounts
 - [ ] P7.6 Bulk upload part 1: template, upload, validation, preview
 - [ ] P7.7 Bulk upload part 2: fix, consent, import, submit, safeguards

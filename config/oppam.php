@@ -95,6 +95,7 @@ return [
         'kyc_link_minutes' => 10,                                  // A07: PAN image viewer links (signed, audited)
         'managed_profiles_per_hour' => 60,                         // P7.3: "Add profile" saves per bureau login per hour
         'managed_restore_days' => 30,                              // B.6: a deleted managed profile can be restored this long, then purged
+        'exports_per_hour' => 30,                                  // P7.4 B.7: biodata / photo exports per bureau login per hour
     ],
 
     // ID verification (M09 / A05, P6.1). Documents are encrypted (APP_KEY) on the private disk and

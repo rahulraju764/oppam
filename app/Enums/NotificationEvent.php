@@ -39,6 +39,8 @@ enum NotificationEvent: string
     case ManagedProfileReviewed = 'managed_profile_reviewed';
     /** Client follow-ups due today (§11A B.15 FollowUpDue, 08:30 IST, P7.3): in-app only, to bureau logins. */
     case FollowUpDue = 'follow_up_due';
+    /** A managed client claimed their profile (§11A B.6 / B.15 ProfileClaimed, P7.4): in-app only, to the Owner and assignee. */
+    case ManagedProfileClaimed = 'managed_profile_claimed';
 
     /** The /notifications filter this event belongs to. */
     public function group(): NotificationGroup
@@ -65,7 +67,7 @@ enum NotificationEvent: string
         return match ($this) {
             // digests (P8.3) or in-app only
             self::InterestDeclined, self::ProfileLiked, self::MutualLike, self::ProfileViewed,
-            self::CommissionEarned, self::ManagedProfileReviewed, self::FollowUpDue => false,
+            self::CommissionEarned, self::ManagedProfileReviewed, self::FollowUpDue, self::ManagedProfileClaimed => false,
             self::NewMessage => true,   // the offline digest only (P4.2, SendChatDigests) — never one mail per message
             default => true,
         };

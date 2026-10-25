@@ -68,6 +68,14 @@
                         <i class="fa fa-sticky-note-o" aria-hidden="true"></i> {{ __('Notes & follow-ups') }}
                     </a>
                 @endif
+                @if ($canInbox)
+                    <a href="{{ route('broker.profiles.inbox', ['code' => $profile->code]) }}" wire:navigate class="ui-btn ui-btn--outline">
+                        <i class="fa fa-inbox" aria-hidden="true"></i> {{ __('Client inbox') }}
+                        @if ($pendingInterests > 0)
+                            <x-ui.badge variant="primary">{{ $pendingInterests }}<span class="visually-hidden"> {{ __('pending') }}</span></x-ui.badge>
+                        @endif
+                    </a>
+                @endif
                 @foreach ($actions as $action)
                     <div x-data="{ confirming: false }" wire:key="action-{{ $action->value }}">
                         <x-ui.button type="button" :variant="$action === \App\Enums\ManagedProfileStatusChange::Delete ? 'danger' : 'outline'"
@@ -85,10 +93,30 @@
                     </div>
                 @endforeach
             </div>
-            @if (! $canSubmit && ! $canEdit && $actions === [] && ! $canNotes)
+            @if (! $canSubmit && ! $canEdit && $actions === [] && ! $canNotes && ! $canInbox)
                 <p class="form-text mb-0">{{ __('Your role can view this profile but not change it.') }}</p>
             @endif
         </div>
+
+        @if ($canExport)
+            <div class="dashboard-content mb-4">
+                <h2 class="managed-form__heading">{{ __('Downloads') }}</h2>
+                <p class="form-text">{{ __('Every download is recorded with your name. The biodata carries your bureau’s name on every page.') }}</p>
+                <div class="managed-detail__actions">
+                    {{-- Plain links (no wire:navigate): the files stream from a controller. --}}
+                    <a href="{{ route('broker.profiles.export.biodata', ['code' => $profile->code]) }}" class="ui-btn ui-btn--outline" download>
+                        <i class="fa fa-file-pdf-o" aria-hidden="true"></i> {{ __('Biodata PDF') }}
+                    </a>
+                    @if ($approvedPhotos > 0)
+                        <a href="{{ route('broker.profiles.export.photos', ['code' => $profile->code]) }}" class="ui-btn ui-btn--outline" download>
+                            <i class="fa fa-file-archive-o" aria-hidden="true"></i> {{ trans_choice('{1} Photo (1)|[2,*] Photos (:count)', $approvedPhotos, ['count' => $approvedPhotos]) }}
+                        </a>
+                    @else
+                        <span class="form-text">{{ __('Photos can be downloaded once our team approves them.') }}</span>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         @if ($canAssign)
             <div class="dashboard-content">

@@ -34,7 +34,11 @@ final class Dashboard extends Component
     {
         $staff = app(BureauGate::class)->staff($this->user());
 
-        return $staff !== null ? ['echo-private:broker.'.$staff->broker_id.',.profile.moderated' => '$refresh'] : [];
+        return $staff !== null ? [
+            'echo-private:broker.'.$staff->broker_id.',.profile.moderated' => '$refresh',
+            'echo-private:broker.'.$staff->broker_id.',.client.interest' => '$refresh',   // Client inbox badge (B.15)
+            'echo-private:broker.'.$staff->broker_id.',.profile.claimed' => '$refresh',
+        ] : [];
     }
 
     public function render(BureauGate $gate, BureauReferrals $referrals, ManagedProfileList $managed): View
@@ -51,12 +55,13 @@ final class Dashboard extends Component
                 'stats' => self::referralStats($referrals->stats($broker->id))] : null,
             ['key' => 'profiles', 'title' => __('Managed profiles'), 'icon' => 'fa-users', 'stats' => [
                 __('Total') => $counts['total'], __('Draft') => $counts['draft'], __('In review') => $counts['review'],
-                __('Active') => $counts['active'], __('Rejected') => $counts['rejected'], __('Claimed') => 0,
+                __('Active') => $counts['active'], __('Rejected') => $counts['rejected'], __('Claimed') => $counts['claimed'],
             ]],
             ['key' => 'moderation', 'title' => __('Moderation feed'), 'icon' => 'fa-check-square-o', 'items' => self::feed($managed->latestDecisions($staff)),
                 'empty' => __('Approvals and rejections of your profiles appear here as they happen.')],
             $can(BureauPermission::ProfilesImport) ? ['key' => 'imports', 'title' => __('Imports'), 'icon' => 'fa-upload', 'empty' => __('No import running.')] : null,
-            $can(BureauPermission::ClientInboxRespond) ? ['key' => 'inbox', 'title' => __('Client inbox'), 'icon' => 'fa-inbox', 'stats' => [__('Pending interests') => 0]] : null,
+            $can(BureauPermission::ClientInboxRespond) ? ['key' => 'inbox', 'title' => __('Client inbox'), 'icon' => 'fa-inbox',
+                'stats' => [__('Pending interests') => $gate->allows($user, BureauPermission::ClientInboxRespond) ? $managed->pendingInterests($staff) : 0]] : null,
             ['key' => 'followups', 'title' => __('Follow-ups due today'), 'icon' => 'fa-bell-o',
                 'items' => $can(BureauPermission::ClientNotesWrite) && $gate->allows($user, BureauPermission::ClientNotesWrite) ? self::followUps($managed->dueFollowUps($staff)) : [],
                 'empty' => __('No follow-ups due today.')],

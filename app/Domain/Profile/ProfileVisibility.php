@@ -35,6 +35,17 @@ final class ProfileVisibility
 
         return $own !== null
             && $this->canBrowse($viewer)
+            && $this->profileCanSee($own, $target);
+    }
+
+    /**
+     * The profile-to-profile part of canView: the target is ACTIVE, of the opposite gender and
+     * not blocked either way. Used where a bureau acts for a managed client that has no login
+     * (§11A B.6 client inbox) — the caller checks who is acting.
+     */
+    public function profileCanSee(Profile $own, Profile $target): bool
+    {
+        return $own->id !== $target->id
             && $target->status === ProfileStatus::Active
             && $target->gender !== $own->gender
             && ! $this->blocks->isBlocked($own, $target);

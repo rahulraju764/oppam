@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * One export attempt (B.7) — allowed or denied, always logged (R-M13-13). Append-only (R-A07-7): no updated_at. Nothing is mass-assignable.
@@ -35,6 +36,13 @@ final class BrokerProfileExport extends Model
 
     /** @var list<string> */
     protected $fillable = [];
+
+    protected static function booted(): void
+    {
+        // R-A07-7: the export audit is append-only — nothing is ever changed or deleted.
+        self::updating(static fn (): never => throw new LogicException('Export audit rows are append-only.'));
+        self::deleting(static fn (): never => throw new LogicException('Export audit rows are append-only.'));
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

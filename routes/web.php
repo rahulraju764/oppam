@@ -8,6 +8,7 @@ use App\Http\Controllers\Member\ImpersonationController;
 use App\Http\Controllers\Member\InvoiceDownloadController;
 use App\Http\Controllers\Member\UnsubscribeSavedSearchController;
 use App\Livewire\Member\Activity\Visitors;
+use App\Livewire\Member\Auth\ClaimProfile;
 use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
@@ -86,6 +87,8 @@ Route::view('/impersonation/ended', 'pages.impersonation-ended')->name('imperson
 
 // Member area. Pages after onboarding also get `profile.onboarded` (PRD §13); the wizard can't.
 Route::middleware(['auth', 'verified.phone'])->group(function (): void {
+    // §11A B.6 claim flow: "Is this you?" straight after the registration OTP (one-time session flag).
+    Route::get('/register/claim', ClaimProfile::class)->middleware('throttle:30,1')->name('register.claim');
     Route::get('/onboarding/{step}', Wizard::class)->whereNumber('step')->name('member.onboarding');
     Route::get('/onboarding/submitted', Submitted::class)->name('member.onboarding.submitted');
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Broker\ManagedProfileExportController;
 use App\Http\Controllers\Broker\MaterialsController;
 use App\Http\Controllers\Broker\ReferralCodeController;
 use App\Livewire\Broker\Apply;
@@ -57,6 +58,16 @@ Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'
             Route::get('/{code}', ManagedProfiles\Show::class)->middleware('bureau:profiles.view')->where('code', 'OPM[0-9]+')->name('show');
             Route::get('/{code}/edit', ManagedProfiles\Form::class)->middleware('bureau:profiles.edit')->where('code', 'OPM[0-9]+')->name('edit');
             Route::get('/{code}/notes', ManagedProfiles\Notes::class)->middleware('bureau:client_notes.write')->where('code', 'OPM[0-9]+')->name('notes');
+            Route::get('/{code}/inbox', ManagedProfiles\ClientInbox::class)->middleware('bureau:client_inbox.respond')->where('code', 'OPM[0-9]+')->name('inbox');
+
+            // Exports (B.7, P7.4): no `bureau:` or `throttle` middleware on purpose — ExportManagedProfile
+            // checks `profiles.export`, ownership and its hourly cap itself, so that EVERY attempt is
+            // logged (R-M13-13); a middleware refusal would leave no row.
+            Route::controller(ManagedProfileExportController::class)->where(['code' => 'OPM[0-9]+'])
+                ->group(function (): void {
+                    Route::get('/{code}/export/biodata', 'biodata')->name('export.biodata');
+                    Route::get('/{code}/export/photos', 'photos')->name('export.photos');
+                });
         });
 
         // B.11 screens of later sessions, registered now with their real gate (decisions 2026-10-23):

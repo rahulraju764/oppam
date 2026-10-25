@@ -61,6 +61,19 @@ final class AcceptInterest
             throw new NotFoundHttpException;
         }
 
+        return $this->accept($own, $from);
+    }
+
+    /**
+     * The acceptance itself, for a profile whose caller already checked who is acting and that
+     * the pair may see each other — the member above, or a bureau for its managed client
+     * (RespondToInterestForClient, §11A B.6).
+     *
+     * @throws NotFoundHttpException no interest from that profile to $own
+     * @throws EngagementRefused answered, withdrawn or expired meanwhile
+     */
+    public function accept(Profile $own, Profile $from): Conversation
+    {
         $conversation = DB::transaction(function () use ($own, $from): Conversation {
             $interest = Interest::query()->where('from_profile_id', $from->id)->where('to_profile_id', $own->id)->lockForUpdate()->first();
 

@@ -76,6 +76,24 @@ it('★ R-M13-20: "assigned only" staff get 404 for a bureau profile not assigne
     $this->get(brokerUrl('/profiles/'.$mine->code.$path))->assertOk();
 })->with(MANAGED_ROUTES);
 
+it('★ R-M13-6 / R-M13-20 (P7.4): the Client Inbox of a foreign, claimed or unassigned client is 404', function (): void {
+    $owner = bureauLogin(BureauRole::Owner);
+    $broker = staffOf($owner)->broker;
+    $telecaller = bureauLogin(BureauRole::Telecaller, broker: $broker);
+    staffOf($telecaller)->forceFill(['profile_scope' => ProfileScope::Assigned])->save();
+    $mine = managedProfile($broker, [], staffOf($telecaller));
+    $notMine = managedProfile($broker);
+
+    actingAsBureau($telecaller->refresh());
+    $this->get(brokerUrl('/profiles/'.$notMine->code.'/inbox'))->assertNotFound();
+    $this->get(brokerUrl('/profiles/'.$mine->code.'/inbox'))->assertOk();
+
+    actingAsBureau($owner);
+    foreach (foreignProfiles($broker) as $case => $profile) {
+        $this->get(brokerUrl('/profiles/'.$profile->code.'/inbox'))->assertNotFound();
+    }
+});
+
 it('★ R-M13-20: the list shows assigned-only staff their own clients only', function (): void {
     $owner = bureauLogin(BureauRole::Owner);
     $broker = staffOf($owner)->broker;
@@ -109,12 +127,14 @@ it('★ R-M13-6: every managed-profile Action refuses outside codes with 404 and
             'assign' => fn () => app(AssignManagedProfiles::class)->handle($login, [$profile->code], $staffId),
             'client phone' => fn () => app(UpdateManagedProfile::class)->handle($login, $profile->code, '9811122233'),
             'note' => fn () => app(AddClientNote::class)->handle($login, $profile->code, new ClientNoteData('NOTE', null, 'Hello there', null)),
+            'inbox accept' => fn () => app(App\Actions\Broker\ManagedProfiles\RespondToInterestForClient::class)->handle($login, $profile->code, 'OPM10001', true),
+            'inbox send' => fn () => app(App\Actions\Broker\ManagedProfiles\SendInterestForClient::class)->handle($login, $profile->code, 'OPM10001', null),
         };
 
         expect($call)->toThrow(ModelNotFoundException::class, null, $case);
         expect($profile->fresh()?->getAttributes())->toBe($before);
     }
-})->with(['submit', 'deactivate', 'delete', 'restore', 'assign', 'client phone', 'note']);
+})->with(['submit', 'deactivate', 'delete', 'restore', 'assign', 'client phone', 'note', 'inbox accept', 'inbox send']);
 
 it('★ R-M13-18: the scope takes the bureau from the staff row — never from the request', function (): void {
     $login = bureauLogin(BureauRole::Owner);

@@ -47,6 +47,18 @@ final class DeclineInterest
 
         $own = $member->profile ?? throw new NotFoundHttpException;
 
+        $this->decline($own, $from);
+    }
+
+    /**
+     * The decline itself, for a profile whose caller already checked who is acting — the member
+     * above, or a bureau for its managed client (RespondToInterestForClient, §11A B.6).
+     *
+     * @throws NotFoundHttpException no interest from that profile to $own
+     * @throws EngagementRefused answered, withdrawn or expired meanwhile
+     */
+    public function decline(Profile $own, Profile $from): void
+    {
         DB::transaction(function () use ($own, $from): void {
             $interest = Interest::query()->where('from_profile_id', $from->id)->where('to_profile_id', $own->id)->lockForUpdate()->first();
 

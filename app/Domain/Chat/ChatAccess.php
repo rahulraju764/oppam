@@ -29,7 +29,8 @@ use App\Services\Entitlements\EntitlementService;
  * deleted / suspended); the pair still connected by an accepted interest (R-M07-1); and the plan
  * allows it — `chat_send` (paid), or a Free member's free reply (R-M07-3,
  * `free_replies_per_conversation`): only after the other member has written in this thread, and
- * only as many as the plan allows (owner decision 2026-10-15).
+ * only as many as the plan allows (owner decision 2026-10-15). Nobody writes to an unclaimed
+ * bureau-managed client (§11A B.6, R-M13-34) until they claim the profile.
  */
 final class ChatAccess
 {
@@ -86,6 +87,11 @@ final class ChatAccess
         if ($other->trashed() || ! in_array($other->status, [ProfileStatus::Active, ProfileStatus::Hidden], true)
             || ! $this->connections->isConnected($me, $other)) {
             return ChatSendState::Unavailable;
+        }
+
+        // An unclaimed bureau-managed client has no login to read or answer (R-M13-34).
+        if ($other->isBrokerManaged()) {
+            return ChatSendState::Managed;
         }
 
         if ($this->entitlements->allows($me, Entitlement::ChatSend)) {

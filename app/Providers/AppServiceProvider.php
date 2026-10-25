@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\BiodataPdfRenderer;
 use App\Contracts\ContentSafety;
 use App\Contracts\DocumentVault;
 use App\Contracts\InvoiceRenderer;
@@ -48,6 +49,7 @@ use App\Observers\NewMemberTickObserver;
 use App\Queries\Admin\WorkQueues;
 use App\Services\Admin\Impersonation;
 use App\Services\Billing\DompdfInvoiceRenderer;
+use App\Services\Broker\DompdfBiodataRenderer;
 use App\Services\Chat\RuleBasedContentSafety;
 use App\Services\Entitlements\EntitlementService;
 use App\Services\Payments\FakePaymentGateway;
@@ -108,6 +110,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
         $this->app->bind(ContentSafety::class, RuleBasedContentSafety::class);         // M07 send flow / A13
         $this->app->bind(InvoiceRenderer::class, DompdfInvoiceRenderer::class);        // M10 GST invoice PDF
+        $this->app->bind(BiodataPdfRenderer::class, DompdfBiodataRenderer::class);     // §11A B.7 bureau biodata PDF
         $this->app->bind(DocumentVault::class, EncryptedDocumentVault::class);         // M09 ID documents, encrypted
 
         $this->app->singleton(FinancialYear::class, fn (): FinancialYear => new FinancialYear(config('oppam.display_timezone')));

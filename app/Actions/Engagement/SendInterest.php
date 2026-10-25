@@ -17,6 +17,7 @@ use App\Enums\InterestStatus;
 use App\Enums\NotificationEvent;
 use App\Enums\ProfileStatus;
 use App\Enums\SettingKey;
+use App\Events\Broker\ClientInterestReceived;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Billing\QuotaExceeded;
 use App\Exceptions\Engagement\EngagementRefused;
@@ -90,6 +91,24 @@ final class SendInterest
             throw new NotFoundHttpException;
         }
 
+        return $this->send($own, $target, $templateCode, $customMessage,
+            fn (Profile $sender) => $this->entitlements->consume($sender, Entitlement::InterestsPerMonth));
+    }
+
+    /**
+     * The send itself, for a profile whose caller already checked who is acting and that $own
+     * may see $target — the member above, or a bureau for its managed client
+     * (SendInterestForClient, §11A B.6). $charge spends one interest of the right allowance inside
+     * the interest's transaction (the member's plan quota, or the bureau's monthly allowance —
+     * R-M13-35) and throws to refuse; nothing is charged when nothing new is sent.
+     *
+     * @param  callable(Profile): void  $charge
+     *
+     * @throws EngagementRefused own profile not ACTIVE, contact filter, cooldown, already connected, custom note on Free, too fast
+     * @throws ValidationException the note (keys `template`, `message`)
+     */
+    public function send(Profile $own, Profile $target, ?string $templateCode, ?string $customMessage, callable $charge): InterestResult
+    {
         if ($own->status !== ProfileStatus::Active) {
             throw EngagementRefused::profileNotActive();
         }
@@ -107,7 +126,7 @@ final class SendInterest
         }
 
         if ($state === Connections::RECEIVED) {
-            $this->accept->handle($member, $target);
+            $this->accept->accept($own, $target);
 
             return new InterestResult(Connections::CONNECTED, changed: true, connected: true);
         }
@@ -125,14 +144,14 @@ final class SendInterest
         $this->limiter->hit($key, 60);
 
         try {
-            $outcome = $this->store($own, $target, $message);
+            $outcome = $this->store($own, $target, $message, $charge);
         } catch (UniqueConstraintViolationException) {
             $outcome = self::ALREADY_PENDING;   // two tabs sent the very first interest at once: the other one stored (and paid for) it
         }
 
         if ($outcome === self::CROSSED) {
             // The other member's interest arrived between the first look and the lock: accept it instead.
-            $this->accept->handle($member, $target);
+            $this->accept->accept($own, $target);
 
             return new InterestResult(Connections::CONNECTED, changed: true, connected: true);
         }
@@ -154,6 +173,11 @@ final class SendInterest
             User::query()->find($target->user_id)?->notify(new InterestNotification(NotificationEvent::InterestReceived, $own->id));
         }
 
+        // A bureau-managed client has no login: the bureau's Client Inbox hears it (§11A B.15).
+        if ($target->isBrokerManaged()) {
+            ClientInterestReceived::dispatch((string) $target->managed_by_broker_id, $target->code);
+        }
+
         return new InterestResult(Connections::SENT, changed: true);
     }
 
@@ -162,11 +186,14 @@ final class SendInterest
      * members sending to each other at the same moment take the locks in the same order) and the
      * decision is made again on what is really there.
      *
+     * @param  (callable(Profile): void)|null  $charge  null = the member's own monthly quota
      * @return string self::SENT, ::ALREADY_PENDING (another tab sent it) or ::CROSSED (theirs is pending: accept it)
      */
-    private function store(Profile $own, Profile $target, ?string $message): string
+    private function store(Profile $own, Profile $target, ?string $message, ?callable $charge = null): string
     {
-        return DB::transaction(function () use ($own, $target, $message): string {
+        $charge ??= fn (Profile $sender) => $this->entitlements->consume($sender, Entitlement::InterestsPerMonth);
+
+        return DB::transaction(function () use ($own, $target, $message, $charge): string {
             $rows = Interest::query()
                 ->where(fn ($q) => $q
                     ->where(fn ($x) => $x->where('from_profile_id', $own->id)->where('to_profile_id', $target->id))
@@ -210,7 +237,7 @@ final class SendInterest
             $interest->save();
 
             InterestEvent::record($interest, InterestStatus::Pending, $own->id);
-            $this->entitlements->consume($own, Entitlement::InterestsPerMonth);   // QuotaExceeded rolls everything back
+            $charge($own);   // QuotaExceeded / ManagedProfileRefused rolls everything back
 
             return self::SENT;
         }, attempts: 3);   // two members sending their first interest to each other at once can deadlock: try again

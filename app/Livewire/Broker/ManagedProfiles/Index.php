@@ -54,7 +54,10 @@ final class Index extends Component
     {
         $staff = app(BureauGate::class)->staff($this->user());
 
-        return $staff !== null ? ['echo-private:broker.'.$staff->broker_id.',.profile.moderated' => '$refresh'] : [];
+        return $staff !== null ? [
+            'echo-private:broker.'.$staff->broker_id.',.profile.moderated' => '$refresh',
+            'echo-private:broker.'.$staff->broker_id.',.profile.claimed' => '$refresh',   // a claimed client leaves the list (B.15)
+        ] : [];
     }
 
     public function updated(string $property): void
