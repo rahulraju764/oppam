@@ -52,6 +52,8 @@ return [
             'safety_warning' => env('MSG91_TPL_SAFETY_WARNING'),
             // A10 P0 page to on-call admins: "Urgent Oppam safety case {#var#} — open the admin panel." (P6.2)
             'safety_p0_case' => env('MSG91_TPL_SAFETY_P0_CASE'),
+            // §11A B.8 staff invitation: "{#var#} invited you to join their bureau on Oppam Matrimony: {#var#} (valid 72 hours)" (P7.5)
+            'staff_invite' => env('MSG91_TPL_STAFF_INVITE'),
         ]),
     ],
 

@@ -28,6 +28,24 @@ const BUREAU_ROUTES = [
     '/materials/qr.svg' => ['materials.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
     '/materials/qr.png' => ['materials.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
     '/materials/poster.pdf' => ['materials.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
+    // P7.5 staff accounts, activity log, earnings (B.21: a Telecaller gets 403 on earnings and staff pages by URL)
+    '/staff' => ['staff.manage', ['OWNER']],
+    '/activity' => ['activity.view', ['OWNER', 'MANAGER']],
+    '/earnings' => ['earnings.view', ['OWNER']],
+];
+
+/**
+ * Per-profile routes (path after /profiles/{code}) => the roles that pass, on a client assigned to
+ * the caller (Telecallers are always assigned-only, B.2). The photo package of a client without
+ * approved photos answers 409 to the roles that may export (the refusal is logged).
+ */
+const BUREAU_PROFILE_ROUTES = [
+    '' => ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER'],
+    '/edit' => ['OWNER', 'MANAGER', 'DATA_ENTRY'],
+    '/notes' => ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER'],
+    '/inbox' => ['OWNER', 'MANAGER', 'TELECALLER'],
+    '/export/biodata' => ['OWNER', 'MANAGER'],
+    '/export/photos' => ['OWNER', 'MANAGER'],
 ];
 
 /** The B.2 matrix, row by row (true = in the role's ceiling). Owner | Manager | Data entry | Telecaller. */
@@ -77,6 +95,92 @@ it('★ the B.2 matrix: each role holds exactly its ceiling on a verified bureau
         expect(app(BureauGate::class)->allows($user, BureauPermission::from($key)))->toBe($row[$i], "{$role->value} × {$key}");
     }
 })->with(fn (): array => collect(BUREAU_MATRIX)->map(fn (array $row, string $key): array => [$key, $row])->values()->all());
+
+it('★ every role × every per-client route (B.11): allowed roles open it; the others get 403 BUREAU_PERMISSION', function (BureauRole $role, string $path): void {
+    $owner = bureauLogin();
+    $broker = staffOf($owner)->broker;
+    $login = $role === BureauRole::Owner ? $owner : bureauLogin($role, broker: $broker);
+    $client = managedProfile($broker, ['status' => App\Enums\ProfileStatus::Draft, 'published_at' => null], staffOf($login));
+    actingAsBureau($login);
+
+    $response = $this->get(brokerUrl('/profiles/'.$client->code.$path));
+
+    if (in_array($role->value, BUREAU_PROFILE_ROUTES[$path], true)) {
+        $path === '/export/photos' ? $response->assertStatus(409) : $response->assertOk();
+    } else {
+        $response->assertForbidden()->assertHeader('X-Error-Code', BureauGate::NOT_PERMITTED);
+    }
+})->with(BureauRole::cases())->with(array_keys(BUREAU_PROFILE_ROUTES));
+
+it('★ every role × the staff detail page: the Owner only (staff.manage)', function (BureauRole $role): void {
+    $owner = bureauLogin();
+    $broker = staffOf($owner)->broker;
+    $telecaller = bureauLogin(BureauRole::Telecaller, broker: $broker);
+    actingAsBureau($role === BureauRole::Owner ? $owner : bureauLogin($role, broker: $broker));
+
+    $response = $this->get(brokerUrl('/staff/'.staffOf($telecaller)->code));
+
+    $role === BureauRole::Owner ? $response->assertOk() : $response->assertForbidden()->assertHeader('X-Error-Code', BureauGate::NOT_PERMITTED);
+})->with(BureauRole::cases());
+
+/**
+ * Every bureau Action, with the permission its B.2 row grants. Each call runs against a fresh
+ * bureau where the caller holds that role; "denied" means a 403 with BUREAU_PERMISSION before
+ * anything else happens. What the call does once allowed is the Action's own tests' business.
+ *
+ * @return array<string, array{0: string, 1: Closure(User, array<string, mixed>): mixed}>
+ */
+function bureauActions(): array
+{
+    return [
+        'create profile' => ['profiles.create', fn ($u) => app(App\Actions\Broker\ManagedProfiles\CreateManagedProfile::class)->handle($u, managedData('9876599901'), basicData())],
+        'change client mobile' => ['profiles.edit', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\UpdateManagedProfile::class)->handle($u, $f['client']->code, '9876599902')],
+        'submit for review' => ['profiles.submit_for_review', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\SubmitManagedProfile::class)->handle($u, $f['client']->code)],
+        'deactivate profile' => ['profiles.deactivate', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\SetManagedProfileStatus::class)->handle($u, $f['client']->code, App\Enums\ManagedProfileStatusChange::Deactivate)],
+        'activate profile' => ['profiles.activate', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\SetManagedProfileStatus::class)->handle($u, $f['client']->code, App\Enums\ManagedProfileStatusChange::Activate)],
+        'delete profile' => ['profiles.delete', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\SetManagedProfileStatus::class)->handle($u, $f['client']->code, App\Enums\ManagedProfileStatusChange::Delete)],
+        'assign' => ['profiles.assign', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\AssignManagedProfiles::class)->handle($u, [$f['client']->code], null)],
+        'restore profile' => ['profiles.delete', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\SetManagedProfileStatus::class)->handle($u, $f['client']->code, App\Enums\ManagedProfileStatusChange::Restore)],
+        'complete follow-up' => ['client_notes.write', fn ($u) => app(App\Actions\Broker\ManagedProfiles\CompleteFollowUp::class)->handle($u, '01HNOTEXISTINGNOTEXXXXXXXX')],
+        'add note' => ['client_notes.write', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\AddClientNote::class)->handle($u, $f['client']->code, new App\Data\Broker\ClientNoteData('NOTE', null, 'Spoke to the family', null))],
+        'answer client inbox' => ['client_inbox.respond', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\RespondToInterestForClient::class)->handle($u, $f['client']->code, 'OPM99999999', false)],
+        'send interest for client' => ['client_inbox.respond', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\SendInterestForClient::class)->handle($u, $f['client']->code, 'OPM99999999', null)],
+        'export' => ['profiles.export', fn ($u, $f) => app(App\Actions\Broker\ManagedProfiles\ExportManagedProfile::class)->handle($u, $f['client']->code, App\Enums\BrokerExportType::BiodataPdf, null)],
+        'invite staff' => ['staff.manage', fn ($u) => app(App\Actions\Broker\Staff\InviteStaff::class)->handle($u, new App\Data\Broker\StaffInviteData('Ravi', '9876599903', 'TELECALLER', 'ASSIGNED'))],
+        'change staff permissions' => ['staff.manage', fn ($u, $f) => app(App\Actions\Broker\Staff\UpdateStaffPermissions::class)->handle($u, $f['staff']->code, [], 'ALL')],
+        'deactivate staff' => ['staff.manage', fn ($u, $f) => app(App\Actions\Broker\Staff\DeactivateStaff::class)->handle($u, $f['staff']->code)],
+        'cancel invitation' => ['staff.manage', fn ($u, $f) => app(App\Actions\Broker\Staff\CancelInvitation::class)->handle($u, $f['invitation']->id)],
+    ];
+}
+
+it('★ every role × every bureau Action (B.2): only the roles whose ceiling holds the permission get past BureauGate', function (string $action): void {
+    flagOn(App\Enums\Flag::BrokerStaff);
+    fakeSms();
+    [$permission, $call] = bureauActions()[$action];
+
+    foreach (BureauRole::cases() as $i => $role) {
+        $owner = bureauLogin();
+        $broker = staffOf($owner)->broker;
+        $login = $role === BureauRole::Owner ? $owner : bureauLogin($role, broker: $broker);
+        $fixture = [
+            'client' => managedProfile($broker, [], staffOf($login)),   // assigned to the caller: scope never hides the permission check
+            'staff' => staffOf(bureauLogin(BureauRole::DataEntry, broker: $broker)),
+            'invitation' => App\Models\BrokerStaffInvitation::factory()->create(['broker_id' => $broker->id, 'expires_at' => now()->addDay()]),
+        ];
+        app(BureauGate::class)->forget();
+
+        $denied = false;
+        try {
+            $call($login, $fixture);
+        } catch (Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            $denied = $e->getStatusCode() === 403 && ($e->getHeaders()['X-Error-Code'] ?? null) === BureauGate::NOT_PERMITTED;
+        } catch (Throwable) {
+            // allowed past the gate; the Action refused for its own reasons (tested elsewhere)
+        }
+
+        expect($denied)->toBe(! BUREAU_MATRIX[$permission][$i], "{$role->value} × {$action}");
+    }
+})->with(fn (): array => array_keys(bureauActions()));
 
 it('every permission key of the enum is in the matrix (nothing unreviewed)', function (): void {
     expect(array_keys(BUREAU_MATRIX))->toEqualCanonicalizing(array_map(fn (BureauPermission $p): string => $p->value, BureauPermission::cases()));

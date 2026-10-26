@@ -24,6 +24,7 @@ final class ComingSoon extends Component
     {
         $this->title = match (request()->route()?->getName()) {
             'broker.import' => __('Bulk import'),
+            'broker.earnings' => __('Earnings'),
             default => __('Coming soon'),
         };
     }

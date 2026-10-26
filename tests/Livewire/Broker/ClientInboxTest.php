@@ -125,8 +125,9 @@ it('the code is locked, and foreign / unassigned clients are 404; Data Entry is 
 
 it('the route is gated by client_inbox.respond (B.11)', function (BureauRole $role, int $status): void {
     $owner = bureauLogin();
-    $client = managedProfile(staffOf($owner)->broker);
-    actingAsBureau($role === BureauRole::Owner ? $owner : bureauLogin($role, broker: staffOf($owner)->broker));
+    $login = $role === BureauRole::Owner ? $owner : bureauLogin($role, broker: staffOf($owner)->broker);
+    $client = managedProfile(staffOf($owner)->broker, [], staffOf($login));   // Telecallers see assigned clients only (B.2)
+    actingAsBureau($login);
 
     $this->get(brokerUrl('/profiles/'.$client->code.'/inbox'))->assertStatus($status);
 })->with([
@@ -166,7 +167,8 @@ it('Show: export downloads and the inbox link follow the role (B.2), with the pe
         ->assertSee('Client inbox')
         ->assertSeeHtml('1<span class="visually-hidden"> pending</span>');
 
-    inboxActing(BureauRole::Telecaller, $broker);
+    $telecaller = inboxActing(BureauRole::Telecaller, $broker);
+    $client->forceFill(['assigned_staff_id' => staffOf($telecaller)->id])->save();   // Telecallers: assigned clients only (B.2)
     Livewire::test(Show::class, ['code' => $client->code])->assertDontSee('Biodata PDF')->assertSee('Client inbox');
 
     inboxActing(BureauRole::DataEntry, $broker);

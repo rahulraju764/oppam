@@ -697,6 +697,21 @@ body.search-sheet-open .mobile-footer { display: none; }
 .client-inbox__message { margin: var(--space-1) 0 0; font-size: var(--text-sm); font-style: italic; overflow-wrap: anywhere; }
 .client-inbox__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
 .client-inbox__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+/* Staff accounts & activity (P7.5, §11A B.8) */
+.staff-seats { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); margin: var(--space-3) 0 var(--space-4); }
+.staff-seats__count { font-weight: 600; }
+.staff-list { margin: 0; padding: 0; list-style: none; }
+.staff-list__item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) 0; border-bottom: var(--border-hair); }
+.staff-list__item:last-child { border-bottom: 0; }
+.staff-list__who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.staff-list__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--color-gr-dark); font-size: var(--text-xs); }
+.staff-permissions { display: grid; gap: var(--space-2); margin: 0; padding: 0; border: 0; }
+.staff-permissions .form-check { min-height: 44px; display: flex; align-items: center; gap: var(--space-2); }
+.staff-performance__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.activity-log { margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.activity-log__item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: var(--border-hair); overflow-wrap: anywhere; }
+.activity-log__item:last-child { border-bottom: 0; }
+.activity-log__when { color: var(--color-gr-dark); font-size: var(--text-xs); white-space: nowrap; }
 /* "Is this you?" claim card (P7.4) */
 .claim-card-profile { margin: 0 0 var(--space-3); font-size: var(--text-lg); overflow-wrap: anywhere; }
 .claim-card-code { color: var(--color-gr-dark); font-size: var(--text-sm); }

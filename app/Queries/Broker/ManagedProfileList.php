@@ -62,7 +62,7 @@ final class ManagedProfileList
             ->select(['profiles.id', 'profiles.code', 'profiles.first_name', 'profiles.last_name', 'profiles.gender', 'profiles.dob',
                 'profiles.status', 'profiles.assigned_staff_id', 'profiles.completeness', 'profiles.updated_at', 'profiles.deleted_at',
                 'profiles.owner_type', 'profiles.managed_by_broker_id', 'profiles.claimed_at'])
-            ->with(['assignedStaff:id,broker_id,user_id,role', 'assignedStaff.user:id,phone', 'assignedStaff.broker:id,name'])
+            ->with(['assignedStaff:id,broker_id,user_id,role,name', 'assignedStaff.user:id,phone', 'assignedStaff.broker:id,name'])
             ->orderByDesc('profiles.updated_at')->orderByDesc('profiles.id')
             ->paginate(self::PER_PAGE);
     }

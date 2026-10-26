@@ -354,7 +354,7 @@ it('B.6: the client mobile can be changed, with the same uniqueness rules; the a
 it('B.6: a note / call / meeting with a follow-up; marking it done; Telecallers may write notes', function (): void {
     $owner = bureauLogin();
     $telecaller = sameBureau($owner, BureauRole::Telecaller);
-    $profile = managedProfile(staffOf($owner)->broker);
+    $profile = managedProfile(staffOf($owner)->broker, [], staffOf($telecaller));   // Telecallers: assigned clients only (B.2)
     $tomorrow = now(config('oppam.display_timezone'))->addDay()->format('Y-m-d');
 
     $note = app(AddClientNote::class)->handle($telecaller, $profile->code, new ClientNoteData('CALL', 'Family interested', 'Spoke to the father.', $tomorrow));

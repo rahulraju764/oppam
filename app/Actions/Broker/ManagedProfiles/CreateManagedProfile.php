@@ -13,7 +13,6 @@ use App\Domain\Safety\BanList;
 use App\Enums\BannedIdentifierType;
 use App\Enums\BureauPermission;
 use App\Enums\ProfileOwnerType;
-use App\Enums\ProfileScope;
 use App\Enums\ProfileStatus;
 use App\Enums\ReferralSource;
 use App\Enums\ReferralStatus;
@@ -152,7 +151,7 @@ final class CreateManagedProfile
             'broker_consent_confirmed_at' => now(),
             'consent_confirmed_by_user_id' => $actor->id,
             'created_by_user_id' => $actor->id,
-            'assigned_staff_id' => $staff->profile_scope === ProfileScope::Assigned ? $staff->id : null,
+            'assigned_staff_id' => $staff->isAssignedOnly() ? $staff->id : null,
         ])->save();
 
         $referral = new BrokerReferral;

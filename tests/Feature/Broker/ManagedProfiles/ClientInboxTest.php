@@ -208,8 +208,8 @@ it('R-M13-35: one allowance per bureau across its clients; the next send is refu
     [$owner, $client] = inboxClient();
     $broker = staffOf($owner)->broker;
     $broker->forceFill(['interest_allowance_monthly' => 2])->save();
-    $second = managedProfile($broker);
     $telecaller = bureauLogin(BureauRole::Telecaller, broker: $broker);
+    $second = managedProfile($broker, [], staffOf($telecaller));
 
     sendFor($owner, $client, suitor('+919800000101')->profile);
     sendFor($telecaller, $second, suitor('+919800000102')->profile);

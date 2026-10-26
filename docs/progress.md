@@ -5,7 +5,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
-**Next session:** P7.5 — Staff accounts (after P7.4's owner review / commit). Open first: P6.1 re-review after its Blocker fix;
+**Next session:** P7.6 — Bulk upload part 1 (after P7.5's owner review / commit). Open first: P6.1 re-review after its Blocker fix;
 P5.3 — Admin billing (A06), groundwork committed in e13f771 (breaks BillingTest.php's fake gateway), screens not built;
 Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
 
@@ -113,7 +113,7 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   together with P7.2 in c558048. Re-verified with P7.4: IdorScopingTest ★, the R-M13-14 A04 test and the R-M13-20 assigned-only
   tests pass; its Dusk journey (Data-entry create at 375 px, A04 approval live in 5.5 s) passed once 3 test-only issues were
   fixed (shared browser session → fresh cookies; Data entry has no Deactivate; cleanup removes conversations first).
-- [ ] P7.4 Client inbox, claim flow & exports — 2026-10-25: built (decisions 2026-10-25; owner: send by profile code, Noto
+- [x] P7.4 Client inbox, claim flow & exports — 2026-10-25: built (decisions 2026-10-25; owner: send by profile code, Noto
   fonts). ClientInbox (accept / decline for the client, send against the bureau's monthly allowance in
   `broker_interest_usage`), ChatSendState::MANAGED (the PRD notice; SendMessage refuses), ClaimManagedProfile after the
   registration OTP ("Is this you?" /register/claim, one transaction, same row lock as exports, ProfileClaimed + Owner /
@@ -126,9 +126,24 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   (0 Blockers / 0 Majors); Minors fixed after: route throttle removed from exports (the Action's logged hourly cap
   remains), photo-package docblock corrected, inbox added to the IDOR matrix. Minors open: refused downloads show no
   in-page error (plain links); SUSPENDED managed profiles can still be claimed (owner question); BiodataBuilder uses the
-  Livewire-namespaced ProfileFacts; export race proven sequentially, not under true concurrency. NOT committed — the
-  post-OTP registration redirect + ownership transfer need the owner's review (rule 5).
-- [ ] P7.5 Staff accounts
+  Livewire-namespaced ProfileFacts; export race proven sequentially, not under true concurrency. Committed by the owner
+  in b95d174 (2026-10-26).
+- [ ] P7.5 Staff accounts — 2026-10-26: built (decisions 2026-10-26; owner: seats = staff + open invites, STF staff code,
+  `broker.staff` flag). InviteStaff (72 h single-use link, sha256 only, seat check under a bureau lock, one mobile = one
+  login, generic refusal), AcceptStaffInvite (password → STAFF_INVITE OTP to the invited mobile → ACTIVE + signed in;
+  existing login untouched until the code is right; re-checked under lock), CancelInvitation, UpdateStaffPermissions
+  (switch-offs ⊂ role ceiling, scope; Owner row protected), DeactivateStaff (session epoch + remember token + trusted
+  devices, clients unassigned, ForceLogout after commit), Staff\Index / Show / AcceptInvite, Broker\Activity (bureau-only
+  `broker.*` audit rows, filters), StaffPerformance (grouped queries), /broker/earnings gated ComingSoon, dashboard Staff
+  widget real. Telecallers always assigned-only (B.2; reviewer round 1 Major, fixed). Tests: BureauPermissionMatrixTest ★
+  (every role × routes, per-client routes incl. exports, staff page, 17 Actions), StaffLifecycleTest 32, BureauActivityTest
+  7, StaffScreensTest 11; suite in serial groups 2,593 passed (BillingTest.php pre-existing fatal excluded); lint + analyse
+  clean; Dusk BrokerPortalTest 5/5 (deactivation → staff tab on /login 0.8–1.5 s; staff / staff detail / activity at
+  375 px). Reviewer: round 1 NOT READY (Telecaller scope) → fixed; round 2 NOT READY only because Dusk couldn't render
+  (stale public/hot) → dev servers restarted, Dusk 5/5; round 3 READY TO COMMIT (0 Blockers / 0 Majors; its 2 Minors fixed). Minors open: broker_staff.code nullable at DB
+  level (model hook fills it); abandoned unverified broker logins aren't purged (that mobile can't self-register as a
+  member); profile field edits aren't audited, so they don't show in the activity log. NOT committed — logins, passwords,
+  STAFF_INVITE OTP and session revocation need the owner's review (rule 5).
 - [ ] P7.6 Bulk upload part 1: template, upload, validation, preview
 - [ ] P7.7 Bulk upload part 2: fix, consent, import, submit, safeguards
 - [ ] P7.8 Payouts & broker admin screens (A07)

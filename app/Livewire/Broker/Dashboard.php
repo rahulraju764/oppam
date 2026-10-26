@@ -6,9 +6,12 @@ namespace App\Livewire\Broker;
 
 use App\Data\Content\SeoData;
 use App\Domain\Broker\BureauGate;
+use App\Domain\Broker\StaffSeats;
 use App\Enums\BureauPermission;
+use App\Enums\BureauStaffStatus;
 use App\Enums\ModerationStatus;
 use App\Models\BrokerKyc;
+use App\Models\BrokerStaff;
 use App\Models\User;
 use App\Queries\Broker\BureauReferrals;
 use App\Queries\Broker\ManagedProfileList;
@@ -41,7 +44,7 @@ final class Dashboard extends Component
         ] : [];
     }
 
-    public function render(BureauGate $gate, BureauReferrals $referrals, ManagedProfileList $managed): View
+    public function render(BureauGate $gate, BureauReferrals $referrals, ManagedProfileList $managed, StaffSeats $seats): View
     {
         $user = $this->user();
         $staff = $gate->authorize($user, BureauPermission::DashboardView);
@@ -68,7 +71,11 @@ final class Dashboard extends Component
             $can(BureauPermission::EarningsView) ? ['key' => 'commission', 'title' => __('Commission'), 'icon' => 'fa-inr',
                 'stats' => [__('Earned') => '₹0', __('Pending') => '₹0', __('Paid') => '₹0']] : null,
             $can(BureauPermission::StaffManage) ? ['key' => 'staff', 'title' => __('Staff'), 'icon' => 'fa-id-badge',
-                'stats' => [__('Seats used') => '1 / '.$broker->staff_seat_limit, __('Active today') => 1]] : null,
+                'stats' => [
+                    __('Seats used') => $seats->used($broker).' / '.$seats->limit($broker),
+                    __('Active today') => BrokerStaff::query()->where('broker_id', $broker->id)->where('status', BureauStaffStatus::Active->value)
+                        ->where('last_login_at', '>=', now((string) config('oppam.display_timezone'))->startOfDay()->utc())->count(),
+                ]] : null,
         ]));
 
         return view('livewire.broker.dashboard', [

@@ -8,7 +8,6 @@ use App\Actions\Broker\ManagedProfiles\AssignManagedProfiles;
 use App\Data\Content\SeoData;
 use App\Domain\Broker\BureauGate;
 use App\Enums\BureauPermission;
-use App\Enums\ProfileScope;
 use App\Enums\ProfileStatus;
 use App\Exceptions\Broker\ManagedProfileRefused;
 use App\Models\User;
@@ -97,7 +96,7 @@ final class Index extends Component
             'assignees' => $assignees->mapWithKeys(fn ($s): array => [$s->id => $s->displayName()])->all(),
             'canAssign' => $canAssign,
             'canCreate' => $gate->allows($user, BureauPermission::ProfilesCreate),
-            'showStaffFilter' => $staff->profile_scope === ProfileScope::All,
+            'showStaffFilter' => ! $staff->isAssignedOnly(),
             'filtered' => $this->status !== '' || trim($this->search) !== '' || $this->assignee !== '',
         ])->layout('layouts::broker', ['seo' => SeoData::private('Client profiles | Oppam Matrimony')]);
     }

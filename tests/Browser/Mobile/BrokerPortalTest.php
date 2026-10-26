@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 
 /*
-| P7.1 – P7.4 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
+| P7.1 – P7.5 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
 | /broker/apply, the dashboard of a Data-entry login (no device challenge), materials, the device
 | check an Owner / Manager meets on a new device and, once trusted, the referral list — none scroll
 | sideways, the main actions are reachable.
@@ -59,6 +59,10 @@ function duskBrokerCleanup(): void
     App\Models\BrokerClientNote::query()->whereIn('broker_id', $brokers)->delete();
     duskConversationsCleanup($profiles->modelKeys());
     App\Models\Profile::withTrashed()->whereKey($profiles->modelKeys())->forceDelete();
+    // P7.5: the bureau's other logins (the Owner who invited the Dusk number) and its invitations go too.
+    $users = $users->merge(BrokerStaff::query()->whereIn('broker_id', $brokers)->pluck('user_id'))->unique();
+    App\Models\BrokerStaffInvitation::query()->whereIn('broker_id', $brokers)->orWhere('phone', DUSK_BROKER_PHONE)->delete();
+    App\Models\TrustedDevice::query()->whereIn('user_id', $users)->delete();
     BrokerStaff::query()->whereIn('broker_id', $brokers)->delete();
     Broker::query()->whereIn('id', $brokers)->delete();
     User::withTrashed()->whereIn('id', $users)->forceDelete();
@@ -194,7 +198,7 @@ it('P7.4: a Telecaller answers the Client Inbox at 375px; the client then regist
     $this->browse(function (Browser $bureau, Browser $client): void {
         $staff = bureauLogin(BureauRole::Telecaller);
         $staff->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
-        $profile = managedProfile($staff->brokerStaff->broker, ['client_phone' => DUSK_MEMBER_PHONE, 'first_name' => 'Dusk', 'last_name' => 'Client']);
+        $profile = managedProfile($staff->brokerStaff->broker, ['client_phone' => DUSK_MEMBER_PHONE, 'first_name' => 'Dusk', 'last_name' => 'Client'], $staff->brokerStaff);   // Telecallers: assigned clients only (B.2)
         $suitor = groom('+919999900042');
         app(App\Actions\Engagement\SendInterest::class)->handle($suitor, $profile, null);
 
@@ -249,4 +253,92 @@ it('P7.4: a Telecaller answers the Client Inbox at 375px; the client then regist
     });
 
     duskClaimCleanup();
+});
+
+it('P7.5: an invited Telecaller joins by link + OTP at 375px; deactivating them signs their open tab out live', function (): void {
+    $this->withoutDefer();   // the invitation SMS is deferred; run it now, in this process (fakeSms)
+    $flag = FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->first();
+    $wasOn = $flag?->is_enabled;
+    ($flag ?? new FeatureFlag)->forceFill(['key' => Flag::BrokerStaff->value, 'is_enabled' => true])->save();
+    app(App\Services\Settings\FeatureFlags::class)->flush();
+
+    try {
+        $this->browse(function (Browser $browser): void {
+            duskFreshSession($browser);
+            $owner = bureauLogin(BureauRole::Owner);
+            $sms = fakeSms();   // the INVITATION is sent from this process; the OTP comes from the dev server's SMS log
+            app(App\Actions\Broker\Staff\InviteStaff::class)->handle($owner, new App\Data\Broker\StaffInviteData('Dusk Telecaller', '9999900031', 'TELECALLER', 'ASSIGNED'));
+            preg_match('#invite/([A-Za-z0-9]{64})#', (string) $sms->notices[0]['variables'][1], $match);
+
+            $masked = '+91 99•••••031';
+            $previous = duskLatestOtp($masked);
+            $browser->visit('/broker/staff/invite/'.$match[1])->waitForText('Dusk Telecaller');
+            assertNoHorizontalScroll($browser);
+            $browser->type('#invitePassword', TEST_MEMBER_PASSWORD)
+                ->type('#invitePasswordConfirm', TEST_MEMBER_PASSWORD)
+                ->click('.login-form button[type="submit"]')
+                ->waitForText('Enter the code')
+                ->waitUsing(10, 100, fn (): bool => duskLatestOtp($masked) !== null && duskLatestOtp($masked) !== $previous)
+                ->type('#inviteCode', (string) duskLatestOtp($masked))
+                ->click('.login-form button[type="submit"]')
+                ->waitForLocation('/broker')
+                ->waitForText('Managed profiles');
+            assertNoHorizontalScroll($browser);
+
+            // The new login is live on its own channel; the Owner deactivates it.
+            $login = User::query()->where('phone', DUSK_BROKER_PHONE)->firstOrFail();
+            $browser->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+                "return window.Echo?.connector?.channels?.['private-App.Models.User.{$login->id}']?.subscription?.subscribed === true;")[0]);
+
+            $started = microtime(true);
+            app(App\Actions\Broker\Staff\DeactivateStaff::class)->handle($owner, (string) $login->brokerStaff?->code);
+            $browser->waitUsing(10, 50, fn (): bool => str_contains((string) $browser->driver->getCurrentURL(), '/login'));
+            $elapsed = microtime(true) - $started;
+            fwrite(STDERR, sprintf("\n[P7.5] deactivation → staff tab on /login in %.2f s\n", $elapsed));
+
+            expect($elapsed)->toBeLessThan(2.0);   // B.21 "logs them out of every tab within 2 s"
+            $browser->visit('/broker')->waitForLocation('/login');
+        });
+    } finally {
+        $wasOn === null   // the row didn't exist before this test: remove it again
+            ? FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->delete()
+            : FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->update(['is_enabled' => $wasOn]);
+        app(App\Services\Settings\FeatureFlags::class)->flush();
+    }
+});
+
+it('P7.5: the Owner’s staff, staff detail and activity pages fit 375px', function (): void {
+    $flag = FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->first();
+    $wasOn = $flag?->is_enabled;
+    ($flag ?? new FeatureFlag)->forceFill(['key' => Flag::BrokerStaff->value, 'is_enabled' => true])->save();
+    app(App\Services\Settings\FeatureFlags::class)->flush();
+
+    try {
+        $this->browse(function (Browser $browser): void {
+            $owner = bureauLogin(BureauRole::Owner);
+            $owner->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+            $telecaller = bureauLogin(BureauRole::Telecaller, broker: $owner->brokerStaff?->broker);
+            app(App\Services\Audit\AuditLogger::class)->record('broker.profile_created', null, after: ['x' => 1], actor: $owner, subjectLabel: 'OPM10001');
+
+            duskFreshSession($browser);
+            $browser->visit('/login')
+                ->type('#loginId', '9999900031')
+                ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+                ->click('.login-form button[type="submit"]')
+                ->waitForLocation('/broker/verify-device');
+            app(TrustedDevices::class)->trust($owner, hash('sha256', (string) $browser->cookie((string) config('oppam.auth.device_cookie'))));
+
+            $browser->visit('/broker/staff')->waitForText('Invite a staff member')->assertSee('1 of 5 seats used');
+            assertNoHorizontalScroll($browser);
+            $browser->visit('/broker/staff/'.$telecaller->brokerStaff?->code)->waitForText('Permissions')->assertSee('Deactivate');
+            assertNoHorizontalScroll($browser);
+            $browser->visit('/broker/activity')->waitForText('Added a profile');
+            assertNoHorizontalScroll($browser);
+        });
+    } finally {
+        $wasOn === null   // the row didn't exist before this test: remove it again
+            ? FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->delete()
+            : FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->update(['is_enabled' => $wasOn]);
+        app(App\Services\Settings\FeatureFlags::class)->flush();
+    }
 });

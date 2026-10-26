@@ -247,7 +247,7 @@ it('show: a Manager deactivates and activates from the detail page; the code is 
 it('show: a Telecaller sees the profile but no edit, status or assignment actions — and calls are refused', function (): void {
     $owner = bureauLogin();
     $telecaller = actingAsBureau(bureauLogin(BureauRole::Telecaller, broker: staffOf($owner)->broker));
-    $profile = managedProfile(staffOf($owner)->broker);
+    $profile = managedProfile(staffOf($owner)->broker, [], staffOf($telecaller));   // Telecallers: assigned clients only (B.2)
 
     Livewire::test(Show::class, ['code' => $profile->code])
         ->assertSee($profile->code)->assertSee('Notes & follow-ups')
@@ -280,7 +280,7 @@ it('show: the client mobile is masked', function (): void {
 
 it('notes: empty state, add a call with a follow-up, mark it done', function (): void {
     $login = bureauActing(BureauRole::Telecaller);
-    $profile = managedProfile(staffOf($login)->broker);
+    $profile = managedProfile(staffOf($login)->broker, [], staffOf($login));   // Telecallers: assigned clients only (B.2)
     $tomorrow = now(config('oppam.display_timezone'))->addDay()->format('Y-m-d');
 
     $page = Livewire::test(Notes::class, ['code' => $profile->code])->assertSee('No notes yet')

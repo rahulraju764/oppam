@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Broker\ManagedProfileExportController;
 use App\Http\Controllers\Broker\MaterialsController;
 use App\Http\Controllers\Broker\ReferralCodeController;
+use App\Livewire\Broker\Activity;
 use App\Livewire\Broker\Apply;
 use App\Livewire\Broker\Auth\VerifyDevice;
 use App\Livewire\Broker\ComingSoon;
@@ -13,6 +14,7 @@ use App\Livewire\Broker\Kyc;
 use App\Livewire\Broker\ManagedProfiles;
 use App\Livewire\Broker\Materials;
 use App\Livewire\Broker\Referrals;
+use App\Livewire\Broker\Staff;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,12 +35,25 @@ Route::get('/apply', Apply::class)->middleware(['guest', 'throttle:30,1'])->name
 // Referral code check (B.5): {valid, name, district} only — public, for the registration / wizard hint.
 Route::get('/validate', ReferralCodeController::class)->middleware('throttle:30,1')->name('validate');
 
+// Staff invitation acceptance (B.8, P7.5): guests with the texted link; the token is matched by its hash.
+Route::get('/staff/invite/{token}', Staff\AcceptInvite::class)->middleware(['guest', 'throttle:30,1'])
+    ->where('token', '[A-Za-z0-9]{64}')->name('staff.accept');
+
 Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'])->group(function (): void {
     Route::get('/verify-device', VerifyDevice::class)->middleware('throttle:30,1')->name('device');
 
     Route::middleware('broker.device')->group(function (): void {
         Route::get('/', Dashboard::class)->middleware('bureau:bureau.dashboard.view')->name('dashboard');
         Route::get('/kyc', Kyc::class)->middleware('bureau:kyc.manage')->name('kyc');
+
+        // Staff accounts & activity (B.8, P7.5): staff pages are the Owner's (`staff.manage`); the
+        // activity log is Owner + Manager (`activity.view`); earnings are the Owner's (P7.8 swaps the page).
+        Route::prefix('staff')->name('staff.')->middleware('bureau:staff.manage')->group(function (): void {
+            Route::get('/', Staff\Index::class)->name('index');
+            Route::get('/{code}', Staff\Show::class)->where('code', 'STF[0-9]+')->name('show');
+        });
+        Route::get('/activity', Activity::class)->middleware('bureau:activity.view')->name('activity');
+        Route::get('/earnings', ComingSoon::class)->middleware('bureau:earnings.view')->name('earnings');
 
         // Referral program (B.5, P7.2): own referrals only; materials are the caller's own bureau.
         Route::get('/referrals', Referrals::class)->middleware('bureau:referrals.view')->name('referrals');

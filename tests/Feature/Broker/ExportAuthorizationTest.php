@@ -175,7 +175,7 @@ it('★ B.2: Data Entry, Telecaller and a Manager with the Owner’s switch-off 
     $owner = bureauLogin();
     $broker = staffOf($owner)->broker;
     $login = bureauLogin($role, broker: $broker, disabled: $disabled);
-    $profile = managedProfile($broker);
+    $profile = managedProfile($broker, [], staffOf($login));   // their own client: the refusal is the permission, not the scope
     actingAsBureau($login);
 
     $this->get(exportUrl($profile))->assertForbidden()->assertHeader('X-Error-Code', BureauGate::NOT_PERMITTED);

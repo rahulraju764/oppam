@@ -6,7 +6,6 @@ namespace App\Domain\Broker;
 
 use App\Enums\BureauPermission;
 use App\Enums\ProfileOwnerType;
-use App\Enums\ProfileScope;
 use App\Models\BrokerStaff;
 use App\Models\Profile;
 use App\Models\User;
@@ -16,7 +15,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 /**
  * Which managed profiles a bureau login may touch (§11A B.6, R-M13-6 / R-M13-18 / R-M13-20): the
  * caller's own bureau (broker id from the staff row, never from input), BROKER_MANAGED and not
- * claimed (R-M13-16), and for "assigned only" staff just the profiles assigned to them. Every
+ * claimed (R-M13-16), and for "assigned only" staff — and every Telecaller (B.2) — just the
+ * profiles assigned to them (BrokerStaff::isAssignedOnly). Every
  * bureau screen and Action finds profiles through here; anything outside answers 404.
  */
 final class ManagedProfileScope
@@ -32,7 +32,7 @@ final class ManagedProfileScope
             ->where('profiles.managed_by_broker_id', $staff->broker_id)
             ->where('profiles.owner_type', ProfileOwnerType::BrokerManaged->value)
             ->whereNull('profiles.claimed_at')
-            ->when($staff->profile_scope === ProfileScope::Assigned,
+            ->when($staff->isAssignedOnly(),
                 fn (Builder $q) => $q->where('profiles.assigned_staff_id', $staff->id));
     }
 
@@ -50,7 +50,7 @@ final class ManagedProfileScope
     {
         return $profile->isBrokerManaged()
             && $profile->managed_by_broker_id === $staff->broker_id
-            && ($staff->profile_scope !== ProfileScope::Assigned || $profile->assigned_staff_id === $staff->id);
+            && (! $staff->isAssignedOnly() || $profile->assigned_staff_id === $staff->id);
     }
 
     /** May this login do $permission on this profile now (BureauGate + scope)? Used by ProfilePolicy. */
