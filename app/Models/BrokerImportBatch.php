@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -22,7 +23,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $sheet_path
  * @property string|null $photos_zip_path
  * @property string $file_sha256
- * @property array<string, mixed>|null $column_map
+ * @property array<string, mixed>|null $column_map field => the sheet header it reads from (P7.6)
+ * @property list<string>|null $headers the sheet's header row as uploaded (P7.6)
+ * @property string|null $duplicate_of_batch_id this bureau uploaded the same file before (P7.6 banner)
+ * @property string|null $error_message why the batch FAILED — safe to show, never cell contents
  * @property ImportBatchStatus $status
  * @property int $rows_total
  * @property int $rows_valid
@@ -50,6 +54,7 @@ final class BrokerImportBatch extends Model
     {
         return [
             'column_map' => 'array',
+            'headers' => 'array',
             'status' => ImportBatchStatus::class,
             'consent_attested_at' => 'datetime',
             'files_purged_at' => 'datetime',
@@ -60,5 +65,11 @@ final class BrokerImportBatch extends Model
     public function broker(): BelongsTo
     {
         return $this->belongsTo(Broker::class);
+    }
+
+    /** @return HasMany<BrokerImportRow, $this> */
+    public function rows(): HasMany
+    {
+        return $this->hasMany(BrokerImportRow::class, 'batch_id');
     }
 }

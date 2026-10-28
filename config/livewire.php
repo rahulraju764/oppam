@@ -133,9 +133,13 @@ return [
 
     'temporary_file_upload' => [
         'disk' => env('LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK'), // Example: 'local', 's3'             | Default: 'default'
-        'rules' => null,                                      // Example: ['file', 'mimes:png,jpg'] | Default: ['required', 'file', 'max:12288'] (12MB)
+        // P7.6 (decisions 2026-10-26): the bureau photo zip may be 200 MB (§11A B.9). The rule allows it, but
+        // LimitLargeLivewireUploads lets a body over 12 MB through ONLY for a bureau login that may bulk-import;
+        // everyone else keeps the default 12 MB. Components still validate their own limits; temp files are
+        // purged after 24 h.
+        'rules' => ['required', 'file', 'max:204800'],
         'directory' => null,                                  // Example: 'tmp'                     | Default: 'livewire-tmp'
-        'middleware' => null,                                 // Example: 'throttle:5,1'            | Default: 'throttle:60,1'
+        'middleware' => ['throttle:60,1', App\Http\Middleware\LimitLargeLivewireUploads::class],   // the default rate; size gated per login
         'preview_mimes' => [                                  // Supported file types for temporary pre-signed file URLs...
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
             'mov', 'avi', 'wmv', 'mp3', 'm4a',

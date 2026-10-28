@@ -36,6 +36,30 @@ final class BanList
         return BannedIdentifier::query()->where('type', $type->value)->where('value', $this->hash($type, $value))->exists();
     }
 
+    /**
+     * Which of these values are banned — one query for a whole list (bulk import, P7.6). Not for
+     * perceptual photo hashes (those match by distance: isBannedPhoto()).
+     *
+     * @param  list<string>  $values
+     * @return list<string> the banned ones, as given
+     */
+    public function bannedAmong(BannedIdentifierType $type, array $values): array
+    {
+        $byHash = [];
+        foreach ($values as $value) {
+            $byHash[$this->hash($type, $value)] = $value;
+        }
+
+        $banned = [];
+        foreach (array_chunk(array_keys($byHash), 500) as $chunk) {
+            foreach (BannedIdentifier::query()->where('type', $type->value)->whereIn('value', $chunk)->pluck('value') as $hash) {
+                $banned[] = $byHash[(string) $hash];
+            }
+        }
+
+        return $banned;
+    }
+
     /** A photo within the ban distance of a banned photo's perceptual hash (64-bit Hamming distance in the database). */
     public function isBannedPhoto(?string $phash): bool
     {

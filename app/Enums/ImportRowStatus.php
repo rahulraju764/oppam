@@ -26,6 +26,17 @@ enum ImportRowStatus: string
         };
     }
 
+    /** <x-ui.badge> variant (explicit map — never built from data). */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Valid, self::Imported => 'success',
+            self::Warning => 'warning',
+            self::Error => 'danger',
+            self::Skipped => 'muted',
+        };
+    }
+
     /** @return array<string, string> value => label, for selects */
     public static function options(): array
     {

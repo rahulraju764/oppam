@@ -8,7 +8,7 @@ use App\Actions\Profile\SaveBasicDetails;
 use App\Data\Broker\ManagedProfileData;
 use App\Data\Profile\BasicDetailsData;
 use App\Domain\Broker\BureauGate;
-use App\Domain\Profile\ProfileRules;
+use App\Domain\Broker\ManagedProfileRules;
 use App\Domain\Safety\BanList;
 use App\Enums\BannedIdentifierType;
 use App\Enums\BureauPermission;
@@ -23,7 +23,6 @@ use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Profile\ProfileCodeGenerator;
 use App\ValueObjects\PhoneNumber;
-use Closure;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -93,19 +92,12 @@ final class CreateManagedProfile
     {
         $phone = PhoneNumber::tryParse($data->clientPhone);
 
+        // R-M13-28: the same rule set as every bulk-import row (ManagedProfileRules).
         Validator::make(
             ['clientPhone' => $data->clientPhone, 'consent' => $data->consent, ...$basic->toArray()],
-            [
-                'clientPhone' => ['required', 'string', 'max:20', function (string $attribute, mixed $value, Closure $fail) use ($phone): void {
-                    if ($phone === null) {
-                        $fail(__('Enter a valid mobile number (an Indian number, or start with + for abroad).'));
-                    }
-                }],
-                'consent' => ['accepted'],
-                ...ProfileRules::basic($basic->toArray()),
-            ],
-            ['consent.accepted' => __('Please confirm the client has agreed before you save the profile.')],
-            ['clientPhone' => __('client mobile'), ...ProfileRules::attributes()],
+            ManagedProfileRules::forCreate($basic->toArray()),
+            ManagedProfileRules::messages(),
+            ManagedProfileRules::attributes(),
         )->validate();
 
         /** @var PhoneNumber $phone */

@@ -128,7 +128,7 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   in-page error (plain links); SUSPENDED managed profiles can still be claimed (owner question); BiodataBuilder uses the
   Livewire-namespaced ProfileFacts; export race proven sequentially, not under true concurrency. Committed by the owner
   in b95d174 (2026-10-26).
-- [ ] P7.5 Staff accounts — 2026-10-26: built (decisions 2026-10-26; owner: seats = staff + open invites, STF staff code,
+- [x] P7.5 Staff accounts — committed by the owner in 5e5377d. 2026-10-26: built (decisions 2026-10-26; owner: seats = staff + open invites, STF staff code,
   `broker.staff` flag). InviteStaff (72 h single-use link, sha256 only, seat check under a bureau lock, one mobile = one
   login, generic refusal), AcceptStaffInvite (password → STAFF_INVITE OTP to the invited mobile → ACTIVE + signed in;
   existing login untouched until the code is right; re-checked under lock), CancelInvitation, UpdateStaffPermissions
@@ -144,7 +144,21 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   level (model hook fills it); abandoned unverified broker logins aren't purged (that mobile can't self-register as a
   member); profile field edits aren't audited, so they don't show in the activity log. NOT committed — logins, passwords,
   STAFF_INVITE OTP and session revocation need the owner's review (rule 5).
-- [ ] P7.6 Bulk upload part 1: template, upload, validation, preview
+- [x] P7.6 Bulk upload part 1: template, upload, validation, preview — 2026-10-28 (decisions 2026-10-26; owner: core-section
+  template, `broker.bulk_import` flag, ≤ 30 s / 500 rows). ImportTemplateBuilder (xlsx from live masters: Profiles in wizard
+  order, Lists / Castes / Locations, drop-downs, Instructions with the example row; csv = header only), Upload (byte sniffing,
+  zip-slip / nested / 1 GB-bomb refusal, files encrypted at rest by ImportFileVault, 20 batches / login / hour), StoreImportBatch,
+  ParseImportBatch on `imports` (chunks of 100, ImportProgress live bar, header auto-map + MAPPING form via SaveColumnMapping,
+  ★ one rule set ManagedProfileRules for form + import — R-M13-28, duplicates, photo-name matching, formula neutralisation,
+  failed() → FAILED), BatchReview (badges, filters, row messages, back-fill), errors.xlsx (audited), LimitLargeLivewireUploads
+  (> 12 MB only for importers). Reviewer: round 1 fixes (encryption, upload gate, caps); round 2 READY TO COMMIT (0 Blockers /
+  0 Majors). This session fixed: PhpSpreadsheet workbooks never freed (a queue worker leaked one per batch → disconnectWorksheets
+  in try/finally), phpunit.xml memory_limit 512M for the test process (~90 MB baseline + ~35 MB per xlsx write), and all 5
+  round-2 Minors (upload gate also measures the files when Content-Length is missing + test, workbook frees in finally and in
+  tests, duplicate-header message capped at 60 chars, 10 s back-fill poll recorded in decisions). Tests: 500 rows in 2.4 s;
+  tests/Feature/Broker 527 + tests/Livewire/Broker 85 passed after the Minor fixes; full suite 2,699 passed before them
+  (BillingTest.php excluded — pre-existing P5.3 fake); lint + analyse clean. Dusk NOT re-run this round (dev servers down;
+  the earlier P7.6 run saw upload → READY live in ~11 s); owner checked it by hand ("is working"). Committed at the owner's request.
 - [ ] P7.7 Bulk upload part 2: fix, consent, import, submit, safeguards
 - [ ] P7.8 Payouts & broker admin screens (A07)
 - [ ] P7.9 Broker security sweep

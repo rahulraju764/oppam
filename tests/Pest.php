@@ -30,6 +30,7 @@ require_once __DIR__.'/Support/verification.php';
 require_once __DIR__.'/Support/broker.php';
 require_once __DIR__.'/Support/safety.php';
 require_once __DIR__.'/Support/referral.php';
+require_once __DIR__.'/Support/import.php';
 pest()->extend(Tests\DuskTestCase::class)->in('Browser/Admin', 'Browser/Member');
 require_once __DIR__.'/Support/dusk.php';
 require_once __DIR__.'/Support/dusk-member.php';

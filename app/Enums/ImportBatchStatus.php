@@ -10,6 +10,7 @@ namespace App\Enums;
 enum ImportBatchStatus: string
 {
     case Uploaded = 'UPLOADED';
+    case Mapping = 'MAPPING';        // P7.6: required columns not recognised — the bureau maps the headers
     case Validating = 'VALIDATING';
     case Ready = 'READY';
     case Importing = 'IMPORTING';
@@ -21,12 +22,24 @@ enum ImportBatchStatus: string
     {
         return match ($this) {
             self::Uploaded => __('Uploaded'),
+            self::Mapping => __('Needs column matching'),
             self::Validating => __('Validating'),
             self::Ready => __('Ready'),
             self::Importing => __('Importing'),
             self::Completed => __('Completed'),
             self::Failed => __('Failed'),
             self::Cancelled => __('Cancelled'),
+        };
+    }
+
+    /** <x-ui.badge> variant (explicit map — never built from data). */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Ready, self::Completed => 'success',
+            self::Failed => 'danger',
+            self::Mapping => 'warning',
+            default => 'muted',
         };
     }
 

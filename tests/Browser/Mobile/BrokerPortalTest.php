@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 
 /*
-| P7.1 – P7.5 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
+| P7.1 – P7.6 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
 | /broker/apply, the dashboard of a Data-entry login (no device challenge), materials, the device
 | check an Owner / Manager meets on a new device and, once trusted, the referral list — none scroll
 | sideways, the main actions are reachable.
@@ -59,6 +59,11 @@ function duskBrokerCleanup(): void
     App\Models\BrokerClientNote::query()->whereIn('broker_id', $brokers)->delete();
     duskConversationsCleanup($profiles->modelKeys());
     App\Models\Profile::withTrashed()->whereKey($profiles->modelKeys())->forceDelete();
+    // P7.6: import batches (rows cascade) and their private files.
+    foreach (App\Models\BrokerImportBatch::query()->whereIn('broker_id', $brokers)->pluck('id') as $batchId) {
+        Illuminate\Support\Facades\Storage::disk((string) config('oppam.media.private_disk'))->deleteDirectory('imports/'.$batchId);
+    }
+    App\Models\BrokerImportBatch::query()->whereIn('broker_id', $brokers)->delete();
     // P7.5: the bureau's other logins (the Owner who invited the Dusk number) and its invitations go too.
     $users = $users->merge(BrokerStaff::query()->whereIn('broker_id', $brokers)->pluck('user_id'))->unique();
     App\Models\BrokerStaffInvitation::query()->whereIn('broker_id', $brokers)->orWhere('phone', DUSK_BROKER_PHONE)->delete();
@@ -68,6 +73,15 @@ function duskBrokerCleanup(): void
     User::withTrashed()->whereIn('id', $users)->forceDelete();
     FeatureFlag::query()->where('key', Flag::BrokerSelfApply->value)->delete();
     app(App\Services\Settings\FeatureFlags::class)->flush();
+
+    // The OTP send limits of the throwaway number (P7.5 accepts an invitation by OTP), as duskMemberCleanup does.
+    $number = sha1(DUSK_BROKER_PHONE);
+    foreach (['otp:gap:', 'otp:phone15:', 'otp:phoneday:'] as $prefix) {
+        Illuminate\Support\Facades\RateLimiter::clear($prefix.$number);
+    }
+    foreach (['127.0.0.1', '::1'] as $ip) {
+        Illuminate\Support\Facades\RateLimiter::clear('otp:ipday:'.$ip);
+    }
 }
 
 /** Each journey starts signed out: the browser is shared between tests (an old "intended" URL would leak in). */
@@ -339,6 +353,63 @@ it('P7.5: the Owner’s staff, staff detail and activity pages fit 375px', funct
         $wasOn === null   // the row didn't exist before this test: remove it again
             ? FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->delete()
             : FeatureFlag::query()->where('key', Flag::BrokerStaff->value)->update(['is_enabled' => $wasOn]);
+        app(App\Services\Settings\FeatureFlags::class)->flush();
+    }
+});
+
+it('P7.6: a Data-entry login uploads a 500-row sheet at 375px; validation progresses live to READY; errors filter', function (): void {
+    $flag = FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->first();
+    $wasOn = $flag?->is_enabled;
+    ($flag ?? new FeatureFlag)->forceFill(['key' => Flag::BrokerBulkImport->value, 'is_enabled' => true])->save();
+    app(App\Services\Settings\FeatureFlags::class)->flush();
+
+    // Mobiles in the throwaway 99998 block, so no demo account on the dev database collides with them.
+    $rows = array_map(fn (array $r, int $i): array => ['client_mobile' => '99998'.str_pad((string) $i, 5, '0', STR_PAD_LEFT)] + $r, importRows(500), range(1, 500));
+    $rows[9]['height'] = 'tall';                       // sheet row 11: an ERROR
+    $rows[19]['date_of_birth'] = '12-05-98';           // sheet row 21: an ERROR
+    $sheet = importXlsx($rows);
+
+    try {
+        $this->browse(function (Browser $browser) use ($sheet): void {
+            $staff = bureauLogin(BureauRole::DataEntry);
+            $staff->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+            duskFreshSession($browser);
+            $browser->visit('/login')
+                ->type('#loginId', '9999900031')
+                ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+                ->click('.login-form button[type="submit"]')
+                ->waitForLocation('/broker');
+
+            $browser->visit('/broker/import')->waitForText('1. Download the template');
+            assertNoHorizontalScroll($browser);
+
+            $started = microtime(true);
+            $browser->attach('#importSheet', (string) $sheet->getRealPath())
+                // The temporary upload has finished once the component holds the file (the button is enabled again).
+                ->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+                    "const c = window.Livewire?.all?.().find(c => c.name === 'broker.import.upload'); return !!(c && c.\$wire.sheet) && !document.querySelector('.import-upload button[type=submit]').disabled;")[0])
+                ->click('.import-upload button[type="submit"]')
+                ->waitUsing(20, 100, fn (): bool => str_contains((string) $browser->driver->getCurrentURL(), '/broker/import/B-'));
+            assertNoHorizontalScroll($browser);
+
+            // The page is subscribed; validation runs on the queue and the bar moves to READY live.
+            $brokerId = $staff->brokerStaff?->broker_id;
+            $browser->waitUntilMissingText('Checking rows', 60)->waitForText('Download rows to fix', 30);
+            fwrite(STDERR, sprintf("\n[P7.6] upload → READY on the page in %.1f s\n", microtime(true) - $started));
+            assertNoHorizontalScroll($browser);
+
+            $batch = App\Models\BrokerImportBatch::query()->where('broker_id', $brokerId)->latest()->firstOrFail();
+            expect($batch->status)->toBe(App\Enums\ImportBatchStatus::Ready)
+                ->and($batch->rows_total)->toBe(500)
+                ->and($batch->rows_error)->toBe(2);
+
+            $browser->press('Errors')->waitUntilMissingText('Row 12')->assertSee('Row 11')->assertSee('Row 21');
+            assertNoHorizontalScroll($browser);
+        });
+    } finally {
+        $wasOn === null
+            ? FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->delete()
+            : FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->update(['is_enabled' => $wasOn]);
         app(App\Services\Settings\FeatureFlags::class)->flush();
     }
 });

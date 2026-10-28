@@ -20,6 +20,8 @@ const BUREAU_ROUTES = [
     '/kyc' => ['kyc.manage', ['OWNER']],
     '/profiles/create' => ['profiles.create', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
     '/import' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
+    '/import/template.xlsx' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
+    '/import/template.csv' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
     // P7.3 managed profiles (the per-profile routes: IdorScopingTest + ManagedProfileScreensTest)
     '/profiles' => ['profiles.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
     // P7.2 referral program
@@ -74,6 +76,7 @@ const BUREAU_MATRIX = [
 beforeEach(function (): void {
     seedMasters();
     $this->seed(PlansSeeder::class);
+    flagOn(App\Enums\Flag::BrokerBulkImport);   // P7.6 import routes answer only behind their flag
 });
 
 it('★ every role × every built portal route on a verified bureau (R-M13-19)', function (BureauRole $role, string $path): void {
@@ -150,12 +153,30 @@ function bureauActions(): array
         'change staff permissions' => ['staff.manage', fn ($u, $f) => app(App\Actions\Broker\Staff\UpdateStaffPermissions::class)->handle($u, $f['staff']->code, [], 'ALL')],
         'deactivate staff' => ['staff.manage', fn ($u, $f) => app(App\Actions\Broker\Staff\DeactivateStaff::class)->handle($u, $f['staff']->code)],
         'cancel invitation' => ['staff.manage', fn ($u, $f) => app(App\Actions\Broker\Staff\CancelInvitation::class)->handle($u, $f['invitation']->id)],
+        'upload an import' => ['profiles.import', fn ($u) => app(App\Actions\Broker\Import\StoreImportBatch::class)->handle($u, importXlsx([importRow()]), null)],
+        'map import columns' => ['profiles.import', fn ($u, $f) => app(App\Actions\Broker\Import\SaveColumnMapping::class)->handle($u, $f['batch']->code, [])],
     ];
 }
+
+it('★ every role × the import batch page and its errors.xlsx (profiles.import)', function (BureauRole $role): void {
+    $owner = bureauLogin();
+    $broker = staffOf($owner)->broker;
+    $batch = App\Models\BrokerImportBatch::factory()->create(['broker_id' => $broker->id, 'uploaded_by_user_id' => $owner->id, 'status' => App\Enums\ImportBatchStatus::Ready]);
+    actingAsBureau($role === BureauRole::Owner ? $owner : bureauLogin($role, broker: $broker));
+
+    foreach (['/import/'.$batch->code, '/import/'.$batch->code.'/errors.xlsx'] as $path) {
+        $response = $this->get(brokerUrl($path));
+        BUREAU_MATRIX['profiles.import'][array_search($role, BureauRole::cases(), true)]
+            ? $response->assertOk()
+            : $response->assertForbidden()->assertHeader('X-Error-Code', BureauGate::NOT_PERMITTED);
+    }
+})->with(BureauRole::cases());
 
 it('★ every role × every bureau Action (B.2): only the roles whose ceiling holds the permission get past BureauGate', function (string $action): void {
     flagOn(App\Enums\Flag::BrokerStaff);
     fakeSms();
+    Illuminate\Support\Facades\Storage::fake((string) config('oppam.media.private_disk'));
+    Illuminate\Support\Facades\Queue::fake();
     [$permission, $call] = bureauActions()[$action];
 
     foreach (BureauRole::cases() as $i => $role) {
@@ -166,6 +187,7 @@ it('★ every role × every bureau Action (B.2): only the roles whose ceiling ho
             'client' => managedProfile($broker, [], staffOf($login)),   // assigned to the caller: scope never hides the permission check
             'staff' => staffOf(bureauLogin(BureauRole::DataEntry, broker: $broker)),
             'invitation' => App\Models\BrokerStaffInvitation::factory()->create(['broker_id' => $broker->id, 'expires_at' => now()->addDay()]),
+            'batch' => App\Models\BrokerImportBatch::factory()->create(['broker_id' => $broker->id, 'uploaded_by_user_id' => $owner->id, 'status' => App\Enums\ImportBatchStatus::Mapping]),
         ];
         app(BureauGate::class)->forget();
 

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Broker\ImportErrorsController;
+use App\Http\Controllers\Broker\ImportTemplateController;
 use App\Http\Controllers\Broker\ManagedProfileExportController;
 use App\Http\Controllers\Broker\MaterialsController;
 use App\Http\Controllers\Broker\ReferralCodeController;
@@ -10,6 +12,7 @@ use App\Livewire\Broker\Apply;
 use App\Livewire\Broker\Auth\VerifyDevice;
 use App\Livewire\Broker\ComingSoon;
 use App\Livewire\Broker\Dashboard;
+use App\Livewire\Broker\Import;
 use App\Livewire\Broker\Kyc;
 use App\Livewire\Broker\ManagedProfiles;
 use App\Livewire\Broker\Materials;
@@ -85,8 +88,17 @@ Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'
                 });
         });
 
-        // B.11 screens of later sessions, registered now with their real gate (decisions 2026-10-23):
-        // P7.6 swaps the component.
-        Route::get('/import', ComingSoon::class)->middleware('bureau:profiles.import')->name('import');
+        // Bulk upload (B.9 steps 1–3, P7.6): `profiles.import` (active, KYC-verified bureau) behind the
+        // `broker.bulk_import` flag; batches are always the caller's bureau's (code → else 404).
+        Route::middleware('bureau:profiles.import')->prefix('import')->group(function (): void {
+            Route::get('/', Import\Upload::class)->name('import');
+            Route::middleware('throttle:20,1')->controller(ImportTemplateController::class)->group(function (): void {
+                Route::get('/template.xlsx', 'xlsx')->name('import.template.xlsx');
+                Route::get('/template.csv', 'csv')->name('import.template.csv');
+            });
+            Route::get('/{batch}', Import\BatchReview::class)->where('batch', 'B-[0-9]+')->name('import.batch');
+            Route::get('/{batch}/errors.xlsx', ImportErrorsController::class)->where('batch', 'B-[0-9]+')
+                ->middleware('throttle:20,1')->name('import.errors');
+        });
     });
 });
