@@ -48,20 +48,35 @@ final class UploadProfilePhoto
     public function handle(User $actor, Profile $profile, UploadedFile $file, ?string $caption = null): Media
     {
         $this->authorizePhotos($actor, $profile);
-
-        $config = (array) config('oppam.media');
-        $minPx = (int) $config['photo_min_px'];
-
-        Validator::make(['photo' => $file, 'caption' => $caption], [
-            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp',
-                'max:'.(int) $config['photo_max_kb'], "dimensions:min_width={$minPx},min_height={$minPx}"],
-            'caption' => ['nullable', 'string', 'max:100'],
-        ], [], ['photo' => __('photo'), 'caption' => __('caption')])->validate();
+        $this->validate($file, $caption);
 
         $key = 'media-upload:'.$actor->id;
-        if ($this->limiter->tooManyAttempts($key, (int) $config['uploads_per_hour'])) {
+        if ($this->limiter->tooManyAttempts($key, (int) config('oppam.media.uploads_per_hour'))) {
             throw ValidationException::withMessages(['photo' => __('You have uploaded a lot of photos. Please try again in an hour.')]);
         }
+
+        $media = $this->storeChecked($actor, $profile, $file, $caption);
+
+        $this->limiter->hit($key, 3600);
+
+        return $media;
+    }
+
+    /**
+     * The same photo pipeline without the per-login hourly cap — for the bulk import (§11A B.9
+     * step 5 "photos through the normal media pipeline"), whose volume the row caps bound
+     * (R-M13-31). Authorization, file rules, re-encoding, the per-profile limit and the PENDING
+     * A04 item are all unchanged.
+     *
+     * @throws AuthorizationException
+     * @throws ValidationException
+     */
+    public function storeChecked(User $actor, Profile $profile, UploadedFile $file, ?string $caption = null): Media
+    {
+        $this->authorizePhotos($actor, $profile);
+        $this->validate($file, $caption);
+
+        $config = (array) config('oppam.media');
 
         try {
             $clean = $this->sanitizer->sanitize((string) $file->getRealPath());
@@ -75,9 +90,20 @@ final class UploadProfilePhoto
             @unlink($clean['path']);
         }
 
-        $this->limiter->hit($key, 3600);
-
         return $media;
+    }
+
+    /** @throws ValidationException */
+    private function validate(UploadedFile $file, ?string $caption): void
+    {
+        $config = (array) config('oppam.media');
+        $minPx = (int) $config['photo_min_px'];
+
+        Validator::make(['photo' => $file, 'caption' => $caption], [
+            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp',
+                'max:'.(int) $config['photo_max_kb'], "dimensions:min_width={$minPx},min_height={$minPx}"],
+            'caption' => ['nullable', 'string', 'max:100'],
+        ], [], ['photo' => __('photo'), 'caption' => __('caption')])->validate();
     }
 
     private function store(Profile $profile, string $path, ?string $caption, int $max): Media

@@ -22,6 +22,7 @@ const BUREAU_ROUTES = [
     '/import' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
     '/import/template.xlsx' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
     '/import/template.csv' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],
+    '/import/batches' => ['profiles.import', ['OWNER', 'MANAGER', 'DATA_ENTRY']],   // P7.7: role part only (B.9 cancel after KYC revoked)
     // P7.3 managed profiles (the per-profile routes: IdorScopingTest + ManagedProfileScreensTest)
     '/profiles' => ['profiles.view', ['OWNER', 'MANAGER', 'DATA_ENTRY', 'TELECALLER']],
     // P7.2 referral program
@@ -155,6 +156,12 @@ function bureauActions(): array
         'cancel invitation' => ['staff.manage', fn ($u, $f) => app(App\Actions\Broker\Staff\CancelInvitation::class)->handle($u, $f['invitation']->id)],
         'upload an import' => ['profiles.import', fn ($u) => app(App\Actions\Broker\Import\StoreImportBatch::class)->handle($u, importXlsx([importRow()]), null)],
         'map import columns' => ['profiles.import', fn ($u, $f) => app(App\Actions\Broker\Import\SaveColumnMapping::class)->handle($u, $f['batch']->code, [])],
+        'fix an import row' => ['profiles.import', fn ($u, $f) => app(App\Actions\Broker\Import\FixImportRow::class)->handle($u, $f['batch']->code, 2, 'height', '163')],
+        're-upload import fixes' => ['profiles.import', fn ($u, $f) => app(App\Actions\Broker\Import\ReuploadImportErrors::class)->handle($u, $f['batch']->code, importXlsx([importRow()]))],
+        'attest import consent' => ['profiles.import', fn ($u, $f) => app(App\Actions\Broker\Import\AttestBatchConsent::class)->handle($u, $f['batch']->code)],
+        'start an import' => ['profiles.import', fn ($u, $f) => app(App\Actions\Broker\Import\StartBatchImport::class)->handle($u, $f['batch']->code)],
+        'cancel an import' => ['profiles.import', fn ($u, $f) => app(App\Actions\Broker\Import\CancelImportBatch::class)->handle($u, $f['batch']->code)],
+        'submit imported profiles' => ['profiles.submit_for_review', fn ($u, $f) => app(App\Actions\Broker\Import\SubmitImportedProfiles::class)->handle($u, $f['batch']->code)],
     ];
 }
 
@@ -248,6 +255,11 @@ it('KYC revoked: a once-verified bureau loses create / import at once (R-M13-21)
     $owner->brokerStaff->broker->forceFill(['kyc_status' => App\Enums\BrokerKycStatus::Revoked])->save();
     $this->get(brokerUrl('/import'))->assertForbidden()->assertHeader('X-Error-Code', BureauGate::KYC_REQUIRED);
     $this->get(brokerUrl(''))->assertOk();   // the rest of the portal still works
+    // P7.7 (B.9): the batch pages stay open so a batch can be cancelled; its rows and errors.xlsx do not.
+    $batch = App\Models\BrokerImportBatch::factory()->create(['broker_id' => $owner->brokerStaff->broker_id, 'uploaded_by_user_id' => $owner->id, 'status' => App\Enums\ImportBatchStatus::Ready]);
+    $this->get(brokerUrl('/import/batches'))->assertOk();
+    $this->get(brokerUrl('/import/'.$batch->code))->assertOk()->assertSee('can’t import profiles right now')->assertSee('Cancel batch');
+    $this->get(brokerUrl('/import/'.$batch->code.'/errors.xlsx'))->assertForbidden()->assertHeader('X-Error-Code', BureauGate::KYC_REQUIRED);
 });
 
 it('B.3 before KYC: the applicant Owner reaches the dashboard and KYC, nothing that handles data', function (): void {

@@ -86,6 +86,12 @@ final class CellParser
         return $text !== '' && str_contains("=+-@\t\r", $text[0]) ? "'".$text : $text;
     }
 
+    /** The stored (neutralised) text back to what the bureau typed — for re-checking a stored row. */
+    public static function restore(string $text): string
+    {
+        return strlen($text) > 1 && $text[0] === "'" && str_contains("=+-@\t\r", $text[1]) ? substr($text, 1) : $text;
+    }
+
     /** @return list<string> */
     public static function photoNames(string $text): array
     {

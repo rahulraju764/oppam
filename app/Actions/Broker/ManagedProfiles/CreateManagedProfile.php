@@ -16,6 +16,7 @@ use App\Enums\ProfileOwnerType;
 use App\Enums\ProfileStatus;
 use App\Enums\ReferralSource;
 use App\Enums\ReferralStatus;
+use App\Models\BrokerImportBatch;
 use App\Models\BrokerReferral;
 use App\Models\BrokerStaff;
 use App\Models\Profile;
@@ -62,29 +63,48 @@ final class CreateManagedProfile
         $staff = $this->gate->authorize($actor, BureauPermission::ProfilesCreate);
         $this->gate->authorize($actor, BureauPermission::ProfilesEdit);
 
-        $phone = $this->validate($data, $basic);
+        $this->validate($data, $basic);
 
         $key = 'broker-profile-create:'.$actor->id;
         if ($this->limiter->tooManyAttempts($key, (int) config('oppam.broker.managed_profiles_per_hour'))) {
             throw ValidationException::withMessages(['clientPhone' => __('You have added many profiles in the last hour. Please try again a little later.')]);
         }
 
-        $profile = DB::transaction(function () use ($actor, $staff, $phone, $basic): Profile {
-            $this->assertPhoneFree($phone);
-
-            $profile = $this->insert($actor, $staff, $phone, $basic);
-            $this->basics->handle($actor, $profile, $basic);
-
-            $this->audit->record('broker.profile_created', $profile, after: [
-                'broker' => $staff->broker?->code, 'assigned' => $profile->assigned_staff_id !== null,
-            ], actor: $actor, subjectLabel: $profile->code);
-
-            return $profile;
-        });
+        $profile = $this->createFor($actor, $staff, $data, $basic);
 
         $this->limiter->hit($key, 3600);
 
         return $profile->refresh();
+    }
+
+    /**
+     * Everything after the caller's checks — the one write path shared by the single form and the
+     * bulk import (R-M13-28, §11A B.9 step 5 "same path as CreateManagedProfile"): the same rule set,
+     * the claim key free under lock (R-M13-29), the DRAFT insert with consent stamps (never
+     * published, R-M13-30), the basics through SaveBasicDetails (which still authorizes `editWizard`
+     * for this login) and the audit row. An imported profile also carries its batch.
+     *
+     * The caller has already passed BureauGate for `$staff` (the form: profiles.create; the import
+     * job: profiles.import, re-checked per chunk).
+     *
+     * @throws ValidationException
+     */
+    public function createFor(User $actor, BrokerStaff $staff, ManagedProfileData $data, BasicDetailsData $basic, ?BrokerImportBatch $batch = null): Profile
+    {
+        $phone = $this->validate($data, $basic);
+
+        return DB::transaction(function () use ($actor, $staff, $phone, $basic, $batch): Profile {
+            $this->assertPhoneFree($phone);
+
+            $profile = $this->insert($actor, $staff, $phone, $basic, $batch);
+            $this->basics->handle($actor, $profile, $basic);
+
+            $this->audit->record('broker.profile_created', $profile, after: array_filter([
+                'broker' => $staff->broker?->code, 'assigned' => $profile->assigned_staff_id !== null, 'batch' => $batch?->code,
+            ], fn (mixed $v): bool => $v !== null), actor: $actor, subjectLabel: $profile->code);
+
+            return $profile;
+        });
     }
 
     /** @throws ValidationException */
@@ -126,7 +146,7 @@ final class CreateManagedProfile
         return __('This mobile number can’t be used for a new profile. It may already be registered on Oppam — a client with an account manages their own profile.');
     }
 
-    private function insert(User $actor, BrokerStaff $staff, PhoneNumber $phone, BasicDetailsData $basic): Profile
+    private function insert(User $actor, BrokerStaff $staff, PhoneNumber $phone, BasicDetailsData $basic, ?BrokerImportBatch $batch): Profile
     {
         $profile = new Profile;
         $profile->forceFill([
@@ -144,6 +164,7 @@ final class CreateManagedProfile
             'consent_confirmed_by_user_id' => $actor->id,
             'created_by_user_id' => $actor->id,
             'assigned_staff_id' => $staff->isAssignedOnly() ? $staff->id : null,
+            'import_batch_id' => $batch?->id,
         ])->save();
 
         $referral = new BrokerReferral;

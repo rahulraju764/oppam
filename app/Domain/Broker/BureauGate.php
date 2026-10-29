@@ -127,6 +127,38 @@ final class BureauGate
         return Response::allow();
     }
 
+    /**
+     * The role part only: an active login of a portal-status bureau whose role (minus the Owner's
+     * switch-offs) includes the permission — WITHOUT the "ACTIVE + KYC-verified bureau" requirement.
+     * For what B.9 still allows once KYC is revoked: seeing a batch's summary and cancelling it.
+     */
+    public function inspectRole(?User $user, BureauPermission $permission): Response
+    {
+        $response = $this->inspect($user, $permission);
+
+        return in_array($response->code(), [self::KYC_REQUIRED, self::INACTIVE], true) && $this->portal($user)->allowed()
+            && $this->staff($user)?->status === BureauStaffStatus::Active
+            ? Response::allow()
+            : $response;
+    }
+
+    /**
+     * inspectRole() for Actions and middleware: the caller's login, else a 403 with the denial code.
+     *
+     * @throws HttpException
+     */
+    public function authorizeRole(?User $user, BureauPermission $permission): BrokerStaff
+    {
+        $response = $this->inspectRole($user, $permission);
+
+        if ($response->denied()) {
+            throw new HttpException(403, (string) $response->message(), null, ['X-Error-Code' => (string) $response->code()]);
+        }
+
+        /** @var BrokerStaff */
+        return $this->staff($user);
+    }
+
     public function allows(?User $user, BureauPermission $permission): bool
     {
         return $this->inspect($user, $permission)->allowed();

@@ -22,6 +22,9 @@ final class ImportFileVault
 {
     private const CHUNK = 1024 * 1024;
 
+    /** Plain copies live in `{temp}/oppam-import-{random}/` only while a job reads them. */
+    public const TEMP_PREFIX = 'oppam-import-';
+
     public function __construct(private readonly Encrypter $encrypter) {}
 
     /** Encrypt the local file at $source into $path on the private disk. */
@@ -59,15 +62,30 @@ final class ImportFileVault
      */
     public function unseal(string $path, string $extension): string
     {
+        if (preg_match('/^[a-z]{2,4}$/', $extension) !== 1) {
+            throw new RuntimeException('Unexpected file type.');
+        }
+
         $in = $this->disk()->readStream($path);
-        $temp = tempnam(sys_get_temp_dir(), 'oppam-import-');
-        if (! is_resource($in) || $temp === false) {
+        // A private folder with a random name per copy: never shared with another job or worker
+        // (a tempnam() name renamed to add the extension is free again for the next caller).
+        $dir = sys_get_temp_dir().DIRECTORY_SEPARATOR.self::TEMP_PREFIX.bin2hex(random_bytes(16));
+        if (! is_resource($in) || ! @mkdir($dir, 0700)) {
+            if (is_resource($in)) {
+                fclose($in);
+            }
+
             throw new RuntimeException('The import file is missing.');
         }
 
-        $plain = $temp.'.'.$extension;
-        rename($temp, $plain);
-        $out = fopen($plain, 'wb');
+        $plain = $dir.DIRECTORY_SEPARATOR.'file.'.$extension;
+        $out = fopen($plain, 'xb');
+        if ($out === false) {
+            fclose($in);
+            @rmdir($dir);
+
+            throw new RuntimeException('The import file could not be prepared.');
+        }
         $broken = false;
 
         try {
@@ -93,12 +111,31 @@ final class ImportFileVault
         return $plain;
     }
 
-    /** Remove a temporary plain copy. */
+    /** Remove a temporary plain copy and its private folder. */
     public static function forget(?string $plain): void
     {
-        if ($plain !== null && is_file($plain)) {
+        if ($plain === null) {
+            return;
+        }
+
+        if (is_file($plain)) {
             @unlink($plain);
         }
+
+        $dir = dirname($plain);
+        if (str_starts_with(basename($dir), self::TEMP_PREFIX) && is_dir($dir)) {
+            @rmdir($dir);
+        }
+    }
+
+    /** Delete every stored file of one batch (its `imports/{batch}/` folder) — cancel and the 30-day purge. */
+    public function purge(string $batchId): void
+    {
+        if (preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/i', $batchId) !== 1) {
+            throw new RuntimeException('Unexpected batch id.');   // never a path built from anything else
+        }
+
+        $this->disk()->deleteDirectory('imports/'.$batchId);
     }
 
     private function disk(): Filesystem

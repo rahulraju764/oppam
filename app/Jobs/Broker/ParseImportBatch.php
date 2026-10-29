@@ -10,10 +10,12 @@ use App\Domain\Broker\Import\ImportContext;
 use App\Domain\Broker\Import\ImportRowValidator;
 use App\Domain\Broker\Import\ImportSheetReader;
 use App\Enums\ImportBatchStatus;
+use App\Enums\SettingKey;
 use App\Events\Broker\ImportProgress;
 use App\Models\BrokerImportBatch;
 use App\Models\BrokerImportRow;
 use App\Services\Broker\ImportFileVault;
+use App\Services\Settings\SettingsRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,7 +32,7 @@ use Throwable;
  * chunks of CHUNK rows, broadcasting ImportProgress after each chunk so the bureau watches a live
  * progress bar.
  *
- *  - more than MAX_ROWS data rows → FAILED ("at most 500 rows per file");
+ *  - more data rows than `broker.import_rows_per_file` (A15, default MAX_ROWS) → FAILED;
  *  - a required column the headers don't give (and no saved mapping) → MAPPING: the bureau maps them
  *    (SaveColumnMapping), which queues this job again;
  *  - otherwise every row is stored with its status and messages → READY.
@@ -113,10 +115,11 @@ final class ParseImportBatch implements ShouldBeUnique, ShouldQueue
     private function parse(BrokerImportBatch $batch, ImportSheetReader $reader, ImportRowValidator $validator, string $sheetFile, ?string $zipFile): void
     {
         $type = self::sheetType((string) $batch->sheet_path);
+        $max = app(SettingsRepository::class)->int(SettingKey::BrokerImportRowsPerFile);   // R-M13-31, A15 (default MAX_ROWS)
 
         // B.9 limits, checked BEFORE the sheet is loaded: a 10 MB file can hold millions of cells.
-        if ($reader->tooLarge($sheetFile, $type, self::MAX_ROWS)) {
-            $this->finish($batch, ImportBatchStatus::Failed, __('This file has more than :max rows. Upload at most :max rows per file.', ['max' => self::MAX_ROWS]));
+        if ($reader->tooLarge($sheetFile, $type, $max)) {
+            $this->finish($batch, ImportBatchStatus::Failed, __('This file has more than :max rows. Upload at most :max rows per file.', ['max' => $max]));
 
             return;
         }
@@ -139,8 +142,8 @@ final class ParseImportBatch implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if ($total > self::MAX_ROWS) {
-            $this->finish($batch, ImportBatchStatus::Failed, __('This file has :count rows. Upload at most :max rows per file.', ['count' => $total, 'max' => self::MAX_ROWS]), $headers);
+        if ($total > $max) {
+            $this->finish($batch, ImportBatchStatus::Failed, __('This file has :count rows. Upload at most :max rows per file.', ['count' => $total, 'max' => $max]), $headers);
 
             return;
         }
@@ -163,14 +166,15 @@ final class ParseImportBatch implements ShouldBeUnique, ShouldQueue
             return $cells;
         };
 
+        $zipNames = $zipFile !== null ? ImportContext::zipKeys(ImportSheetReader::zipEntries($zipFile)) : null;
         $context = ImportContext::load(
             $batch->broker_id,
             array_map(fn (array $row): string => (string) ($cellsOf($row)['client_mobile'] ?? ''), array_values($rows)),
-            $zipFile !== null ? ImportSheetReader::zipEntries($zipFile) : null,
+            $zipNames,
         );
 
         BrokerImportRow::query()->where('batch_id', $batch->id)->delete();
-        $batch->forceFill(['headers' => $headers, 'column_map' => $map, 'rows_total' => $total, 'rows_valid' => 0, 'rows_warning' => 0, 'rows_error' => 0])->save();
+        $batch->forceFill(['headers' => $headers, 'column_map' => $map, 'zip_names' => $zipNames, 'rows_total' => $total, 'rows_valid' => 0, 'rows_warning' => 0, 'rows_error' => 0])->save();
 
         $counts = ['VALID' => 0, 'WARNING' => 0, 'ERROR' => 0];
         $processed = 0;

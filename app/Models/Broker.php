@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\BrokerKycStatus;
 use App\Enums\BrokerStatus;
 use App\Enums\BureauRole;
+use App\Enums\ImportsPauseReason;
 use App\Models\Masters\District;
 use Database\Factories\BrokerFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,6 +41,8 @@ use Illuminate\Support\Carbon;
  * @property int $import_daily_cap
  * @property int $interest_allowance_monthly
  * @property Carbon|null $imports_paused_at
+ * @property ImportsPauseReason|null $imports_paused_reason
+ * @property string|null $imports_paused_batch_id the batch that tripped the auto-pause (R-M13-32)
  * @property string|null $status_reason
  * @property Carbon|null $activated_at
  * @property Carbon $created_at
@@ -73,6 +76,7 @@ final class Broker extends Model
             'import_daily_cap' => 'integer',
             'interest_allowance_monthly' => 'integer',
             'imports_paused_at' => 'datetime',
+            'imports_paused_reason' => ImportsPauseReason::class,
             'activated_at' => 'datetime',
         ];
     }

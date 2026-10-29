@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Queries\Admin;
 
 use App\Data\Admin\WorkQueueData;
+use App\Enums\ImportsPauseReason;
 use App\Enums\SettingKey;
+use App\Models\Broker;
 use App\Support\Facades\Settings;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Support\Facades\DB;
@@ -28,11 +30,19 @@ final class DashboardAlerts
     /**
      * @param  list<WorkQueueData>  $workQueues  the queues this admin may see
      * @param  bool  $system  include the system-health alerts (failed jobs, backlog) — for `dashboard.view`
+     * @param  bool  $brokers  include bureaus whose imports were auto-paused (§11A B.9 "A07 is alerted") — for `brokers.imports.manage`
      * @return list<array{level: string, text: string}> level = warning | danger
      */
-    public function for(array $workQueues, bool $system = true): array
+    public function for(array $workQueues, bool $system = true, bool $brokers = false): array
     {
         $alerts = [];
+
+        if ($brokers) {
+            $paused = Broker::query()->whereNotNull('imports_paused_at')->where('imports_paused_reason', ImportsPauseReason::Auto)->orderBy('imports_paused_at')->limit(5)->pluck('code');
+            if ($paused->isNotEmpty()) {
+                $alerts[] = ['level' => 'warning', 'text' => __('Bulk imports auto-paused (too many rejections): :codes. Review in Brokers.', ['codes' => $paused->implode(', ')])];
+            }
+        }
 
         foreach ($workQueues as $queue) {
             if ($queue->breached) {

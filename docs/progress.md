@@ -159,7 +159,23 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   tests/Feature/Broker 527 + tests/Livewire/Broker 85 passed after the Minor fixes; full suite 2,699 passed before them
   (BillingTest.php excluded — pre-existing P5.3 fake); lint + analyse clean. Dusk NOT re-run this round (dev servers down;
   the earlier P7.6 run saw upload → READY live in ~11 s); owner checked it by hand ("is working"). Committed at the owner's request.
-- [ ] P7.7 Bulk upload part 2: fix, consent, import, submit, safeguards
+- [x] P7.7 Bulk upload part 2: fix, consent, import, submit, safeguards — 2026-10-29 (decisions 2026-10-28; owner: uploader loses
+  access → stop safely (rest SKIPPED), daily cap → import up to it and resume, auto-pause needs ≥ 5 decided, new bureau = < 30 days
+  OR < 20 decided OR < 80 % approved). FixImportRow (inline, same validator + context), ReuploadImportErrors (fixed errors file
+  into the same batch by `row`), AttestBatchConsent + StartBatchImport (uploader only), ImportBatchRows on `imports` (per-row
+  transaction through CreateManagedProfile::createFor + SaveCareer/About, idempotent via imported_profile_id, photos through
+  UploadProfilePhoto::storeChecked, allowance re-checked per row under the bureau lock, bureau / uploader stops), caps (per file,
+  per day = min(bureau, global), new bureau), SubmitImportedProfiles (A04 flag "batch · entered by"), BatchModerationTally +
+  PauseBrokerImports (auto-pause > 40 %, ImportsPaused, A02 alert), CancelImportBatch (closes a partly imported batch), Batches
+  history, PurgeImportFiles 03:45 IST, batch pages role-gated so a KYC-revoked bureau can still cancel. Fixed on the way:
+  ImportFileVault temp-name collision across workers (private random folder per copy), P7.6 broker toasts never showed.
+  Tests: ImportPipelineTest ★ 21 (duplicates, consent, caps, idempotent, auto-pause, stops, photos, 500 rows ≈ 26 s), ImportFixTest,
+  ImportSubmitTest, ImportPurgeTest, ImportScreensP77Test, matrix + 6 actions + /import/batches, payload tests. Reviewer round 1:
+  READY TO COMMIT (0 Blockers / 0 Majors; full suite 2753 passed with BillingTest.php excluded); Minors 2, 3, 5, 6, 7 fixed after
+  (tests/Feature/Broker 571 + tests/Livewire/Broker 96 passed, lint + analyse clean). Dusk at 375 px: P7.1–P7.6 passed; P7.7
+  journey passed 3 runs in a row (Import → COMPLETED live ≈ 5 s), one earlier early failure (possible flake); a final full-file
+  run was stopped for low memory. Open: Minor 1 (owner) — should assigned-only logins see only their own batches?; Minor 4
+  (permission re-checked per 100-row chunk, by design); widths 320/768/1024/1440 not checked. NOT committed.
 - [ ] P7.8 Payouts & broker admin screens (A07)
 - [ ] P7.9 Broker security sweep
 

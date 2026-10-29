@@ -29,4 +29,27 @@ final class ImportRefused extends RuntimeException
     {
         return new self(__('This batch can’t be changed at its current stage.'), 'BROKER_IMPORT_STATUS');
     }
+
+    /** B.9 step 4: the attestation and the import belong to the person who uploaded the file. */
+    public static function notUploader(): self
+    {
+        return new self(__('Only the person who uploaded this file can confirm consent and import it.'), 'BROKER_IMPORT_NOT_UPLOADER');
+    }
+
+    /** R-M13-27: no import without the uploader's attestation. */
+    public static function notAttested(): self
+    {
+        return new self(__('Confirm that every client in this file has agreed before importing.'), 'BROKER_IMPORT_CONSENT');
+    }
+
+    /** R-M13-31: today's allowance is used up. */
+    public static function noAllowance(): self
+    {
+        return new self(__('Your bureau has used today’s import allowance. You can import the remaining rows tomorrow.'), 'BROKER_IMPORT_DAILY_CAP');
+    }
+
+    public static function nothingToImport(): self
+    {
+        return new self(__('There are no rows ready to import. Fix the rows with errors first.'), 'BROKER_IMPORT_EMPTY');
+    }
 }

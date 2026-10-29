@@ -57,6 +57,27 @@ it('★ rule 7 / B.18: the sheet and the zip are ENCRYPTED at rest; the vault re
     ImportFileVault::forget($restoredZip);
 });
 
+it('rule 7: every plain copy gets its own private folder — two unseals never share a path; forget() removes both file and folder', function (): void {
+    $batch = app(StoreImportBatch::class)->handle(bureauLogin(), importXlsx([importRow()]), null);
+    $vault = app(ImportFileVault::class);
+
+    // P7.7 regression: a tempnam() name renamed to add ".xlsx" was free again for the next worker,
+    // which could overwrite another batch's decrypted sheet while it was being read.
+    $a = $vault->unseal($batch->sheet_path, 'xlsx');
+    $b = $vault->unseal($batch->sheet_path, 'xlsx');
+    expect($a)->not->toBe($b)
+        ->and(dirname($a))->not->toBe(dirname($b))
+        ->and(basename(dirname($a)))->toStartWith(ImportFileVault::TEMP_PREFIX);
+
+    ImportFileVault::forget($a);
+    expect(is_file($a))->toBeFalse()->and(is_dir(dirname($a)))->toBeFalse()
+        ->and(is_file($b))->toBeTrue();
+    ImportFileVault::forget($b);
+    expect(is_dir(dirname($b)))->toBeFalse();
+
+    expect(fn () => $vault->unseal($batch->sheet_path, '../x'))->toThrow(RuntimeException::class);
+});
+
 it('a stored file that was tampered with can’t be decrypted', function (): void {
     $batch = app(StoreImportBatch::class)->handle(bureauLogin(), importXlsx([importRow()]), null);
     Storage::disk((string) config('oppam.media.private_disk'))->put($batch->sheet_path, "tampered\n");

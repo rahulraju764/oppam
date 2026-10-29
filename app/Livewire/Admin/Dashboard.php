@@ -49,7 +49,7 @@ final class Dashboard extends Component
             'canView' => $canView,
             'queues' => $workQueues,
             // Queue alerts go with the queues; failed jobs / backlog are system health: dashboard.view only.
-            'alerts' => $alerts->for($workQueues, system: $canView),
+            'alerts' => $alerts->for($workQueues, system: $canView, brokers: $admin->can('brokers.imports.manage')),
             'kpis' => $canView ? $metrics->kpis() : [],
             'online' => $canView ? $presence->online() : null,
             'asOf' => $canView ? $metrics->asOf()?->setTimezone((string) config('oppam.display_timezone')) : null,

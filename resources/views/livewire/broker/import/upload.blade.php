@@ -62,7 +62,8 @@
                 <li>{{ __('See which rows are ready, which need a look, and download the errors to fix them.') }}</li>
                 <li>{{ __('Nothing is created until you confirm the clients’ consent and import.') }}</li>
             </ol>
-            <p class="small mb-0">{{ __('Only add clients who have agreed to be on Oppam Matrimony.') }}</p>
+            <p class="small">{{ __('Only add clients who have agreed to be on Oppam Matrimony.') }}</p>
+            <p class="small mb-0"><a href="{{ route('broker.import.batches') }}" wire:navigate>{{ __('See earlier batches') }}</a></p>
         </div>
     </div>
 </div>

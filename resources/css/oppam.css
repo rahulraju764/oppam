@@ -712,6 +712,15 @@ body.search-sheet-open .mobile-footer { display: none; }
 .import-rows__who { flex: 1 1 8rem; min-width: 0; overflow-wrap: anywhere; }
 .import-rows__messages { margin: 0 0 var(--space-3); padding-left: var(--space-5); font-size: var(--text-sm); }
 .import-rows__messages .is-error { color: var(--color-primary-dark); }
+/* Bulk import steps 3–6 (P7.7) */
+.import-fixes { display: grid; gap: var(--space-3); }
+.import-fixes__upload { display: grid; gap: var(--space-2); }
+.import-consent h2, .import-submit h2 { font-size: var(--text-lg); }
+.import-fix { display: grid; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.import-fix__cell { display: grid; grid-template-columns: 1fr; gap: var(--space-1); }
+@media (min-width: 576px) { .import-fix__cell { grid-template-columns: minmax(0, 1fr) auto; align-items: end; } .import-fix__cell label { grid-column: 1 / -1; } }
+.import-rows__profile { margin: 0 0 var(--space-2); font-size: var(--text-sm); }
+.import-batches__type, .import-batches__by { display: block; color: var(--color-gr-dark); font-size: var(--text-xs); overflow-wrap: anywhere; }
 /* Staff accounts & activity (P7.5, §11A B.8) */
 .staff-seats { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); margin: var(--space-3) 0 var(--space-4); }
 .staff-seats__count { font-weight: 600; }

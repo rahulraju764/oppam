@@ -413,3 +413,69 @@ it('P7.6: a Data-entry login uploads a 500-row sheet at 375px; validation progre
         app(App\Services\Settings\FeatureFlags::class)->flush();
     }
 });
+
+it('P7.7: at 375px a Data-entry login fixes a row inline, confirms consent, imports — progress and the result arrive live; batch history', function (): void {
+    $flag = FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->first();
+    $wasOn = $flag?->is_enabled;
+    ($flag ?? new FeatureFlag)->forceFill(['key' => Flag::BrokerBulkImport->value, 'is_enabled' => true])->save();
+    app(App\Services\Settings\FeatureFlags::class)->flush();
+
+    $rows = array_map(fn (array $r, int $i): array => ['client_mobile' => '99997'.str_pad((string) $i, 5, '0', STR_PAD_LEFT)] + $r, importRows(3), range(1, 3));
+    $rows[2]['height'] = 'tall';                       // sheet row 4: an ERROR, fixed inline below
+    $sheet = importXlsx($rows);
+
+    try {
+        $this->browse(function (Browser $browser) use ($sheet): void {
+            $staff = bureauLogin(BureauRole::DataEntry);
+            $staff->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+            duskFreshSession($browser);
+            $browser->visit('/login')
+                ->type('#loginId', '9999900031')
+                ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+                ->click('.login-form button[type="submit"]')
+                ->waitForLocation('/broker');
+
+            $browser->visit('/broker/import')->waitForText('1. Download the template')
+                ->attach('#importSheet', (string) $sheet->getRealPath())
+                ->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+                    "const c = window.Livewire?.all?.().find(c => c.name === 'broker.import.upload'); return !!(c && c.\$wire.sheet) && !document.querySelector('.import-upload button[type=submit]').disabled;")[0])
+                ->click('.import-upload button[type="submit"]')
+                ->waitUsing(20, 100, fn (): bool => str_contains((string) $browser->driver->getCurrentURL(), '/broker/import/B-'))
+                ->waitForText('Consent and import', 60);
+
+            // Step 3: open the ERROR row and fix its height in place.
+            $browser->press('Errors')->waitUntilMissingText('Row 2')->assertSee('Row 4')
+                ->click('.import-rows__head')->waitFor('#fix-4-0')
+                ->clear('#fix-4-0')->type('#fix-4-0', '163')
+                ->click('.import-fix__cell button[type="submit"]')
+                ->waitForText('Row 4 is ready.');
+            assertNoHorizontalScroll($browser);
+
+            // Steps 4–5: consent, then import; the page follows the job live.
+            // Controls brought to the middle of the screen: the sticky header would otherwise cover them at 375px.
+            $centre = fn (string $selector) => $browser->script("document.querySelector('{$selector}').scrollIntoView({block: 'center'})");
+            $browser->press('All')->waitForText('Row 2');
+            $centre('#f-consent');
+            $browser->check('#f-consent');
+            $centre('.import-consent button[type="submit"]');
+            $browser->press('Confirm consent')->waitForText('Import now');
+            $centre('.import-consent button');
+            $started = microtime(true);
+            $browser->press('Import now')->waitForText('Import finished: 3 profiles added as drafts.', 60);
+            fwrite(STDERR, sprintf("\n[P7.7] Import → COMPLETED on the page in %.1f s\n", microtime(true) - $started));
+            $browser->waitForText('Submit all complete profiles')->press('Imported')->waitForText('Row 4');
+            assertNoHorizontalScroll($browser);
+
+            $batch = App\Models\BrokerImportBatch::query()->where('broker_id', $staff->brokerStaff?->broker_id)->latest()->firstOrFail();
+            expect($batch->status)->toBe(App\Enums\ImportBatchStatus::Completed)->and($batch->rows_imported)->toBe(3);
+
+            $browser->visit('/broker/import/batches')->waitForText($batch->code);
+            assertNoHorizontalScroll($browser);
+        });
+    } finally {
+        $wasOn === null
+            ? FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->delete()
+            : FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->update(['is_enabled' => $wasOn]);
+        app(App\Services\Settings\FeatureFlags::class)->flush();
+    }
+});

@@ -88,7 +88,7 @@ Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'
                 });
         });
 
-        // Bulk upload (B.9 steps 1–3, P7.6): `profiles.import` (active, KYC-verified bureau) behind the
+        // Bulk upload (B.9, P7.6 / P7.7): `profiles.import` (active, KYC-verified bureau) behind the
         // `broker.bulk_import` flag; batches are always the caller's bureau's (code → else 404).
         Route::middleware('bureau:profiles.import')->prefix('import')->group(function (): void {
             Route::get('/', Import\Upload::class)->name('import');
@@ -96,9 +96,14 @@ Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'
                 Route::get('/template.xlsx', 'xlsx')->name('import.template.xlsx');
                 Route::get('/template.csv', 'csv')->name('import.template.csv');
             });
-            Route::get('/{batch}', Import\BatchReview::class)->where('batch', 'B-[0-9]+')->name('import.batch');
             Route::get('/{batch}/errors.xlsx', ImportErrorsController::class)->where('batch', 'B-[0-9]+')
                 ->middleware('throttle:20,1')->name('import.errors');
+        });
+        // The batch pages need only the ROLE part of `profiles.import`: once KYC is revoked a bureau may
+        // still see a batch's summary and cancel it (B.9) — rows and every other action stay gated.
+        Route::middleware('bureau:profiles.import,role')->prefix('import')->group(function (): void {
+            Route::get('/batches', Import\Batches::class)->name('import.batches');
+            Route::get('/{batch}', Import\BatchReview::class)->where('batch', 'B-[0-9]+')->name('import.batch');
         });
     });
 });

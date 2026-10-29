@@ -121,3 +121,23 @@ it('ManagedProfileModerated carries the profile code and the decision only — n
         ->and($event->broadcastAs())->toBe('profile.moderated')
         ->and($event->queue)->toBe('broadcasts');
 });
+
+it('P7.7 ImportCompleted carries the batch code, status and counts only — no ids, names or mobiles', function (): void {
+    $event = new App\Events\Broker\ImportCompleted('01HBROKERULIDXXXXXXXXXXXXX', 'B-0042', 'READY', 100, 0, 240, 'DAILY_CAP');
+
+    expect($event->broadcastWith())->toBe(['batch' => 'B-0042', 'status' => 'READY', 'imported' => 100, 'skipped' => 0, 'waiting' => 240, 'stopped' => 'DAILY_CAP'])
+        ->and($event->broadcastOn()[0]->name)->toBe('private-broker.01HBROKERULIDXXXXXXXXXXXXX')
+        ->and($event->broadcastAs())->toBe('import.completed')
+        ->and($event->queue)->toBe('broadcasts')
+        ->and($event)->toBeInstanceOf(Illuminate\Contracts\Events\ShouldDispatchAfterCommit::class);
+});
+
+it('P7.7 ImportsPaused carries the reason and the batch code only (R-M13-32 banner)', function (): void {
+    $event = new App\Events\Broker\ImportsPaused('01HBROKERULIDXXXXXXXXXXXXX', 'AUTO', 'B-0042');
+
+    expect($event->broadcastWith())->toBe(['reason' => 'AUTO', 'batch' => 'B-0042'])
+        ->and($event->broadcastOn()[0]->name)->toBe('private-broker.01HBROKERULIDXXXXXXXXXXXXX')
+        ->and($event->broadcastAs())->toBe('imports.paused')
+        ->and($event->queue)->toBe('broadcasts')
+        ->and($event)->toBeInstanceOf(Illuminate\Contracts\Events\ShouldDispatchAfterCommit::class);
+});

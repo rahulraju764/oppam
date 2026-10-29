@@ -94,3 +94,55 @@ function importRows(int $count): array
 {
     return array_map(fn (int $i): array => importRow(['first_name' => 'Client'.chr(65 + $i % 26).'a'], '98765'.str_pad((string) (1000 + $i), 5, '0', STR_PAD_LEFT)), range(1, $count));
 }
+
+// ---- P7.7 import pipeline helpers ---------------------------------------------------------------
+
+/** Upload + validate now (the parse job run inline); the READY batch. */
+function pipelineReady(App\Models\User $login, array $rows, ?UploadedFile $zip = null): App\Models\BrokerImportBatch
+{
+    $batch = app(App\Actions\Broker\Import\StoreImportBatch::class)->handle($login, importXlsx($rows), $zip);
+    app()->call([new App\Jobs\Broker\ParseImportBatch($batch->id), 'handle']);
+
+    return $batch->refresh();
+}
+
+/** The uploader attests and starts; the job is then run inline. */
+function importNow(App\Models\User $login, App\Models\BrokerImportBatch $batch): App\Models\BrokerImportBatch
+{
+    app(App\Actions\Broker\Import\AttestBatchConsent::class)->handle($login, $batch->code);
+    app(App\Actions\Broker\Import\StartBatchImport::class)->handle($login, $batch->code);
+
+    return runImportJob($batch);
+}
+
+function runImportJob(App\Models\BrokerImportBatch $batch): App\Models\BrokerImportBatch
+{
+    app()->call([new App\Jobs\Broker\ImportBatchRows($batch->id), 'handle']);
+
+    return $batch->refresh();
+}
+
+/** A setting changed for this test (the repository memoises values: flushed). */
+function settingIs(App\Enums\SettingKey $key, int $value): void
+{
+    App\Models\Setting::query()->where('key', $key->value)->delete();
+    App\Models\Setting::factory()->keyed($key, $value)->create();
+    app(App\Services\Settings\SettingsRepository::class)->flush();
+}
+
+function rowAt(App\Models\BrokerImportBatch $batch, int $rowNumber): App\Models\BrokerImportRow
+{
+    return App\Models\BrokerImportRow::query()->where('batch_id', $batch->id)->where('row_number', $rowNumber)->firstOrFail();
+}
+
+/** Past the new-bureau cap (decisions 2026-10-28): 60 days since KYC, 20 moderated profiles, all approved. */
+function establishedBureau(App\Models\User $login): App\Models\Broker
+{
+    $broker = staffOf($login)->broker;
+    $broker->forceFill(['activated_at' => now()->subDays(60)])->save();
+    App\Models\Profile::factory()->count(20)->brokerManaged($broker)->create()->each(fn (App\Models\Profile $p) => App\Models\ModerationItem::factory()->create([
+        'type' => App\Enums\ModerationItemType::ProfileNew, 'profile_id' => $p->id, 'status' => App\Enums\ModerationStatus::Approved, 'decided_at' => now(),
+    ]));
+
+    return $broker->refresh();
+}

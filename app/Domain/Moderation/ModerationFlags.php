@@ -9,6 +9,8 @@ use App\Domain\Safety\BanList;
 use App\Enums\Gender;
 use App\Enums\SettingKey;
 use App\Models\Broker;
+use App\Models\BrokerImportBatch;
+use App\Models\BrokerStaff;
 use App\Models\Media;
 use App\Models\Profile;
 use App\Services\Settings\SettingsRepository;
@@ -54,8 +56,7 @@ final class ModerationFlags
 
         // §11A B.6 / R-M13-14: entered by a bureau — reviewed like any profile, provenance shown to A04 only.
         if ($profile->isBrokerManaged()) {
-            $code = Broker::query()->whereKey($profile->managed_by_broker_id)->value('code');
-            $flags[] = new ModerationFlag('broker_managed', __('Added by broker :code.', ['code' => (string) $code]));
+            $flags[] = new ModerationFlag('broker_managed', $this->provenance($profile));
         }
 
         return $flags;
@@ -152,5 +153,30 @@ final class ModerationFlags
             ->value('code');
 
         return is_string($code) ? $code : null;
+    }
+
+    /**
+     * §11A B.9 step 6 / B.6: "Added by broker BRK1042 · batch B-0042 · entered by <staff>" — who
+     * brought the profile in, for A04 only (R-M13-14: reviewed like any other profile).
+     */
+    private function provenance(Profile $profile): string
+    {
+        $parts = [__('Added by broker :code', ['code' => (string) Broker::query()->whereKey($profile->managed_by_broker_id)->value('code')])];
+
+        if ($profile->import_batch_id !== null) {
+            $batch = BrokerImportBatch::query()->whereKey($profile->import_batch_id)->value('code');
+            if (is_string($batch)) {
+                $parts[] = __('batch :code', ['code' => $batch]);
+            }
+        }
+
+        if ($profile->created_by_user_id !== null) {
+            $staff = BrokerStaff::query()->where('user_id', $profile->created_by_user_id)->with(['user', 'broker'])->first();
+            if ($staff !== null) {
+                $parts[] = __('entered by :name', ['name' => $staff->displayName()]);
+            }
+        }
+
+        return implode(' · ', $parts).'.';
     }
 }

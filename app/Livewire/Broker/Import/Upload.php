@@ -10,11 +10,12 @@ use App\Domain\Broker\BureauGate;
 use App\Domain\Broker\Import\ImportFileInspector;
 use App\Enums\BureauPermission;
 use App\Enums\Flag;
+use App\Enums\SettingKey;
 use App\Exceptions\Broker\ImportRefused;
-use App\Jobs\Broker\ParseImportBatch;
 use App\Models\Broker;
 use App\Models\User;
 use App\Support\Facades\Feature;
+use App\Support\Facades\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Livewire\Component;
@@ -79,7 +80,7 @@ final class Upload extends Component
         return view('livewire.broker.import.upload', [
             'enabled' => Feature::active(Flag::BrokerBulkImport),
             'paused' => $broker->imports_paused_at !== null,
-            'maxRows' => ParseImportBatch::MAX_ROWS,
+            'maxRows' => Settings::int(SettingKey::BrokerImportRowsPerFile),
         ])->layout('layouts::broker', ['seo' => SeoData::private('Bulk import | Oppam Matrimony')]);
     }
 

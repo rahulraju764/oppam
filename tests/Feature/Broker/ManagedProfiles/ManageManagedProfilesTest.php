@@ -68,7 +68,9 @@ it('R-M13-14: a managed profile goes through the A04 queue like any profile, fla
         ->and($profile->published_at)->toBeNull();
 
     $flags = collect(app(ModerationFlags::class)->forProfile($profile, []))->pluck('message', 'code');
-    expect($flags['broker_managed'] ?? null)->toBe('Added by broker '.staffOf($login)->broker->code.'.');
+    // B.9 step 6 (P7.7): provenance names the bureau and the staff login that entered it.
+    $staff = staffOf($login)->load(['user', 'broker']);
+    expect($flags['broker_managed'] ?? null)->toBe('Added by broker '.$staff->broker->code.' · entered by '.$staff->displayName().'.');
 
     expect(AuditLog::query()->where('action', 'broker.profile_submitted')->exists())->toBeTrue();
 });

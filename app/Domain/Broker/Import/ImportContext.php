@@ -72,8 +72,19 @@ final class ImportContext
             $taken,
             array_count_values($e164),
             $clients,
-            $zipEntries === null ? null : array_fill_keys(array_map(fn (string $n): string => mb_strtolower(basename($n)), $zipEntries), true),
+            $zipEntries === null ? null : array_fill_keys(self::zipKeys($zipEntries), true),
         );
+    }
+
+    /**
+     * The zip's file names as photo_files are matched: lowercase base names, unique.
+     *
+     * @param  list<string>  $entries
+     * @return list<string>
+     */
+    public static function zipKeys(array $entries): array
+    {
+        return array_values(array_unique(array_map(fn (string $n): string => mb_strtolower(basename($n)), $entries)));
     }
 
     public static function personKey(string $first, string $last, string $dob): string

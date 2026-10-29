@@ -6,6 +6,7 @@ use App\Jobs\Billing\ExpireSubscriptions;
 use App\Jobs\Billing\ExpireUnpaidOrders;
 use App\Jobs\Billing\SendPlanExpiryReminders;
 use App\Jobs\Broker\PurgeDeletedManagedProfiles;
+use App\Jobs\Broker\PurgeImportFiles;
 use App\Jobs\Broker\SendFollowUpReminders;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
@@ -67,3 +68,6 @@ Schedule::job(new SendFollowUpReminders)->timezone('Asia/Kolkata')->dailyAt('08:
 
 // §11A B.6: managed profiles deleted longer than the 30-day recovery are purged (21:40 UTC = 03:10 IST).
 Schedule::job(new PurgeDeletedManagedProfiles)->dailyAt('21:40')->onOneServer()->withoutOverlapping();
+
+// §11A B.9 / B.23: bulk-import source files purged after broker.import_file_retention_days (30), 03:45 IST (P7.7).
+Schedule::job(new PurgeImportFiles)->timezone('Asia/Kolkata')->dailyAt('03:45')->onOneServer()->withoutOverlapping();

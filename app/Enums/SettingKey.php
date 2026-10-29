@@ -67,6 +67,8 @@ enum SettingKey: string
     case BrokerImportRowsPerDay = 'broker.import_rows_per_day';
     case BrokerImportRowsPerDayNew = 'broker.import_rows_per_day_new';
     case BrokerImportAutoPauseRejectionPct = 'broker.import_auto_pause_rejection_pct';
+    case BrokerImportAutoPauseMinDecided = 'broker.import_auto_pause_min_decided';
+    case BrokerImportFileRetentionDays = 'broker.import_file_retention_days';
     case OtpTtlMinutes = 'otp.ttl_minutes';
     case OtpMaxAttempts = 'otp.max_attempts';
     case OtpMaxSendsPer15Minutes = 'otp.max_sends_per_15_minutes';
@@ -174,6 +176,8 @@ enum SettingKey: string
             self::BrokerImportRowsPerDay => 1000,
             self::BrokerImportRowsPerDayNew => 100,
             self::BrokerImportAutoPauseRejectionPct => 40,
+            self::BrokerImportAutoPauseMinDecided => 5,       // R-M13-32 applies once this many of a batch's profiles are decided (decisions 2026-10-28)
+            self::BrokerImportFileRetentionDays => 30,       // B.9: source files purged after this many days
             self::OtpTtlMinutes => 5,
             self::OtpMaxAttempts => 3,
             self::OtpMaxSendsPer15Minutes => 3,
@@ -268,6 +272,8 @@ enum SettingKey: string
             self::BrokerImportRowsPerFile => ['required', 'integer', 'min:1', 'max:5000'],
             self::BrokerImportRowsPerDay, self::BrokerImportRowsPerDayNew => ['required', 'integer', 'min:1', 'max:20000'],
             self::BrokerImportAutoPauseRejectionPct => ['required', 'integer', 'min:1', 'max:100'],
+            self::BrokerImportAutoPauseMinDecided => ['required', 'integer', 'min:1', 'max:500'],
+            self::BrokerImportFileRetentionDays => ['required', 'integer', 'min:1', 'max:365'],
             self::OtpTtlMinutes => ['required', 'integer', 'min:1', 'max:30'],
             self::OtpMaxAttempts, self::OtpMaxSendsPer15Minutes => ['required', 'integer', 'min:1', 'max:10'],
             self::OtpMaxSendsPerPhonePerDay => ['required', 'integer', 'min:1', 'max:50'],

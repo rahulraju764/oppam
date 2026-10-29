@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Broker\ManagedProfiles;
 
+use App\Domain\Broker\Import\BatchModerationTally;
 use App\Domain\Broker\ManagedProfileScope;
 use App\Enums\BureauRole;
 use App\Enums\BureauStaffStatus;
 use App\Events\Broker\ManagedProfileModerated;
+use App\Models\BrokerImportBatch;
 use App\Models\BrokerStaff;
 use App\Models\Profile;
 use App\Notifications\Broker\ManagedProfileReviewed;
@@ -22,12 +24,23 @@ use App\Notifications\Broker\ManagedProfileReviewed;
  */
 final class AnnounceModerationDecision
 {
-    public function __construct(private readonly ManagedProfileScope $scope) {}
+    public function __construct(
+        private readonly ManagedProfileScope $scope,
+        private readonly BatchModerationTally $tally,
+    ) {}
 
     public function handle(Profile $profile, bool $approved, ?string $reason = null): void
     {
         if (! $profile->isBrokerManaged()) {
             return;
+        }
+
+        // An imported profile: its batch's approval rate, and the auto-pause check (R-M13-32).
+        if ($profile->import_batch_id !== null) {
+            $batch = BrokerImportBatch::query()->find($profile->import_batch_id);
+            if ($batch !== null) {
+                $this->tally->refresh($batch);
+            }
         }
 
         $brokerId = (string) $profile->managed_by_broker_id;
