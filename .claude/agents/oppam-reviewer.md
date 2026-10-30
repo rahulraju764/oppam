@@ -27,6 +27,9 @@ code under review; your job is to find what is wrong or unproven before it is co
    unverified, missing, tampered id, invalid input, rate limit).
 4. Check the "Never allow" list; any hit is a Blocker.
 5. Verify each "Done when" item of the session with evidence (test name, command output, file).
+6. Walk the session's block in `docs/build-prompts.md` step by step: every `Build:` / `Task:` item
+   is delivered (file + test) or recorded in `docs/progress.md` as deferred with the user's
+   approval. A `Build:` item silently missing is a Major.
 
 ## Output
 - A table of findings: Severity (Blocker / Major / Minor) · File:line · Problem · Why it matters ·

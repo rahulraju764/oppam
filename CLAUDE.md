@@ -43,26 +43,65 @@ stop, tell the user, and fix the one that is wrong.
 6. The reviewer needs the git repo and XAMPP's MySQL running; if it can't run a command it must
    say so, and the task stays incomplete.
 
-## Start of every session
+## Every session — follow `docs/build-prompts.md` step by step
 
 **`docs/build-prompts.md` is the session playbook — use it for every request.** Whenever the user
-names a session (P7.2, "next phase", "start phase 8" …) or asks for any build, fix, review or
-explanation, find the matching prompt in `docs/build-prompts.md` (the session's own block, or a
-Utility prompt such as Resume / Debug / Review / Security check / Explain) and follow it together
-with the **Session Starter** — even if the user doesn't paste it. Its `Read:` list says which PRD
-sections to open and its `Done when:` is the finish line the reviewer checks. If the user says they
-are away / unattended, use the **Unattended Session Starter** in that file instead.
+names a session (P7.7, "next phase", "start phase 8", "complete P7.8" …) or asks for any build, fix,
+review or explanation, find the matching prompt in `docs/build-prompts.md` (the session's own
+block, or a Utility prompt such as Resume / Debug / Review / Security check / Explain) and follow
+it together with the **Session Starter** and **How to use this pack** — even if the user doesn't
+paste them. If the user says they are away / unattended, use the **Unattended Session Starter**
+instead. The file is studied **twice per session: at the start and again at completion.**
 
-1. Read `docs/progress.md` — find the current phase and the next unchecked item, then its prompt in
-   `docs/build-prompts.md`.
-2. Read only the PRD sections that item's prompt names (don't load the whole PRD; it is ~2,700 lines).
-3. Load the skills that apply: always `oppam-code-standards` + `oppam-testing`; add
+### A. Starting a session — study the prompt
+
+1. Read `docs/progress.md` — the current phase, the next unchecked item, and any open notes /
+   Minors / "→ P<x.y>" hand-overs addressed to this session.
+2. Open `docs/build-prompts.md` and read, in full: **How to use this pack**, the **Session
+   Starter**, and the session's own block (e.g. `### P7.7 — …`). Don't work from memory of it.
+3. Break the session block into a **prompt checklist**, one line per item:
+   - every PRD section in its `Read:` list (read only those — the PRD is ~2,700 lines);
+   - every component, action, job, screen, rule and safeguard named in `Build:` / `Task:`;
+   - every condition in `Done when:` (the finish line the reviewer checks);
+   - every step of the Session Starter (plan → approval → build → tests → pint → phpstan →
+     review gate → reviewer → completion report → progress.md → no commit unless asked).
+4. Load the skills that apply: always `oppam-code-standards` + `oppam-testing`; add
    `oppam-ui-standards` when views/CSS/JS change; `oppam-review-gate` before finishing.
-4. **Plan before coding** for anything bigger than a one-file fix. List migrations, models,
-   actions, Livewire components, views, tests. Wait for approval.
-5. Build → write tests (success + security matrix) → run tests → fix → pint + phpstan →
-   self-check with `oppam-review-gate` → run the `oppam-reviewer` agent → give the **completion
-   report** → update `docs/progress.md` → commit (only when asked).
+5. Inspect the existing code, then **plan before coding** (anything bigger than a one-file fix):
+   map every checklist item to the files that deliver it (migrations, models, enums, actions,
+   Livewire components, views, routes, events/notifications, tests). Wait for approval. If the
+   session is too big for one sitting, propose a split (e.g. P7.8a / P7.8b) — never drop a
+   `Build:` item silently.
+
+### B. Building — work prompt-wise
+
+6. Work through the checklist **in the prompt's order**, item by item: build → tests (success +
+   security matrix, named with PRD rule ids) → run them → fix. Keep the checklist current; an item
+   is done only when its test or command has actually been run.
+7. Then pint + phpstan → self-check with `oppam-review-gate` → run the `oppam-reviewer` agent.
+
+### C. Completing a session — study the prompt again
+
+8. **Re-open `docs/build-prompts.md`** and re-read the session block and the Session Starter, then
+   walk the checklist **step by step** against the work:
+   - each `Build:` item → done (file + test as evidence), or deferred **with the user's approval**
+     and written into `docs/progress.md` under the session that will do it;
+   - each `Done when:` condition → proved by a named test / command output;
+   - each Session Starter step → actually done (no skipped review gate, reviewer or report).
+   Anything missing → finish it, or ask the user; never report the session as complete with a gap.
+9. Give the **completion report** (`oppam-review-gate` format), including the **Prompt
+   checklist** (every item → done / deferred / not done → evidence).
+10. Update `docs/progress.md` (what was built, decisions, reviewer rounds, open Minors, deferrals).
+    Then follow **How to use this pack** step 4: the user tries it in the browser → commit (only
+    when asked) → tick the item.
+11. Name the next session: the next unchecked item in `docs/progress.md` and its block in
+    `docs/build-prompts.md`.
+
+### D. Completing a whole phase
+
+When the last session of a phase is done, re-read that phase's section of `docs/build-prompts.md`
+and `docs/progress.md`: every session ticked (or its open items listed), every hand-over to a later
+session recorded, Dusk / owner-review items still open listed — before starting the next phase.
 
 If the PRD and a request disagree, **stop and ask** — never silently pick one. If the PRD is
 silent, propose an answer and ask; record the decision in `docs/decisions.md`.

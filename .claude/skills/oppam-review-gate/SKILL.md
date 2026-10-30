@@ -120,6 +120,8 @@ For each module/session the agent must report, with evidence:
 
 ```text
 Feature:              <session id + name, PRD sections implemented>
+Prompt checklist:     <each Build:/Task: item and Done when: condition of the session's block in
+                       docs/build-prompts.md → done / deferred (user-approved, where) / not done → evidence>
 Files changed:        <grouped: migrations, models, actions, livewire, views, routes, tests, config>
 Database changes:     <tables/columns/indexes/constraints; expand-contract notes; seeders>
 Authorization:        <policies/abilities/permission keys; how queries are scoped>
