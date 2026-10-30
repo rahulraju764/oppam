@@ -178,7 +178,7 @@ final class ImportBatchRows implements ShouldBeUnique, ShouldQueue
     private function blocked(BrokerImportBatch $batch, ?User $uploader, BureauGate $gate, ?BrokerStaff &$staff): ?ImportStopReason
     {
         $broker = Broker::query()->find($batch->broker_id);
-        if ($broker === null || ! $broker->isVerifiedAndActive() || $broker->imports_paused_at !== null || ! Feature::active(Flag::BrokerBulkImport)) {
+        if ($broker === null || ! $broker->isVerifiedAndActive() || $broker->imports_paused_at !== null || $broker->creation_paused_at !== null || ! Feature::active(Flag::BrokerBulkImport)) {
             return ImportStopReason::BureauBlocked;
         }
 

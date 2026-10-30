@@ -25,9 +25,20 @@ it('opens the admin menu from the top bar and never scrolls sideways at 375px', 
         $browser->driver->getKeyboard()->sendKeys(Facebook\WebDriver\WebDriverKeys::ESCAPE);
         $browser->waitUntilMissing('#admin-sidebar.is-open');
 
-        foreach (['/staff', '/roles', '/sessions', '/members', '/masters', '/masters/castes', '/masters/profanity-ml', '/moderation/profiles', '/moderation/photos', '/moderation/edits', '/moderation/escalations'] as $path) {
+        foreach (['/staff', '/roles', '/sessions', '/members', '/masters', '/masters/castes', '/masters/profanity-ml', '/moderation/profiles', '/moderation/photos', '/moderation/edits', '/moderation/escalations',
+            '/brokers', '/brokers/payouts',                 // P7.8a A07 directory and payout runs
+            '/brokers/exports', '/brokers/imports', '/brokers/disputes'] as $path) {   // P7.8b oversight screens
             $browser->visit(adminDuskUrl($path))
                 ->waitFor('.admin-page-head')
+                ->assertScript('document.scrollingElement.scrollWidth <= document.documentElement.clientWidth');
+        }
+
+        // P7.8b: a bureau page with its ten tabs (the tab bar scrolls inside itself) and a lazy tab.
+        $code = App\Models\Broker::query()->value('code');
+        if ($code !== null) {
+            $browser->visit(adminDuskUrl('/brokers/'.$code.'?tab=activity'))
+                ->waitFor('[dusk="broker-tab-activity"]')
+                ->waitForText('Without a staff or activity filter')
                 ->assertScript('document.scrollingElement.scrollWidth <= document.documentElement.clientWidth');
         }
     });

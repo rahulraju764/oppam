@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Broker;
 
 use App\Domain\Broker\BrokerCodeLookup;
+use App\Domain\Broker\SignupFingerprints;
 use App\Enums\ReferralSource;
 use App\Enums\ReferralStatus;
 use App\Models\BrokerReferral;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  * - FOUND + ACTIVE bureau → profiles.broker_id, broker_verified = true and a PENDING ledger row;
  * - an unknown code or a bureau that isn't ACTIVE → only broker_code_raw (broker_verified = false),
  *   for the A07 unverified-codes queue;
+ * - the new row keeps how the member signed up — keyed hashes of the IP / network and the device
+ *   cookie only (SignupFingerprints; P7.8c fraud signals, B.12);
  * - it never blocks or fails a registration (R-M13-1) and never replaces a verified attribution —
  *   attribution is first-touch and permanent, changed by admins only (R-M13-3).
  *
@@ -26,7 +29,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class ResolveBrokerCode
 {
-    public function __construct(private readonly BrokerCodeLookup $lookup) {}
+    public function __construct(
+        private readonly BrokerCodeLookup $lookup,
+        private readonly SignupFingerprints $fingerprints,
+    ) {}
 
     public function handle(Profile $profile, ?string $typed, ?string $cookie = null): void
     {
@@ -56,6 +62,7 @@ final class ResolveBrokerCode
                     'profile_id' => $profile->id,
                     'source' => ReferralSource::Referral,
                     'status' => ReferralStatus::Pending,
+                    ...$this->fingerprints->current(),   // P7.8c: hashed sign-up IP / network / device (B.12 signals)
                 ])->save();
             }
         });

@@ -42,10 +42,12 @@ it('broker-owner.{broker}: refused once the login is suspended, the Owner row de
         'deactivated owner row' => $owner->brokerStaff->forceFill(['status' => BureauStaffStatus::Deactivated])->save(),
         'rejected bureau' => $broker->forceFill(['status' => BrokerStatus::Rejected])->save(),
         'deactivated bureau' => $broker->forceFill(['status' => BrokerStatus::Deactivated])->save(),
+        'suspended bureau' => $broker->forceFill(['status' => BrokerStatus::Suspended])->save(),           // P7.8 (P7.2 Minor)
+        'KYC-pending bureau' => $broker->forceFill(['status' => BrokerStatus::KycPending])->save(),        // P7.8 (P7.2 Minor)
     };
 
     expect((new BrokerOwnerChannel)->join($owner->refresh(), $broker->id))->toBeFalse();
-})->with(['suspended login', 'deactivated owner row', 'rejected bureau', 'deactivated bureau']);
+})->with(['suspended login', 'deactivated owner row', 'rejected bureau', 'deactivated bureau', 'suspended bureau', 'KYC-pending bureau']);
 
 it('App.Models.User.{id}: a bureau login joins its own channel only, while active', function (): void {
     $login = bureauLogin(BureauRole::Telecaller);

@@ -40,8 +40,13 @@ return [
         ['admin.verification.index', 'ID verification', 'fa-id-card-o', 'verification.queue.view'],
     ],
     'Brokers' => [
+        ['admin.brokers.index', 'Broker directory', 'fa-briefcase', 'brokers.view'],
         ['admin.brokers.kyc', 'Applications & KYC', 'fa-building-o', 'brokers.kyc'],
         ['admin.brokers.unverified', 'Unverified codes', 'fa-question-circle-o', 'brokers.edit'],
+        ['admin.brokers.payouts', 'Payout runs', 'fa-bank', 'brokers.payout'],
+        ['admin.brokers.imports', 'Bulk imports', 'fa-upload', 'brokers.imports.view'],
+        ['admin.brokers.exports', 'Export audit', 'fa-download', 'brokers.exports.view'],
+        ['admin.brokers.disputes', 'Consent disputes', 'fa-balance-scale', 'brokers.view'],
     ],
     'Master data' => [
         ['admin.masters.index', 'Master data', 'fa-list', 'masters.view'],

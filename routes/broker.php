@@ -6,12 +6,13 @@ use App\Http\Controllers\Broker\ImportErrorsController;
 use App\Http\Controllers\Broker\ImportTemplateController;
 use App\Http\Controllers\Broker\ManagedProfileExportController;
 use App\Http\Controllers\Broker\MaterialsController;
+use App\Http\Controllers\Broker\PayoutStatementController;
 use App\Http\Controllers\Broker\ReferralCodeController;
 use App\Livewire\Broker\Activity;
 use App\Livewire\Broker\Apply;
 use App\Livewire\Broker\Auth\VerifyDevice;
-use App\Livewire\Broker\ComingSoon;
 use App\Livewire\Broker\Dashboard;
+use App\Livewire\Broker\Earnings;
 use App\Livewire\Broker\Import;
 use App\Livewire\Broker\Kyc;
 use App\Livewire\Broker\ManagedProfiles;
@@ -50,13 +51,15 @@ Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'
         Route::get('/kyc', Kyc::class)->middleware('bureau:kyc.manage')->name('kyc');
 
         // Staff accounts & activity (B.8, P7.5): staff pages are the Owner's (`staff.manage`); the
-        // activity log is Owner + Manager (`activity.view`); earnings are the Owner's (P7.8 swaps the page).
+        // activity log is Owner + Manager (`activity.view`); earnings and statements are the Owner's (P7.8).
         Route::prefix('staff')->name('staff.')->middleware('bureau:staff.manage')->group(function (): void {
             Route::get('/', Staff\Index::class)->name('index');
             Route::get('/{code}', Staff\Show::class)->where('code', 'STF[0-9]+')->name('show');
         });
         Route::get('/activity', Activity::class)->middleware('bureau:activity.view')->name('activity');
-        Route::get('/earnings', ComingSoon::class)->middleware('bureau:earnings.view')->name('earnings');
+        Route::get('/earnings', Earnings::class)->middleware('bureau:earnings.view')->name('earnings');
+        Route::get('/earnings/statements/{run}', PayoutStatementController::class)->where('run', 'PAY[0-9]+')
+            ->middleware(['bureau:earnings.view', 'throttle:30,1'])->name('earnings.statement');
 
         // Referral program (B.5, P7.2): own referrals only; materials are the caller's own bureau.
         Route::get('/referrals', Referrals::class)->middleware('bureau:referrals.view')->name('referrals');

@@ -342,3 +342,23 @@ it('§8.1: an Owner or Manager on an unknown device is sent to the device OTP; o
     'data entry' => [BureauRole::DataEntry, false],
     'telecaller' => [BureauRole::Telecaller, false],
 ]);
+
+it('★ R-A07-10 / R-A07-9: a creation-paused bureau — add and import refused for every role (BROKER_CREATION_PAUSED); profiles, batches and exports stay open', function (BureauRole $role): void {
+    $owner = bureauLogin();
+    $broker = staffOf($owner)->broker;
+    $broker->forceFill(['creation_paused_at' => now(), 'creation_paused_reason' => '3 upheld consent disputes'])->save();
+    $client = managedProfile($broker);
+    actingAsBureau($role === BureauRole::Owner ? $owner : bureauLogin($role, broker: $broker));
+    $i = array_search($role, BureauRole::cases(), true);
+
+    foreach (['/profiles/create' => 'profiles.create', '/import' => 'profiles.import'] as $path => $permission) {
+        $response = $this->get(brokerUrl($path));
+        BUREAU_MATRIX[$permission][$i]
+            ? $response->assertForbidden()->assertHeader('X-Error-Code', BureauGate::CREATION_PAUSED)
+            : $response->assertForbidden()->assertHeader('X-Error-Code', BureauGate::NOT_PERMITTED);
+    }
+
+    $this->get(brokerUrl('/profiles'))->assertOk();
+    BUREAU_MATRIX['profiles.import'][$i] ? $this->get(brokerUrl('/import/batches'))->assertOk() : null;
+    BUREAU_MATRIX['profiles.export'][$i] ? $this->get(brokerUrl('/profiles/'.$client->code.'/export/biodata'))->assertOk() : null;
+})->with(BureauRole::cases());

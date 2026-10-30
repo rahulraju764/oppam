@@ -32,4 +32,16 @@ enum BrokerKycStatus: string
     {
         return collect(self::cases())->mapWithKeys(fn (self $case): array => [$case->value => $case->label()])->all();
     }
+
+    /** <x-ui.badge> variant (the label is always shown too). */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::NotSubmitted => 'muted',
+            self::Pending => 'warning',
+            self::Verified => 'verified',
+            self::Rejected => 'danger',
+            self::Revoked => 'danger',
+        };
+    }
 }

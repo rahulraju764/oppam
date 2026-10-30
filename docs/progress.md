@@ -5,9 +5,9 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
 **Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
-**Next session:** P7.6 — Bulk upload part 1 (after P7.5's owner review / commit). Open first: P6.1 re-review after its Blocker fix;
-P5.3 — Admin billing (A06), groundwork committed in e13f771 (breaks BillingTest.php's fake gateway), screens not built;
-Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
+**Next session:** P7.8c — Fraud & quality signals (P7.8a reviewed READY, held for the owner's rule-5 review; P7.8b built, reviewer
+round 2 due). Then P7.9. Still open elsewhere: P6.1 re-review after its Blocker fix; P5.3 — Admin billing (A06), groundwork committed in e13f771
+(breaks BillingTest.php's fake gateway), screens not built; Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -176,8 +176,72 @@ Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
   journey passed 3 runs in a row (Import → COMPLETED live ≈ 5 s), one earlier early failure (possible flake); a final full-file
   run was stopped for low memory. Open: Minor 1 (owner) — should assigned-only logins see only their own batches?; Minor 4
   (permission re-checked per 100-row chunk, by design); widths 320/768/1024/1440 not checked. NOT committed.
-- [ ] P7.8 Payouts & broker admin screens (A07)
-- [ ] P7.9 Broker security sweep
+- [ ] P7.8 Payouts & broker admin screens (A07) — split by the owner (decisions 2026-10-29) into:
+  - [ ] P7.8a Money & bureau control — 2026-10-29: built (decisions 2026-10-29 (1)–(15)). A07 directory (BrokerDirectoryQuery, B.12
+    columns, search / filters, CreateBureau → APPLIED bureau the Owner applies into with the same mobile, R-A07-1/2), BrokerShow
+    Overview (terms: commission `brokers.commission_bps`, allowance / seats / import cap `brokers.edit`, R-A07-11; suspend /
+    deactivate / reactivate R-A07-8; payouts hold) + Earnings + Payouts tabs; payout runs PAY1001… (CreatePayoutRun — one open run,
+    paid-period override B.17; PayoutCalculator — gross − clawback + carried in, TDS setting (0 bps), < ₹500 → CARRIED_FORWARD R-A07-5;
+    ApprovePayoutRun — row lock, second approver > ₹50,000 per bureau line R-A07-4; MarkPayoutPaid with UTR; RollPayoutLineForward;
+    DiscardPayoutRun), statements on demand (DompdfPayoutStatementRenderer; admin + Owner's own), Broker\Earnings (Owner only, live on
+    `.commission.earned` / `.payout.paid`), `broker-owner` channel ACTIVE Owners only (P7.2 Minor). Tests: PayoutRunTest ★ 21,
+    PayoutCalculatorTest, BrokerDeactivationTest ★ (Done when), AdminBureauTest 11, BrokerAdminScreensTest, EarningsTest, channel tests.
+    Runs: P7.8a files 110 passed; tests/Feature/Broker + Livewire/Broker + Livewire/Admin + Feature/Broadcasting 955 passed; lint +
+    analyse clean; Dusk P7.8 suspend → staff tab on /login 0.83 s (375 px), AdminPanelTest (/brokers, /brokers/payouts at 375 px)
+    passed. Reviewer round 1: **READY TO COMMIT** (0 Blockers / 0 Majors; its own run: 2,854 passed in groups, BillingTest.php
+    excluded). Minors fixed after: (2) an unproved application no longer rewrites the A07-entered bureau details (test);
+    (3) a run whose second approval stopped being needed completes on the next approval (test); (4) payout-run lock timeout and the
+    UTR unique-index race become friendly refusals (untested — races); (1) BrokerSuspended docblock corrected (ForceLogout does the
+    sign-out; no listener). Minors open: statement downloads aren't audited (like invoices); conversion % computed in Blade; widths
+    320/768/1024/1440 and BrokerShow / PayoutRunShow not browser-checked. **NOT committed — payouts and ApplyAsBroker / Apply
+    (application path) need the owner's own review (rule 5).**
+  - [ ] P7.8b Oversight — 2026-10-30: built (decisions 2026-10-29 P7.8b row (1)–(12)). BrokerShow tabs per permission (Referrals,
+    Managed profiles → A04 for PENDING_REVIEW, Staff with deactivate / reset devices, Imports, Exports, Disputes, Activity incl. A07's
+    own actions), ExportsAudit (`/brokers/exports`, append-only, unknown codes reported, burst / repeat anomaly badges), ImportsMonitor
+    (`/brokers/imports`: paused bureaus first, pause / resume, cancel via the bureau's own cancel core, audited source download that
+    deletes its plain copy), consent Disputes (`/brokers/disputes`, `broker_consent_disputes` DSP…: profile SUSPENDED + its A04 items
+    held, A10 case P1; dismissed → status + items back, PENDING_REVIEW with nothing to review → DRAFT; 3 upheld in 90 days → creation
+    pause, BureauGate 403 BROKER_CREATION_PAUSED for create + import only, Owner notified, A02 alert), KYC revoke (Overview,
+    `brokers.kyc`). Tests: BrokerOversightTest 24 (★ R-M13-21, ★ R-A07-10 ×2, ★ R-A07-9, ★ R-A07-7, B.17, staff / batch IDOR),
+    BrokerOversightScreensTest 11, matrix ★ creation-pause × 4 roles, Dusk AdminPanelTest (3 new pages + a bureau page at 375 px).
+    Reviewer round 1: NOT READY — 1 Major (a dispute left the profile's A04 items open; a dismissal could leave PENDING_REVIEW with no
+    queue item) → fixed (ModerationHold::ConsentDispute hold / release, DRAFT fallback, tests); Minors 2 (embedded dispute target),
+    3 (temp copy cleanup on failure / abort), 4 (pause from the standalone monitor, loop variable), 5 (A07 actions on staff / batches /
+    disputes in the timeline), 7 (Owner notice, neutral alert), 8 (export indexes) fixed with tests; enum CHECK constraints added to the
+    dispute columns; the export-index down() fixed (rollback + re-migrate verified). **Reviewer round 2: READY TO COMMIT** (its own
+    run: 1439 passed in groups, lint + analyse clean). Dusk AdminPanelTest re-run after the fixes: passed (20 assertions, 375 px).
+    Minors open: A10 can't act on a managed profile (no member login) — outcomes other than "no action" refuse; a dispute on a
+    profile that was already SUSPENDED holds nothing of its own, so a dismissal leaves it as the earlier suspension left it (by design);
+    widths 320/768/1024/1440 and the dialogs not driven in a browser. Not committed — commit it only after P7.8a's owner review
+    (BrokerShow / routes build on P7.8a), keeping the P7.8c files out.
+  - [ ] P7.8c Fraud & quality signals (B.12) — 2026-10-30: built (decisions 2026-10-30; owner: capture the data now; the three money
+    signals hold payouts). Capture: referral rows keep keyed HMACs of the sign-up IP and its /24 (/48) network and sha256 of the
+    `oppam_device` cookie (SignupFingerprints, written by ResolveBrokerCode at registration and wizard step 1 — **rule 5: registration
+    path**); photo pHash and A04's duplicate check already existed (reused). Signals (`broker_fraud_signals`, one OPEN row per bureau ×
+    type; FraudSignals + RecordFraudSignals + daily ScanBrokerFraudSignals 04:15 IST): shared sign-ups, incomplete referrals,
+    pay-then-refund, self-referral (bureau logins' devices / IPs), referral spike, export pattern, high rejection, consent disputes,
+    import mobile pattern and import photo match (ImportBatchSignals → batch `signal_flags`, matching photos' A04 items escalated),
+    staff on many devices. Money signals (shared sign-ups, self-referral, spike) auto-hold payouts; staff devices / exports tell the
+    Owner. A07: SignalsPanel on the Overview (resolve `brokers.edit`, "Void all commissions" `brokers.payout` → VOID FRAUD), directory
+    badge + "Open signals" filter, A02 alert (now for `brokers.view`, with the creation-pause alert). Tests: FraudSignalsTest 19,
+    BrokerSignalsScreensTest 5. Reviewer round 1: NOT READY — 2 Majors fixed with tests: HIGH_REJECTION could never fire (real A04
+    rejections carry a reason_category; the filter now drops only hold / stale markers — the test was masked by factory defaults);
+    a resolved signal (and its payout hold) was reopened nightly by the same evidence (now only new evidence reopens; spike once per
+    month). Minors fixed: banned-photo matches counted, job timeout 900 s < retry_after, panel shows the real hold state, alerts say
+    how many bureaus, batch flags shown in the imports monitor, cookie kept / set tests, scan test renamed. Minors open: the import
+    photo check is a full `media` scan per photo inside the daily job (measure; split per batch if slow); APP_KEY rotation breaks
+    older IP matching; the panel with signals not driven in a browser. Round 2 due.
+- [ ] P7.9 Broker security sweep — 2026-10-30: built (plan approved 2026-10-30). Report: `docs/security/broker-sweep-p7.9.md`
+  (surface × attacker × expected × result × test). New suites in `tests/Feature/Broker/Security/`: SurfaceInventoryTest ★ (all 42
+  `broker.*` / `admin.brokers.*` routes and every action of the 37 bureau / A07 Livewire components must have attack rows naming
+  existing test files — a new route or action without one fails), RouteAttackTest (27 portal routes × guest / member / another
+  bureau's Owner with the victim's codes / stale deactivated session / suspended + deactivated bureau), MidFlowRevocationTest
+  (pages opened while allowed, then staff deactivated / bureau suspended / KYC revoked / creation or imports paused / permission
+  switched off → refused, nothing written; tampered #[Locked] codes on 7 components; foreign invitation / follow-up / assignee /
+  photo ids), ChannelAttackTest (member, non-Owner roles on `broker-owner`, unknown ids, guest auth). ★ B.22 suites + sweep:
+  454 passed. **No application gap found**; 2 coverage gaps closed with tests (photo actions with another profile's photo id;
+  member account on the bureau channels). Dusk BrokerPortalTest (DUSK_DRIVER_PORT=9615): 8/8 journeys passed at 375 px (P7.1–P7.8).
+  Reviewer: not yet run.
 
 ## Phase 8 — Content, settings & communication
 - [ ] P8.1 CMS & public pages (M12 + A08)

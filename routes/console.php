@@ -7,6 +7,7 @@ use App\Jobs\Billing\ExpireUnpaidOrders;
 use App\Jobs\Billing\SendPlanExpiryReminders;
 use App\Jobs\Broker\PurgeDeletedManagedProfiles;
 use App\Jobs\Broker\PurgeImportFiles;
+use App\Jobs\Broker\ScanBrokerFraudSignals;
 use App\Jobs\Broker\SendFollowUpReminders;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
@@ -71,3 +72,6 @@ Schedule::job(new PurgeDeletedManagedProfiles)->dailyAt('21:40')->onOneServer()-
 
 // §11A B.9 / B.23: bulk-import source files purged after broker.import_file_retention_days (30), 03:45 IST (P7.7).
 Schedule::job(new PurgeImportFiles)->timezone('Asia/Kolkata')->dailyAt('03:45')->onOneServer()->withoutOverlapping();
+
+// §11A B.12: A07 fraud & quality signals — batch flags, then every bureau, 04:15 IST (P7.8c).
+Schedule::job(new ScanBrokerFraudSignals)->timezone('Asia/Kolkata')->dailyAt('04:15')->onOneServer()->withoutOverlapping();

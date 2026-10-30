@@ -54,6 +54,11 @@ use Illuminate\Validation\ValidationException;
  * - One PAN = one bureau (keyed hash); a second application with it is refused with a message,
  *   unless the holder never proved its mobile and is past the hold window (then it is released).
  * - Role, status, code, commission and seats come from the server only. Per-IP cap.
+ * - A bureau an admin created in A07 (P7.8, decisions 2026-10-29) waits for its Owner: an
+ *   application with that bureau's mobile is linked to it (code, commission and limits kept)
+ *   instead of opening another. With `broker.self_apply` off only such an application is accepted,
+ *   through /broker/apply?bureau=<code>, and only with the mobile on record. The mobile is still
+ *   proved by OTP and KYC follows as usual (R-A07-2).
  */
 final class ApplyAsBroker
 {
@@ -69,9 +74,10 @@ final class ApplyAsBroker
      * @throws RegistrationFailed for the per-IP cap
      * @throws ValidationException when the PAN already belongs to a bureau
      */
-    public function handle(BrokerApplicationData $data, string $ip): RegistrationResult
+    public function handle(BrokerApplicationData $data, string $ip, ?string $reservedCode = null): RegistrationResult
     {
-        if (! Feature::active(Flag::BrokerSelfApply)) {
+        $selfApply = Feature::active(Flag::BrokerSelfApply);
+        if (! $selfApply && $reservedCode === null) {
             abort(404);
         }
 
@@ -85,7 +91,7 @@ final class ApplyAsBroker
         $panHash = PanNumber::hash($data->pan);
 
         /** @var array{0: User|null, 1: User|null} $outcome [new login, existing holder] */
-        $outcome = DB::transaction(function () use ($data, $passwordHash, $panHash): array {
+        $outcome = DB::transaction(function () use ($data, $passwordHash, $panHash, $selfApply, $reservedCode): array {
             $holder = User::withTrashed()->where('phone', $data->phone->e164())->lockForUpdate()->first();
 
             if ($holder !== null) {
@@ -96,8 +102,15 @@ final class ApplyAsBroker
                 $this->release($holder);
             }
 
+            $reserved = Broker::query()->where('phone', $data->phone->e164())->where('status', BrokerStatus::Applied)
+                ->whereNotNull('created_by_admin_id')->whereDoesntHave('staff')->lockForUpdate()->first();
+
+            if (! $selfApply && ($reserved === null || $reserved->code !== $reservedCode)) {
+                throw ValidationException::withMessages(['form.mobile' => __('Use the mobile number our team registered for this bureau.')]);
+            }
+
             $panHolder = Broker::query()->where('pan_hash', $panHash)->lockForUpdate()->first();
-            if ($panHolder !== null) {
+            if ($panHolder !== null && $panHolder->id !== $reserved?->id) {
                 $this->releasePan($panHolder);
             }
 
@@ -111,20 +124,34 @@ final class ApplyAsBroker
                 'phone_verified_at' => null,
             ])->save();
 
-            $broker = new Broker;
-            $broker->forceFill([
-                'code' => $this->codes->next(),
-                'name' => $data->name,
-                'bureau_name' => $data->bureauName,
-                'phone' => $data->phone->e164(),
-                'email' => $user->email,
-                'district_id' => $data->districtId,
-                'status' => BrokerStatus::Applied,
-                'kyc_status' => BrokerKycStatus::NotSubmitted,
-                'pan_hash' => $panHash,
-                'pan_last4' => PanNumber::last4($data->pan),
-                'staff_seat_limit' => Settings::int(SettingKey::BrokerStaffSeatsDefault),
-            ])->save();
+            if ($reserved !== null) {
+                // Admin-created: code, terms and the details A07 entered stay as they are — the mobile
+                // isn't proved yet, so an application only fills what A07 left blank (the PAN goes
+                // with the application and is released with it).
+                $broker = $reserved;
+                $broker->forceFill([
+                    'bureau_name' => $broker->bureau_name ?? $data->bureauName,
+                    'email' => $broker->email ?? $user->email,
+                    'district_id' => $broker->district_id ?? $data->districtId,
+                    'pan_hash' => $panHash,
+                    'pan_last4' => PanNumber::last4($data->pan),
+                ])->save();
+            } else {
+                $broker = new Broker;
+                $broker->forceFill([
+                    'code' => $this->codes->next(),
+                    'name' => $data->name,
+                    'bureau_name' => $data->bureauName,
+                    'phone' => $data->phone->e164(),
+                    'email' => $user->email,
+                    'district_id' => $data->districtId,
+                    'status' => BrokerStatus::Applied,
+                    'kyc_status' => BrokerKycStatus::NotSubmitted,
+                    'pan_hash' => $panHash,
+                    'pan_last4' => PanNumber::last4($data->pan),
+                    'staff_seat_limit' => Settings::int(SettingKey::BrokerStaffSeatsDefault),
+                ])->save();
+            }
 
             $owner = new BrokerStaff;
             $owner->forceFill([
@@ -135,7 +162,8 @@ final class ApplyAsBroker
                 'status' => BureauStaffStatus::Invited,
             ])->save();
 
-            $this->audit->record('broker.applied', $broker, after: ['status' => BrokerStatus::Applied->value], actor: $user, subjectLabel: $broker->code);
+            $this->audit->record('broker.applied', $broker, after: ['status' => BrokerStatus::Applied->value, 'admin_created' => $reserved !== null],
+                actor: $user, subjectLabel: $broker->code);
 
             return [$user, null];
         });
@@ -205,7 +233,10 @@ final class ApplyAsBroker
         if ($staff !== null) {
             $brokerId = $staff->broker_id;
             $staff->delete();
-            Broker::query()->whereKey($brokerId)->delete();
+
+            // An admin-created bureau stays, waiting for its Owner again; a self-application goes.
+            Broker::query()->whereKey($brokerId)->whereNull('created_by_admin_id')->delete();
+            Broker::query()->whereKey($brokerId)->update(['pan_hash' => null, 'pan_last4' => null, 'updated_at' => now()]);
         }
 
         Profile::withTrashed()->where('user_id', $holder->id)->forceDelete();

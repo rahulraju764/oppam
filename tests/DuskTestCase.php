@@ -14,6 +14,9 @@ use PHPUnit\Framework\Attributes\BeforeClass;
 /**
  * Browser tests (Laravel Dusk) run against the app served by `composer dev`
  * (APP_URL, http://localhost:8000) — start it first. See CLAUDE.md "Commands".
+ *
+ * ChromeDriver listens on DUSK_DRIVER_PORT (default 9515). Windows sometimes reserves a port range
+ * that covers 9515 (`netsh int ipv4 show excludedportrange protocol=tcp`): set another free port.
  */
 abstract class DuskTestCase extends BaseTestCase
 {
@@ -21,7 +24,7 @@ abstract class DuskTestCase extends BaseTestCase
     public static function prepare(): void
     {
         if (! static::runningInSail()) {
-            static::startChromeDriver(['--port=9515']);
+            static::startChromeDriver(['--port='.self::driverPort()]);
         }
     }
 
@@ -39,9 +42,14 @@ abstract class DuskTestCase extends BaseTestCase
         $this->configureOptions($options);
 
         return RemoteWebDriver::create(
-            $_ENV['DUSK_DRIVER_URL'] ?? env('DUSK_DRIVER_URL') ?? 'http://localhost:9515',
+            $_ENV['DUSK_DRIVER_URL'] ?? env('DUSK_DRIVER_URL') ?? 'http://localhost:'.self::driverPort(),
             DesiredCapabilities::chrome()->setCapability(ChromeOptions::CAPABILITY, $options)
         );
+    }
+
+    private static function driverPort(): int
+    {
+        return (int) ($_ENV['DUSK_DRIVER_PORT'] ?? env('DUSK_DRIVER_PORT') ?? 9515);
     }
 
     protected function configureOptions(ChromeOptions $options): void

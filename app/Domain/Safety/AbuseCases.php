@@ -68,6 +68,21 @@ final class AbuseCases
         return $case;
     }
 
+    /**
+     * A07 recorded a client's consent dispute on a bureau's managed profile (§11A B.12, R-A07-10):
+     * the profile's case — opened now if none is open — takes at least this priority. No reporter.
+     */
+    public function openForProfile(string $profileId, CasePriority $priority): AbuseCase
+    {
+        $case = $this->openCaseFor($profileId, $priority);
+        $this->raise($case, $priority);
+        $case->last_reported_at = now();
+        $case->save();
+        $this->announce($case);
+
+        return $case;
+    }
+
     /** Distinct members whose reports on this profile still count towards the escalation. */
     public function recentReporters(string $profileId): int
     {

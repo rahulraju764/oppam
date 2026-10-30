@@ -6,14 +6,23 @@ use App\Http\Controllers\Admin\BreakGlassImageController;
 use App\Http\Controllers\Admin\BrokerKycDocumentController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
 use App\Http\Controllers\Admin\EvidencePackController;
+use App\Http\Controllers\Admin\ImportSourceController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
+use App\Http\Controllers\Admin\PayoutStatementController;
 use App\Http\Controllers\Admin\VerificationDocumentController;
 use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
+use App\Livewire\Admin\Brokers\BrokerShow;
+use App\Livewire\Admin\Brokers\BrokersIndex;
+use App\Livewire\Admin\Brokers\Disputes as BrokerDisputes;
+use App\Livewire\Admin\Brokers\ExportsAudit as BrokerExportsAudit;
+use App\Livewire\Admin\Brokers\ImportsMonitor as BrokerImportsMonitor;
 use App\Livewire\Admin\Brokers\KycQueue as BrokerKycQueue;
+use App\Livewire\Admin\Brokers\PayoutRunShow;
+use App\Livewire\Admin\Brokers\PayoutsIndex;
 use App\Livewire\Admin\Brokers\UnverifiedCodesQueue as BrokerUnverifiedCodesQueue;
 use App\Livewire\Admin\Chat\BreakGlass;
 use App\Livewire\Admin\Chat\BreakGlassViewer;
@@ -116,6 +125,27 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
 
     // P7.2: mistyped / unknown referral codes — link or clear, audited (R-M13-3).
     Route::get('/brokers/unverified-codes', BrokerUnverifiedCodesQueue::class)->middleware('can:brokers.edit')->name('brokers.unverified');
+
+    // P7.8: the A07 directory and bureau detail (brokers.view; each action re-checks its own
+    // permission), and payout runs (brokers.payout) — statements rendered on demand, paid lines only.
+    Route::middleware('can:brokers.view')->prefix('brokers')->name('brokers.')->group(function (): void {
+        Route::get('/', BrokersIndex::class)->name('index');
+        // P7.8b oversight: consent disputes (brokers.view; recording / deciding need brokers.edit in the
+        // Actions), the export audit and the bulk-import monitor (their own permissions).
+        Route::get('/disputes', BrokerDisputes::class)->name('disputes');
+        Route::get('/exports', BrokerExportsAudit::class)->middleware('can:brokers.exports.view')->name('exports');
+        Route::get('/imports', BrokerImportsMonitor::class)->middleware('can:brokers.imports.view')->name('imports');
+        Route::get('/{broker}/imports/{batch}/source/{file}', ImportSourceController::class)
+            ->where(['broker' => 'BRK[0-9]+', 'batch' => 'B-[0-9]+', 'file' => 'sheet|photos'])
+            ->middleware(['can:brokers.imports.manage', 'throttle:30,1'])->name('imports.source');
+        Route::get('/{broker}', BrokerShow::class)->where('broker', 'BRK[0-9]+')->name('show');
+    });
+    Route::middleware('can:brokers.payout')->prefix('brokers/payouts')->name('brokers.payouts')->group(function (): void {
+        Route::get('/', PayoutsIndex::class);
+        Route::get('/{run}', PayoutRunShow::class)->where('run', 'PAY[0-9]+')->name('.show');
+        Route::get('/{run}/statements/{broker}', PayoutStatementController::class)->where(['run' => 'PAY[0-9]+', 'broker' => 'BRK[0-9]+'])
+            ->middleware('throttle:60,1')->name('.statement');
+    });
 
     // Safety cases (A10, P6.2). Viewing needs safety.reports.view; every decision re-checks its own
     // permission. The evidence pack: a 5-minute signed link, super admin + legal hold (ExportEvidencePack).

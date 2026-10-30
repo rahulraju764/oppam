@@ -23,7 +23,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * switch-off applies to the very next request (B.18 "no caching past a change").
  *
  * An applicant Owner is INVITED until KYC approval (decisions 2026-10-23): they reach only the
- * pre-KYC pages (dashboard, KYC, materials — B.3 "Before KYC"). Denials carry a machine code
+ * pre-KYC pages (dashboard, KYC, materials — B.3 "Before KYC"). A bureau whose create / import
+ * rights A07 paused (R-A07-10, upheld consent disputes) is refused both, and nothing else. Denials carry a machine code
  * (BROKER_KYC_REQUIRED, BROKER_INACTIVE, …) that the 403 response repeats in `X-Error-Code`.
  */
 final class BureauGate
@@ -37,6 +38,8 @@ final class BureauGate
     public const STAFF_INACTIVE = 'BROKER_STAFF_INACTIVE';
 
     public const NOT_PERMITTED = 'BUREAU_PERMISSION';
+
+    public const CREATION_PAUSED = 'BROKER_CREATION_PAUSED';
 
     private const MEMO = 'oppam.bureau-staff';
 
@@ -124,6 +127,10 @@ final class BureauGate
                 : Response::deny(__('Your bureau is not active.'), self::INACTIVE);
         }
 
+        if (in_array($permission, [BureauPermission::ProfilesCreate, BureauPermission::ProfilesImport], true) && $broker->creation_paused_at !== null) {
+            return Response::deny(__('Adding and importing profiles is paused for your bureau while our team reviews client complaints. Please contact Oppam support.'), self::CREATION_PAUSED);
+        }
+
         return Response::allow();
     }
 
@@ -136,7 +143,7 @@ final class BureauGate
     {
         $response = $this->inspect($user, $permission);
 
-        return in_array($response->code(), [self::KYC_REQUIRED, self::INACTIVE], true) && $this->portal($user)->allowed()
+        return in_array($response->code(), [self::KYC_REQUIRED, self::INACTIVE, self::CREATION_PAUSED], true) && $this->portal($user)->allowed()
             && $this->staff($user)?->status === BureauStaffStatus::Active
             ? Response::allow()
             : $response;

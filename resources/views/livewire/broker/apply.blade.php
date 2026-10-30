@@ -19,6 +19,9 @@
                             <div class="login-head">
                                 <h1>{{ __('Apply as a marriage bureau') }}</h1>
                                 <p>{{ __('We check every bureau before it can add client profiles. You’ll confirm your mobile next, then send your PAN and bank details.') }}</p>
+                                @if ($reserved)
+                                    <p class="mb-0"><strong>{{ __('Our team has registered your bureau :code. Use the mobile number you gave us.', ['code' => $bureau]) }}</strong></p>
+                                @endif
                             </div>
 
                             <form wire:submit="apply" novalidate>

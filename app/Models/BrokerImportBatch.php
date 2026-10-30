@@ -46,6 +46,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $import_started_at
  * @property ImportStopReason|null $stop_reason why the last import run stopped early (P7.7)
  * @property Carbon|null $files_purged_at
+ * @property array<string, int>|null $signal_flags P7.8c B.12 batch flags: mobile_pattern / photo_matches => rows (ImportBatchSignals)
  * @property Carbon $created_at
  * @property-read Broker|null $broker
  */
@@ -71,6 +72,7 @@ final class BrokerImportBatch extends Model
             'consent_attested_at' => 'datetime',
             'import_started_at' => 'datetime',
             'stop_reason' => ImportStopReason::class,
+            'signal_flags' => 'array',
             'files_purged_at' => 'datetime',
         ];
     }

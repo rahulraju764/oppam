@@ -29,4 +29,15 @@ enum ReferralStatus: string
     {
         return collect(self::cases())->mapWithKeys(fn (self $case): array => [$case->value => $case->label()])->all();
     }
+
+    /** <x-ui.badge> variant (the label is always shown too). */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Pending => 'muted',
+            self::Earned => 'warning',
+            self::Paid => 'success',
+            self::Void => 'danger',
+        };
+    }
 }

@@ -31,9 +31,10 @@ final class DashboardAlerts
      * @param  list<WorkQueueData>  $workQueues  the queues this admin may see
      * @param  bool  $system  include the system-health alerts (failed jobs, backlog) — for `dashboard.view`
      * @param  bool  $brokers  include bureaus whose imports were auto-paused (§11A B.9 "A07 is alerted") — for `brokers.imports.manage`
+     * @param  bool  $bureaus  include bureaus whose adding is paused (R-A07-10) or with open fraud / quality signals (B.12) — for `brokers.view`
      * @return list<array{level: string, text: string}> level = warning | danger
      */
-    public function for(array $workQueues, bool $system = true, bool $brokers = false): array
+    public function for(array $workQueues, bool $system = true, bool $brokers = false, bool $bureaus = false): array
     {
         $alerts = [];
 
@@ -41,6 +42,25 @@ final class DashboardAlerts
             $paused = Broker::query()->whereNotNull('imports_paused_at')->where('imports_paused_reason', ImportsPauseReason::Auto)->orderBy('imports_paused_at')->limit(5)->pluck('code');
             if ($paused->isNotEmpty()) {
                 $alerts[] = ['level' => 'warning', 'text' => __('Bulk imports auto-paused (too many rejections): :codes. Review in Brokers.', ['codes' => $paused->implode(', ')])];
+            }
+
+        }
+
+        if ($bureaus) {
+            // R-A07-10: create / import rights paused after upheld consent disputes — pending A07's review.
+            $paused = Broker::query()->whereNotNull('creation_paused_at');
+            if (($count = (clone $paused)->count()) > 0) {
+                $alerts[] = ['level' => 'danger', 'text' => __('Adding profiles paused at :n bureau(s): :codes. Review in Brokers.', [
+                    'n' => $count, 'codes' => self::codes($paused->orderBy('creation_paused_at')->limit(5)->pluck('code')->all(), $count),
+                ])];
+            }
+
+            // §11A B.12: bureaus with open fraud / quality signals (P7.8c).
+            $flagged = Broker::query()->whereHas('fraudSignals', fn ($q) => $q->whereNull('resolved_at'));
+            if (($count = (clone $flagged)->count()) > 0) {
+                $alerts[] = ['level' => 'warning', 'text' => __(':n bureau(s) with open fraud or quality signals: :codes. Review in Brokers.', [
+                    'n' => $count, 'codes' => self::codes($flagged->orderBy('code')->limit(5)->pluck('code')->all(), $count),
+                ])];
             }
         }
 
@@ -95,5 +115,13 @@ final class DashboardAlerts
         } catch (Throwable) {
             return [];
         }
+    }
+
+    /** "BRK1, BRK2 and 3 more" — the first codes and how many are left out. @param list<string> $codes */
+    private static function codes(array $codes, int $total): string
+    {
+        $more = $total - count($codes);
+
+        return implode(', ', $codes).($more > 0 ? ' '.__('and :n more', ['n' => $more]) : '');
     }
 }

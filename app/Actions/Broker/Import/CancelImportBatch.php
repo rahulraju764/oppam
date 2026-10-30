@@ -12,6 +12,7 @@ use App\Enums\BureauRole;
 use App\Enums\ImportBatchStatus;
 use App\Enums\ImportRowStatus;
 use App\Exceptions\Broker\ImportRefused;
+use App\Models\AdminUser;
 use App\Models\BrokerImportBatch;
 use App\Models\BrokerImportRow;
 use App\Models\User;
@@ -52,32 +53,51 @@ final class CancelImportBatch
             if ($batch->uploaded_by_user_id !== $actor->id && ! in_array($staff->role, [BureauRole::Owner, BureauRole::Manager], true)) {
                 throw ImportRefused::notUploader();
             }
-            if (! $batch->isCancellable()) {
-                throw ImportRefused::wrongStatus();
-            }
 
-            if ($batch->rows_imported > 0) {
-                // Partly imported (the daily cap stopped it): close it — the profiles stay, the rest is skipped.
-                BrokerImportRow::query()->where('batch_id', $batch->id)
-                    ->whereIn('status', [ImportRowStatus::Valid, ImportRowStatus::Warning, ImportRowStatus::Error])
-                    ->update(['status' => ImportRowStatus::Skipped, 'updated_at' => now()]);
-                $this->rechecker->recount($batch);
-                $batch->forceFill(['status' => ImportBatchStatus::Completed, 'stop_reason' => null])->save();
-                $this->audit->record('broker.import_closed', $batch, after: ['imported' => $batch->rows_imported, 'skipped' => $batch->rows_skipped], actor: $actor, subjectLabel: $batch->code);
-
-                return $batch;
-            }
-
-            $batch->forceFill(['status' => ImportBatchStatus::Cancelled, 'sheet_path' => null, 'photos_zip_path' => null, 'fix_sheet_path' => null, 'files_purged_at' => now()])->save();
-            $this->audit->record('broker.import_cancelled', $batch, after: ['rows' => $batch->rows_total], actor: $actor, subjectLabel: $batch->code);
-
-            return $batch;
+            return $this->cancel($batch, $actor, 'broker');
         });
 
-        if ($batch->status === ImportBatchStatus::Cancelled) {
-            $this->vault->purge($batch->id);   // after the commit: a failed write never loses the files
-        }
+        $this->purgeIfCancelled($batch);
 
         return $batch;
+    }
+
+    /**
+     * Cancel (nothing imported yet) or close (partly imported) a batch the caller has locked, inside
+     * its transaction — shared with A07 (Admin\Brokers\Imports\CancelImportBatchAsAdmin, audit
+     * prefix `brokers`). Call purgeIfCancelled() after the commit.
+     *
+     * @throws ImportRefused not cancellable in its status
+     */
+    public function cancel(BrokerImportBatch $batch, User|AdminUser $actor, string $auditPrefix, ?string $reason = null): BrokerImportBatch
+    {
+        if (! $batch->isCancellable()) {
+            throw ImportRefused::wrongStatus();
+        }
+
+        if ($batch->rows_imported > 0) {
+            // Partly imported (the daily cap stopped it): close it — the profiles stay, the rest is skipped.
+            BrokerImportRow::query()->where('batch_id', $batch->id)
+                ->whereIn('status', [ImportRowStatus::Valid, ImportRowStatus::Warning, ImportRowStatus::Error])
+                ->update(['status' => ImportRowStatus::Skipped, 'updated_at' => now()]);
+            $this->rechecker->recount($batch);
+            $batch->forceFill(['status' => ImportBatchStatus::Completed, 'stop_reason' => null])->save();
+            $this->audit->record($auditPrefix.'.import_closed', $batch, after: ['imported' => $batch->rows_imported, 'skipped' => $batch->rows_skipped], reason: $reason, actor: $actor, subjectLabel: $batch->code);
+
+            return $batch;
+        }
+
+        $batch->forceFill(['status' => ImportBatchStatus::Cancelled, 'sheet_path' => null, 'photos_zip_path' => null, 'fix_sheet_path' => null, 'files_purged_at' => now()])->save();
+        $this->audit->record($auditPrefix.'.import_cancelled', $batch, after: ['rows' => $batch->rows_total], reason: $reason, actor: $actor, subjectLabel: $batch->code);
+
+        return $batch;
+    }
+
+    /** After the commit: a failed write never loses the files. */
+    public function purgeIfCancelled(BrokerImportBatch $batch): void
+    {
+        if ($batch->status === ImportBatchStatus::Cancelled) {
+            $this->vault->purge($batch->id);
+        }
     }
 }

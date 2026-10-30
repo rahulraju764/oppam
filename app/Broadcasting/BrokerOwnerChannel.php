@@ -12,10 +12,11 @@ use App\Models\BrokerStaff;
 use App\Models\User;
 
 /**
- * `broker-owner.{broker}` (§11A B.15): Owner-only bureau events — commission earned (B.10), later
- * KYC and payout updates. Re-checked against the database on every auth request: an ACTIVE bureau
- * login that is that bureau's ACTIVE Owner, on a bureau that is still open (not rejected or
- * deactivated). Staff of any other role, and every other bureau, are refused.
+ * `broker-owner.{broker}` (§11A B.15): Owner-only bureau events — commission earned and payout
+ * paid (B.10), suspension. Re-checked against the database on every auth request: an ACTIVE bureau
+ * login that is that bureau's ACTIVE Owner, on an ACTIVE bureau (P7.8: a suspended or KYC-pending
+ * bureau's Owner has no live money events to receive — the suspension itself reaches open tabs
+ * through ForceLogout). Staff of any other role, and every other bureau, are refused.
  */
 final class BrokerOwnerChannel
 {
@@ -30,7 +31,7 @@ final class BrokerOwnerChannel
             ->where('broker_id', $broker)
             ->where('role', BureauRole::Owner)
             ->where('status', BureauStaffStatus::Active)
-            ->whereHas('broker', fn ($query) => $query->whereNotIn('status', [BrokerStatus::Rejected, BrokerStatus::Deactivated]))
+            ->whereHas('broker', fn ($query) => $query->where('status', BrokerStatus::Active))
             ->exists();
     }
 }

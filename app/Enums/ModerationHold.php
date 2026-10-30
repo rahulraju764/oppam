@@ -13,6 +13,7 @@ enum ModerationHold: string
 {
     case MemberSuspended = 'MEMBER_SUSPENDED';
     case MemberDeleted = 'MEMBER_DELETED';
+    case ConsentDispute = 'CONSENT_DISPUTE';   // A07 recorded a consent dispute on a managed profile (R-A07-10)
 
     /** The marker for an item that was ESCALATED when it was held (released back to escalated). */
     public function escalated(): string

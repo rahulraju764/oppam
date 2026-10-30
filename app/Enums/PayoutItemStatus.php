@@ -27,4 +27,14 @@ enum PayoutItemStatus: string
     {
         return collect(self::cases())->mapWithKeys(fn (self $case): array => [$case->value => $case->label()])->all();
     }
+
+    /** <x-ui.badge> variant (the label is always shown too). */
+    public function badgeVariant(): string
+    {
+        return match ($this) {
+            self::Pending => 'warning',
+            self::Paid => 'success',
+            self::CarriedForward => 'muted',
+        };
+    }
 }

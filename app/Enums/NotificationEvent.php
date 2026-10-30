@@ -41,6 +41,8 @@ enum NotificationEvent: string
     case FollowUpDue = 'follow_up_due';
     /** A managed client claimed their profile (§11A B.6 / B.15 ProfileClaimed, P7.4): in-app only, to the Owner and assignee. */
     case ManagedProfileClaimed = 'managed_profile_claimed';
+    /** A payout to the bureau was sent (§11A B.15 PayoutPaid, P7.8): in-app + email, to the Owner. */
+    case PayoutPaid = 'payout_paid';
 
     /** The /notifications filter this event belongs to. */
     public function group(): NotificationGroup

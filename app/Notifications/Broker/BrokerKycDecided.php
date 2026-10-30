@@ -22,6 +22,8 @@ final class BrokerKycDecided extends MemberNotification
 
     public const APPLICATION_REJECTED = 'application_rejected';
 
+    public const REVOKED = 'revoked';
+
     public function __construct(
         public readonly string $outcome,
         public readonly ?string $reason = null,
@@ -43,6 +45,11 @@ final class BrokerKycDecided extends MemberNotification
             self::KYC_REJECTED => new NotificationContentData(
                 title: __('Please check your KYC details'),
                 body: __('We couldn’t verify your KYC: :reason Please correct it and send it again.', ['reason' => (string) $this->reason]),
+                url: route('broker.kyc'),
+            ),
+            self::REVOKED => new NotificationContentData(
+                title: __('Your bureau’s KYC needs to be done again'),
+                body: __('Our team has withdrawn your KYC verification. Creating, importing and exporting profiles is paused until you send your KYC again. Contact our support team if you have questions.'),
                 url: route('broker.kyc'),
             ),
             default => new NotificationContentData(

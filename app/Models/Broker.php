@@ -45,6 +45,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $imports_paused_batch_id the batch that tripped the auto-pause (R-M13-32)
  * @property string|null $status_reason
  * @property Carbon|null $activated_at
+ * @property Carbon|null $payouts_held_at commission is held (A07 fraud signal) — left out of payout runs
+ * @property string|null $payouts_hold_reason
+ * @property string|null $created_by_admin_id set for a bureau an admin created; its Owner applies with the same mobile
+ * @property Carbon|null $creation_paused_at creating and importing profiles is refused (R-A07-10: upheld consent disputes)
+ * @property string|null $creation_paused_reason
  * @property Carbon $created_at
  * @property-read District|null $district
  * @property-read BrokerKyc|null $latestKyc
@@ -78,6 +83,8 @@ final class Broker extends Model
             'imports_paused_at' => 'datetime',
             'imports_paused_reason' => ImportsPauseReason::class,
             'activated_at' => 'datetime',
+            'payouts_held_at' => 'datetime',
+            'creation_paused_at' => 'datetime',
         ];
     }
 
@@ -91,6 +98,12 @@ final class Broker extends Model
     public function isVerifiedAndActive(): bool
     {
         return $this->status === BrokerStatus::Active && $this->kyc_status === BrokerKycStatus::Verified;
+    }
+
+    /** May be paid (R-A07-2, B.21 "KYC-less bureaus are excluded"): ACTIVE, KYC-verified and payouts not held. */
+    public function isPayable(): bool
+    {
+        return $this->isVerifiedAndActive() && $this->payouts_held_at === null;
     }
 
     /**
@@ -118,6 +131,38 @@ final class Broker extends Model
         return $this->hasMany(BrokerStaff::class);
     }
 
+    /**
+     * The commission ledger — referrals and managed conversions (B.5, B.10).
+     *
+     * @return HasMany<BrokerReferral, $this>
+     */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(BrokerReferral::class);
+    }
+
+    /**
+     * Profiles the bureau manages now (a claimed profile has left — R-M13-16).
+     *
+     * @return HasMany<Profile, $this>
+     */
+    public function managedProfiles(): HasMany
+    {
+        return $this->hasMany(Profile::class, 'managed_by_broker_id');
+    }
+
+    /** @return HasMany<BrokerStaffInvitation, $this> */
+    public function staffInvitations(): HasMany
+    {
+        return $this->hasMany(BrokerStaffInvitation::class);
+    }
+
+    /** @return HasMany<BrokerPayoutItem, $this> */
+    public function payoutItems(): HasMany
+    {
+        return $this->hasMany(BrokerPayoutItem::class);
+    }
+
     /** @return HasMany<BrokerKyc, $this> */
     public function kycSubmissions(): HasMany
     {
@@ -128,5 +173,17 @@ final class Broker extends Model
     public function latestKyc(): HasOne
     {
         return $this->hasOne(BrokerKyc::class)->latestOfMany();
+    }
+
+    /** @return HasMany<BrokerFraudSignal, $this> */
+    public function fraudSignals(): HasMany
+    {
+        return $this->hasMany(BrokerFraudSignal::class);
+    }
+
+    /** @return HasMany<BrokerConsentDispute, $this> */
+    public function consentDisputes(): HasMany
+    {
+        return $this->hasMany(BrokerConsentDispute::class);
     }
 }

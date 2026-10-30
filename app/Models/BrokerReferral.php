@@ -30,14 +30,19 @@ use Illuminate\Support\Carbon;
  * @property int|null $commission_bps
  * @property int $commission_paise
  * @property ReferralStatus $status
- * @property string|null $payout_item_id
+ * @property string|null $payout_item_id the payout line that paid it (kept after a void: the next run claws it back)
+ * @property string|null $clawed_back_item_id the payout line that took a voided, already-paid commission back (B.19)
  * @property Carbon|null $earned_at
  * @property Carbon|null $voided_at
  * @property ReferralVoidReason|null $void_reason
+ * @property string|null $signup_ip_hash HMAC of the referred member's sign-up IP (never the IP) — B.12 signals
+ * @property string|null $signup_net_hash HMAC of its /24 (/48) network
+ * @property string|null $signup_device_hash sha256 of the sign-up device cookie (as login_events)
  * @property Carbon $created_at
  * @property-read Broker|null $broker
  * @property-read Profile|null $profile
  * @property-read Order|null $order
+ * @property-read BrokerPayoutItem|null $payoutItem
  */
 final class BrokerReferral extends Model
 {
@@ -83,5 +88,11 @@ final class BrokerReferral extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** @return BelongsTo<BrokerPayoutItem, $this> */
+    public function payoutItem(): BelongsTo
+    {
+        return $this->belongsTo(BrokerPayoutItem::class, 'payout_item_id');
     }
 }

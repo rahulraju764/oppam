@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 
 /*
-| P7.1 – P7.6 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
+| P7.1 – P7.8 — the broker portal at phone width (375 px, device emulation; B.11 "fully responsive"):
 | /broker/apply, the dashboard of a Data-entry login (no device challenge), materials, the device
 | check an Owner / Manager meets on a new device and, once trusted, the referral list — none scroll
 | sideways, the main actions are reachable.
@@ -56,6 +56,11 @@ function duskBrokerCleanup(): void
     }
     App\Models\ModerationItem::query()->whereIn('profile_id', $profiles->modelKeys())->delete();
     App\Models\BrokerReferral::query()->whereIn('broker_id', $brokers)->delete();
+    // P7.8: payout lines of the bureau and the runs that held only them.
+    $runs = App\Models\BrokerPayoutItem::query()->whereIn('broker_id', $brokers)->pluck('run_id')->unique();
+    App\Models\BrokerPayoutItem::query()->whereIn('broker_id', $brokers)->update(['rolled_into_item_id' => null]);
+    App\Models\BrokerPayoutItem::query()->whereIn('broker_id', $brokers)->delete();
+    App\Models\BrokerPayoutRun::query()->whereKey($runs)->whereDoesntHave('items')->delete();
     App\Models\BrokerClientNote::query()->whereIn('broker_id', $brokers)->delete();
     duskConversationsCleanup($profiles->modelKeys());
     App\Models\Profile::withTrashed()->whereKey($profiles->modelKeys())->forceDelete();
@@ -478,4 +483,49 @@ it('P7.7: at 375px a Data-entry login fixes a row inline, confirms consent, impo
             : FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->update(['is_enabled' => $wasOn]);
         app(App\Services\Settings\FeatureFlags::class)->flush();
     }
+});
+
+it('P7.8: A07 suspends the bureau — an open staff tab at 375px is signed out live; the Owner’s Earnings page fits 375px', function (): void {
+    $this->browse(function (Browser $browser): void {
+        // The Owner's Earnings page with a paid payout and its statement link.
+        $owner = bureauLogin(BureauRole::Owner);
+        $owner->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+        $broker = $owner->brokerStaff?->broker;
+        earnedCommission($broker, 60_000);
+        $admin = duskAdmin();
+        $run = paidRun($admin);
+
+        duskFreshSession($browser);
+        $browser->visit('/login')
+            ->type('#loginId', '9999900031')
+            ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/broker/verify-device');
+        app(TrustedDevices::class)->trust($owner, hash('sha256', (string) $browser->cookie((string) config('oppam.auth.device_cookie'))));
+        $browser->visit('/broker/earnings')->waitForText('Paid to you')->assertSee('₹600')->assertSee($run->label());
+        assertNoHorizontalScroll($browser);
+
+        // A Data-entry login of the same bureau (no device check) on the dashboard, live on its channel.
+        $staff = bureauLogin(BureauRole::DataEntry, broker: $broker);
+        $owner->forceFill(['phone' => '+919999900032'])->save();
+        $staff->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+        duskFreshSession($browser);
+        $browser->visit('/login')
+            ->type('#loginId', '9999900031')
+            ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+            ->click('.login-form button[type="submit"]')
+            ->waitForLocation('/broker');
+        $browser->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+            "return window.Echo?.connector?.channels?.['private-App.Models.User.{$staff->id}']?.subscription?.subscribed === true;")[0]);
+
+        $started = microtime(true);
+        app(App\Actions\Admin\Brokers\SuspendBroker::class)->handle($admin, $broker->refresh(), 'Dusk: referral spike under review');
+        $browser->waitUsing(10, 50, fn (): bool => str_contains((string) $browser->driver->getCurrentURL(), '/login'));
+        $elapsed = microtime(true) - $started;
+        fwrite(STDERR, sprintf("\n[P7.8] bureau suspended → staff tab on /login in %.2f s\n", $elapsed));
+
+        expect($elapsed)->toBeLessThan(2.0);   // B.21 "deactivating a bureau … logs staff out live"
+        $browser->visit('/broker')->waitForLocation('/login');
+        assertNoHorizontalScroll($browser);
+    });
 });
