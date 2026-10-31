@@ -75,31 +75,34 @@ function sweepActionCoverage(): array
         'Broker\Activity' => [],
         'Broker\Earnings' => [],
         'Broker\Materials' => [],
-        'Broker\Referrals' => [],
+        'Broker\Referrals' => ['updatedStage' => []],   // updatedX hooks mapped to [] only reset a filter / page: no write
         'Broker\Kyc' => ['submit' => ['Feature/Broker/BrokerKycTest']],
         'Broker\Import\Upload' => ['startImport' => ['Feature/Broker/ImportUploadTest', SWEEP_MIDFLOW]],
         'Broker\Import\Batches' => [],
         'Broker\Import\BatchReview' => [
+            'updatedFilter' => [],
             'progressed' => ['Livewire/Broker/ImportScreensTest'], 'completed' => ['Livewire/Broker/ImportScreensP77Test'],
             'saveMapping' => [SWEEP_MATRIX], 'fixCell' => [SWEEP_MATRIX, 'Feature/Broker/ImportFixTest'], 'uploadFixes' => [SWEEP_MATRIX],
             'attest' => [SWEEP_MATRIX], 'import' => [SWEEP_MATRIX, SWEEP_MIDFLOW], 'submitAll' => [SWEEP_MATRIX], 'cancel' => [SWEEP_MATRIX],
         ],
-        'Broker\ManagedProfiles\ClientInbox' => ['accept' => ['Feature/Broker/IdorScopingTest'], 'decline' => ['Feature/Broker/IdorScopingTest'],
+        'Broker\ManagedProfiles\ClientInbox' => ['accept' => ['Feature/Broker/IdorScopingTest', 'Feature/Broker/ManagedProfiles/ClientInboxTest'],
+            'decline' => ['Feature/Broker/IdorScopingTest', 'Feature/Broker/ManagedProfiles/ClientInboxTest'], 'updatedTab' => [],
             'send' => [SWEEP_MATRIX, SWEEP_MIDFLOW], 'claimed' => ['Feature/Broker/ClaimFlowTest']],
         'Broker\ManagedProfiles\Form' => ['open' => ['Livewire/Broker/ManagedProfileScreensTest'], 'save' => [SWEEP_MATRIX, SWEEP_MIDFLOW],
             'autosave' => ['Livewire/Broker/ManagedProfileScreensTest'], 'saveClientPhone' => [SWEEP_MATRIX, 'Feature/Broker/IdorScopingTest'],
             'submit' => [SWEEP_MATRIX, 'Feature/Broker/IdorScopingTest'], 'photosChanged' => [], 'toggleChoice' => [], 'clearChoice' => []],
         'Broker\ManagedProfiles\Index' => ['assignSelected' => [SWEEP_MATRIX, SWEEP_MIDFLOW]],
         'Broker\ManagedProfiles\Notes' => ['add' => [SWEEP_MATRIX, SWEEP_MIDFLOW], 'complete' => [SWEEP_MATRIX, SWEEP_MIDFLOW]],
-        'Broker\ManagedProfiles\Photos' => ['savePhoto' => [SWEEP_MIDFLOW], 'deletePhoto' => [SWEEP_MIDFLOW],
+        'Broker\ManagedProfiles\Photos' => ['savePhoto' => [SWEEP_MIDFLOW], 'deletePhoto' => [SWEEP_MIDFLOW], 'updatedHoroscope' => [SWEEP_MIDFLOW],
             'movePhoto' => [SWEEP_MIDFLOW], 'updateCaption' => [SWEEP_MIDFLOW], 'deleteHoroscope' => [SWEEP_MIDFLOW]],
         'Broker\ManagedProfiles\Show' => ['claimed' => ['Feature/Broker/ClaimFlowTest'], 'change' => [SWEEP_MATRIX, SWEEP_MIDFLOW],
             'submit' => [SWEEP_MATRIX], 'assign' => [SWEEP_MATRIX]],
         'Broker\Staff\AcceptInvite' => ['start' => ['Feature/Broker/StaffLifecycleTest'], 'verify' => ['Feature/Broker/StaffLifecycleTest'], 'back' => ['Livewire/Broker/StaffScreensTest']],
-        'Broker\Staff\Index' => ['invite' => [SWEEP_MATRIX, SWEEP_MIDFLOW], 'cancel' => [SWEEP_MATRIX, SWEEP_MIDFLOW]],
-        'Broker\Staff\Show' => ['save' => [SWEEP_MATRIX], 'deactivate' => [SWEEP_MATRIX, SWEEP_MIDFLOW]],
+        'Broker\Staff\Index' => ['invite' => [SWEEP_MATRIX, SWEEP_MIDFLOW], 'cancel' => [SWEEP_MATRIX, SWEEP_MIDFLOW], 'updatedRole' => []],
+        'Broker\Staff\Show' => ['save' => [SWEEP_MATRIX, 'Feature/Broker/StaffLifecycleTest'], 'deactivate' => [SWEEP_MATRIX, SWEEP_MIDFLOW], 'updatedMonth' => []],
         'Admin\Brokers\BrokerShow' => array_fill_keys(['revokeKyc', 'pauseCreation', 'resumeCreation'], ['Livewire/Admin/BrokerOversightScreensTest', 'Feature/Broker/BrokerOversightTest'])
-            + array_fill_keys(['saveTerms', 'suspend', 'deactivate', 'reactivate', 'holdPayouts', 'releasePayouts'], ['Livewire/Admin/BrokerAdminScreensTest', 'Feature/Broker/BrokerDeactivationTest', 'Feature/Broker/AdminBureauTest']),
+            + array_fill_keys(['saveTerms', 'suspend', 'deactivate', 'reactivate', 'holdPayouts', 'releasePayouts'], ['Livewire/Admin/BrokerAdminScreensTest', 'Feature/Broker/BrokerDeactivationTest', 'Feature/Broker/AdminBureauTest'])
+        + ['updatedTab' => ['Livewire/Admin/BrokerOversightScreensTest']],
         'Admin\Brokers\BrokersIndex' => ['clearFilters' => [], 'create' => ['Livewire/Admin/BrokerAdminScreensTest', 'Feature/Broker/AdminBureauTest']],
         'Admin\Brokers\Disputes' => array_fill_keys(['record', 'decide', 'uphold', 'dismiss'], ['Livewire/Admin/BrokerOversightScreensTest', 'Feature/Broker/BrokerOversightTest']),
         'Admin\Brokers\ExportsAudit' => ['clearFilters' => []],
@@ -108,8 +111,8 @@ function sweepActionCoverage(): array
         'Admin\Brokers\PayoutRunShow' => array_fill_keys(['openLine', 'approve', 'markPaid', 'rollForward', 'discard'], ['Livewire/Admin/BrokerAdminScreensTest', 'Feature/Broker/PayoutRunTest']),
         'Admin\Brokers\PayoutsIndex' => ['create' => ['Livewire/Admin/BrokerAdminScreensTest', 'Feature/Broker/PayoutRunTest']],
         'Admin\Brokers\SignalsPanel' => array_fill_keys(['confirm', 'resolve', 'voidAll'], ['Livewire/Admin/BrokerSignalsScreensTest', 'Feature/Broker/FraudSignalsTest']),
-        'Admin\Brokers\Tabs\ActivityTab' => [], 'Admin\Brokers\Tabs\EarningsTab' => [], 'Admin\Brokers\Tabs\PayoutsTab' => [],
-        'Admin\Brokers\Tabs\ProfilesTab' => [], 'Admin\Brokers\Tabs\ReferralsTab' => [],
+        'Admin\Brokers\Tabs\ActivityTab' => [], 'Admin\Brokers\Tabs\EarningsTab' => ['updatedStatus' => []], 'Admin\Brokers\Tabs\PayoutsTab' => [],
+        'Admin\Brokers\Tabs\ProfilesTab' => ['updatedStatus' => []], 'Admin\Brokers\Tabs\ReferralsTab' => ['updatedStage' => []],
         'Admin\Brokers\Tabs\StaffTab' => array_fill_keys(['confirm', 'deactivate', 'resetDevices'], ['Livewire/Admin/BrokerOversightScreensTest', 'Feature/Broker/BrokerOversightTest']),
         'Admin\Brokers\UnverifiedCodesQueue' => array_fill_keys(['select', 'close', 'link', 'clear'], ['Livewire/Admin/UnverifiedCodesQueueTest']),
     ];
@@ -149,7 +152,7 @@ it('★ B.22: every action of every bureau / A07 Livewire component is in the sw
                     && $m->getAttributes(Livewire\Attributes\Computed::class) === [])   // computed values aren't callable actions
                 ->map(fn (ReflectionMethod $m): string => $m->getName())
                 ->reject(fn (string $n): bool => in_array($n, ['mount', 'render', 'boot', 'booted', 'hydrate', 'dehydrate', 'placeholder', 'getListeners', 'updated', 'updating', 'rendering', 'rendered', 'exception'], true)
-                    || str_starts_with($n, 'updated') || str_starts_with($n, 'updating') || str_starts_with($n, '__') || in_array($n, SWEEP_FRAMEWORK_METHODS, true))
+                    || str_starts_with($n, '__') || in_array($n, SWEEP_FRAMEWORK_METHODS, true))   // updatedX hooks stay listed: one may write
                 ->values()->all();
             $found[substr($class, strlen('App\\Livewire\\'))] = $actions;
         }

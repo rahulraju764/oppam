@@ -78,8 +78,10 @@ it('★ R-M13-6 / R-M13-18 another bureau’s Owner with the victim’s codes: 4
     $expected = SWEEP_PORTAL_ROUTES[$path];
 
     if ($expected === 'own') {
-        expect($response->status())->toBeIn([200, 302])
-            ->and((string) $response->getContent())->not->toContain($this->fixtures['{code}']);   // never the victim's data
+        expect($response->status())->toBeIn([200, 302]);
+        foreach ($this->fixtures as $code) {   // never the victim's data: profile, batch, staff or payout-run code
+            expect((string) $response->getContent())->not->toContain($code);
+        }
     } else {
         $response->assertStatus($expected);
     }
@@ -97,14 +99,18 @@ it('★ B.18 / B.19 stale session: a staff login deactivated after signing in is
     $response = $this->get(sweepUrl($path, $this->fixtures));
 
     expect($response->status())->toBeIn([302, 403])
-        ->and(in_array($response->status(), [302], true) ? (string) $response->headers->get('Location') : 'login')->toContain('login');
+        ->and($response->status() === 302 ? (string) $response->headers->get('Location') : 'login')->toContain('login')
+        ->and(auth('web')->check())->toBeFalse();                                   // the session is gone, not just this page
 })->with(array_keys(SWEEP_PORTAL_ROUTES));
 
 it('★ R-A07-8 suspended / deactivated bureau: the Owner reaches no portal route', function (string $path, BrokerStatus $status): void {
     actingAsBureau($this->victimOwner);
     $this->victim->forceFill(['status' => $status])->save();
 
-    expect($this->get(sweepUrl($path, $this->fixtures))->status())->toBeIn([302, 403]);
+    $response = $this->get(sweepUrl($path, $this->fixtures));
+
+    expect($response->status())->toBeIn([302, 403])
+        ->and($response->status() === 302 ? (string) $response->headers->get('Location') : 'login')->toContain('login');
 })->with(array_keys(SWEEP_PORTAL_ROUTES))->with([BrokerStatus::Suspended, BrokerStatus::Deactivated]);
 
 it('B.18 public bureau routes: the application and the invitation link are guest-only and throttled; the code check says name + district only', function (): void {
@@ -115,4 +121,24 @@ it('B.18 public bureau routes: the application and the invitation link are guest
     actingAsBureau($this->victimOwner);
     $this->get(brokerUrl('/apply'))->assertRedirect();                                         // guest only
     $this->get(brokerUrl('/staff/invite/'.str_repeat('a', 64)))->assertRedirect();
+});
+
+it('★ B.18 / B.19 stale session through a Livewire update (persistent middleware): a staff login deactivated after the page loaded is signed out', function (): void {
+    actingAsBureau($this->victimStaff);
+    $html = $this->get(brokerUrl('/profiles'))->assertOk()->getContent();
+
+    staffOf($this->victimStaff)->forceFill(['status' => BureauStaffStatus::Deactivated])->save();
+
+    $response = bureauLivewireUpdate((string) $html);
+    expect($response->status())->toBeIn([302, 403])
+        ->and(auth('web')->check())->toBeFalse();
+});
+
+it('★ R-M13-19 stale permission through a Livewire update: a page whose permission the Owner switched off refuses the next update', function (): void {
+    actingAsBureau($this->victimStaff);
+    $html = $this->get(brokerUrl('/activity'))->assertOk()->getContent();
+
+    staffOf($this->victimStaff)->forceFill(['disabled_permissions' => ['activity.view']])->save();
+
+    expect(bureauLivewireUpdate((string) $html)->status())->toBe(403);
 });

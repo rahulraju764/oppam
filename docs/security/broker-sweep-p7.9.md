@@ -2,11 +2,12 @@
 
 Date: 2026-10-30. Scope: every route, Livewire action, channel and export of the broker module
 (bureau portal `oppam.in/broker` and A07 `admin.oppam.in/brokers`), attacked as each bureau role, as
-another bureau, and through stale or revoked access. Built after P7.8a–c, on the uncommitted tree.
+another bureau, and through stale or revoked access. Built after P7.8a–c (committed with them in
+08080f3); reviewer round 1 found coverage gaps 3–6 below, closed in the follow-up commit.
 
 **Result: no open gaps.** No attack in the tables below reached data or changed anything it
-shouldn't. The sweep found two **coverage** gaps (things that were safe but untested) and closed
-them with tests; it found no application defect.
+shouldn't. Six **coverage** gaps (safe but untested — two found by the sweep, four by its review)
+were closed with tests; no application defect was found.
 
 ## How it is kept complete
 
@@ -14,7 +15,8 @@ them with tests; it found no application defect.
 `admin.brokers.*` and every public action of all 37 bureau / A07 Livewire components (reflection —
 Livewire's own pagination / upload hooks and `#[Computed]` values excluded), each with the test
 files that attack it, and checks those files exist. A new route or action without a row fails the
-build.
+build. Every `updatedX` hook is listed too (only Livewire's bare `updated()` / `updating()` are left
+out): `updatedHoroscope` writes; the others only reset a filter or page and are mapped to `[]`.
 
 ## Attackers
 
@@ -38,7 +40,8 @@ build.
 | 27 portal routes (typed URLs) | guest | redirect to sign-in | ✔ | RouteAttackTest |
 | 27 portal routes | member account | 403 / 404 (role:BROKER) | ✔ | RouteAttackTest |
 | 27 portal routes, victim's profile / batch / staff / payout-run codes | another bureau's Owner | 404; exports 403 + a refused `broker_profile_exports` row naming the attacker; own pages never show the victim's data | ✔ | RouteAttackTest, IdorScopingTest ★, ExportAuthorizationTest ★ |
-| 27 portal routes | stale session (staff deactivated) | signed out on the next request | ✔ | RouteAttackTest, StaffLifecycleTest |
+| 27 portal routes | stale session (staff deactivated) | signed out on the next request (session gone) | ✔ | RouteAttackTest, StaffLifecycleTest |
+| A portal page's Livewire update (persistent middleware) | staff deactivated / bureau suspended / permission switched off after the page loaded | signed out / 403 | ✔ | RouteAttackTest, BureauPermissionMatrixTest |
 | 27 portal routes | suspended / deactivated bureau | no portal route opens | ✔ | RouteAttackTest, BrokerDeactivationTest ★ |
 | Every route × every role | Owner / Manager / Data entry / Telecaller | B.2 matrix (403 BUREAU_PERMISSION, KYC_REQUIRED, CREATION_PAUSED) | ✔ | BureauPermissionMatrixTest ★ |
 | Public routes `/apply`, `/staff/invite/{token}`, `/validate` | signed-in login, anyone | guest-only; validate returns name + district only | ✔ | RouteAttackTest, BrokerApplicationTest, StaffLifecycleTest |
@@ -49,8 +52,10 @@ build.
 | Staff\Index::invite, Staff\Show::deactivate | Owner, then bureau suspended | refused | ✔ | MidFlowRevocationTest |
 | `#[Locked]` codes on Show, ClientInbox, Notes, Form, Photos, BatchReview, Staff\Show | tampered to another bureau's code | CannotUpdateLockedPropertyException | ✔ | MidFlowRevocationTest |
 | Ids sent by the browser: invitation id, follow-up id, assignee id | another bureau's ids | 404 / field error, nothing changed | ✔ | MidFlowRevocationTest |
-| Photo actions (delete / move / caption) | another profile's photo uuid via the bureau's own client | 404, photo untouched; foreign profile code → 404 | ✔ (**coverage gap closed**) | MidFlowRevocationTest |
-| Every managed-profile Action | foreign / claimed / unassigned codes | 404, nothing changed | ✔ | IdorScopingTest ★ |
+| Photo actions (delete / move / caption) | another profile's photo uuid via the bureau's own client | 404, photo untouched (order unchanged); foreign profile code → 404 | ✔ (**coverage gap closed**) | MidFlowRevocationTest |
+| Photo writes (savePhoto, deleteHoroscope, horoscope upload) | Telecaller (no `profiles.edit`); assigned-only on an unassigned client; staff deactivated / bureau suspended after the page opened | refused, no media written | ✔ (**coverage gap closed**) | MidFlowRevocationTest |
+| Every managed-profile Action | another bureau's / a member's own / a claimed client, as the Owner | 404, nothing changed | ✔ | IdorScopingTest ★ |
+| Every managed-profile Action (submit, status, client phone, note, assign, inbox accept / send) | assigned-only login, a bureau client assigned to someone else | 404, nothing changed | ✔ (**coverage gap closed**) | IdorScopingTest ★ |
 | Biodata / photo export | non-managed, claimed, assigned-only, wrong role, KYC revoked, suspended | 403 + logged on every attempt | ✔ | ExportAuthorizationTest ★ |
 | Claim vs export race | claim and export of the same profile | no window where both succeed | ✔ | ClaimFlowTest |
 | Import validation | single form vs import row | one rule set | ✔ | ImportValidationParityTest ★ |
@@ -66,6 +71,10 @@ build.
 |---|---|---|---|
 | 1 | Photo actions of a managed client were not attacked with another profile's photo id (the code already refused it: `ownPhoto()` scopes by profile) | test coverage | MidFlowRevocationTest "photo actions…" |
 | 2 | No test that a member account can't join `broker.*` / `broker-owner.*` (the channel callbacks already refused it) | test coverage | ChannelAttackTest |
+| 3 | Photo writes (savePhoto, deleteHoroscope, horoscope upload) were mapped as attacked but nothing called them | test coverage (review) | MidFlowRevocationTest "photo writes…" ×2 |
+| 4 | The inventory dropped every `updated*` hook, hiding the horoscope upload (a write) | guard (review) | SurfaceInventoryTest lists `updatedX` hooks |
+| 5 | No managed-profile Action was attacked by an assigned-only login on an unassigned client | test coverage (review) | IdorScopingTest "assigned-only login gets 404…" |
+| 6 | Stale session / switched-off permission through a real Livewire update was tested for suspension only; weak redirect / session assertions | test coverage (review) | RouteAttackTest Livewire-update tests; session-gone and Location assertions |
 
 No application change was needed.
 

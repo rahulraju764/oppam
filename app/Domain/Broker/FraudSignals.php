@@ -114,13 +114,15 @@ final class FraudSignals
         $matches = BrokerReferral::query()->where('broker_referrals.broker_id', $broker->id)->where('broker_referrals.source', ReferralSource::Referral)
             ->where('broker_referrals.created_at', '>=', $since)
             ->where(fn ($q) => $q->whereIn('broker_referrals.signup_device_hash', $devices)->orWhereIn('broker_referrals.signup_ip_hash', $ips))
-            ->join('profiles', 'profiles.id', '=', 'broker_referrals.profile_id')
-            ->limit(20)->pluck('profiles.code');
+            ->join('profiles', 'profiles.id', '=', 'broker_referrals.profile_id');
+        $count = (clone $matches)->count();
+        // The 20 newest, always in the same order, and the total — so a rescan never mistakes a reshuffle for new evidence.
+        $codes = $matches->orderByDesc('broker_referrals.created_at')->orderByDesc('broker_referrals.id')->limit(20)->pluck('profiles.code');
 
-        return $matches->isNotEmpty() ? ['profiles' => $matches->values()->all()] : null;
+        return $count > 0 ? ['matches' => $count, 'profiles' => $codes->values()->all()] : null;
     }
 
-    /** @return array<string, int>|null this IST month's referrals against the 3 previous months' average */
+    /** @return array{month: string, this_month: int, monthly_average: int}|null this IST month's referrals against the 3 previous months' average */
     public function referralSpike(Broker $broker): ?array
     {
         $tz = (string) config('oppam.display_timezone');

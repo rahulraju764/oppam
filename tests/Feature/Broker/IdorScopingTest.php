@@ -147,3 +147,28 @@ it('★ R-M13-18: the scope takes the bureau from the staff row — never from t
     expect($found)->toBeEmpty()
         ->and(app(ManagedProfileScope::class)->covers(staffOf($login), $foreign))->toBeFalse();
 });
+
+it('★ R-M13-20 (P7.9): an assigned-only login gets 404 from every managed-profile Action on a bureau client not assigned to it, and nothing changes', function (string $action): void {
+    flagOn(App\Enums\Flag::BrokerClientInterestSending);
+    $owner = bureauLogin(BureauRole::Owner);
+    $broker = staffOf($owner)->broker;
+    $login = bureauLogin(BureauRole::Manager, broker: $broker);                      // a Manager holds every one of these permissions
+    staffOf($login)->forceFill(['profile_scope' => ProfileScope::Assigned])->save();
+    $colleague = staffOf(bureauLogin(BureauRole::DataEntry, broker: $broker));
+    $client = managedProfile($broker, [], $colleague);                                // the bureau's, assigned to someone else
+    $before = $client->fresh()?->getAttributes();
+
+    $call = match ($action) {
+        'submit' => fn () => app(SubmitManagedProfile::class)->handle($login, $client->code),
+        'deactivate' => fn () => app(SetManagedProfileStatus::class)->handle($login, $client->code, ManagedProfileStatusChange::Deactivate),
+        'delete' => fn () => app(SetManagedProfileStatus::class)->handle($login, $client->code, ManagedProfileStatusChange::Delete),
+        'assign' => fn () => app(AssignManagedProfiles::class)->handle($login, [$client->code], staffOf($login)->id),
+        'client phone' => fn () => app(UpdateManagedProfile::class)->handle($login, $client->code, '9811122233'),
+        'note' => fn () => app(AddClientNote::class)->handle($login, $client->code, new ClientNoteData('NOTE', null, 'Hello there', null)),
+        'inbox accept' => fn () => app(App\Actions\Broker\ManagedProfiles\RespondToInterestForClient::class)->handle($login, $client->code, 'OPM10001', true),
+        'inbox send' => fn () => app(App\Actions\Broker\ManagedProfiles\SendInterestForClient::class)->handle($login, $client->code, 'OPM10001', null),
+    };
+
+    expect($call)->toThrow(ModelNotFoundException::class);
+    expect($client->fresh()?->getAttributes())->toBe($before);
+})->with(['submit', 'deactivate', 'delete', 'assign', 'client phone', 'note', 'inbox accept', 'inbox send']);

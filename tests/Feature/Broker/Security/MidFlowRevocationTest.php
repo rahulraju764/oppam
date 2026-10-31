@@ -235,6 +235,39 @@ it('★ R-M13-6 photo actions: another profile’s photo id sent through the bur
     refused(fn () => $page()->call('movePhoto', $photo->uuid, 0));
     refused(fn () => $page()->call('updateCaption', $photo->uuid, 'mine now'));
 
-    expect($photo->refresh()->exists)->toBeTrue()->and($photo->caption)->toBe('theirs')->and($photo->model_id)->toBe($victim->id);
+    expect($photo->refresh()->exists)->toBeTrue()->and($photo->caption)->toBe('theirs')->and($photo->model_id)->toBe($victim->id)
+        ->and($photo->order_column)->toBe(1);                                          // movePhoto changed nothing
     refused(fn () => Livewire::test(App\Livewire\Broker\ManagedProfiles\Photos::class, ['profileCode' => $victim->code]));   // foreign code: 404
 });
+
+it('★ B.2 / R-M13-20 photo writes: a role without profiles.edit, and an assigned-only login on a client not assigned to it, never open the photo manager', function (): void {
+    $broker = staffOf(bureauLogin())->broker;
+    $client = managedProfile($broker);
+
+    actingAsBureau(bureauLogin(BureauRole::Telecaller, broker: $broker));            // ceiling has no profiles.edit
+    refused(fn () => Livewire::test(App\Livewire\Broker\ManagedProfiles\Photos::class, ['profileCode' => $client->code]));
+
+    $assignedOnly = bureauLogin(BureauRole::DataEntry, broker: $broker);
+    staffOf($assignedOnly)->forceFill(['profile_scope' => App\Enums\ProfileScope::Assigned])->save();
+    actingAsBureau($assignedOnly);
+    refused(fn () => Livewire::test(App\Livewire\Broker\ManagedProfiles\Photos::class, ['profileCode' => $client->code]));
+});
+
+it('★ B.18 / B.19 photo writes (savePhoto, deleteHoroscope, horoscope upload): refused once the login is deactivated or the bureau suspended after the page opened', function (string $how, string $write): void {
+    $login = actingAsBureau(bureauLogin(BureauRole::DataEntry));
+    $client = managedProfile(staffOf($login)->broker);
+    $page = Livewire::test(App\Livewire\Broker\ManagedProfiles\Photos::class, ['profileCode' => $client->code]);
+    if ($write === 'savePhoto') {
+        $page->set('photo', Illuminate\Http\UploadedFile::fake()->image('p.jpg', 600, 800));   // attached while allowed
+    }
+    revocations($how)[$how]($login, staffOf($login)->broker);
+    $before = App\Models\Media::query()->count();
+
+    refused(fn () => match ($write) {
+        'savePhoto' => $page->call('savePhoto'),
+        'deleteHoroscope' => $page->call('deleteHoroscope'),
+        default => $page->set('horoscope', Illuminate\Http\UploadedFile::fake()->create('h.pdf', 20, 'application/pdf')),   // updatedHoroscope
+    });
+
+    expect(App\Models\Media::query()->count())->toBe($before);
+})->with(['staff deactivated', 'bureau suspended'])->with(['savePhoto', 'deleteHoroscope', 'horoscope upload']);

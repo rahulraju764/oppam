@@ -101,7 +101,7 @@ it('B.12 self-referral: a referral signed up on a device or IP of the bureau’s
     expect(app(FraudSignals::class)->selfReferral($this->broker))->toBeNull();
 
     BrokerReferral::query()->where('profile_id', $member->profile->id)->update(['signup_ip_hash' => SignupFingerprints::ipHash('103.21.4.5')]);
-    expect(app(FraudSignals::class)->selfReferral($this->broker))->toBe(['profiles' => [$member->profile->code]]);
+    expect(app(FraudSignals::class)->selfReferral($this->broker))->toBe(['matches' => 1, 'profiles' => [$member->profile->code]]);
 });
 
 it('B.12 referral spike: this month ≥ 3× the 3-month average and ≥ 10 — never for a bureau without 3 months of history', function (): void {

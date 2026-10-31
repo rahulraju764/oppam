@@ -117,7 +117,11 @@ final class DashboardAlerts
         }
     }
 
-    /** "BRK1, BRK2 and 3 more" — the first codes and how many are left out. @param list<string> $codes */
+    /**
+     * "BRK1, BRK2 and 3 more" — the first codes and how many are left out.
+     *
+     * @param  list<string>  $codes
+     */
     private static function codes(array $codes, int $total): string
     {
         $more = $total - count($codes);
