@@ -17,7 +17,7 @@ use Database\Seeders\PlansSeeder;
 | deactivated staff login, and the Owner of a suspended bureau. BureauPermissionMatrixTest already
 | covers every role of the bureau itself; IdorScopingTest / ExportAuthorizationTest the per-profile
 | rules in depth. This file adds the outside attackers on every route at once. Each route must be
-| listed here — SurfaceInventoryTest fails when one isn't.
+| listed here — the "every portal page is attacked" test below fails when one isn't.
 */
 
 const SWEEP_PORTAL_ROUTES = [
@@ -59,9 +59,21 @@ function sweepUrl(string $path, array $fixtures): string
     return brokerUrl(rtrim(strtr($path, $fixtures), '/'));
 }
 
+it('★ B.22: every portal page is attacked here — a new bureau GET route without a row fails', function (): void {
+    $placeholders = fn (string $uri): string => (string) preg_replace('/\{[^}]+\}/', '{}', $uri);
+    $public = ['/apply', '/staff/invite/{}', '/validate'];                               // guest-facing: their own test below
+
+    $routes = collect(Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+        ->filter(fn (Illuminate\Routing\Route $r): bool => str_starts_with((string) $r->getName(), 'broker.') && in_array('GET', $r->methods(), true))
+        ->map(fn (Illuminate\Routing\Route $r): string => $placeholders('/'.ltrim((string) substr($r->uri(), strlen('broker')), '/')))
+        ->reject(fn (string $path): bool => in_array($path, $public, true));
+
+    expect($routes->values()->all())->toEqualCanonicalizing(array_map($placeholders, array_keys(SWEEP_PORTAL_ROUTES)));
+});
+
 it('★ B.18 guest: every portal route sends a guest to sign in', function (string $path): void {
-    $this->get(sweepUrl($path, $this->fixtures))->assertRedirect();
-    expect(auth('web')->check())->toBeFalse();
+    expect((string) $this->get(sweepUrl($path, $this->fixtures))->assertRedirect()->headers->get('Location'))->toContain('login')
+        ->and(auth('web')->check())->toBeFalse();
 })->with(array_keys(SWEEP_PORTAL_ROUTES));
 
 it('★ B.18 member login: a member account never reaches a portal route (role:BROKER)', function (string $path): void {
@@ -113,7 +125,7 @@ it('★ R-A07-8 suspended / deactivated bureau: the Owner reaches no portal rout
         ->and($response->status() === 302 ? (string) $response->headers->get('Location') : 'login')->toContain('login');
 })->with(array_keys(SWEEP_PORTAL_ROUTES))->with([BrokerStatus::Suspended, BrokerStatus::Deactivated]);
 
-it('B.18 public bureau routes: the application and the invitation link are guest-only and throttled; the code check says name + district only', function (): void {
+it('B.18 public bureau routes: the application and the invitation link are guest-only; the code check says name + district only', function (): void {
     $this->get(brokerUrl('/validate?code='.$this->victim->code))->assertOk()
         ->assertJsonStructure(['valid', 'name', 'district'])
         ->assertJsonMissingPath('phone')->assertJsonMissingPath('email')->assertJsonMissingPath('id');

@@ -98,6 +98,52 @@ it('★ B.18 add a managed profile (Form::save): refused after the page opened',
     expect(Profile::query()->where('managed_by_broker_id', staffOf($login)->broker_id)->count())->toBe(0);
 })->with(['staff deactivated', 'bureau suspended', 'KYC revoked', 'creation paused', 'switched off']);
 
+it('★ B.18 / B.19 / R-M13-20 edit a client (Form::save, autosave, open): refused after the page opened; nothing is written', function (string $how, string $write): void {
+    $login = actingAsBureau(bureauLogin(BureauRole::DataEntry));
+    $broker = staffOf($login)->broker;
+    $client = app(App\Actions\Broker\ManagedProfiles\CreateManagedProfile::class)->handle($login, managedData(), basicData());
+    $name = $client->first_name;
+    $form = Livewire::test(Form::class, ['code' => $client->code])->set('basic.first_name', 'Changed');
+
+    match ($how) {
+        'switched off' => switchOff($login, 'profiles.edit'),
+        'taken off this client' => (function () use ($login, $client, $broker): void {
+            staffOf($login)->forceFill(['profile_scope' => App\Enums\ProfileScope::Assigned])->save();
+            $client->forceFill(['assigned_staff_id' => staffOf(bureauLogin(BureauRole::DataEntry, broker: $broker))->id])->save();
+        })(),
+        default => revocations($how)[$how]($login, $broker),
+    };
+
+    refused(fn () => match ($write) {
+        'save' => $form->call('save'),
+        'autosave' => $form->call('autosave'),
+        default => $form->call('open', 2),
+    });
+
+    expect($client->refresh()->first_name)->toBe($name);
+})->with(['staff deactivated', 'bureau suspended', 'switched off', 'taken off this client'])->with(['save', 'autosave', 'open']);
+
+it('R-M13-21 / B.19 KYC revoked blocks create / import / export only: an existing client can still be edited', function (): void {
+    $login = actingAsBureau(bureauLogin(BureauRole::DataEntry));
+    $client = app(App\Actions\Broker\ManagedProfiles\CreateManagedProfile::class)->handle($login, managedData(), basicData());
+    $form = Livewire::test(Form::class, ['code' => $client->code])->set('basic.first_name', 'Changed');
+
+    revocations('KYC revoked')['KYC revoked']($login, staffOf($login)->broker);
+    $form->call('autosave')->assertOk();
+
+    expect($client->refresh()->first_name)->toBe('Changed');
+});
+
+it('★ R-M13-20 edit a client: an assigned-only login can’t open the form of a client not assigned to it', function (): void {
+    $broker = staffOf(bureauLogin())->broker;
+    $client = managedProfile($broker, [], staffOf(bureauLogin(BureauRole::DataEntry, broker: $broker)));
+    $login = bureauLogin(BureauRole::DataEntry, broker: $broker);
+    staffOf($login)->forceFill(['profile_scope' => App\Enums\ProfileScope::Assigned])->save();
+    actingAsBureau($login);
+
+    refused(fn () => Livewire::test(Form::class, ['code' => $client->code]));
+});
+
 it('★ R-A07-9 / R-A07-10 / R-M13-21 upload a sheet (Upload::startImport): refused after the page opened', function (string $how): void {
     $login = actingAsBureau(bureauLogin(BureauRole::DataEntry));
     $real = importXlsx([importRow()]);

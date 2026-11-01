@@ -3,10 +3,10 @@
 Date: 2026-10-30. Scope: every route, Livewire action, channel and export of the broker module
 (bureau portal `oppam.in/broker` and A07 `admin.oppam.in/brokers`), attacked as each bureau role, as
 another bureau, and through stale or revoked access. Built after P7.8a–c (committed with them in
-08080f3); reviewer round 1 found coverage gaps 3–6 below, closed in the follow-up commit.
+08080f3); reviewer round 1 found coverage gaps 3–6 below (closed in b874fd9), round 2 gaps 7–9.
 
 **Result: no open gaps.** No attack in the tables below reached data or changed anything it
-shouldn't. Six **coverage** gaps (safe but untested — two found by the sweep, four by its review)
+shouldn't. Nine **coverage** gaps (safe but untested — two found by the sweep, seven by its review)
 were closed with tests; no application defect was found.
 
 ## How it is kept complete
@@ -46,6 +46,7 @@ out): `updatedHoroscope` writes; the others only reset a filter or page and are 
 | Every route × every role | Owner / Manager / Data entry / Telecaller | B.2 matrix (403 BUREAU_PERMISSION, KYC_REQUIRED, CREATION_PAUSED) | ✔ | BureauPermissionMatrixTest ★ |
 | Public routes `/apply`, `/staff/invite/{token}`, `/validate` | signed-in login, anyone | guest-only; validate returns name + district only | ✔ | RouteAttackTest, BrokerApplicationTest, StaffLifecycleTest |
 | Form::save (add a client) | page open, then staff deactivated / bureau suspended / KYC revoked / creation paused / switched off | 403, no profile | ✔ | MidFlowRevocationTest |
+| Form::save, autosave, open (edit a client) | page open, then staff deactivated / bureau suspended / `profiles.edit` switched off / taken off this client (assigned-only) | refused, nothing written. KYC revoked: editing still works (R-M13-21 and B.19 name create / import / export only; tested; owner to confirm, decisions 2026-11-01) | ✔ (**coverage gap closed**) | MidFlowRevocationTest |
 | Upload::startImport | then staff deactivated / suspended / KYC revoked / creation paused / imports paused | 403 (paused: field error), no batch | ✔ | MidFlowRevocationTest |
 | BatchReview::import | then staff deactivated / suspended / KYC revoked / creation paused | refused, batch untouched | ✔ | MidFlowRevocationTest |
 | Show::change, ClientInbox::send, Notes::add, Index::assignSelected | then staff deactivated / suspended / switched off | refused, nothing written | ✔ | MidFlowRevocationTest |
@@ -75,6 +76,9 @@ out): `updatedHoroscope` writes; the others only reset a filter or page and are 
 | 4 | The inventory dropped every `updated*` hook, hiding the horoscope upload (a write) | guard (review) | SurfaceInventoryTest lists `updatedX` hooks |
 | 5 | No managed-profile Action was attacked by an assigned-only login on an unassigned client | test coverage (review) | IdorScopingTest "assigned-only login gets 404…" |
 | 6 | Stale session / switched-off permission through a real Livewire update was tested for suspension only; weak redirect / session assertions | test coverage (review) | RouteAttackTest Livewire-update tests; session-gone and Location assertions |
+| 7 | Form::open and autosave write a partial save on an existing client but were mapped only to happy-path tests | test coverage (review) | MidFlowRevocationTest "edit a client…" |
+| 8 | A new portal GET route could be mapped in the inventory without being attacked | guard (review) | RouteAttackTest "every portal page is attacked" |
+| 9 | The guest row only asserted a redirect, not one to sign-in | test coverage (review) | RouteAttackTest guest test asserts the login Location |
 
 No application change was needed.
 

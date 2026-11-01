@@ -13,6 +13,7 @@ use App\Models\BrokerFraudSignal;
 use App\Models\BrokerStaff;
 use App\Notifications\Broker\BureauSignalRaised;
 use App\Services\Audit\AuditLogger;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -52,15 +53,21 @@ final class RecordFraudSignals
     /**
      * Is there evidence the admin didn't see when they resolved the last signal of this type? A code
      * not in the resolved lists, or a count above the resolved one; a referral spike is reviewed once
-     * per IST month.
+     * per IST month. Counts come from rolling windows, so a same-sized recurrence looks unchanged:
+     * once the resolution is older than the detector's window, whatever it finds is new.
      *
      * @param  array<string, mixed>  $now
      * @param  array<string, mixed>  $seen
      */
-    public static function isNewEvidence(BrokerSignal $type, array $now, array $seen): bool
+    public static function isNewEvidence(BrokerSignal $type, array $now, array $seen, ?CarbonInterface $resolvedAt = null): bool
     {
         if ($type === BrokerSignal::ReferralSpike) {
             return ($now['month'] ?? null) !== ($seen['month'] ?? null);
+        }
+
+        $window = FraudSignals::evidenceDays($type);
+        if ($window !== null && $resolvedAt !== null && $resolvedAt->lte(now()->subDays($window))) {
+            return true;
         }
 
         foreach ($now as $key => $value) {
@@ -88,7 +95,7 @@ final class RecordFraudSignals
 
         $resolved = BrokerFraudSignal::query()->where('broker_id', $locked->id)->where('type', $type)->whereNotNull('resolved_at')
             ->latest('resolved_at')->first();
-        if ($resolved !== null && ! self::isNewEvidence($type, $details, $resolved->details ?? [])) {
+        if ($resolved !== null && ! self::isNewEvidence($type, $details, $resolved->details ?? [], $resolved->resolved_at)) {
             return false;   // the admin already reviewed this evidence: no new signal, no new hold
         }
 

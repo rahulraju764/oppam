@@ -33,6 +33,22 @@ use Illuminate\Support\Facades\DB;
  */
 final class FraudSignals
 {
+    /**
+     * How far back a detector looks: once a resolution is this old, what it detects happened after
+     * that review (open consent disputes have no age limit: one still open comes back for review).
+     * Null: no rolling window (incomplete referrals only grow; a spike goes by month).
+     */
+    public static function evidenceDays(BrokerSignal $type): ?int
+    {
+        return match ($type) {
+            BrokerSignal::IncompleteReferrals, BrokerSignal::ReferralSpike => null,
+            BrokerSignal::ExportPattern, BrokerSignal::StaffDevices => 7,
+            BrokerSignal::SharedSignups, BrokerSignal::HighRejection, BrokerSignal::ImportMobilePattern, BrokerSignal::ImportPhotoMatch => 30,
+            BrokerSignal::PayThenRefund, BrokerSignal::SelfReferral => 90,
+            BrokerSignal::ConsentDisputes => Settings::int(SettingKey::BrokerDisputeWindowDays),
+        };
+    }
+
     /** @return array<string, array<string, mixed>> BrokerSignal value => details, for the signals present now */
     public function detect(Broker $broker): array
     {

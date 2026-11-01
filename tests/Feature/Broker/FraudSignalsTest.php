@@ -330,6 +330,67 @@ it('★ B.12: a resolved signal stays resolved — the same evidence never reope
         ->and($this->broker->refresh()->payouts_held_at)->not->toBeNull();
 });
 
+it('★ B.12: a same-sized recurrence reopens a resolved signal once the resolution is older than the detector’s window — never sooner', function (BrokerSignal $type, int $days): void {
+    $details = ['counted' => 1, 'codes' => ['OPM1']];
+
+    expect(FraudSignals::evidenceDays($type))->toBe($days)
+        ->and(RecordFraudSignals::isNewEvidence($type, $details, $details))->toBeFalse()
+        ->and(RecordFraudSignals::isNewEvidence($type, $details, $details, now()->subDays($days)->addHour()))->toBeFalse()
+        ->and(RecordFraudSignals::isNewEvidence($type, $details, $details, now()->subDays($days)))->toBeTrue();
+})->with([
+    'shared sign-ups' => [BrokerSignal::SharedSignups, 30],
+    'pay then refund' => [BrokerSignal::PayThenRefund, 90],
+    'self-referral' => [BrokerSignal::SelfReferral, 90],
+    'exports' => [BrokerSignal::ExportPattern, 7],
+    'rejections' => [BrokerSignal::HighRejection, 30],
+    'import mobiles' => [BrokerSignal::ImportMobilePattern, 30],
+    'import photos' => [BrokerSignal::ImportPhotoMatch, 30],
+    'staff devices' => [BrokerSignal::StaffDevices, 7],
+]);
+
+it('B.12: the consent-dispute window is the A15 setting; incomplete referrals have no rolling window, so only growth reopens them', function (): void {
+    $details = ['referrals' => 10, 'never_live' => 9];
+
+    expect(FraudSignals::evidenceDays(BrokerSignal::ConsentDisputes))->toBe(App\Support\Facades\Settings::int(SettingKey::BrokerDisputeWindowDays))
+        ->and(RecordFraudSignals::isNewEvidence(BrokerSignal::IncompleteReferrals, $details, $details, now()->subYear()))->toBeFalse();
+});
+
+it('★ B.12 through the scan: the same sign-ups recur after the window — a new signal and a new payout hold; the rescan before that stays silent', function (): void {
+    $admin = adminWithRole('super_admin');
+    $device = hash('sha256', str_repeat('d', 40));
+    foreach (range(1, 3) as $i) {
+        referral($this->broker, ['signup_device_hash' => $device]);
+    }
+    app(RecordFraudSignals::class)->handle($this->broker);
+    app(ResolveFraudSignal::class)->handle($admin, $this->broker, BrokerFraudSignal::query()->sole()->id, 'Clients registered at the bureau office');
+    app(App\Actions\Admin\Brokers\SetBrokerPayoutHold::class)->handle($admin, $this->broker->refresh(), false, 'Checked: office sign-ups');
+
+    $this->travel(29)->days();
+    expect(app(RecordFraudSignals::class)->handle($this->broker->refresh()))->toBe([]);
+
+    $this->travel(2)->days();                                                                   // the first three have aged out
+    foreach (range(1, 3) as $i) {
+        referral($this->broker, ['signup_device_hash' => $device]);
+    }
+    expect(app(RecordFraudSignals::class)->handle($this->broker->refresh()))->toBe([BrokerSignal::SharedSignups])
+        ->and($this->broker->refresh()->payouts_held_at)->not->toBeNull();
+});
+
+it('B.12 void all, end to end: a commission already paid is clawed back on the next run', function (): void {
+    $finance = adminWithRole('finance');
+    $paid = earnedCommission($this->broker, 60_000);
+    paidRun($finance);
+
+    app(VoidAllReferrals::class)->handle($finance, $this->broker->refresh(), 'Self-referral confirmed');
+    expect($paid->refresh()->void_reason)->toBe(ReferralVoidReason::Fraud);
+
+    $this->travel(1)->months();
+    earnedCommission($this->broker, 150_000);
+    $line = lineOf(createRun($finance), $this->broker);
+
+    expect($line->clawback_paise)->toBe(60_000)->and($line->net_paise)->toBe(90_000);
+});
+
 it('B.12: a resolved referral spike is reviewed once per IST month', function (): void {
     $type = BrokerSignal::ReferralSpike;
     expect(RecordFraudSignals::isNewEvidence($type, ['month' => '2026-10', 'this_month' => 40], ['month' => '2026-10', 'this_month' => 12]))->toBeFalse()
