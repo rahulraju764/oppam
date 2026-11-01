@@ -107,6 +107,16 @@ final class Broker extends Model
     }
 
     /**
+     * isPayable() as a query.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopePayable(Builder $query): void
+    {
+        $query->where('status', BrokerStatus::Active)->where('kyc_status', BrokerKycStatus::Verified)->whereNull('payouts_held_at');
+    }
+
+    /**
      * APPLIED bureaus whose Owner proved the mobile: the A07 "no KYC yet" list, its count and SLA.
      * An application never confirmed by SMS is nobody's work yet (it is released later).
      *

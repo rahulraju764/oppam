@@ -207,6 +207,25 @@ it('B.19: a claim that loses the race to the bureau deleting the client is refus
     expect(session(ClaimProfile::OFFER_SESSION_KEY))->toBeNull();
 });
 
+it('R-M13-15 (decisions 2026-10-31): a SUSPENDED client is still offered; the claim ends the bureau’s access, the suspension stays and the profile isn’t searchable', function (): void {
+    [$owner, $profile] = bureauClient(['status' => ProfileStatus::Suspended, 'published_at' => null]);
+    registerAndVerify($this);
+    $member = claimant();
+
+    expect(app(ClaimManagedProfile::class)->candidateFor($member)?->id)->toBe($profile->id);
+
+    app(ClaimManagedProfile::class)->claim($member);
+    $claimed = $profile->refresh();
+
+    expect($claimed->user_id)->toBe($member->id)
+        ->and($claimed->managed_by_broker_id)->toBeNull()
+        ->and($claimed->status)->toBe(ProfileStatus::Suspended)
+        ->and(Profile::query()->searchable()->whereKey($claimed->id)->exists())->toBeFalse();
+
+    actingAsBureau($owner);
+    $this->get(brokerUrl('/profiles/'.$claimed->code))->assertNotFound();
+});
+
 it('a second "Yes" (another tab) claims nothing more', function (): void {
     bureauClient();
     registerAndVerify($this);

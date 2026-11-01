@@ -60,7 +60,8 @@ it('lists unverified codes of proved members with suggestions within distance 2 
 it('link: attribution set, PENDING ledger row opened, audited with the raw code and reason', function (): void {
     $broker = Broker::factory()->create(['code' => 'BRK1042']);
     $member = mistyped('BRK1024');
-    $this->actingAs(adminWithRole('super_admin'), 'admin');
+    $admin = adminWithRole('super_admin');
+    $this->actingAs($admin, 'admin');
 
     Livewire::test(UnverifiedCodesQueue::class)
         ->call('select', $member->profile->code)
@@ -76,6 +77,7 @@ it('link: attribution set, PENDING ledger row opened, audited with the raw code 
     expect($profile->broker_id)->toBe($broker->id)->and($profile->broker_verified)->toBeTrue()
         ->and(BrokerReferral::query()->sole()->status)->toBe(ReferralStatus::Pending)
         ->and($audit->reason)->toBe('Member confirmed on the phone')
+        ->and($audit->actor_id)->toBe($admin->id)                     // B.21 "an audit row naming the admin"
         ->and($audit->before['broker_code_raw'])->toBe('BRK1024');
 });
 

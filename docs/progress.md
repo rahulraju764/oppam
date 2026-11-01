@@ -4,10 +4,10 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 7 — Broker module (P6.1 and P7.1 built out of order; P5.3 still open)
-**Next session:** P7.8c — Fraud & quality signals (P7.8a reviewed READY, held for the owner's rule-5 review; P7.8b built, reviewer
-round 2 due). Then P7.9. Still open elsewhere: P6.1 re-review after its Blocker fix; P5.3 — Admin billing (A06), groundwork committed in e13f771
-(breaks BillingTest.php's fake gateway), screens not built; Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
+**Current phase:** 7 — Broker module: every session built and reviewer READY (2026-11-01); P7.2, P7.8a–c, P7.9 stay unticked until the owner's
+rule-5 review and browser try.
+**Next session:** P5.3 — Admin billing (A06), groundwork committed in e13f771 (breaks BillingTest.php's fake gateway), screens not built. Then P8.1.
+Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -230,7 +230,11 @@ round 2 due). Then P7.9. Still open elsewhere: P6.1 re-review after its Blocker 
     month). Minors fixed: banned-photo matches counted, job timeout 900 s < retry_after, panel shows the real hold state, alerts say
     how many bureaus, batch flags shown in the imports monitor, cookie kept / set tests, scan test renamed. Minors open: the import
     photo check is a full `media` scan per photo inside the daily job (measure; split per batch if slow); APP_KEY rotation breaks
-    older IP matching; the panel with signals not driven in a browser. Round 2 due.
+    older IP matching; the panel with signals not driven in a browser. Committed by the owner in 08080f3 + b874fd9. Round 2 (2026-11-01):
+    NOT READY — 1 Major: a same-sized recurrence never reopened a resolved signal → reopens once the resolution is older than the detector's
+    window (105a4e4). **Round 3: READY TO COMMIT.** Minors for the owner: a same-sized recurrence inside the window can surface up to one window
+    late, so a run could pay first; new evidence adds no hold while a signal stays open after its hold was released; one exact-IP match holds
+    payouts (CGNAT).
 - [ ] P7.9 Broker security sweep — 2026-10-30: built (plan approved 2026-10-30). Report: `docs/security/broker-sweep-p7.9.md`
   (surface × attacker × expected × result × test). New suites in `tests/Feature/Broker/Security/`: SurfaceInventoryTest ★ (all 42
   `broker.*` / `admin.brokers.*` routes and every action of the 37 bureau / A07 Livewire components must have attack rows naming
@@ -241,7 +245,24 @@ round 2 due). Then P7.9. Still open elsewhere: P6.1 re-review after its Blocker 
   photo ids), ChannelAttackTest (member, non-Owner roles on `broker-owner`, unknown ids, guest auth). ★ B.22 suites + sweep:
   454 passed. **No application gap found**; 2 coverage gaps closed with tests (photo actions with another profile's photo id;
   member account on the bureau channels). Dusk BrokerPortalTest (DUSK_DRIVER_PORT=9615): 8/8 journeys passed at 375 px (P7.1–P7.8).
-  Reviewer: not yet run.
+  Reviewer round 1 found coverage gaps 3–6 (closed in b874fd9); round 2 NOT READY — 1 Major: Form::open / autosave mapped but not attacked
+  (gaps 7–9, 105a4e4). **Round 3: READY TO COMMIT.** No application defect found. True concurrency is left to P9.4.
+- [ ] Phase 7 close-out — 2026-11-01 (plan approved; decisions 2026-10-31 + 2026-11-01). Assigned-only logins see only the batches they uploaded
+  (`BrokerImportBatch::visibleTo`, one scope for list, page, errors file and every batch Action). Payout-run reminders (`PayoutsDue`,
+  `SendPayoutRunReminder` daily 09:00 IST, once a month per admin, mail + A02 alert for `brokers.payout`; `broker.payout_reminder_day`). No
+  commission maturation job (owner). A suspended client stays claimable and suspended (test). Found on the way: the batch page didn't update on A04
+  decisions though F09 says approvals stream back live → it listens to `.profile.moderated`. `ImportSubmitTest`'s R-M13-20 test split: 404 on a
+  colleague's batch (owner's rule), filter proved in the login's own batch; reviewer: not a weakening. Reviewer: READY TO COMMIT (0 Blockers / 0 Majors).
+  Runs, XAMPP PHP 8.2, serial groups (`composer test` can't run whole until P5.3 fixes BillingTest.php): 3,154 passed on b874fd9 (all folders,
+  BillingTest.php excluded); on this work lint + analyse clean, Unit 122, Settings 123, Feature/Admin 236, Feature/Broadcasting 68, Livewire/Admin
+  168, Livewire/Broker 105, Feature/Broker 948 + the 1 test split above, then the changed files 64 passed; the other folders not re-run on it.
+  Dusk (dev servers up): BrokerPortalTest + AdminPanelTest 12 passed, 874 assertions, incl. F09 approval live 2.4 s and every portal / A07 page at
+  320 / 768 / 1024 / 1440 px (real browser per width), before the last test-only edits and the per-admin reminder marker. B.21 / B.22 walked line by
+  line by the reviewer. Open: the refund criterion is proven only from `RefundProcessed` on (real refund → P5.3 Done-when); the B.22 Dusk journey is
+  proven in pieces (P7.1, P7.5, P7.7, F09), KYC approval not driven in a browser; dialogs at other widths → P9.3. Owner to confirm: decisions 2026-11-01.
+  Minors → P9.4: a code-only colleague batch exposure on the bureau channel and the duplicate banner; `scopePayable` repeats CreatePayoutRun's
+  condition (unify after rule 5). Local dev: run the servers once per session; a set outliving its session stalls its queue worker, and two sets
+  share ports silently.
 
 ## Phase 8 — Content, settings & communication
 - [ ] P8.1 CMS & public pages (M12 + A08)

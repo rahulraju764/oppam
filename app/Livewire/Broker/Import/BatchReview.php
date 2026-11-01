@@ -90,6 +90,7 @@ final class BatchReview extends Component
             'echo-private:broker.'.$staff->broker_id.',.import.progress' => 'progressed',
             'echo-private:broker.'.$staff->broker_id.',.import.completed' => 'completed',
             'echo-private:broker.'.$staff->broker_id.',.imports.paused' => '$refresh',
+            'echo-private:broker.'.$staff->broker_id.',.profile.moderated' => '$refresh',   // F09: A04 approvals stream back live
             'realtime-reconnected' => '$refresh',   // back-fill whatever the socket missed (PRD §9.7)
         ] : [];
     }
@@ -334,7 +335,7 @@ final class BatchReview extends Component
 
     private function find(BrokerStaff $staff): BrokerImportBatch
     {
-        return BrokerImportBatch::query()->where('broker_id', $staff->broker_id)->where('code', $this->code)->firstOrFail();
+        return BrokerImportBatch::query()->visibleTo($staff)->where('code', $this->code)->firstOrFail();
     }
 
     private function user(): User

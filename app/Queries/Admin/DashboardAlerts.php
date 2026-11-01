@@ -25,18 +25,26 @@ final class DashboardAlerts
     /** The application's queues (CLAUDE.md "Queues"). */
     public const QUEUES = ['default', 'broadcasts', 'notifications', 'mail', 'media', 'matching', 'imports'];
 
-    public function __construct(private readonly QueueFactory $queues) {}
+    public function __construct(
+        private readonly QueueFactory $queues,
+        private readonly PayoutsDue $payoutsDue,
+    ) {}
 
     /**
      * @param  list<WorkQueueData>  $workQueues  the queues this admin may see
      * @param  bool  $system  include the system-health alerts (failed jobs, backlog) — for `dashboard.view`
      * @param  bool  $brokers  include bureaus whose imports were auto-paused (§11A B.9 "A07 is alerted") — for `brokers.imports.manage`
      * @param  bool  $bureaus  include bureaus whose adding is paused (R-A07-10) or with open fraud / quality signals (B.12) — for `brokers.view`
+     * @param  bool  $payouts  include a broker payout run that is due (§11A B.23) — for `brokers.payout`
      * @return list<array{level: string, text: string}> level = warning | danger
      */
-    public function for(array $workQueues, bool $system = true, bool $brokers = false, bool $bureaus = false): array
+    public function for(array $workQueues, bool $system = true, bool $brokers = false, bool $bureaus = false, bool $payouts = false): array
     {
         $alerts = [];
+
+        if ($payouts && ($month = $this->payoutsDue->month()) !== null) {
+            $alerts[] = ['level' => 'warning', 'text' => __('Broker payout run due: no run covers :month yet. Create one in Brokers.', ['month' => $month->format('F Y')])];
+        }
 
         if ($brokers) {
             $paused = Broker::query()->whereNotNull('imports_paused_at')->where('imports_paused_reason', ImportsPauseReason::Auto)->orderBy('imports_paused_at')->limit(5)->pluck('code');

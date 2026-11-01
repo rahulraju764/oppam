@@ -452,7 +452,10 @@ likes/day, favourites cap, free-reply toggle) + consistency warning; orders list
 timeline + raw webhooks; stuck orders (re-poll/mark failed/force-activate super_admin);
 refunds by category with side-effects in one transaction; subscription views; complimentary
 grants; coupons CRUD; GST CSV export; daily reconciliation job with investigate rows.
-Done when: A06 rules tested (refund side-effects, plan delete guard, second-level checks).
+Done when: A06 rules tested (refund side-effects, plan delete guard, second-level checks); the
+refund path dispatches `RefundProcessed`, with a test from a real refund through to the voided
+commission and its clawback (§11A B.21; P7.2's listener and `PAY_THEN_REFUND` wait for this);
+`tests/Livewire/Member/BillingTest.php`'s fake gateway is fixed and `composer test` runs whole again.
 ```
 
 ---

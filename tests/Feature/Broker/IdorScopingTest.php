@@ -10,11 +10,13 @@ use App\Actions\Broker\ManagedProfiles\UpdateManagedProfile;
 use App\Data\Broker\ClientNoteData;
 use App\Domain\Broker\ManagedProfileScope;
 use App\Enums\BureauRole;
+use App\Enums\ImportBatchStatus;
 use App\Enums\ManagedProfileStatusChange;
 use App\Enums\ProfileOwnerType;
 use App\Enums\ProfileScope;
 use App\Enums\ProfileStatus;
 use App\Models\Broker;
+use App\Models\BrokerImportBatch;
 use App\Models\Profile;
 use Database\Seeders\PlansSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -147,6 +149,60 @@ it('★ R-M13-18: the scope takes the bureau from the staff row — never from t
     expect($found)->toBeEmpty()
         ->and(app(ManagedProfileScope::class)->covers(staffOf($login), $foreign))->toBeFalse();
 });
+
+it('★ R-M13-20 (decisions 2026-10-31): an assigned-only login reaches only the import batches it uploaded — list, page, errors file', function (): void {
+    flagOn(App\Enums\Flag::BrokerBulkImport);
+    $owner = bureauLogin(BureauRole::Owner);
+    $broker = staffOf($owner)->broker;
+    $login = bureauLogin(BureauRole::DataEntry, broker: $broker);
+    staffOf($login)->forceFill(['profile_scope' => ProfileScope::Assigned])->save();
+    $theirs = BrokerImportBatch::factory()->create(['broker_id' => $broker->id, 'uploaded_by_user_id' => $owner->id, 'status' => ImportBatchStatus::Ready]);
+    $own = BrokerImportBatch::factory()->create(['broker_id' => $broker->id, 'uploaded_by_user_id' => $login->id, 'status' => ImportBatchStatus::Ready]);
+
+    actingAsBureau($login);
+    $this->get(brokerUrl('/import/batches'))->assertOk()->assertSee($own->code)->assertDontSee($theirs->code);
+    $this->get(brokerUrl('/import/'.$theirs->code))->assertNotFound();
+    $this->get(brokerUrl('/import/'.$theirs->code.'/errors.xlsx'))->assertNotFound();
+    $this->get(brokerUrl('/import/'.$own->code))->assertOk();
+    $this->get(brokerUrl('/import/'.$own->code.'/errors.xlsx'))->assertOk();
+
+    $everyClient = bureauLogin(BureauRole::DataEntry, broker: $broker);                 // the default scope still sees the bureau's batches
+    actingAsBureau($everyClient);
+    $this->get(brokerUrl('/import/batches'))->assertOk()->assertSee($own->code)->assertSee($theirs->code);
+    $this->get(brokerUrl('/import/'.$theirs->code))->assertOk();
+});
+
+it('★ R-M13-20 (decisions 2026-10-31): an assigned-only login gets 404 from every batch Action on a colleague’s batch, and nothing changes', function (string $action, ImportBatchStatus $status): void {
+    flagOn(App\Enums\Flag::BrokerBulkImport);
+    $owner = bureauLogin(BureauRole::Owner);
+    $broker = staffOf($owner)->broker;
+    $login = bureauLogin(BureauRole::Manager, broker: $broker);                         // a Manager holds every one of these permissions
+    staffOf($login)->forceFill(['profile_scope' => ProfileScope::Assigned])->save();
+    $batch = BrokerImportBatch::factory()->create(['broker_id' => $broker->id, 'uploaded_by_user_id' => $owner->id, 'status' => $status]);
+    App\Models\BrokerImportRow::factory()->create(['batch_id' => $batch->id, 'row_number' => 2]);   // "fix a row" would 404 on a missing row otherwise
+    $before = $batch->fresh()?->getAttributes();
+
+    $call = match ($action) {
+        'map columns' => fn () => app(App\Actions\Broker\Import\SaveColumnMapping::class)->handle($login, $batch->code, []),
+        'fix a row' => fn () => app(App\Actions\Broker\Import\FixImportRow::class)->handle($login, $batch->code, 2, 'height', '163'),
+        're-upload fixes' => fn () => app(App\Actions\Broker\Import\ReuploadImportErrors::class)->handle($login, $batch->code, importXlsx([importRow()])),
+        'attest consent' => fn () => app(App\Actions\Broker\Import\AttestBatchConsent::class)->handle($login, $batch->code),
+        'start import' => fn () => app(App\Actions\Broker\Import\StartBatchImport::class)->handle($login, $batch->code),
+        'cancel' => fn () => app(App\Actions\Broker\Import\CancelImportBatch::class)->handle($login, $batch->code),
+        'submit' => fn () => app(App\Actions\Broker\Import\SubmitImportedProfiles::class)->handle($login, $batch->code),
+    };
+
+    expect($call)->toThrow(ModelNotFoundException::class);
+    expect($batch->fresh()?->getAttributes())->toBe($before);
+})->with([
+    'map columns' => ['map columns', ImportBatchStatus::Mapping],
+    'fix a row' => ['fix a row', ImportBatchStatus::Ready],
+    're-upload fixes' => ['re-upload fixes', ImportBatchStatus::Ready],
+    'attest consent' => ['attest consent', ImportBatchStatus::Ready],
+    'start import' => ['start import', ImportBatchStatus::Ready],
+    'cancel' => ['cancel', ImportBatchStatus::Ready],
+    'submit' => ['submit', ImportBatchStatus::Completed],
+]);
 
 it('★ R-M13-20 (P7.9): an assigned-only login gets 404 from every managed-profile Action on a bureau client not assigned to it, and nothing changes', function (string $action): void {
     flagOn(App\Enums\Flag::BrokerClientInterestSending);

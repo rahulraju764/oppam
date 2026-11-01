@@ -9,6 +9,7 @@ use App\Jobs\Broker\PurgeDeletedManagedProfiles;
 use App\Jobs\Broker\PurgeImportFiles;
 use App\Jobs\Broker\ScanBrokerFraudSignals;
 use App\Jobs\Broker\SendFollowUpReminders;
+use App\Jobs\Broker\SendPayoutRunReminder;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
 use App\Jobs\Engagement\DetectEngagementSignals;
@@ -75,3 +76,6 @@ Schedule::job(new PurgeImportFiles)->timezone('Asia/Kolkata')->dailyAt('03:45')-
 
 // §11A B.12: A07 fraud & quality signals — batch flags, then every bureau, 04:15 IST (P7.8c).
 Schedule::job(new ScanBrokerFraudSignals)->timezone('Asia/Kolkata')->dailyAt('04:15')->onOneServer()->withoutOverlapping();
+
+// §11A B.23: payout-run reminder to `brokers.payout` admins, checked 09:00 IST, sent once a month while a run is due.
+Schedule::job(new SendPayoutRunReminder)->timezone('Asia/Kolkata')->dailyAt('09:00')->onOneServer()->withoutOverlapping();

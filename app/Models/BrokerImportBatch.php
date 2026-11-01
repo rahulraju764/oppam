@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\ImportBatchStatus;
 use App\Enums\ImportStopReason;
 use Database\Factories\BrokerImportBatchFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -75,6 +76,18 @@ final class BrokerImportBatch extends Model
             'signal_flags' => 'array',
             'files_purged_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The batches this login may see: its bureau's; an assigned-only login just its own uploads,
+     * because a batch shows client names and mobiles (R-M13-20, decisions 2026-10-31).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeVisibleTo(Builder $query, BrokerStaff $staff): void
+    {
+        $query->where('broker_id', $staff->broker_id)
+            ->when($staff->isAssignedOnly(), fn (Builder $q) => $q->where('uploaded_by_user_id', $staff->user_id));
     }
 
     /** @return BelongsTo<User, $this> */

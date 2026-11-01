@@ -55,6 +55,7 @@ out): `updatedHoroscope` writes; the others only reset a filter or page and are 
 | Ids sent by the browser: invitation id, follow-up id, assignee id | another bureau's ids | 404 / field error, nothing changed | ✔ | MidFlowRevocationTest |
 | Photo actions (delete / move / caption) | another profile's photo uuid via the bureau's own client | 404, photo untouched (order unchanged); foreign profile code → 404 | ✔ (**coverage gap closed**) | MidFlowRevocationTest |
 | Photo writes (savePhoto, deleteHoroscope, horoscope upload) | Telecaller (no `profiles.edit`); assigned-only on an unassigned client; staff deactivated / bureau suspended after the page opened | refused, no media written | ✔ (**coverage gap closed**) | MidFlowRevocationTest |
+| Import batches: list, page, errors.xlsx, and map / fix / re-upload / attest / start / cancel / submit | assigned-only login, a colleague's batch (owner decision 2026-10-31) | not listed; 404, nothing changed; own batches and "all clients" logins unaffected | ✔ (**scope tightened at the phase close**) | IdorScopingTest ★ |
 | Every managed-profile Action | another bureau's / a member's own / a claimed client, as the Owner | 404, nothing changed | ✔ | IdorScopingTest ★ |
 | Every managed-profile Action (submit, status, client phone, note, assign, inbox accept / send) | assigned-only login, a bureau client assigned to someone else | 404, nothing changed | ✔ (**coverage gap closed**) | IdorScopingTest ★ |
 | Biodata / photo export | non-managed, claimed, assigned-only, wrong role, KYC revoked, suspended | 403 + logged on every attempt | ✔ | ExportAuthorizationTest ★ |
@@ -80,10 +81,11 @@ out): `updatedHoroscope` writes; the others only reset a filter or page and are 
 | 8 | A new portal GET route could be mapped in the inventory without being attacked | guard (review) | RouteAttackTest "every portal page is attacked" |
 | 9 | The guest row only asserted a redirect, not one to sign-in | test coverage (review) | RouteAttackTest guest test asserts the login Location |
 
-No application change was needed.
+The sweep itself needed no application change. One rule was tightened afterwards at the owner's
+request: assigned-only logins now see only the import batches they uploaded (`BrokerImportBatch::visibleTo`).
 
 ## Not covered here (recorded elsewhere)
 
 - True concurrency (two processes at once) is proven by row locks and sequential tests, not by
   parallel load — P9.4 load test.
-- Browser widths other than 375 px — progress.md open Minors (P7.1–P7.8).
+- Dialogs at widths other than 375 px; pages at all widths are in BrokerPortalTest "Gate D" (P7.8 close-out).

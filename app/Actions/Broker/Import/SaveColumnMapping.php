@@ -53,7 +53,7 @@ final class SaveColumnMapping
         }
 
         $batch = DB::transaction(function () use ($actor, $staff, $batchCode, $mapping): BrokerImportBatch {
-            $batch = BrokerImportBatch::query()->where('broker_id', $staff->broker_id)->where('code', $batchCode)->lockForUpdate()->firstOrFail();
+            $batch = BrokerImportBatch::query()->visibleTo($staff)->where('code', $batchCode)->lockForUpdate()->firstOrFail();
 
             if ($batch->status !== ImportBatchStatus::Mapping) {
                 throw ImportRefused::wrongStatus();

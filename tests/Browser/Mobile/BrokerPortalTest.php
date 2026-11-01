@@ -62,6 +62,7 @@ function duskBrokerCleanup(): void
     App\Models\BrokerPayoutItem::query()->whereIn('broker_id', $brokers)->delete();
     App\Models\BrokerPayoutRun::query()->whereKey($runs)->whereDoesntHave('items')->delete();
     App\Models\BrokerClientNote::query()->whereIn('broker_id', $brokers)->delete();
+    App\Models\BrokerFraudSignal::query()->whereIn('broker_id', $brokers)->delete();   // P7.8c
     duskConversationsCleanup($profiles->modelKeys());
     App\Models\Profile::withTrashed()->whereKey($profiles->modelKeys())->forceDelete();
     // P7.6: import batches (rows cascade) and their private files.
@@ -468,7 +469,9 @@ it('P7.7: at 375px a Data-entry login fixes a row inline, confirms consent, impo
             $started = microtime(true);
             $browser->press('Import now')->waitForText('Import finished: 3 profiles added as drafts.', 60);
             fwrite(STDERR, sprintf("\n[P7.7] Import → COMPLETED on the page in %.1f s\n", microtime(true) - $started));
-            $browser->waitForText('Submit all complete profiles')->press('Imported')->waitForText('Row 4');
+            $browser->waitForText('Submit all complete profiles')
+                ->waitUntilMissing('.toast-card__title', 20)   // at 375 px the toast sits over the row filters until it goes
+                ->press('Imported')->waitForText('Row 4');
             assertNoHorizontalScroll($browser);
 
             $batch = App\Models\BrokerImportBatch::query()->where('broker_id', $staff->brokerStaff?->broker_id)->latest()->firstOrFail();
@@ -483,6 +486,160 @@ it('P7.7: at 375px a Data-entry login fixes a row inline, confirms consent, impo
             : FeatureFlag::query()->where('key', Flag::BrokerBulkImport->value)->update(['is_enabled' => $wasOn]);
         app(App\Services\Settings\FeatureFlags::class)->flush();
     }
+});
+
+/**
+ * Gate D: each path in a browser of its own at each width (phone emulation keeps a running browser
+ * at 375 px, so it can't be resized), carrying the signed-in cookies of $signedIn.
+ *
+ * @param  list<string>  $urls
+ */
+function assertFitsWidths(Browser $signedIn, string $landing, array $urls): void
+{
+    $cookies = $signedIn->driver->manage()->getCookies();
+    $port = (int) ($_ENV['DUSK_DRIVER_PORT'] ?? env('DUSK_DRIVER_PORT') ?? 9515);
+
+    foreach ([320, 768, 1024, 1440] as $width) {
+        $options = (new Facebook\WebDriver\Chrome\ChromeOptions)->addArguments(['--headless=new', '--disable-gpu', '--disable-smooth-scrolling']);
+        $options->setExperimentalOption('mobileEmulation', [
+            'deviceMetrics' => ['width' => $width, 'height' => 900, 'pixelRatio' => 1, 'touch' => $width < 1024, 'mobile' => $width < 768],
+        ]);
+        $driver = Facebook\WebDriver\Remote\RemoteWebDriver::create('http://localhost:'.$port,
+            Facebook\WebDriver\Remote\DesiredCapabilities::chrome()->setCapability(Facebook\WebDriver\Chrome\ChromeOptions::CAPABILITY, $options));
+
+        try {
+            $browser = new Browser($driver);
+            $browser->visit($landing);
+            foreach ($cookies as $cookie) {
+                $driver->manage()->addCookie($cookie);
+            }
+
+            foreach ($urls as $url) {
+                $browser->visit($url)->waitFor('main#main');
+                $body = (string) $browser->script('return document.body.innerText;')[0];
+                expect((string) $driver->getCurrentURL())->toContain((string) parse_url($url, PHP_URL_PATH));   // still signed in: no redirect to sign-in
+                expect($body)->not->toContain('We couldn’t find that page')->not->toContain('doesn’t include this')->not->toContain('Server Error');
+                expect($browser->script('return window.innerWidth;')[0])->toBe($width);
+                expect($browser->script('return document.scrollingElement.scrollWidth <= document.documentElement.clientWidth;')[0])
+                    ->toBeTrue("{$url} scrolls sideways at {$width} px");
+            }
+        } finally {
+            $driver->quit();
+        }
+    }
+}
+
+/** Bulk import and staff on for $journey, each flag put back after it. */
+function duskWithImportFlags(Closure $journey): void
+{
+    $flags = [Flag::BrokerBulkImport->value, Flag::BrokerStaff->value];
+    $was = FeatureFlag::query()->whereIn('key', $flags)->pluck('is_enabled', 'key');
+    foreach ($flags as $key) {
+        (FeatureFlag::query()->where('key', $key)->first() ?? new FeatureFlag)->forceFill(['key' => $key, 'is_enabled' => true])->save();
+    }
+    app(App\Services\Settings\FeatureFlags::class)->flush();
+
+    try {
+        $journey();
+    } finally {
+        foreach ($flags as $key) {
+            $was->has($key)
+                ? FeatureFlag::query()->where('key', $key)->update(['is_enabled' => $was[$key]])
+                : FeatureFlag::query()->where('key', $key)->delete();
+        }
+        app(App\Services\Settings\FeatureFlags::class)->flush();
+    }
+}
+
+it('B.22 / F09: a batch page is open when A04 approves an imported client — the approval rate arrives live', function (): void {
+    duskWithImportFlags(function (): void {
+        $this->browse(function (Browser $browser): void {
+            $staff = bureauLogin(BureauRole::DataEntry);
+            $staff->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+            $brokerId = (string) $staff->brokerStaff?->broker_id;
+            $profile = managedClientReadyToSubmit($staff, '9876512377');
+            $batch = App\Models\BrokerImportBatch::factory()->create([
+                'broker_id' => $brokerId, 'uploaded_by_user_id' => $staff->id, 'status' => App\Enums\ImportBatchStatus::Completed, 'rows_total' => 1, 'rows_imported' => 1,
+            ]);
+            $profile->forceFill(['import_batch_id' => $batch->id])->save();
+            $item = app(App\Actions\Broker\ManagedProfiles\SubmitManagedProfile::class)->handle($staff->refresh(), $profile->code);
+
+            duskFreshSession($browser);
+            $browser->visit('/login')
+                ->type('#loginId', '9999900031')
+                ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+                ->click('.login-form button[type="submit"]')
+                ->waitForLocation('/broker');
+            $browser->visit('/broker/import/'.$batch->code)->waitForText($batch->code)->assertDontSee('Approved at review');
+            $browser->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+                "return window.Echo?.connector?.channels?.['private-broker.{$brokerId}']?.subscription?.subscribed === true;")[0]);
+
+            $started = microtime(true);
+            app(App\Actions\Moderation\ApproveProfile::class)->handle(duskAdmin(), $item);
+            $browser->waitForText('Approved at review', 15);
+            fwrite(STDERR, sprintf("\n[F09] approval → live on the batch page in %.1f s\n", microtime(true) - $started));
+            assertNoHorizontalScroll($browser);
+        });
+    });
+
+    duskBrokerCleanup();   // the decided A04 item points at the Dusk admin: bureau rows first
+    duskAdminCleanup();
+});
+
+it('Gate D: the bureau portal fits 320, 768, 1024 and 1440 px without sideways scrolling', function (): void {
+    duskWithImportFlags(function (): void {
+        $this->browse(function (Browser $browser): void {
+            $owner = bureauLogin(BureauRole::Owner);
+            $owner->forceFill(['phone' => DUSK_BROKER_PHONE, 'password' => Hash::make(TEST_MEMBER_PASSWORD)])->save();
+            $broker = $owner->brokerStaff?->broker;
+            $client = managedProfile($broker);
+            $colleague = staffOf(bureauLogin(BureauRole::Telecaller, broker: $broker));
+            $batch = App\Models\BrokerImportBatch::factory()->create(['broker_id' => $broker->id, 'uploaded_by_user_id' => $owner->id, 'status' => App\Enums\ImportBatchStatus::Ready]);
+            earnedCommission($broker, 60_000);
+            paidRun(duskAdmin());
+
+            duskFreshSession($browser);
+            $browser->visit('/login')
+                ->type('#loginId', '9999900031')
+                ->type('#loginPassword', TEST_MEMBER_PASSWORD)
+                ->click('.login-form button[type="submit"]')
+                ->waitForLocation('/broker/verify-device');
+            app(TrustedDevices::class)->trust($owner, hash('sha256', (string) $browser->cookie((string) config('oppam.auth.device_cookie'))));
+
+            assertFitsWidths($browser, '/favicon.ico', array_map(fn (string $path): string => '/broker'.$path, [
+                '', '/activity', '/earnings', '/import', '/import/batches', '/import/'.$batch->code, '/kyc', '/materials', '/profiles', '/profiles/create',
+                '/profiles/'.$client->code, '/profiles/'.$client->code.'/edit', '/profiles/'.$client->code.'/inbox', '/profiles/'.$client->code.'/notes',
+                '/referrals', '/staff', '/staff/'.$colleague->code,
+            ]));
+        });
+    });
+
+    duskBrokerCleanup();
+    duskAdminCleanup();
+});
+
+it('Gate D: the A07 screens fit 320, 768, 1024 and 1440 px without sideways scrolling, signals panel included', function (): void {
+    $this->browse(function (Browser $browser): void {
+        duskFreshSession($browser);
+        duskSignInAdmin($browser);
+        $admin = App\Models\AdminUser::query()->where('email', DUSK_ADMIN_EMAIL)->sole();
+
+        $owner = bureauLogin(BureauRole::Owner);
+        $owner->forceFill(['phone' => DUSK_BROKER_PHONE])->save();
+        $broker = $owner->brokerStaff?->broker;
+        earnedCommission($broker, 60_000);
+        $run = paidRun($admin);
+        App\Models\BrokerFraudSignal::factory()->create(['broker_id' => $broker->id, 'type' => App\Enums\BrokerSignal::SharedSignups]);
+
+        $tabs = array_map(fn (string $tab): string => '/brokers/'.$broker->code.'?tab='.$tab, array_keys(App\Livewire\Admin\Brokers\BrokerShow::TABS));
+
+        assertFitsWidths($browser, adminDuskUrl('/favicon.ico'), array_map(adminDuskUrl(...), [
+            '/brokers', '/brokers/payouts', '/brokers/payouts/'.$run->code, '/brokers/exports', '/brokers/imports', '/brokers/disputes', ...$tabs,
+        ]));
+    });
+
+    duskBrokerCleanup();
+    duskAdminCleanup();
 });
 
 it('P7.8: A07 suspends the bureau — an open staff tab at 375px is signed out live; the Owner’s Earnings page fits 375px', function (): void {

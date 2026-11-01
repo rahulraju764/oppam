@@ -37,7 +37,7 @@ final class ImportErrorsController extends Controller
         $staff = $gate->authorize($login, BureauPermission::ProfilesImport);
         abort_unless(Feature::active(Flag::BrokerBulkImport), 404);
 
-        $model = BrokerImportBatch::query()->where('broker_id', $staff->broker_id)->where('code', $batch)->firstOrFail();
+        $model = BrokerImportBatch::query()->visibleTo($staff)->where('code', $batch)->firstOrFail();
         $headers = $model->headers ?? [];
 
         $book = new Spreadsheet;

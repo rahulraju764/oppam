@@ -18,7 +18,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 /**
  * The checks every bulk-import step shares (§11A B.9, R-M13-26, R-M13-18): the login holds
  * `profiles.import` (ACTIVE, KYC-verified bureau — BureauGate), the `broker.bulk_import` flag is on,
- * and a batch is only ever the caller's bureau's, looked up by its code (another bureau's → 404).
+ * and a batch is only ever the caller's bureau's, looked up by its code (another bureau's → 404; for
+ * an assigned-only login, a colleague's too).
  */
 final class ImportBatchAccess
 {
@@ -48,7 +49,7 @@ final class ImportBatchAccess
     public function find(BrokerStaff $staff, string $code, bool $lock = false): BrokerImportBatch
     {
         return BrokerImportBatch::query()
-            ->where('broker_id', $staff->broker_id)
+            ->visibleTo($staff)
             ->where('code', $code)
             ->when($lock, fn ($q) => $q->lockForUpdate())
             ->firstOrFail();

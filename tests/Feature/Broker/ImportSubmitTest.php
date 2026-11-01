@@ -70,7 +70,44 @@ it('★ B.9 step 6 / R-M13-14: complete imported drafts go to A04 with the batch
         ->and($flags['broker_managed'])->toBe('Added by broker '.$staff->broker->code.' · batch '.$batch->code.' · entered by '.$staff->displayName().'.');
 });
 
-it('R-M13-20: an assigned-only login submits only its own clients from the batch; a Telecaller is 403', function (): void {
+it('R-M13-20: in its own batch, an assigned-only login submits only clients assigned to it', function (): void {
+    $login = bureauLogin(BureauRole::DataEntry);
+    $broker = staffOf($login)->broker;
+    BrokerStaff::query()->where('user_id', $login->id)->update(['profile_scope' => ProfileScope::Assigned->value]);
+    app(BureauGate::class)->forget();
+    $batch = importNow($login, pipelineReady($login, [importRow(), importRow(mobile: '9876500102')]));
+    [$mine, $theirs] = Profile::query()->where('import_batch_id', $batch->id)->orderBy('id')->pluck('id')
+        ->map(fn (string $id): Profile => completeImported($login, Profile::query()->findOrFail($id)))->all();
+    $theirs->forceFill(['assigned_staff_id' => staffOf(bureauLogin(BureauRole::DataEntry, broker: $broker))->id])->save();
+    app(BureauGate::class)->forget();
+
+    expect(app(SubmitImportedProfiles::class)->handle($login, $batch->code)->submitted)->toBe(1)
+        ->and($mine->refresh()->status)->toBe(ProfileStatus::PendingReview)
+        ->and($theirs->refresh()->status)->toBe(ProfileStatus::Draft);
+});
+
+it('decisions 2026-11-01: an assigned-only login shut out of a colleague’s batch still submits its assigned client from the client page', function (): void {
+    $owner = bureauLogin(BureauRole::Owner);
+    $broker = staffOf($owner)->broker;
+    $client = managedClientReadyToSubmit($owner, '9876512377');
+    $batch = App\Models\BrokerImportBatch::factory()->create(['broker_id' => $broker->id, 'uploaded_by_user_id' => $owner->id, 'status' => App\Enums\ImportBatchStatus::Completed]);
+    $login = bureauLogin(BureauRole::DataEntry, broker: $broker);
+    staffOf($login)->forceFill(['profile_scope' => ProfileScope::Assigned])->save();
+    $client->forceFill(['import_batch_id' => $batch->id, 'assigned_staff_id' => staffOf($login)->id])->save();
+    app(BureauGate::class)->forget();
+
+    expect(fn () => app(SubmitImportedProfiles::class)->handle($login, $batch->code))
+        ->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect($client->refresh()->status)->toBe(ProfileStatus::Draft);
+
+    actingAsBureau($login);
+    $this->get(brokerUrl('/profiles/'.$client->code))->assertOk()->assertSee('wire:click="submit"', false);
+    Livewire\Livewire::test(App\Livewire\Broker\ManagedProfiles\Show::class, ['code' => $client->code])->call('submit')->assertOk();
+
+    expect($client->refresh()->status)->toBe(ProfileStatus::PendingReview);
+});
+
+it('R-M13-20 (decisions 2026-10-31): an assigned-only login gets 404 on a colleague’s batch; a Telecaller is 403', function (): void {
     $login = bureauLogin(BureauRole::DataEntry);
     $batch = importNow($login, pipelineReady($login, [importRow()]));
     $profile = completeImported($login, Profile::query()->where('import_batch_id', $batch->id)->firstOrFail());
@@ -78,8 +115,9 @@ it('R-M13-20: an assigned-only login submits only its own clients from the batch
     $assigned = bureauLogin(BureauRole::DataEntry, broker: staffOf($login)->broker);
     BrokerStaff::query()->where('user_id', $assigned->id)->update(['profile_scope' => ProfileScope::Assigned->value]);
     app(BureauGate::class)->forget();
-    expect(app(SubmitImportedProfiles::class)->handle($assigned, $batch->code)->submitted)->toBe(0)
-        ->and($profile->refresh()->status)->toBe(ProfileStatus::Draft);
+    expect(fn () => app(SubmitImportedProfiles::class)->handle($assigned, $batch->code))
+        ->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect($profile->refresh()->status)->toBe(ProfileStatus::Draft);
 
     $telecaller = bureauLogin(BureauRole::Telecaller, broker: staffOf($login)->broker);
     app(BureauGate::class)->forget();

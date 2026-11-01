@@ -72,6 +72,7 @@ enum SettingKey: string
     case BrokerPayoutMinimumPaise = 'broker.payout_minimum_paise';
     case BrokerPayoutSecondApproverPaise = 'broker.payout_second_approver_paise';
     case BrokerPayoutTdsBps = 'broker.payout_tds_bps';
+    case BrokerPayoutReminderDay = 'broker.payout_reminder_day';
     case BrokerDisputeUpheldLimit = 'broker.dispute_upheld_limit';
     case BrokerDisputeWindowDays = 'broker.dispute_window_days';
     case BrokerExportAnomalyPerHour = 'broker.export_anomaly_per_hour';
@@ -196,6 +197,7 @@ enum SettingKey: string
             self::BrokerPayoutMinimumPaise => 50_000,          // R-A07-5: balances under ₹500 roll forward
             self::BrokerPayoutSecondApproverPaise => 5_000_000,   // R-A07-4: a line above ₹50,000 needs a second approver
             self::BrokerPayoutTdsBps => 0,                     // B.10 "TDS (if applicable)": 0 until the owner sets the 194H rate (decisions 2026-10-29)
+            self::BrokerPayoutReminderDay => 1,                // B.23 payout-run reminders: from this day of the month (IST)
             self::BrokerDisputeUpheldLimit => 3,               // R-A07-10: this many upheld consent disputes …
             self::BrokerDisputeWindowDays => 90,               // … within this many days pause the bureau's create / import rights
             self::BrokerExportAnomalyPerHour => 40,            // B.12: more exports than this by one login in an hour is highlighted
@@ -307,6 +309,7 @@ enum SettingKey: string
             self::BrokerPayoutMinimumPaise => ['required', 'integer', 'min:0', 'max:10000000'],
             self::BrokerPayoutSecondApproverPaise => ['required', 'integer', 'min:100', 'max:100000000'],
             self::BrokerPayoutTdsBps => ['required', 'integer', 'min:0', 'max:3000'],
+            self::BrokerPayoutReminderDay => ['required', 'integer', 'min:1', 'max:28'],
             self::BrokerDisputeUpheldLimit => ['required', 'integer', 'min:1', 'max:50'],
             self::BrokerDisputeWindowDays => ['required', 'integer', 'min:7', 'max:365'],
             self::BrokerExportAnomalyPerHour => ['required', 'integer', 'min:5', 'max:1000'],

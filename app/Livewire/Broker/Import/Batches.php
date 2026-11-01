@@ -18,7 +18,7 @@ use Livewire\WithPagination;
 /**
  * /broker/import/batches (§11A B.9 "Batch history"): the bureau's batches, newest first — file type,
  * uploader, date, row counts (valid / warning / error / imported), status and the A04 approval rate —
- * each opening its batch page. Only the caller's bureau's (scoped by its id). Like the batch page it
+ * each opening its batch page. Only those the caller may see (BrokerImportBatch::visibleTo). Like the batch page it
  * opens with the role part of `profiles.import`, so a bureau whose KYC was revoked can still find a
  * batch to cancel (B.9).
  */
@@ -39,7 +39,7 @@ final class Batches extends Component
         $staff = $gate->authorizeRole($this->user(), BureauPermission::ProfilesImport);
 
         $batches = BrokerImportBatch::query()
-            ->where('broker_id', $staff->broker_id)
+            ->visibleTo($staff)
             ->with(['uploaderStaff.user', 'uploaderStaff.broker'])   // displayName() reads both
             ->latest('created_at')->orderByDesc('id')
             ->paginate(self::PER_PAGE);
