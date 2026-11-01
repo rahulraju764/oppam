@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin\Members\Tabs;
 
 use App\Livewire\Admin\Members\Concerns\IsMemberTab;
+use App\Models\Order;
 use App\Models\Subscription;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -27,6 +28,9 @@ final class SubscriptionsTab extends Component
         return view('livewire.admin.members.tabs.subscriptions-tab', [
             'subscriptions' => Subscription::query()->where('profile_id', $this->profile()->id)
                 ->with('plan:id,code,name')->latest('starts_at')->limit(50)->get(),
+            'orders' => auth('admin')->user()?->can('billing.view') === true
+                ? Order::query()->where('profile_id', $this->profile()->id)->with('plan:id,name')->latest()->limit(50)->get()
+                : null,
             'timezone' => (string) config('oppam.display_timezone'),
         ]);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Jobs\Billing\ExpireSubscriptions;
 use App\Jobs\Billing\ExpireUnpaidOrders;
+use App\Jobs\Billing\ReconcilePayments;
 use App\Jobs\Billing\SendPlanExpiryReminders;
 use App\Jobs\Broker\PurgeDeletedManagedProfiles;
 use App\Jobs\Broker\PurgeImportFiles;
@@ -61,6 +62,9 @@ Schedule::job(new ExpireUnpaidOrders)->hourlyAt(40)->onOneServer()->withoutOverl
 // M10 expiry (P5.2): ended plans → Free limits + flags + plan_expired; reminders 7 days / 1 day before, 10:00 IST.
 Schedule::job(new ExpireSubscriptions)->everyTenMinutes()->onOneServer()->withoutOverlapping();
 Schedule::job(new SendPlanExpiryReminders)->timezone('Asia/Kolkata')->dailyAt('10:00')->onOneServer()->withoutOverlapping();
+
+// A06 (P5.3): daily reconciliation against the gateway, 02:00 IST ("investigate" rows).
+Schedule::job(new ReconcilePayments)->timezone('Asia/Kolkata')->dailyAt('02:00')->onOneServer()->withoutOverlapping();
 
 // M09 / A05 (P6.1): ID files deleted (and the deletion verified) 90 days after the decision, 03:30 IST.
 Schedule::job(new PurgeExpiredVerificationDocuments)->timezone('Asia/Kolkata')->dailyAt('03:30')->onOneServer()->withoutOverlapping();

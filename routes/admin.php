@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Http\Controllers\Admin\BreakGlassImageController;
 use App\Http\Controllers\Admin\BrokerKycDocumentController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
+use App\Http\Controllers\Admin\CreditNoteController;
 use App\Http\Controllers\Admin\EvidencePackController;
+use App\Http\Controllers\Admin\GstExportController;
 use App\Http\Controllers\Admin\ImportSourceController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
@@ -15,6 +17,15 @@ use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
 use App\Livewire\Admin\Auth\TwoFactorSetup;
+use App\Livewire\Admin\Billing\CouponsIndex;
+use App\Livewire\Admin\Billing\Investigations;
+use App\Livewire\Admin\Billing\OrderShow;
+use App\Livewire\Admin\Billing\OrdersIndex;
+use App\Livewire\Admin\Billing\PlanEditor;
+use App\Livewire\Admin\Billing\PlansIndex;
+use App\Livewire\Admin\Billing\RefundsIndex;
+use App\Livewire\Admin\Billing\StuckOrders;
+use App\Livewire\Admin\Billing\SubscriptionsIndex;
 use App\Livewire\Admin\Brokers\BrokerShow;
 use App\Livewire\Admin\Brokers\BrokersIndex;
 use App\Livewire\Admin\Brokers\Disputes as BrokerDisputes;
@@ -145,6 +156,22 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/{run}', PayoutRunShow::class)->where('run', 'PAY[0-9]+')->name('.show');
         Route::get('/{run}/statements/{broker}', PayoutStatementController::class)->where(['run' => 'PAY[0-9]+', 'broker' => 'BRK[0-9]+'])
             ->middleware('throttle:60,1')->name('.statement');
+    });
+
+    // Plans, orders, refunds, coupons (A06, P5.3). Viewing needs billing.view; every change re-checks its
+    // own permission in its Action. The GST CSV: billing.export.
+    Route::middleware('can:billing.view')->prefix('billing')->name('billing.')->group(function (): void {
+        Route::get('/orders', OrdersIndex::class)->name('orders');
+        Route::get('/orders/stuck', StuckOrders::class)->name('stuck');
+        Route::get('/orders/{order}', OrderShow::class)->where('order', 'ORD[0-9]+')->name('orders.show');
+        Route::get('/refunds', RefundsIndex::class)->name('refunds');
+        Route::get('/reconciliation', Investigations::class)->name('investigations');
+        Route::get('/subscriptions', SubscriptionsIndex::class)->name('subscriptions');
+        Route::get('/plans', PlansIndex::class)->name('plans');
+        Route::get('/plans/{plan}', PlanEditor::class)->where('plan', '[A-Z]+')->name('plans.edit');
+        Route::get('/coupons', CouponsIndex::class)->name('coupons');
+        Route::get('/credit-notes/{number}', CreditNoteController::class)->where('number', 'CN-[0-9]{4}-[0-9]{6}')->middleware('throttle:60,1')->name('credit-notes.show');
+        Route::get('/gst-export', GstExportController::class)->middleware(['can:billing.export', 'throttle:20,1'])->name('gst-export');
     });
 
     // Safety cases (A10, P6.2). Viewing needs safety.reports.view; every decision re-checks its own

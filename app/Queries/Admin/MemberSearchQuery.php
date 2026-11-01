@@ -9,6 +9,7 @@ use App\Enums\PlanCode;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -75,6 +76,7 @@ final class MemberSearchQuery
 
         match (true) {
             preg_match('/^OPM\d+$/i', $term) === 1 => $query->where('profiles.code', strtoupper($term)),
+            preg_match('/^ORD\d+$/i', $term) === 1 => $query->whereIn('profiles.id', Order::query()->select('profile_id')->where('code', strtoupper($term))),
             str_contains($term, '@') => $query->where('users.email', mb_strtolower($term)),
             preg_match('/^[\d\s+()-]+$/', $term) === 1 && strlen($digits) >= 4 => $query->where('users.phone', 'like', '%'.substr($digits, -10)),
             default => $query->where(fn (Builder $q) => $q

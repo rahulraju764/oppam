@@ -42,14 +42,27 @@ final class ReconcileOrder
         }
 
         try {
-            $payments = $this->gateway->paymentsForOrder($order->gateway_order_id);
+            return $this->poll($order);
         } catch (PaymentGatewayUnavailable $e) {
             report($e);
 
             return $order;
         }
+    }
 
-        foreach ($payments as $payment) {
+    /**
+     * Ask the gateway about this order and act on what it says, whatever the order's status (A06
+     * "re-poll": activation stays idempotent on the payment id).
+     *
+     * @throws PaymentGatewayUnavailable
+     */
+    public function poll(Order $order): Order
+    {
+        if ($order->gateway_order_id === null || $order->gateway !== $this->gateway->name()) {
+            return $order;
+        }
+
+        foreach ($this->gateway->paymentsForOrder($order->gateway_order_id) as $payment) {
             if ($payment->orderId !== $order->gateway_order_id) {
                 continue;
             }

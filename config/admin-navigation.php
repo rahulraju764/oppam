@@ -48,6 +48,15 @@ return [
         ['admin.brokers.exports', 'Export audit', 'fa-download', 'brokers.exports.view'],
         ['admin.brokers.disputes', 'Consent disputes', 'fa-balance-scale', 'brokers.view'],
     ],
+    'Billing' => [
+        ['admin.billing.orders', 'Orders', 'fa-file-text-o', 'billing.view'],
+        ['admin.billing.stuck', 'Stuck orders', 'fa-exclamation-triangle', 'billing.view'],
+        ['admin.billing.refunds', 'Refunds', 'fa-undo', 'billing.view'],
+        ['admin.billing.investigations', 'Reconciliation', 'fa-search', 'billing.view'],
+        ['admin.billing.subscriptions', 'Subscriptions', 'fa-credit-card', 'billing.view'],
+        ['admin.billing.plans', 'Plans', 'fa-tags', 'billing.view'],
+        ['admin.billing.coupons', 'Coupons', 'fa-ticket', 'billing.view'],
+    ],
     'Master data' => [
         ['admin.masters.index', 'Master data', 'fa-list', 'masters.view'],
     ],

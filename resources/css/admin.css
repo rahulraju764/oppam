@@ -159,6 +159,7 @@ body.is-admin {
    the table (e.g. .visually-hidden labels); without it they escape the scroll box and widen the
    whole page on phones (found by tests/Browser/Mobile/AdminPanelTest). */
 .admin-table-wrap { position: relative; overflow-x: auto; }
+.admin-pre { max-height: 20rem; margin: var(--space-2) 0 0; padding: var(--space-3); overflow: auto; font-size: var(--text-xs); background: var(--bg-mist); border-radius: var(--radius-xs); }
 
 .admin-table {
   width: 100%;

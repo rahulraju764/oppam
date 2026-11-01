@@ -131,6 +131,16 @@ it('with Razorpay, pay hands the browser the server\'s order and amount — noth
         {
             return [];
         }
+
+        public function paymentsBetween(Carbon\CarbonInterface $from, Carbon\CarbonInterface $to): array
+        {
+            return [];
+        }
+
+        public function refund(string $paymentId, int $amountPaise, string $receipt): App\Data\Billing\GatewayRefundData
+        {
+            throw App\Exceptions\Billing\PaymentGatewayUnavailable::because('not used');
+        }
     });
 
     Livewire::actingAs(groom(), 'web')->test(Checkout::class, ['plan' => 'silver'])

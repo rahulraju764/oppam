@@ -28,6 +28,7 @@ enum NotificationEvent: string
     case VerificationApproved = 'verification_approved';
     case VerificationRejected = 'verification_rejected';
     case PaymentSuccess = 'payment_success';
+    case RefundIssued = 'refund_issued';
     case PlanExpiring = 'plan_expiring';
     case PlanExpired = 'plan_expired';
     case AccountStatus = 'account_status';
@@ -89,7 +90,7 @@ enum NotificationEvent: string
     {
         return in_array($this, [
             self::ProfileApproved, self::ProfileRejected, self::VerificationApproved, self::VerificationRejected,
-            self::PaymentSuccess, self::PlanExpired, self::AccountStatus, self::SafetyWarning,
+            self::PaymentSuccess, self::RefundIssued, self::PlanExpired, self::AccountStatus, self::SafetyWarning,
         ], true);
     }
 

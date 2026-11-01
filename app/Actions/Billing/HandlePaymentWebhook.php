@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Actions\Billing;
 
 use App\Contracts\PaymentGateway;
+use App\Data\Billing\WebhookEventData;
 use App\Enums\PaymentStatus;
 use App\Exceptions\Billing\InvalidWebhook;
+use App\Models\Payment;
 use App\Models\PaymentWebhookEvent;
 use App\Services\Payments\RazorpayWebhookPayload;
 use Illuminate\Support\Str;
@@ -18,7 +20,8 @@ use InvalidArgumentException;
  *  2. the event is stored once per gateway event id (payer contact details redacted) — a
  *     redelivery of a processed event is answered "replayed" without acting again;
  *  3. payment.captured / order.paid → ActivateSubscription (itself idempotent on the payment id);
- *     payment.failed → RecordFailedPayment; anything else is stored and ignored.
+ *     payment.failed → RecordFailedPayment; refund.* → SettleRefund; anything else is stored and
+ *     ignored.
  */
 final class HandlePaymentWebhook
 {
@@ -30,6 +33,7 @@ final class HandlePaymentWebhook
         private readonly PaymentGateway $gateway,
         private readonly ActivateSubscription $activate,
         private readonly RecordFailedPayment $failed,
+        private readonly SettleRefund $refunds,
     ) {}
 
     /** @throws InvalidWebhook */
@@ -56,7 +60,7 @@ final class HandlePaymentWebhook
             'event_id' => $eventId,
             'event' => substr($data->event, 0, 60),
             'payload' => RazorpayWebhookPayload::redacted($body),   // payer email / phone / UPI id never stored
-            'gateway_order_id' => $data->gatewayOrderId === null ? null : substr($data->gatewayOrderId, 0, 64),
+            'gateway_order_id' => $this->orderIdOf($data),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -68,6 +72,7 @@ final class HandlePaymentWebhook
 
         $payment = $data->payment;
         $outcome = match (true) {
+            $data->refund !== null && str_starts_with($data->event, 'refund.') => $this->refunds->handle($data->refund),
             $payment === null => self::IGNORED,
             in_array($data->event, ['payment.captured', 'order.paid'], true) && $payment->status === PaymentStatus::Captured => $this->activate->handle($payment),
             $data->event === 'payment.failed' && $payment->status === PaymentStatus::Failed => $this->failed->handle($payment),
@@ -77,5 +82,14 @@ final class HandlePaymentWebhook
         $stored->forceFill(['processed_at' => now(), 'outcome' => $outcome])->save();
 
         return $outcome;
+    }
+
+    /** The order this delivery belongs to, so A06 shows it there; a refund event names only its payment. */
+    private function orderIdOf(WebhookEventData $data): ?string
+    {
+        $id = $data->gatewayOrderId ?? ($data->refund === null ? null : Payment::query()->where('gateway_payment_id', $data->refund->paymentId)
+            ->first()?->order()->value('gateway_order_id'));
+
+        return $id === null ? null : substr($id, 0, 64);
     }
 }

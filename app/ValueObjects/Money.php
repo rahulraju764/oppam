@@ -29,6 +29,16 @@ final readonly class Money
     }
 
     /** "1,999" or "1,00,000.50" — Indian digit grouping, paise shown only when non-zero. */
+    /** A rupee amount an admin typed ("499" or "499.50") in paise, or null if it isn't one. */
+    public static function parseRupees(string $input): ?int
+    {
+        if (preg_match('/^(\d{1,9})(?:\.(\d{1,2}))?$/', trim($input), $m) !== 1) {
+            return null;
+        }
+
+        return (int) $m[1] * 100 + (int) str_pad($m[2] ?? '', 2, '0');
+    }
+
     public function format(): string
     {
         $rupees = (string) intdiv($this->paise, 100);

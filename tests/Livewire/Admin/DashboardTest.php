@@ -136,8 +136,10 @@ it('an admin without dashboard.view gets no figures — only the queues their ro
     dashAs('moderator');
     Livewire::test(Dashboard::class)->assertSee('Key figures')->assertSee('Work queues')->assertDontSee('Recent activity');
 
+    // Finance: its own queues since P5.3 (A06), none of the moderators', and no audit feed.
     dashAs('finance');
-    Livewire::test(Dashboard::class)->assertSee('Key figures')->assertDontSee('Work queues')->assertDontSee('Recent activity');
+    Livewire::test(Dashboard::class)->assertSee('Key figures')->assertSee('Work queues')->assertSee('Stuck orders')
+        ->assertDontSee('Profile queue')->assertDontSee('Recent activity');
 });
 
 it('the dashboard needs a signed-in admin', function (): void {
@@ -253,7 +255,8 @@ it('the queue counts for the sidebar and the dashboard are read once per request
         ->and($badges['admin.moderation.profiles'])->toBe(['key' => 'moderation.profiles', 'count' => 2])
         ->and($badges['admin.moderation.photos']['count'])->toBe(1)            // an escalated photo still waits in its queue
         ->and($badges['admin.moderation.escalations'])->toBe(['key' => null, 'count' => 1])
-        ->and($queues->for(adminWithRole('finance')))->toBe([])->and($queues->for(null))->toBe([]);
+        ->and(collect($queues->for(adminWithRole('finance')))->pluck('routeName')->all())->toBe(['admin.billing.stuck', 'admin.billing.refunds', 'admin.billing.investigations'])
+        ->and($queues->for(null))->toBe([]);
 });
 
 // ---- A03 Engagement tab --------------------------------------------------------------------------------

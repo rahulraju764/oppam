@@ -172,6 +172,9 @@ function duskChatCleanup(): void
     App\Models\Subscription::query()->whereIn('profile_id', $ids)->delete();
     // P5.1: billing rows restrict-delete their profile (financial records) — Dusk members' only.
     $orders = App\Models\Order::query()->whereIn('profile_id', $ids)->pluck('id');
+    App\Models\BillingInvestigation::query()->whereIn('order_id', $orders)->delete();   // P5.3: A06 records first
+    App\Models\CreditNote::query()->whereIn('order_id', $orders)->delete();
+    App\Models\Refund::query()->whereIn('order_id', $orders)->delete();
     App\Models\Invoice::query()->whereIn('order_id', $orders)->delete();
     App\Models\CouponRedemption::query()->whereIn('order_id', $orders)->delete();
     App\Models\Payment::query()->whereIn('order_id', $orders)->delete();

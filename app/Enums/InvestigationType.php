@@ -39,7 +39,7 @@ enum InvestigationType: string
             self::AmountMismatch => __('Check with the member; force-activate (super admin) or refund the payment.'),
             self::ExtraPayment => __('Refund the extra payment (category: duplicate / extra payment).'),
             self::NotAtGateway => __('Compare with the Razorpay dashboard before taking any action.'),
-            self::RefundFailed => __('The plan was already ended. Retry the refund or settle it with the member.'),
+            self::RefundFailed => __('Check whether the plan already ended (see the details). Request the refund again or settle it with the member.'),
             self::RefundStuck => __('Look the refund up in the Razorpay dashboard and record the outcome.'),
         };
     }

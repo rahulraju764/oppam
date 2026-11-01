@@ -21,4 +21,19 @@
             </tr>
         @endforeach
     </x-admin.table>
+
+    @if ($orders !== null && $orders->isNotEmpty())
+        <h2 class="h6 mt-4">{{ __('Orders') }}</h2>
+        <x-admin.table :headers="[__('Order'), __('Plan'), __('Total'), __('Status'), __('Created (IST)')]" :caption="__('This member’s orders')">
+            @foreach ($orders as $order)
+                <tr wire:key="order-{{ $order->code }}">
+                    <td><a href="{{ route('admin.billing.orders.show', ['order' => $order->code]) }}" wire:navigate><strong>{{ $order->code }}</strong></a></td>
+                    <td>{{ $order->plan?->name }}</td>
+                    <td>₹{{ $order->total()->format() }}</td>
+                    <td>{{ $order->status->label() }}</td>
+                    <td>{{ $order->created_at->timezone($timezone)->format('d M Y, g:i a') }}</td>
+                </tr>
+            @endforeach
+        </x-admin.table>
+    @endif
 </div>

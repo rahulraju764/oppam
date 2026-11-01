@@ -9,17 +9,21 @@ use App\Domain\Broker\KycQueue;
 use App\Enums\KycSubmissionStatus;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
+use App\Enums\RefundStatus;
 use App\Enums\SettingKey;
 use App\Enums\TicketStatus;
 use App\Models\AbuseCase;
 use App\Models\AdminUser;
+use App\Models\BillingInvestigation;
 use App\Models\Broker;
 use App\Models\BrokerKyc;
 use App\Models\EngagementSignal;
 use App\Models\MessageFlag;
 use App\Models\ModerationItem;
+use App\Models\Refund;
 use App\Models\SupportTicket;
 use App\Models\VerificationRequest;
+use App\Queries\Billing\StuckOrdersQuery;
 use App\Support\Facades\Settings;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -31,8 +35,8 @@ use Illuminate\Support\Collection;
  * query each), and the A05 ID verification queue (`verification.queue.view`, P6.1; breached after
  * `verification.aging_breach_hours`), broker KYC (P7.1), A10 safety cases (`safety.reports.view`,
  * breached when one is past its SLA) and support tickets (`support.view`, breached when a first reply
- * is overdue) — P6.2. Stuck orders add themselves with their module (owner decision 2026-10-11: only
- * queues that exist are shown).
+ * is overdue) — P6.2, and A06 stuck orders, refunds to approve and reconciliation (`billing.view`) — P5.3.
+ * Only queues that exist are shown (owner decision 2026-10-11).
  * Memoised for the request: the layout's sidebar and the dashboard ask the same thing.
  */
 final class WorkQueues
@@ -53,6 +57,9 @@ final class WorkQueues
     private ?WorkQueueData $cases = null;
 
     private ?WorkQueueData $tickets = null;
+
+    /** @var list<WorkQueueData>|null */
+    private ?array $billing = null;
 
     /**
      * @return list<WorkQueueData> only the queues this admin may open
@@ -79,6 +86,9 @@ final class WorkQueues
         }
         if ($admin->can('support.view')) {
             $queues[] = $this->tickets ??= $this->tickets();
+        }
+        if ($admin->can('billing.view')) {
+            array_push($queues, ...($this->billing ??= $this->billing()));
         }
 
         return $queues;
@@ -129,6 +139,31 @@ final class WorkQueues
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
 
         return new WorkQueueData(KycQueue::QUEUE_KEY, __('Bureau KYC'), 'admin.brokers.kyc', 'fa-building-o', KycQueue::waitingCount(), $oldest, $oldest !== null && $oldest->lt($breach));
+    }
+
+    /**
+     * A06 (P5.3): stuck orders, refunds waiting for a second admin, open reconciliation rows. No
+     * live key: the badges show while something waits. Breached past the moderation SLA.
+     *
+     * @return list<WorkQueueData>
+     */
+    private function billing(): array
+    {
+        $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
+        $queue = function (string $label, string $route, string $icon, int $count, mixed $oldest) use ($breach): WorkQueueData {
+            $at = $oldest !== null ? CarbonImmutable::parse((string) $oldest) : null;
+
+            return new WorkQueueData(null, $label, $route, $icon, $count, $at, $at?->lt($breach) ?? false);
+        };
+        $stuck = app(StuckOrdersQuery::class)->query();
+        $refunds = Refund::query()->where('status', RefundStatus::Requested);
+        $rows = BillingInvestigation::query()->open();
+
+        return [
+            $queue(__('Stuck orders'), 'admin.billing.stuck', 'fa-exclamation-triangle', (clone $stuck)->count(), (clone $stuck)->min('orders.created_at')),
+            $queue(__('Refunds to approve'), 'admin.billing.refunds', 'fa-undo', (clone $refunds)->count(), (clone $refunds)->min('created_at')),
+            $queue(__('Reconciliation'), 'admin.billing.investigations', 'fa-search', (clone $rows)->count(), (clone $rows)->min('created_at')),
+        ];
     }
 
     /** A10 (P6.2): open abuse cases; breached when any is past its P0/P1/P2 SLA. */

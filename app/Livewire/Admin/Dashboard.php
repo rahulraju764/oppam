@@ -10,6 +10,7 @@ use App\Models\AdminUser;
 use App\Models\AuditLog;
 use App\Queries\Admin\DashboardAlerts;
 use App\Queries\Admin\DashboardMetrics;
+use App\Queries\Admin\RevenueSummary;
 use App\Queries\Admin\WorkQueues;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
@@ -39,7 +40,7 @@ final class Dashboard extends Component
             : [];
     }
 
-    public function render(DashboardMetrics $metrics, WorkQueues $queues, DashboardAlerts $alerts, PresenceCounter $presence): View
+    public function render(DashboardMetrics $metrics, WorkQueues $queues, DashboardAlerts $alerts, PresenceCounter $presence, RevenueSummary $revenue): View
     {
         $admin = $this->admin();
         $canView = $admin->can('dashboard.view');
@@ -51,14 +52,27 @@ final class Dashboard extends Component
             // Queue alerts go with the queues; failed jobs / backlog are system health: dashboard.view only.
             'alerts' => $alerts->for($workQueues, system: $canView, brokers: $admin->can('brokers.imports.manage'), bureaus: $admin->can('brokers.view'), payouts: $admin->can('brokers.payout')),
             'kpis' => $canView ? $metrics->kpis() : [],
+            'revenue' => $canView && $admin->can('billing.view') ? $revenue->summary() : null,
             'online' => $canView ? $presence->online() : null,
             'asOf' => $canView ? $metrics->asOf()?->setTimezone((string) config('oppam.display_timezone')) : null,
-            'charts' => $canView ? $this->charts($metrics) : [],
+            'charts' => $canView ? [...$this->charts($metrics), ...($admin->can('billing.view') ? [$this->revenueChart($revenue)] : [])] : [],
             'activity' => $canView && $admin->can('audit.view')
                 ? AuditLog::query()->latest('created_at')->orderByDesc('id')->limit(self::ACTIVITY)->get()
                 : null,
             'timezone' => (string) config('oppam.display_timezone'),
         ]);
+    }
+
+    /**
+     * @return array{id: string, title: string, type: string, labels: list<string>, datasets: list<array{label: string, data: list<int>}>}
+     */
+    private function revenueChart(RevenueSummary $revenue): array
+    {
+        $byPlan = $revenue->byPlan();
+
+        return ['id' => 'revenue', 'title' => __('Revenue by plan, ₹ (30 days)'), 'type' => 'bar', 'labels' => $byPlan['labels'], 'datasets' => [
+            ['label' => __('Revenue'), 'data' => $byPlan['values']],
+        ]];
     }
 
     /**

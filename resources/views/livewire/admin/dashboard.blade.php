@@ -40,6 +40,14 @@
                                        :tick="$kpi['metric'] === \App\Enums\Metric::NewMembers ? $kpi['metric']->value : null" />
                 </div>
             @endforeach
+            @if ($revenue !== null)
+                <div class="col-6 col-md-4 col-xl-3" wire:key="kpi-revenue-today">
+                    <x-admin.stat-card :label="__('Revenue today')" :value="'₹'.$revenue['today']->format()" :definition="__('Paid orders today (IST), GST included, less refunds processed today.')" />
+                </div>
+                <div class="col-6 col-md-4 col-xl-3" wire:key="kpi-revenue-month">
+                    <x-admin.stat-card :label="__('Revenue this month')" :value="'₹'.$revenue['month']->format()" :definition="__('Paid orders this month (IST), GST included, less refunds processed this month.')" />
+                </div>
+            @endif
             <div class="col-6 col-md-4 col-xl-3" wire:key="kpi-online">
                 <x-admin.stat-card :label="__('Online now')" :value="$online === null ? '—' : number_format($online)"
                                    :definition="__('Members connected right now who show their online status.')"

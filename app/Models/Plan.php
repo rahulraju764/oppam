@@ -54,6 +54,12 @@ final class Plan extends Model
         $query->where('is_active', true)->where('is_purchasable', true)->orderBy('sort_order');
     }
 
+    /** @return HasMany<Subscription, $this> */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
     /** @return HasMany<PlanPrice, $this> */
     public function prices(): HasMany
     {

@@ -488,47 +488,6 @@ it('P7.7: at 375px a Data-entry login fixes a row inline, confirms consent, impo
     }
 });
 
-/**
- * Gate D: each path in a browser of its own at each width (phone emulation keeps a running browser
- * at 375 px, so it can't be resized), carrying the signed-in cookies of $signedIn.
- *
- * @param  list<string>  $urls
- */
-function assertFitsWidths(Browser $signedIn, string $landing, array $urls): void
-{
-    $cookies = $signedIn->driver->manage()->getCookies();
-    $port = (int) ($_ENV['DUSK_DRIVER_PORT'] ?? env('DUSK_DRIVER_PORT') ?? 9515);
-
-    foreach ([320, 768, 1024, 1440] as $width) {
-        $options = (new Facebook\WebDriver\Chrome\ChromeOptions)->addArguments(['--headless=new', '--disable-gpu', '--disable-smooth-scrolling']);
-        $options->setExperimentalOption('mobileEmulation', [
-            'deviceMetrics' => ['width' => $width, 'height' => 900, 'pixelRatio' => 1, 'touch' => $width < 1024, 'mobile' => $width < 768],
-        ]);
-        $driver = Facebook\WebDriver\Remote\RemoteWebDriver::create('http://localhost:'.$port,
-            Facebook\WebDriver\Remote\DesiredCapabilities::chrome()->setCapability(Facebook\WebDriver\Chrome\ChromeOptions::CAPABILITY, $options));
-
-        try {
-            $browser = new Browser($driver);
-            $browser->visit($landing);
-            foreach ($cookies as $cookie) {
-                $driver->manage()->addCookie($cookie);
-            }
-
-            foreach ($urls as $url) {
-                $browser->visit($url)->waitFor('main#main');
-                $body = (string) $browser->script('return document.body.innerText;')[0];
-                expect((string) $driver->getCurrentURL())->toContain((string) parse_url($url, PHP_URL_PATH));   // still signed in: no redirect to sign-in
-                expect($body)->not->toContain('We couldn’t find that page')->not->toContain('doesn’t include this')->not->toContain('Server Error');
-                expect($browser->script('return window.innerWidth;')[0])->toBe($width);
-                expect($browser->script('return document.scrollingElement.scrollWidth <= document.documentElement.clientWidth;')[0])
-                    ->toBeTrue("{$url} scrolls sideways at {$width} px");
-            }
-        } finally {
-            $driver->quit();
-        }
-    }
-}
-
 /** Bulk import and staff on for $journey, each flag put back after it. */
 function duskWithImportFlags(Closure $journey): void
 {
