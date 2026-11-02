@@ -127,6 +127,32 @@ final class PhotoUrls
         return $urls;
     }
 
+    /**
+     * The one exception to "guests never see a clear photo" (owner 2026-11-01): the home page's
+     * featured members, who opted in. Only FeaturedMembers may call this, with profiles it has
+     * already filtered. A photo not yet converted is left out, never shown as a placeholder.
+     *
+     * @param  iterable<Profile>  $optedIn
+     * @return array<string, string> profile id => clear card URL
+     */
+    public function publicCardUrls(iterable $optedIn): array
+    {
+        $ids = collect($optedIn)->map(fn (Profile $profile): string => (string) $profile->id)->all();
+
+        return Media::query()
+            ->where('model_type', (new Profile)->getMorphClass())
+            ->whereIn('model_id', $ids)
+            ->where('collection_name', Profile::PHOTOS)
+            ->approved()
+            ->orderBy('order_column')
+            ->get()
+            ->groupBy('model_id')
+            ->map(fn (Collection $photos): ?Media => $photos->first())
+            ->filter(fn (?Media $media): bool => $media?->hasGeneratedConversion('card') === true)
+            ->map(fn (Media $media): string => $media->getUrl('card'))
+            ->all();
+    }
+
     /** @return Collection<int, Media> */
     private function photos(Profile $owner, bool $approvedOnly): Collection
     {

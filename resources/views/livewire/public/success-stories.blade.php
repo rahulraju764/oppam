@@ -39,9 +39,8 @@
                                 <p class="text-muted-brand">{{ $story->place }} &middot; {{ $story->date }}</p>
                             </div>
                         </div>
-                        @foreach ($story->paragraphs as $paragraph)
-                            <p class="p-main">{{ $paragraph }}</p>
-                        @endforeach
+                        {{-- Sanitised by SaveContent (HtmlSanitizer) before it was stored. --}}
+                        <div class="story-full-body">{!! $story->bodyHtml !!}</div>
                     </article>
                 @endforeach
             </div>

@@ -24,24 +24,25 @@
         </div>
     </section>
 
+    @isset($blocks['values'])
     <section class="about-values">
         <div class="container is-chrome">
             <div class="section-header">
-                <p class="eyebrow">{{ __('What we stand for') }}</p>
-                <h2>{{ __('Four things we will not compromise on') }}</h2>
+                <p class="eyebrow">{{ $blocks['values']->text('eyebrow') }}</p>
+                <h2>{{ $blocks['values']->text('heading') }}</h2>
                 @include('livewire.public.partials.title-divider')
             </div>
 
             <div class="row g-4">
-                @foreach ($values as $value)
+                @foreach (['fa-shield', 'fa-lock', 'fa-users', 'fa-map-marker'] as $icon)
                     <div class="col-lg-6 col-md-6 col-12">
                         <div class="value-card">
                             <span class="value-icon">
-                                <i class="fa {{ $value['icon'] }}" aria-hidden="true"></i>
+                                <i class="fa {{ $icon }}" aria-hidden="true"></i>
                             </span>
                             <div>
-                                <h3>{{ __($value['title']) }}</h3>
-                                <p>{{ __($value['text']) }}</p>
+                                <h3>{{ $blocks['values']->text('value'.$loop->iteration.'_title') }}</h3>
+                                <p>{{ $blocks['values']->text('value'.$loop->iteration.'_text') }}</p>
                             </div>
                         </div>
                     </div>
@@ -49,6 +50,7 @@
             </div>
         </div>
     </section>
+    @endisset
 
     <section class="about-story">
         <div class="container is-readable">

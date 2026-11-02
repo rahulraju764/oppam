@@ -93,6 +93,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['saved-searches/unsubscribe/*']);
 
         $middleware->alias([
+            'content.preview' => App\Http\Middleware\EnableContentPreview::class,
             'admin.session' => EnsureAdminSessionIsValid::class,
             'admin.active' => EnsureAdminIsActive::class,
             '2fa.confirmed' => EnsureTwoFactorConfirmed::class,

@@ -21,6 +21,7 @@ import './alpine/master-sort';
 import './alpine/photo-moderation';
 import './alpine/admin-chart';
 import './alpine/pdf-document';
+import './alpine/rich-text';
 
 window.bootstrap = bootstrap;
 

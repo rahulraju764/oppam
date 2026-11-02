@@ -13,6 +13,7 @@ use App\Jobs\Broker\SendFollowUpReminders;
 use App\Jobs\Broker\SendPayoutRunReminder;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
+use App\Jobs\Content\PublishScheduledContent;
 use App\Jobs\Engagement\DetectEngagementSignals;
 use App\Jobs\Engagement\ExpireInterests;
 use App\Jobs\Matching\GenerateDailyMatches;
@@ -83,3 +84,6 @@ Schedule::job(new ScanBrokerFraudSignals)->timezone('Asia/Kolkata')->dailyAt('04
 
 // §11A B.23: payout-run reminder to `brokers.payout` admins, checked 09:00 IST, sent once a month while a run is due.
 Schedule::job(new SendPayoutRunReminder)->timezone('Asia/Kolkata')->dailyAt('09:00')->onOneServer()->withoutOverlapping();
+
+// A08: scheduled content goes live within a minute of its time (P8.1a).
+Schedule::job(new PublishScheduledContent)->everyMinute()->onOneServer()->withoutOverlapping();

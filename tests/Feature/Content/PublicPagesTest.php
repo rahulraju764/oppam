@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\SettingKey;
 use App\Models\Setting;
+use Database\Seeders\DemoContentSeeder;
 use Database\Seeders\PlansSeeder;
 use Illuminate\Support\Facades\Route;
 
@@ -110,6 +111,8 @@ it('links the home plans teaser to the plans page', function (): void {
 });
 
 it('links each success-story card to its full story on the same page', function (): void {
+    $this->seed(DemoContentSeeder::class);
+
     $this->get('/success-stories')
         ->assertSee('href="#story-allen-riya"', false)
         ->assertSee('id="story-allen-riya"', false);

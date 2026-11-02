@@ -20,10 +20,11 @@ final class DatabaseSeeder extends Seeder
             PlansSeeder::class,
             AdminRolesSeeder::class,
             SettingsSeeder::class,
+            ContentSeeder::class,
         ]);
 
         if (app()->environment('local')) {
-            $this->call([DemoProfilesSeeder::class, AdminUsersSeeder::class, DemoCouponsSeeder::class]);
+            $this->call([DemoProfilesSeeder::class, AdminUsersSeeder::class, DemoCouponsSeeder::class, DemoContentSeeder::class]);
         }
     }
 }

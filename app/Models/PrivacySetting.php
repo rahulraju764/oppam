@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $show_online_status
  * @property bool $show_last_seen
  * @property bool $read_receipts
+ * @property bool $show_on_home the member chose to appear on the public home page (set only by SetHomeVisibility)
  */
 final class PrivacySetting extends Model
 {
@@ -54,6 +55,7 @@ final class PrivacySetting extends Model
             'read_receipts' => 'boolean',
             'incognito' => 'boolean',
             'contact_filter_enabled' => 'boolean',
+            'show_on_home' => 'boolean',
         ];
     }
 }

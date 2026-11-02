@@ -107,6 +107,13 @@
 
                     <div class="information-table">
                         <div class="info-block-head">
+                            <h2><i class="fa fa-home" aria-hidden="true"></i> {{ __('Home Page') }}</h2>
+                        </div>
+                        <livewire:member.profile.home-visibility-toggle />
+                    </div>
+
+                    <div class="information-table">
+                        <div class="info-block-head">
                             <h2><i class="fa fa-quote-left" aria-hidden="true"></i> {{ __('About Myself') }}</h2>
                             @if ($canEdit)<a href="{{ route('member.onboarding', ['step' => 6]) }}" class="edit-link" wire:navigate>{{ __('Edit') }}<span class="visually-hidden"> {{ __('About Myself') }}</span></a>@endif
                         </div>

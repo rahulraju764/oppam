@@ -5,32 +5,32 @@ declare(strict_types=1);
 namespace App\Livewire\Public;
 
 use App\Data\Content\SeoData;
-use App\Data\Profile\ProfileCardData;
+use App\Models\User;
 use App\Queries\Billing\PlanCatalog;
-use App\Support\DemoContent;
+use App\Queries\Content\FeaturedMembers;
+use App\Queries\Content\PublicContent;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
  * Landing page (template index.php, PRD M12): hero carousel + register form, about, 3 steps,
- * top members, plans teaser, testimonials. The hero form becomes <livewire:public.quick-register>
- * in P1.1; the members band becomes a query over ACTIVE, verified, photo-public profiles.
+ * featured members, plans teaser, testimonials. All its copy comes from A08 (PublicContent); a
+ * section with nothing published is left out.
  */
 final class Home extends Component
 {
-    public function render(): View
+    public function render(PublicContent $content, FeaturedMembers $featured, PlanCatalog $plans): View
     {
-        $members = array_map(static fn (array $member): ProfileCardData => new ProfileCardData(
-            code: '',
-            name: $member['name'],
-            photoUrl: asset($member['img']),
-            place: $member['place'],
-        ), DemoContent::homeMembers());
+        $viewer = auth('web')->user();
+        $blocks = $content->blocks();
 
         return view('livewire.public.home', [
-            'members' => $members,
-            'testimonials' => DemoContent::testimonials(),
-            'plans' => app(PlanCatalog::class)->cards(ctaUrl: route('plans')),
+            'banners' => $content->banners(),
+            'blocks' => $blocks,
+            'counters' => $content->counters($blocks),
+            'members' => $featured->forViewer($viewer instanceof User ? $viewer : null),
+            'testimonials' => $content->testimonials(),
+            'plans' => $plans->cards(ctaUrl: route('plans')),
         ])->layout('layouts::public', ['seo' => new SeoData(
             title: 'Oppam Matrimony | Trusted Kerala Matrimony',
             description: 'Oppam Matrimony helps Malayalis in Kerala to find genuine life partners through verified profiles, secure matchmaking, and trusted connections.',

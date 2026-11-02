@@ -82,7 +82,7 @@ it('renders a pricing card from paise without floats and only links a CTA that e
 });
 
 it('renders both story-card variants', function (): void {
-    $story = new StoryData('allen-riya', 'Allen & Riya', 'Thrissur', 'Married January 2024', '/images/profile/story-couple.webp', 500, 500, 'We matched.', ['One.']);
+    $story = new StoryData('allen-riya', 'Allen & Riya', 'Thrissur', 'Married January 2024', '/images/profile/story-couple.webp', 500, 500, 'We matched.', '<p>One.</p>');
 
     expect(Blade::render('<x-story.card :story="$s" />', ['s' => $story]))->toContain('story-card')->toContain('Allen &amp; Riya')
         ->and(Blade::render('<x-story.card :story="$s" variant="slide" />', ['s' => $story]))->toContain('parent-stories swiper-slide')->toContain($story->url());

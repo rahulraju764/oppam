@@ -304,3 +304,9 @@ function bride(string $e164 = '+919800000098'): User
 
     return $user->refresh();
 }
+
+/** A member on their own phone number, with an ACTIVE profile (M12 featured-member tests). */
+function contentMember(): User
+{
+    return memberWithPhone('+9198'.random_int(10_000_000, 99_999_999));
+}

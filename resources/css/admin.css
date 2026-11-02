@@ -469,3 +469,29 @@ tr[draggable="true"] { cursor: grab; }
 .ticket-thread__item.is-note { background: var(--bg-sand); border: 1px dashed var(--border-color); }
 .ticket-thread__meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-1); color: var(--color-gr-dark); font-size: var(--text-xs); }
 .ticket-thread__body { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+
+/* A08 rich text editor (x-admin.rich-text). */
+.rich-text__toolbar,
+.rich-text__link {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.rich-text__btn {
+    min-width: 44px;
+    min-height: 44px;
+    background: transparent;
+    border: 1px solid var(--color-secondary-dark);
+    border-radius: var(--radius-xs);
+    color: var(--color-secondary-dark);
+}
+
+.rich-text__link .form-control {
+    flex: 1 1 12rem;
+}
+
+.rich-text__area {
+    min-height: 10rem;
+}

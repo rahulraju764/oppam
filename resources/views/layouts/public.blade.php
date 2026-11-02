@@ -26,6 +26,11 @@
     @include('layouts.partials.preloader')
     @include('layouts.partials.header', ['member' => $member, 'pageNav' => $nav->pageNav($pageNav)])
     <x-impersonation-banner />
+    @if (app(\App\Queries\Content\PreviewContext::class)->active())
+        <div class="container is-chrome" data-content-preview>
+            <x-ui.alert type="warning">{{ __('Preview: this page shows unpublished content. Visitors don’t see this.') }}</x-ui.alert>
+        </div>
+    @endif
 
     <main id="main" tabindex="-1">
         {{ $slot }}

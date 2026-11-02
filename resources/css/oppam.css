@@ -779,3 +779,9 @@ body.search-sheet-open .mobile-footer { display: none; }
 .contact-sent { padding: var(--space-7); border-radius: var(--radius-card); background: var(--bg-teal); text-align: center; }
 .contact-sent .fa { font-size: var(--text-3xl); color: var(--color-secondary-dark); }
 .contact-sent h2 { margin: var(--space-3) 0; font-size: var(--text-xl); }
+
+/* Home hero with no published banners: the register form flows in the page (P8.1a). */
+.matrimony-slides.is-empty .hero-form-layer {
+    position: static;
+    padding-block: var(--space-6);
+}

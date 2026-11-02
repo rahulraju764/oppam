@@ -8,6 +8,7 @@ use App\Contracts\BiodataPdfRenderer;
 use App\Contracts\ContentSafety;
 use App\Contracts\CreditNoteRenderer;
 use App\Contracts\DocumentVault;
+use App\Contracts\HtmlSanitizer;
 use App\Contracts\InvoiceRenderer;
 use App\Contracts\PaymentGateway;
 use App\Contracts\PayoutStatementRenderer;
@@ -49,12 +50,14 @@ use App\Models\User;
 use App\Observers\MasterDataObserver;
 use App\Observers\NewMemberTickObserver;
 use App\Queries\Admin\WorkQueues;
+use App\Queries\Content\PreviewContext;
 use App\Services\Admin\Impersonation;
 use App\Services\Billing\DompdfCreditNoteRenderer;
 use App\Services\Billing\DompdfInvoiceRenderer;
 use App\Services\Broker\DompdfBiodataRenderer;
 use App\Services\Broker\DompdfPayoutStatementRenderer;
 use App\Services\Chat\RuleBasedContentSafety;
+use App\Services\Content\PurifierHtmlSanitizer;
 use App\Services\Entitlements\EntitlementService;
 use App\Services\Payments\FakePaymentGateway;
 use App\Services\Payments\RazorpayGateway;
@@ -105,6 +108,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(FeatureFlags::class);
         $this->app->scoped(EntitlementService::class);
         $this->app->scoped(Impersonation::class);
+        $this->app->scoped(PreviewContext::class);   // A08 signed preview: this request only
         $this->app->scoped(Connections::class);   // memoises "who is connected" for the request (P3.4)
         $this->app->scoped(WorkQueues::class);    // the sidebar and the dashboard ask for the same counts (P3.5)
         $this->app->scoped(ChatSafetyRules::class);         // A13 rules: cached overrides, memoised per request / job (P4.3b)
@@ -112,6 +116,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
 
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
+        $this->app->bind(HtmlSanitizer::class, PurifierHtmlSanitizer::class);         // A08 rich text
         $this->app->bind(ContentSafety::class, RuleBasedContentSafety::class);         // M07 send flow / A13
         $this->app->bind(InvoiceRenderer::class, DompdfInvoiceRenderer::class);        // M10 GST invoice PDF
         $this->app->bind(BiodataPdfRenderer::class, DompdfBiodataRenderer::class);     // §11A B.7 bureau biodata PDF
@@ -250,6 +255,9 @@ final class AppServiceProvider extends ServiceProvider
 
         // Horizon and Pulse live on the admin domain behind the admin middleware (config) and
         // these permissions — in every environment, local included.
+        // A08 opens for anyone who works on content; each change re-checks content.edit or content.publish.
+        Gate::define('content.view', fn (mixed $user = null): bool => $user instanceof AdminUser && ($user->can('content.edit') || $user->can('content.publish')));
+
         Gate::define('viewHorizon', fn (mixed $user = null): bool => $user instanceof AdminUser && $user->can('system.horizon'));
         Gate::define('viewPulse', fn (mixed $user = null): bool => $user instanceof AdminUser && $user->can('system.pulse'));
 

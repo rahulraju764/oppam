@@ -6,7 +6,7 @@ namespace App\Livewire\Public;
 
 use App\Data\Content\SeoData;
 use App\Queries\Billing\PlanCatalog;
-use App\Support\DemoContent;
+use App\Queries\Content\PublicContent;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -32,7 +32,7 @@ final class Plans extends Component
             'durations' => $durations,
             'selectedDuration' => $duration,
             'comparison' => $catalog->comparison(),
-            'faqs' => DemoContent::faqs(),
+            'faqs' => app(PublicContent::class)->faqs(),
         ])->layout('layouts::public', ['seo' => new SeoData(
             title: 'Membership Packages & FAQ | Oppam Matrimony',
             description: 'Upgrade your membership and unlock premium features, and find answers to common questions about registration, profiles and privacy.',

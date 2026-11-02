@@ -8,6 +8,8 @@ use App\Livewire\Public\Contact;
 use App\Livewire\Public\Home;
 use App\Livewire\Public\Plans;
 use App\Livewire\Public\SuccessStories;
+use Database\Seeders\ContentSeeder;
+use Database\Seeders\DemoContentSeeder;
 use Database\Seeders\PlansSeeder;
 use Livewire\Livewire;
 
@@ -17,6 +19,8 @@ use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->seed(PlansSeeder::class);
+    $this->seed(ContentSeeder::class);
+    $this->seed(DemoContentSeeder::class);
 });
 
 it('renders each public page component', function (string $component, string $expected): void {
@@ -29,12 +33,6 @@ it('renders each public page component', function (string $component, string $ex
     [Plans::class, 'Frequently Asked Questions'],
     [Contact::class, 'Get in Touch'],
 ]);
-
-it('renders the six template members on the home page without links for a visitor', function (): void {
-    Livewire::test(Home::class)
-        ->assertSeeInOrder(['Reshma', 'Anjali', 'Ann', 'Mariya', 'Neethu', 'Athira'])
-        ->assertDontSeeHtml('class="member-link"');
-});
 
 it('opens the first FAQ in each column and wires the accordion accessibly', function (): void {
     Livewire::test(Plans::class)

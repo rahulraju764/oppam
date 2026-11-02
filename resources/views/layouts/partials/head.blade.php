@@ -5,7 +5,7 @@
     are absolute and host-pinned (the public routes only answer on config('oppam.app_domain')).
 --}}
 @php($canonical = url()->current())
-@php($indexable = \App\Support\Facades\Settings::bool(\App\Enums\SettingKey::SeoIndexable))
+@php($indexable = \App\Support\Facades\Settings::bool(\App\Enums\SettingKey::SeoIndexable) && ! app(\App\Queries\Content\PreviewContext::class)->active())
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">

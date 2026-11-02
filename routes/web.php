@@ -62,6 +62,15 @@ Route::get('/safety', SafetyCentre::class)->name('safety');
 Route::view('/privacy', 'pages.privacy')->name('privacy');
 Route::view('/terms', 'pages.terms')->name('terms');
 
+// A08 signed preview (P8.1a): the real pages with one unpublished row. Issued by IssueContentPreview.
+Route::middleware(['signed', 'throttle:60,1'])->prefix('content-preview')->name('content.preview.')->group(function (): void {
+    Route::get('/home/{code}', Home::class)->middleware('content.preview:banners,testimonials,home-blocks')->name('home');
+    Route::get('/about/{code}', About::class)->middleware('content.preview:home-blocks')->name('about');
+    Route::get('/story/{code}', SuccessStories::class)->middleware('content.preview:stories')->name('story');
+    Route::get('/branch/{code}', Branches::class)->middleware('content.preview:branches')->name('branch');
+    Route::get('/faq/{code}', Plans::class)->middleware('content.preview:faq')->name('faq');
+});
+
 // The FAQ lives on the plans page (template faq.php was a 301 stub to package#faq).
 Route::permanentRedirect('/faq', '/plans#faq')->name('faq');
 

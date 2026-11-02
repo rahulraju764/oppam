@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Livewire\Public;
 
 use App\Data\Content\SeoData;
-use App\Support\DemoContent;
+use App\Queries\Content\PublicContent;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /** Our Branches (template branches.php, PRD M12). Offices come from the branches table in P8.1. */
 final class Branches extends Component
 {
-    public function render(): View
+    public function render(PublicContent $content): View
     {
-        return view('livewire.public.branches', ['branches' => DemoContent::branches()])
+        return view('livewire.public.branches', ['branches' => $content->branches()])
             ->layout('layouts::public', ['seo' => new SeoData(
                 title: 'Our Branches | Oppam Matrimony',
                 description: 'Visit an Oppam Matrimony office in Thrissur, Kochi, Thiruvananthapuram, Kozhikode and across Kerala.',

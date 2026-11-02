@@ -4,7 +4,7 @@
     the cards; "Purchase Now" opens checkout with the plan key + duration. Below: the comparison
     table built from plan_features (PRD §7.3).
 --}}
-@php($faqColumns = array_chunk($faqs, (int) ceil(count($faqs) / 2)))
+@php($faqColumns = $faqs === [] ? [] : array_chunk($faqs, (int) ceil(count($faqs) / 2)))
 
 <div>
     <section class="page-hero">
@@ -86,6 +86,7 @@
         </div>
     </section>
 
+    @if ($faqs !== [])
     <section class="faq-section py-5" id="faq">
         <div class="container is-readable">
             <div class="faq-heading text-center">
@@ -106,11 +107,12 @@
                                         <button @class(['accordion-button', 'collapsed' => ! $open]) type="button"
                                                 data-bs-toggle="collapse" data-bs-target="#{{ $itemId }}"
                                                 aria-expanded="{{ $open ? 'true' : 'false' }}" aria-controls="{{ $itemId }}">
-                                            {{ __($faq['question']) }}
+                                            {{ $faq->question }}
                                         </button>
                                     </h3>
                                     <div id="{{ $itemId }}" @class(['accordion-collapse collapse', 'show' => $open]) data-bs-parent="#faq-col-{{ $column }}">
-                                        <div class="accordion-body">{{ __($faq['answer']) }}</div>
+                                        {{-- Sanitised by SaveContent (HtmlSanitizer) before it was stored. --}}
+                                        <div class="accordion-body">{!! $faq->answerHtml !!}</div>
                                     </div>
                                 </div>
                             @endforeach
@@ -120,4 +122,5 @@
             </div>
         </div>
     </section>
+    @endif
 </div>

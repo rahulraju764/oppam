@@ -48,6 +48,14 @@ return [
         ['admin.brokers.exports', 'Export audit', 'fa-download', 'brokers.exports.view'],
         ['admin.brokers.disputes', 'Consent disputes', 'fa-balance-scale', 'brokers.view'],
     ],
+    'Content' => [
+        ['admin.content.home-blocks', 'Home blocks', 'fa-th-large', 'content.view'],
+        ['admin.content.banners', 'Hero banners', 'fa-picture-o', 'content.view'],
+        ['admin.content.stories', 'Success stories', 'fa-heart-o', 'content.view'],
+        ['admin.content.testimonials', 'Testimonials', 'fa-quote-left', 'content.view'],
+        ['admin.content.branches', 'Branches', 'fa-map-marker', 'content.view'],
+        ['admin.content.faq', 'FAQ', 'fa-question-circle', 'content.view'],
+    ],
     'Billing' => [
         ['admin.billing.orders', 'Orders', 'fa-file-text-o', 'billing.view'],
         ['admin.billing.stuck', 'Stuck orders', 'fa-exclamation-triangle', 'billing.view'],

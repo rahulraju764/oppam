@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\ContentType;
 use App\Http\Controllers\Admin\BreakGlassImageController;
 use App\Http\Controllers\Admin\BrokerKycDocumentController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
@@ -42,6 +43,7 @@ use App\Livewire\Admin\Chat\FlagReview;
 use App\Livewire\Admin\Chat\Overview as ChatOverview;
 use App\Livewire\Admin\Chat\Rules as ChatRules;
 use App\Livewire\Admin\Chat\Signals as ChatSignals;
+use App\Livewire\Admin\Content\ContentIndex;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\Masters\Index as MastersIndex;
 use App\Livewire\Admin\Masters\ListEditor as MastersListEditor;
@@ -156,6 +158,13 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/{run}', PayoutRunShow::class)->where('run', 'PAY[0-9]+')->name('.show');
         Route::get('/{run}/statements/{broker}', PayoutStatementController::class)->where(['run' => 'PAY[0-9]+', 'broker' => 'BRK[0-9]+'])
             ->middleware('throttle:60,1')->name('.statement');
+    });
+
+    // Content (A08, P8.1a). Open to content.edit or content.publish; each Action re-checks its own permission.
+    Route::middleware('can:content.view')->prefix('content')->name('content.')->group(function (): void {
+        foreach (ContentType::cases() as $contentType) {
+            Route::get('/'.$contentType->value, ContentIndex::class)->defaults('type', $contentType->value)->name($contentType->value);
+        }
     });
 
     // Plans, orders, refunds, coupons (A06, P5.3). Viewing needs billing.view; every change re-checks its

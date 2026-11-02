@@ -1,4 +1,4 @@
-{{-- Our Branches (template branches.php). Demo offices until the branches table (A08, P8.1). --}}
+{{-- Our Branches (template branches.php, M12): the published rows of A08. --}}
 <div>
     <section class="branches-section">
         <div class="container is-chrome">
@@ -9,27 +9,37 @@
                 <p class="branches-intro">{{ __('Bring your horoscope and your parents. No appointment needed, though calling ahead saves you a wait on Saturdays.') }}</p>
             </div>
 
+            @if ($branches === [])
+                <x-ui.empty-state icon="fa-map-marker" :title="__('Our offices will be listed here soon')" :message="__('Until then, get in touch and we will help you directly.')" />
+            @endif
+
             <div class="row g-4">
                 @foreach ($branches as $branch)
                     <div class="col-lg-4 col-md-6 col-12">
                         <div class="branch-card">
                             <div class="branch-card-head">
-                                <h2>{{ $branch['city'] }}</h2>
-                                <span class="chip">{{ __($branch['role']) }}</span>
+                                <h2>{{ $branch->city }}</h2>
+                                <span class="chip">{{ $branch->role }}</span>
                             </div>
                             <address class="branch-card-body">
                                 <p class="branch-line">
                                     <i class="fa fa-map-marker" aria-hidden="true"></i>
-                                    <span>{{ $branch['address'] }}</span>
+                                    <span>{{ $branch->address }}</span>
                                 </p>
                                 <p class="branch-line">
                                     <i class="fa fa-phone" aria-hidden="true"></i>
-                                    <a href="tel:{{ $branch['tel'] }}">{{ $branch['phone'] }}</a>
+                                    <a href="tel:{{ $branch->tel }}">{{ $branch->phone }}</a>
                                 </p>
                                 <p class="branch-line">
                                     <i class="fa fa-clock-o" aria-hidden="true"></i>
-                                    <span>{{ $branch['hours'] }}</span>
+                                    <span>{{ $branch->hours }}</span>
                                 </p>
+                                @if ($branch->mapUrl !== null)
+                                    <p class="branch-line">
+                                        <i class="fa fa-map-o" aria-hidden="true"></i>
+                                        <a href="{{ $branch->mapUrl }}" target="_blank" rel="noopener noreferrer">{{ __('View on map') }}</a>
+                                    </p>
+                                @endif
                             </address>
                         </div>
                     </div>
