@@ -40,7 +40,7 @@ final class PublicContent
         return $this->rows(Banner::class)->map(fn (Banner $row): BannerData => new BannerData(
             heading: $row->heading,
             copy: $row->copy,
-            imageUrl: $this->images->url((string) $row->image_path),
+            imageUrl: $this->imageUrl($row->image_path),
             imageWidth: $row->image_width ?? 1920,
             imageHeight: $row->image_height ?? 700,
             alt: (string) $row->alt,
@@ -56,7 +56,7 @@ final class PublicContent
             name: $row->name,
             place: $row->place,
             quote: $row->quote,
-            imageUrl: $this->images->url((string) $row->image_path),
+            imageUrl: $this->imageUrl($row->image_path),
             imageWidth: $row->image_width ?? 600,
             imageHeight: $row->image_height ?? 600,
         ))->values()->all();
@@ -70,7 +70,7 @@ final class PublicContent
             couple: $row->couple,
             place: $row->place,
             date: __('Married :date', ['date' => $row->wedding_date->format('F Y')]),
-            imageUrl: $row->image_path !== null ? $this->images->url($row->image_path) : asset('images/photo-processing.svg'),
+            imageUrl: $this->imageUrl($row->image_path),
             imageWidth: $row->image_width ?? 500,
             imageHeight: $row->image_height ?? 500,
             quote: $row->quote,
@@ -133,8 +133,14 @@ final class PublicContent
         return array_values(array_filter([
             new CounterData('images/about/computing.png', $figures['members'], $labels->text('members_label')),
             new CounterData('images/about/heart.png', $figures['marriages'], $labels->text('marriages_label')),
-            new CounterData('images/home/stat-downloads.png', $figures['branches'], $labels->text('branches_label')),
+            new CounterData('fa-map-marker', $figures['branches'], $labels->text('branches_label')),
         ], fn (CounterData $counter): bool => $counter->value > 0));
+    }
+
+    /** Only a preview can reach here without an image: publishing requires one. */
+    private function imageUrl(?string $path): string
+    {
+        return $path !== null ? $this->images->url($path) : asset('images/photo-processing.svg');
     }
 
     /**

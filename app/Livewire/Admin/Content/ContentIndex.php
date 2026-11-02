@@ -49,8 +49,15 @@ final class ContentIndex extends Component
     #[Locked]
     public ?string $editing = null;
 
+    /** The version that dialog opened on: a save is refused if the row has moved on. */
+    #[Locked]
+    public ?int $editingVersion = null;
+
     #[Locked]
     public ?string $acting = null;
+
+    #[Locked]
+    public ?int $actingVersion = null;
 
     /** @var array<string, mixed> */
     public array $fields = [];
@@ -98,6 +105,7 @@ final class ContentIndex extends Component
         $this->resetForm();
 
         $this->editing = $row->code;
+        $this->editingVersion = $row->lock_version;
         $current = $row->withDraft();
         $this->fields = collect(array_keys($this->contentType()->rules($row instanceof HomeBlock ? $row->block_key : null)))
             ->reject(fn (string $field): bool => str_starts_with($field, 'content.'))
@@ -130,7 +138,7 @@ final class ContentIndex extends Component
             : null;
 
         try {
-            $saved = $save->handle($this->admin(), $type, $row, $this->fields, $image, $consent);
+            $saved = $save->handle($this->admin(), $type, $row, $this->fields, $image, $consent, $this->editingVersion);
         } catch (ValidationException $invalid) {
             foreach ($invalid->errors() as $field => $messages) {
                 $this->addError(in_array($field, ['image', 'consentNote'], true) ? $field : 'fields.'.$field, $messages[0]);
@@ -158,14 +166,14 @@ final class ContentIndex extends Component
         $this->step(fn () => $transition->backToDraft($this->admin(), $this->find($code)), __('Back to draft.'));
     }
 
-    public function publish(TransitionContent $transition, string $code): void
+    public function publish(TransitionContent $transition, string $code, ?int $version = null): void
     {
-        $this->step(fn () => $transition->publish($this->admin(), $this->find($code)), __('Published.'));
+        $this->step(fn () => $transition->publish($this->admin(), $this->find($code), $version), __('Published.'));
     }
 
-    public function publishChanges(TransitionContent $transition, string $code): void
+    public function publishChanges(TransitionContent $transition, string $code, ?int $version = null): void
     {
-        $this->step(fn () => $transition->publishChanges($this->admin(), $this->find($code)), __('Changes published.'));
+        $this->step(fn () => $transition->publishChanges($this->admin(), $this->find($code), $version), __('Changes published.'));
     }
 
     public function discardChanges(TransitionContent $transition, string $code): void
@@ -173,10 +181,12 @@ final class ContentIndex extends Component
         $this->step(fn () => $transition->discardChanges($this->admin(), $this->find($code)), __('Changes discarded.'));
     }
 
-    public function confirm(string $code, string $dialog): void
+    public function confirm(string $code, string $dialog, ?int $version = null): void
     {
         abort_unless(in_array($dialog, ['content-archive', 'content-withdraw', 'content-schedule'], true), 404);
-        $this->acting = $this->find($code)->code;
+        $row = $this->find($code);
+        $this->acting = $row->code;
+        $this->actingVersion = $version ?? $row->lock_version;
         $this->reset('reason', 'scheduleAt');
         $this->resetErrorBag();
         $this->dispatch('open-modal', name: $dialog);
@@ -193,7 +203,7 @@ final class ContentIndex extends Component
             return;
         }
 
-        if ($this->step(fn () => $transition->schedule($this->admin(), $this->acted(), $at), __('Scheduled.'))) {
+        if ($this->step(fn () => $transition->schedule($this->admin(), $this->acted(), $at, $this->actingVersion), __('Scheduled.'))) {
             $this->dispatch('close-modal', name: 'content-schedule');
         }
     }
@@ -295,7 +305,7 @@ final class ContentIndex extends Component
 
     private function resetForm(): void
     {
-        $this->reset('editing', 'fields', 'image', 'consentFirst', 'consentSecond', 'consentNote', 'previewUrl');
+        $this->reset('editing', 'editingVersion', 'fields', 'image', 'consentFirst', 'consentSecond', 'consentNote', 'previewUrl');
         $this->resetErrorBag();
     }
 

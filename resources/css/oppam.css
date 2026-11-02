@@ -785,3 +785,17 @@ body.search-sheet-open .mobile-footer { display: none; }
     position: static;
     padding-block: var(--space-6);
 }
+
+/* A story's stored paragraphs read like the template's .story-longform .p-main (P8.1a). */
+.story-full-body p {
+    color: var(--color-gr-dark);
+    font-size: var(--text-md);
+    line-height: var(--leading-normal);
+    margin: 0 0 var(--space-4) 0;
+}
+
+/* The branches counter has no bundled image. */
+.stat-icon .fa {
+    color: var(--color-primary);
+    font-size: var(--text-2xl);
+}

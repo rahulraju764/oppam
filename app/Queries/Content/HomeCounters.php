@@ -18,6 +18,12 @@ final class HomeCounters
 {
     private const CACHE_KEY = 'content.home_counters';
 
+    /** A publish or withdrawal shows at once; nothing else needs to. */
+    public function forget(): void
+    {
+        Cache::forget(self::CACHE_KEY);
+    }
+
     /** @return array{members: int, marriages: int, branches: int} */
     public function figures(): array
     {

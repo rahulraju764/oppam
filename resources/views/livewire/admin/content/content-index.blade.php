@@ -36,6 +36,7 @@
                 </td>
                 <td>
                     <x-ui.badge :variant="$row->status->badgeVariant()">{{ $row->status->label() }}</x-ui.badge>
+                    <small class="text-muted-brand">{{ __('Version :v', ['v' => $row->lock_version]) }}</small>
                     @if ($row->hasPendingChanges())
                         <x-ui.badge variant="warning">{{ __('Changes waiting') }}</x-ui.badge>
                     @endif
@@ -47,30 +48,34 @@
                 <td class="text-nowrap">
                     @php($status = $row->status)
                     @can('content.edit')
-                        <x-ui.button size="sm" variant="outline" type="button" wire:click="edit('{{ $row->code }}')" dusk="content-edit-{{ $row->code }}">{{ __('Edit') }}</x-ui.button>
+                        @unless ($row instanceof \App\Models\SuccessStory && $row->isWithdrawn())
+                        <x-ui.button size="sm" variant="outline" type="button" loading="edit" wire:click="edit('{{ $row->code }}')" dusk="content-edit-{{ $row->code }}">{{ __('Edit') }}</x-ui.button>
+                        @endunless
                     @endcan
-                    <x-ui.button size="sm" variant="ghost" type="button" wire:click="preview('{{ $row->code }}')" dusk="content-preview-{{ $row->code }}">{{ __('Preview') }}</x-ui.button>
+                    @unless ($row instanceof \App\Models\SuccessStory && $row->isWithdrawn())
+                        <x-ui.button size="sm" variant="ghost" type="button" loading="preview" wire:click="preview('{{ $row->code }}')" dusk="content-preview-{{ $row->code }}">{{ __('Preview') }}</x-ui.button>
+                    @endunless
 
                     @can('content.edit')
                         @if ($status === \App\Enums\ContentStatus::Draft)
-                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="submit('{{ $row->code }}')" dusk="content-submit-{{ $row->code }}">{{ __('Send for review') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="ghost" type="button" loading="submit" wire:click="submit('{{ $row->code }}')" dusk="content-submit-{{ $row->code }}">{{ __('Send for review') }}</x-ui.button>
                         @elseif ($status !== \App\Enums\ContentStatus::Published)
-                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="backToDraft('{{ $row->code }}')">{{ $status === \App\Enums\ContentStatus::Archived ? __('Restore to draft') : __('Back to draft') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="ghost" type="button" loading="backToDraft" wire:click="backToDraft('{{ $row->code }}')">{{ $status === \App\Enums\ContentStatus::Archived ? __('Restore to draft') : __('Back to draft') }}</x-ui.button>
                         @endif
                         @if ($row->hasPendingChanges())
-                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="discardChanges('{{ $row->code }}')" wire:confirm="{{ __('Discard the waiting changes?') }}">{{ __('Discard changes') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="ghost" type="button" loading="discardChanges" wire:click="discardChanges('{{ $row->code }}')" wire:confirm="{{ __('Discard the waiting changes?') }}">{{ __('Discard changes') }}</x-ui.button>
                         @endif
                     @endcan
 
                     @can('content.publish')
                         @if (in_array($status, [\App\Enums\ContentStatus::InReview, \App\Enums\ContentStatus::Scheduled], true))
-                            <x-ui.button size="sm" type="button" wire:click="publish('{{ $row->code }}')" dusk="content-publish-{{ $row->code }}">{{ __('Publish now') }}</x-ui.button>
+                            <x-ui.button size="sm" type="button" loading="publish" wire:click="publish('{{ $row->code }}', {{ $row->lock_version }})" dusk="content-publish-{{ $row->code }}">{{ __('Publish now') }}</x-ui.button>
                         @endif
                         @if ($status === \App\Enums\ContentStatus::InReview)
-                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $row->code }}', 'content-schedule')">{{ __('Schedule') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $row->code }}', 'content-schedule', {{ $row->lock_version }})">{{ __('Schedule') }}</x-ui.button>
                         @endif
                         @if ($row->hasPendingChanges())
-                            <x-ui.button size="sm" type="button" wire:click="publishChanges('{{ $row->code }}')" dusk="content-publish-changes-{{ $row->code }}">{{ __('Publish changes') }}</x-ui.button>
+                            <x-ui.button size="sm" type="button" loading="publishChanges" wire:click="publishChanges('{{ $row->code }}', {{ $row->lock_version }})" dusk="content-publish-changes-{{ $row->code }}">{{ __('Publish changes') }}</x-ui.button>
                         @endif
                         @if ($status !== \App\Enums\ContentStatus::Archived)
                             <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $row->code }}', 'content-archive')">{{ __('Archive') }}</x-ui.button>
@@ -109,7 +114,7 @@
 
         <x-slot:footer>
             <x-ui.button variant="ghost" type="button" x-on:click="open = false">{{ __('Cancel') }}</x-ui.button>
-            <x-ui.button type="submit" form="content-form" loading="save" dusk="content-save">{{ __('Save') }}</x-ui.button>
+            <x-ui.button type="submit" form="content-form" loading="save, image" dusk="content-save">{{ __('Save') }}</x-ui.button>
         </x-slot:footer>
     </x-ui.modal>
     @endcan
@@ -117,7 +122,7 @@
     <x-ui.modal name="content-preview" :title="__('Preview link')">
         <p>{{ __('This link shows the real page with the unpublished text. It works for 30 minutes for anyone who has it.') }}</p>
         @if ($previewUrl !== null)
-            <a href="{{ $previewUrl }}" target="_blank" rel="noopener noreferrer" dusk="content-preview-link">{{ __('Open preview') }}</a>
+            <x-ui.button :href="$previewUrl" target="_blank" rel="noopener noreferrer" dusk="content-preview-link">{{ __('Open preview') }}</x-ui.button>
         @endif
     </x-ui.modal>
 
@@ -135,7 +140,7 @@
     </x-admin.confirm-modal>
 
     <x-admin.confirm-modal name="content-withdraw" :title="__('Withdraw this story?')" action="withdraw" :confirm-label="__('Withdraw')">
-        <p>{{ __('It leaves the site at once, its photo is deleted and the recorded consent is cleared. It can only return with fresh consent and a new photo.') }}</p>
+        <p>{{ __('It leaves the site at once, its photo is deleted and the recorded consent is cleared. It can only return with fresh consent and a new photo. Please don’t name anyone in the reason: the audit log can’t be erased.') }}</p>
     </x-admin.confirm-modal>
     @endcan
 </div>

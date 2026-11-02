@@ -6,6 +6,7 @@ namespace App\Livewire\Member\Profile;
 
 use App\Actions\Profile\SetHomeVisibility;
 use App\Enums\PhotoVisibility;
+use App\Exceptions\Admin\ContentRefused;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -28,7 +29,7 @@ final class HomeVisibilityToggle extends Component
     {
         try {
             $set->handle($this->member(), $this->show);
-        } catch (ImpersonationRestricted $restricted) {
+        } catch (ImpersonationRestricted|ContentRefused $restricted) {
             $this->show = ! $this->show;
             $this->dispatch('toast', type: 'danger', title: $restricted->getMessage());
 
@@ -42,7 +43,8 @@ final class HomeVisibilityToggle extends Component
     {
         $profile = $this->member()->profile;
         $eligible = $profile?->is_premium === true && $profile->is_verified === true
-            && ($profile->privacySetting->photo_visibility ?? PhotoVisibility::AllMembers) === PhotoVisibility::AllMembers;
+            && ($profile->privacySetting->photo_visibility ?? PhotoVisibility::AllMembers) === PhotoVisibility::AllMembers
+            && $profile->privacySetting?->incognito !== true;
 
         return view('livewire.member.profile.home-visibility-toggle', ['eligible' => $eligible]);
     }

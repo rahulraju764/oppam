@@ -31,6 +31,12 @@ enum HomeBlockKey: string
         };
     }
 
+    /** "step1_title" → "Step 1 title". */
+    public static function fieldLabel(string $field): string
+    {
+        return __(ucfirst(str_replace('_', ' ', (string) preg_replace('/(\d)/', ' $1', $field))));
+    }
+
     /** @return array<string, int> field => longest allowed text */
     public function fields(): array
     {

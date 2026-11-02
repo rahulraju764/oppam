@@ -10,12 +10,17 @@ use App\Models\SuccessStory;
 use App\Models\Testimonial;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 /** Demo stories, testimonials and offices. Local only (DatabaseSeeder): none of these people or addresses are real. */
 final class DemoContentSeeder extends Seeder
 {
     public function run(HtmlSanitizer $sanitizer): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new RuntimeException('Demo people must never reach this environment.');
+        }
+
         /** @var array{stories: list<array{slug: string, couple: string, place: string, date: string, img: string, w: int, h: int, quote: string, story: list<string>}>, testimonials: list<array{name: string, place: string, img: string, quote: string}>, branches: list<array{city: string, role: string, address: string, phone: string, tel: string, hours: string}>} $demo */
         $demo = require database_path('seeders/data/content-demo.php');
 

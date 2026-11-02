@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\URL;
 /**
  * A08 signed preview: a 30-minute link to the real public page with this row's unpublished text.
  * It works without a sign-in (the public host has no admin session), so it is audited. Open to
- * anyone who works on content.
+ * anyone who works on content. The link is for this version of the row: once the row changes, or a
+ * story is withdrawn and restored, it stops working, so a preview never shows text nobody meant to approve.
  */
 final class IssueContentPreview
 {
@@ -33,7 +34,7 @@ final class IssueContentPreview
         return URL::temporarySignedRoute(
             $row->contentType()->previewRoute($row instanceof HomeBlock ? $row->block_key : null),
             now()->addMinutes(self::MINUTES),
-            ['code' => $row->code],
+            ['code' => $row->code, 'v' => $row->lock_version],
         );
     }
 }

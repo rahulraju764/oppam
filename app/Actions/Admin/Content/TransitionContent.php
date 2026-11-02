@@ -9,6 +9,7 @@ use App\Exceptions\Admin\ContentRefused;
 use App\Models\AdminUser;
 use App\Models\EditorialContent;
 use App\Models\SuccessStory;
+use App\Queries\Content\HomeCounters;
 use App\Services\Audit\AuditLogger;
 use App\Services\Content\ContentImageStore;
 use Carbon\CarbonImmutable;
@@ -28,6 +29,7 @@ final class TransitionContent
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly ContentImageStore $images,
+        private readonly HomeCounters $counters,
     ) {}
 
     public function submit(AdminUser $admin, EditorialContent $row): EditorialContent
@@ -51,7 +53,7 @@ final class TransitionContent
     }
 
     /** @throws AuthorizationException|ContentRefused */
-    public function schedule(AdminUser $admin, EditorialContent $row, CarbonImmutable $at): EditorialContent
+    public function schedule(AdminUser $admin, EditorialContent $row, CarbonImmutable $at, ?int $expectedVersion = null): EditorialContent
     {
         Gate::forUser($admin)->authorize('content.publish');
 
@@ -59,18 +61,20 @@ final class TransitionContent
             throw ContentRefused::scheduleInPast();
         }
 
-        return $this->move($admin, $row, ContentStatus::Scheduled, 'content.scheduled', function (EditorialContent $locked) use ($at): void {
+        return $this->move($admin, $row, ContentStatus::Scheduled, 'content.scheduled', function (EditorialContent $locked) use ($at, $expectedVersion): void {
+            $this->assertVersion($locked, $expectedVersion);
             $this->assertPublishable($locked);
             $locked->forceFill(['scheduled_at' => $at->utc()]);
         });
     }
 
     /** @throws AuthorizationException|ContentRefused */
-    public function publish(AdminUser $admin, EditorialContent $row): EditorialContent
+    public function publish(AdminUser $admin, EditorialContent $row, ?int $expectedVersion = null): EditorialContent
     {
         Gate::forUser($admin)->authorize('content.publish');
 
-        return $this->move($admin, $row, ContentStatus::Published, 'content.published', function (EditorialContent $locked) use ($admin): void {
+        return $this->move($admin, $row, ContentStatus::Published, 'content.published', function (EditorialContent $locked) use ($admin, $expectedVersion): void {
+            $this->assertVersion($locked, $expectedVersion);
             $this->assertPublishable($locked);
             $locked->forceFill(['scheduled_at' => null, 'published_at' => now(), 'published_by_admin_id' => $admin->id]);
         });
@@ -98,19 +102,21 @@ final class TransitionContent
 
             $locked->forceFill(['status' => ContentStatus::Published, 'scheduled_at' => null, 'published_at' => now()])->save();
             $this->audit->record('content.published', $locked, ['status' => ContentStatus::Scheduled->value], ['status' => ContentStatus::Published->value], subjectLabel: $locked->code);
+            DB::afterCommit(fn () => $this->counters->forget());
         });
     }
 
     /** A live row's waiting edits go on the site. */
-    public function publishChanges(AdminUser $admin, EditorialContent $row): EditorialContent
+    public function publishChanges(AdminUser $admin, EditorialContent $row, ?int $expectedVersion = null): EditorialContent
     {
         Gate::forUser($admin)->authorize('content.publish');
 
-        return DB::transaction(function () use ($admin, $row): EditorialContent {
+        return DB::transaction(function () use ($admin, $row, $expectedVersion): EditorialContent {
             $locked = $this->locked($row);
             if (! $locked->isLive() || ! $locked->hasPendingChanges()) {
                 throw ContentRefused::noPendingChanges();
             }
+            $this->assertVersion($locked, $expectedVersion);
             $this->assertPublishable($locked);
 
             $replaced = $this->replacedImage($locked);
@@ -174,6 +180,7 @@ final class TransitionContent
             }
             $locked->forceFill(['status' => $to])->save();
             $this->audit->record($action, $locked, ['status' => $from->value], ['status' => $to->value], $reason, actor: $admin, subjectLabel: $locked->code);
+            DB::afterCommit(fn () => $this->counters->forget());
 
             return $locked;
         });
@@ -183,6 +190,14 @@ final class TransitionContent
     {
         /** @var EditorialContent */
         return $row->newQuery()->whereKey($row->id)->lockForUpdate()->firstOrFail();
+    }
+
+    /** What the publisher was looking at must still be what goes out. @throws ContentRefused */
+    private function assertVersion(EditorialContent $row, ?int $expected): void
+    {
+        if ($expected !== null && $row->lock_version !== $expected) {
+            throw ContentRefused::changedMeanwhile();
+        }
     }
 
     /** @throws ContentRefused */

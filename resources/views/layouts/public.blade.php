@@ -28,7 +28,7 @@
     <x-impersonation-banner />
     @if (app(\App\Queries\Content\PreviewContext::class)->active())
         <div class="container is-chrome" data-content-preview>
-            <x-ui.alert type="warning">{{ __('Preview: this page shows unpublished content. Visitors don’t see this.') }}</x-ui.alert>
+            <x-ui.alert type="warning">{{ __('Preview: this page shows unpublished content. Visitors don’t see this.') }} {{ __('Version :v.', ['v' => app(\App\Queries\Content\PreviewContext::class)->version()]) }}</x-ui.alert>
         </div>
     @endif
 

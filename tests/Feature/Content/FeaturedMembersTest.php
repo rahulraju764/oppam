@@ -92,8 +92,9 @@ it('M12: each condition failing alone keeps the member off the home page', funct
 
 it('M12: opt-in defaults to off', function (): void {
     $user = contentMember();
+    (new PrivacySetting)->forceFill(['profile_id' => $user->profile->id])->save();
 
-    expect(PrivacySetting::query()->find($user->profile->id)?->show_on_home ?? false)->toBeFalse();
+    expect(PrivacySetting::query()->findOrFail($user->profile->id)->show_on_home)->toBeFalse();
 });
 
 it('M12: a suspended account, or a profile soft-deleted, disappears on the next load', function (string $how): void {
@@ -182,4 +183,39 @@ it('M12: featured cards have no link for a visitor (a visitor can’t open profi
     featuredProfile();
 
     Livewire::test(Home::class)->assertSee('Featured')->assertDontSeeHtml('class="member-link"');
+});
+
+it('the toggle: joining is rate limited, leaving never is, and leaving takes effect at once', function (): void {
+    $profile = featuredProfile();
+    $user = $profile->user;
+    $action = app(SetHomeVisibility::class);
+    $action->handle($user, false);
+
+    foreach (range(1, SettingKey::ContentHomeToggleMaxPerHour->default()) as $i) {
+        $action->handle($user, true);
+        $action->handle($user, false);
+    }
+
+    expect(fn () => $action->handle($user, true))->toThrow(App\Exceptions\Admin\ContentRefused::class)
+        ->and(featuredNames())->toBe([]);
+
+    // Over the limit and opted in from before: leaving still works.
+    PrivacySetting::query()->findOrFail($profile->id)->forceFill(['show_on_home' => true])->save();
+    expect(featuredNames())->toBe(['Featured']);
+
+    $action->handle($user, false);
+
+    expect(featuredNames())->toBe([]);
+});
+
+it('the toggle: repeating the same choice changes nothing and writes no audit row', function (): void {
+    $user = contentMember();
+    $action = app(SetHomeVisibility::class);
+
+    $action->handle($user, false);
+    expect(AuditLog::query()->where('action', 'profile.home_visibility_changed')->count())->toBe(0);
+
+    $action->handle($user, true);
+    $action->handle($user, true);
+    expect(AuditLog::query()->where('action', 'profile.home_visibility_changed')->count())->toBe(1);
 });

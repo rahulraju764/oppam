@@ -26,9 +26,10 @@ final class EnableContentPreview
             ->first(fn (ContentType $candidate): bool => $candidate->model()::query()->where('code', $code)->exists());
 
         abort_if($type === null, 404);
+        abort_if((string) $type->model()::query()->where('code', $code)->value('lock_version') !== (string) $request->query('v'), 404);
         abort_if($type === ContentType::Story && SuccessStory::query()->where('code', $code)->whereNotNull('withdrawn_at')->exists(), 404);
 
-        $this->preview->set($type, $code);
+        $this->preview->set($type, $code, (int) $request->query('v'));
 
         try {
             /** @var Response $response */

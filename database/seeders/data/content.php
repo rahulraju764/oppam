@@ -41,7 +41,7 @@ return [
             'heading' => 'Stories of Trust & Happiness',
         ],
         'counters' => [
-            'members_label' => 'Verified Members',
+            'members_label' => 'Members',
             'marriages_label' => 'Marriages',
             'branches_label' => 'Branches',
         ],

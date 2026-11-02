@@ -281,6 +281,7 @@ it('A08: a withdrawn story needs a reason, can’t be withdrawn twice, and retur
     expect(fn () => $this->flow->publish($this->publisher, $story->refresh()))->toThrow(ContentRefused::class, 'consent');
 
     app(SaveContent::class)->handle($this->editor, ContentType::Story, $story->refresh(), storyInput(), consent: new ConsentInput(true, true, 'Fresh forms received'));
+    $this->flow->submit($this->editor, $story->refresh());   // an edit sends it back to draft
     expect(fn () => $this->flow->publish($this->publisher, $story->refresh()))->toThrow(ContentRefused::class, 'image');
 });
 
@@ -350,4 +351,165 @@ it('FAQ answers render as stored rich text', function (): void {
     FaqItem::factory()->published()->create(['answer' => '<p><strong>Yes</strong></p>']);
 
     expect(app(PublicContent::class)->faqs()[0]->answerHtml)->toBe('<p><strong>Yes</strong></p>');
+});
+
+it('A08 review Blocker: a dialog left open can’t re-record consent on a story withdrawn meanwhile', function (): void {
+    $story = SuccessStory::factory()->published()->create(['couple' => 'Asha & Binu', 'consent_note' => 'Signed forms 2024']);
+    $openedOn = $story->lock_version;
+    app(WithdrawStory::class)->handle($this->publisher, $story, 'Partner asked to remove it');
+
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Story, $story->refresh(), storyInput(), consent: new ConsentInput(true, true, 'Signed forms 2024'), expectedVersion: $openedOn))
+        ->toThrow(ContentRefused::class);
+
+    // Without a version too: a withdrawn story takes no edits at all until it is restored.
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Story, $story->refresh(), storyInput(), consent: new ConsentInput(true, true, 'Signed forms 2024')))
+        ->toThrow(ContentRefused::class);
+
+    expect($story->refresh()->hasBothConsents())->toBeFalse()->and($story->image_path)->toBeNull();
+});
+
+it('A08 review Blocker: restoring a story still needs consent typed in a dialog opened after the restore', function (): void {
+    $story = SuccessStory::factory()->published()->create();
+    $openedOn = $story->lock_version;
+    app(WithdrawStory::class)->handle($this->publisher, $story, 'Partner asked to remove it');
+    $this->flow->backToDraft($this->editor, $story->refresh());
+
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Story, $story->refresh(), storyInput(), consent: new ConsentInput(true, true, 'Old note'), expectedVersion: $openedOn))
+        ->toThrow(ContentRefused::class);
+    expect($story->refresh()->hasBothConsents())->toBeFalse();
+});
+
+it('A08: a stale dialog can’t overwrite someone else’s edit', function (): void {
+    $branch = Branch::factory()->create(['city' => 'First']);
+    $openedOn = $branch->lock_version;
+    $input = ['sort_order' => 0, 'role' => 'Branch', 'address' => 'Somewhere', 'phone' => '0487', 'tel' => '+914872441100', 'hours' => '10–6'];
+
+    app(SaveContent::class)->handle($this->editor, ContentType::Branch, $branch, ['city' => 'Second', ...$input], expectedVersion: $openedOn);
+
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Branch, $branch, ['city' => 'Stale', ...$input], expectedVersion: $openedOn))->toThrow(ContentRefused::class)
+        ->and($branch->refresh()->city)->toBe('Second');
+});
+
+it('A08 review: editing a row in review sends it back to draft, so unreviewed text can’t go out under a publisher’s click', function (): void {
+    $branch = Branch::factory()->inReview()->create();
+
+    app(SaveContent::class)->handle($this->editor, ContentType::Branch, $branch, ['sort_order' => 0, 'city' => 'Changed', 'role' => 'Branch', 'address' => 'Somewhere', 'phone' => '0487', 'tel' => '+914872441100', 'hours' => '10–6']);
+
+    expect($branch->refresh()->status)->toBe(ContentStatus::Draft);
+    expect(fn () => $this->flow->publish($this->publisher, $branch))->toThrow(ContentRefused::class);
+});
+
+it('A08 review: waiting changes edited after the publisher looked aren’t released by that publisher’s click', function (): void {
+    $branch = Branch::factory()->published()->create(['city' => 'Live', 'draft' => ['city' => 'Approved text']]);
+    $seen = $branch->lock_version;
+
+    app(SaveContent::class)->handle($this->editor, ContentType::Branch, $branch, ['sort_order' => 0, 'city' => 'Sneaked in', 'role' => 'Branch', 'address' => 'Somewhere', 'phone' => '0487', 'tel' => '+914872441100', 'hours' => '10–6']);
+
+    expect(fn () => $this->flow->publishChanges($this->publisher, $branch, $seen))->toThrow(ContentRefused::class)
+        ->and($branch->refresh()->city)->toBe('Live');
+});
+
+it('A08 review: the same goes for publishing and scheduling a row that moved on', function (): void {
+    $branch = Branch::factory()->inReview()->create();
+    $seen = $branch->lock_version - 1;
+
+    expect(fn () => $this->flow->publish($this->publisher, $branch, $seen))->toThrow(ContentRefused::class)
+        ->and(fn () => $this->flow->schedule($this->publisher, $branch, now()->addDay()->toImmutable(), $seen))->toThrow(ContentRefused::class)
+        ->and($branch->refresh()->status)->toBe(ContentStatus::InReview);
+});
+
+it('A08 review: consent changes are in the audit row, the note text isn’t', function (): void {
+    $story = app(SaveContent::class)->handle($this->editor, ContentType::Story, null, storyInput(), consent: new ConsentInput(true, false, 'Told us privately'));
+    app(SaveContent::class)->handle($this->editor, ContentType::Story, $story, storyInput(), consent: new ConsentInput(true, true, 'Told us privately'));
+
+    $log = AuditLog::query()->where('action', 'content.saved')->where('subject_id', $story->id)->orderByDesc('created_at')->orderByDesc('id')->firstOrFail();
+
+    expect($log->before['consent'])->toBe(['first' => true, 'second' => false])
+        ->and($log->after['consent'])->toBe(['first' => true, 'second' => true])
+        ->and(json_encode([$log->before, $log->after]))->not->toContain('Told us privately');
+});
+
+it('A08 review: a palette PNG is accepted, not a fatal error', function (): void {
+    Storage::fake('public');
+    $path = tempnam(sys_get_temp_dir(), 'pal');
+    $palette = imagecreate(100, 100);
+    imagecolorallocate($palette, 200, 30, 60);
+    imagepng($palette, $path);
+
+    $row = app(SaveContent::class)->handle($this->editor, ContentType::Banner, null, ['sort_order' => 0, 'heading' => 'H', 'copy' => 'C'], new UploadedFile($path, 'logo.png', 'image/png', null, true));
+
+    Storage::disk('public')->assertExists((string) $row->getAttribute('image_path'));
+    expect($row->getAttribute('image_width'))->toBe(100);
+});
+
+it('A08 review: an image too large to decode safely is refused before decoding', function (): void {
+    Storage::fake('public');
+    $path = tempnam(sys_get_temp_dir(), 'big');
+    $big = imagecreate(7000, 7000);
+    imagecolorallocate($big, 1, 1, 1);
+    imagepng($big, $path, 9);
+
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Banner, null, ['sort_order' => 0, 'heading' => 'H', 'copy' => 'C'], new UploadedFile($path, 'big.png', 'image/png', null, true)))
+        ->toThrow(ValidationException::class);
+    expect(Storage::disk('public')->allFiles('content'))->toBe([]);
+});
+
+it('A08 review: location data in a photo never reaches the public disk', function (): void {
+    Storage::fake('public');
+
+    $row = app(SaveContent::class)->handle($this->editor, ContentType::Banner, null, ['sort_order' => 0, 'heading' => 'H', 'copy' => 'C'], jpegWithGps());
+
+    expect(Storage::disk('public')->get((string) $row->getAttribute('image_path')))->not->toContain('Exif')->not->toContain('GPS');
+});
+
+it('A08 review: a refused save leaves no uploaded file behind', function (): void {
+    Storage::fake('public');
+    $branch = Banner::factory()->create();
+
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Banner, $branch, ['sort_order' => 0, 'heading' => 'H', 'copy' => 'C'], UploadedFile::fake()->image('a.jpg', 400, 400), expectedVersion: 999))->toThrow(ContentRefused::class);
+
+    expect(Storage::disk('public')->allFiles('content'))->toBe([]);
+});
+
+it('A08 review: a tampered rich-text field is a validation error, not a crash', function (): void {
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Faq, null, ['sort_order' => 0, 'question' => 'Q', 'answer' => ['x']]))->toThrow(ValidationException::class);
+});
+
+it('A08 review: a phone photo’s EXIF rotation is applied before it is dropped', function (): void {
+    if (! function_exists('exif_read_data')) {
+        $this->markTestSkipped('ext-exif is not loaded.');
+    }
+
+    Storage::fake('public');
+    $image = imagecreatetruecolor(100, 50);
+    imagefilledrectangle($image, 0, 0, 49, 49, (int) imagecolorallocate($image, 255, 0, 0));   // left half red
+    ob_start();
+    imagejpeg($image, null, 100);
+    $jpeg = (string) ob_get_clean();
+
+    // A minimal APP1 segment: little-endian TIFF, one tag, Orientation (0x0112) = 6.
+    $tiff = "II*\0\x08\0\0\0\x01\0\x12\x01\x03\0\x01\0\0\0\x06\0\0\0\0\0\0\0";
+    $app1 = "Exif\0\0".$tiff;
+    $path = tempnam(sys_get_temp_dir(), 'exif');
+    file_put_contents($path, substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($app1) + 2).$app1.substr($jpeg, 2));
+    expect(exif_read_data($path)['Orientation'] ?? null)->toBe(6);
+
+    $row = app(SaveContent::class)->handle($this->editor, ContentType::Banner, null, ['sort_order' => 0, 'heading' => 'H', 'copy' => 'C'], new UploadedFile($path, 'phone.jpg', 'image/jpeg', null, true));
+
+    expect($row->getAttribute('image_width'))->toBe(50)->and($row->getAttribute('image_height'))->toBe(100);
+
+    // Orientation 6 means turn clockwise: the red left half ends up on top.
+    $stored = imagecreatefromstring(Storage::disk('public')->get((string) $row->getAttribute('image_path')));
+    $red = fn (int $x, int $y): int => (imagecolorat($stored, $x, $y) >> 16) & 0xFF;
+    expect($red(25, 10))->toBeGreaterThan(200)->and($red(25, 90))->toBeLessThan(50);
+});
+
+it('A08 review: a failure after the upload is stored rolls back and removes the file', function (): void {
+    Storage::fake('public');
+    AuditLog::creating(fn () => throw new RuntimeException('audit down'));
+
+    expect(fn () => app(SaveContent::class)->handle($this->editor, ContentType::Banner, null, ['sort_order' => 0, 'heading' => 'H', 'copy' => 'C'], UploadedFile::fake()->image('a.jpg', 400, 400)))
+        ->toThrow(RuntimeException::class);
+
+    expect(Banner::query()->count())->toBe(0)->and(Storage::disk('public')->allFiles('content'))->toBe([]);
 });

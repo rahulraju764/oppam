@@ -2,9 +2,9 @@
     @foreach ($blockKey->fields() as $field => $max)
         <div class="col-12">
             @if ($max > 120)
-                <x-ui.textarea :label="\Illuminate\Support\Str::headline($field)" :name="$field" :id="'block-'.$field" wire:model="fields.content.{{ $field }}" rows="2" :maxlength="$max" required />
+                <x-ui.textarea :label="\App\Enums\HomeBlockKey::fieldLabel($field)" :name="$field" :id="'block-'.$field" wire:model="fields.content.{{ $field }}" rows="2" :maxlength="$max" required />
             @else
-                <x-ui.input :label="\Illuminate\Support\Str::headline($field)" :name="$field" :id="'block-'.$field" wire:model="fields.content.{{ $field }}" :maxlength="$max" required />
+                <x-ui.input :label="\App\Enums\HomeBlockKey::fieldLabel($field)" :name="$field" :id="'block-'.$field" wire:model="fields.content.{{ $field }}" :maxlength="$max" required />
             @endif
         </div>
     @endforeach

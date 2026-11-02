@@ -20,6 +20,9 @@ document.addEventListener('alpine:init', () => {
             const next = this.$wire.$get(model) ?? '';
             if (this.$refs.editor.innerHTML !== next) {
                 this.$refs.editor.innerHTML = next;
+                this.range = null;   // it pointed into the content just replaced
+                this.linking = false;
+                this.linkUrl = '';
             }
         },
 
@@ -28,28 +31,40 @@ document.addEventListener('alpine:init', () => {
             this.$wire.$set(model, this.$refs.editor.innerHTML, false);
         },
 
-        format(command) {
-            this.$refs.editor.focus();
-            document.execCommand('defaultParagraphSeparator', false, 'p');
-            document.execCommand(command);
-            this.sync();
-        },
-
-        openLink() {
+        // Tabbing to a toolbar button takes focus from the editor: keep where the cursor was.
+        remember() {
             const selection = window.getSelection();
-            this.range = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
-            this.linkUrl = '';
-            this.linking = true;
+            if (selection.rangeCount > 0 && this.$refs.editor.contains(selection.anchorNode)) {
+                this.range = selection.getRangeAt(0).cloneRange();
+            }
         },
 
-        applyLink() {
+        restore() {
             this.$refs.editor.focus();
             if (this.range) {
                 const selection = window.getSelection();
                 selection.removeAllRanges();
                 selection.addRange(this.range);
             }
-            if (this.linkUrl) {
+        },
+
+        format(command) {
+            this.remember();   // a mouse click doesn't blur: the selection now is the one meant
+            this.restore();
+            document.execCommand('defaultParagraphSeparator', false, 'p');
+            document.execCommand(command);
+            this.sync();
+        },
+
+        openLink() {
+            this.remember();
+            this.linkUrl = '';
+            this.linking = true;
+        },
+
+        applyLink() {
+            this.restore();
+            if (this.linkUrl && this.range) {
                 document.execCommand('createLink', false, this.linkUrl);
             }
             this.linking = false;

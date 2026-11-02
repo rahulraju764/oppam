@@ -34,6 +34,21 @@ final class ContentRefused extends RuntimeException
         return new self(__('This story has already been withdrawn.'));
     }
 
+    public static function changedMeanwhile(): self
+    {
+        return new self(__('Someone changed this item while you were looking at it. Open it again to see the latest version.'));
+    }
+
+    public static function withdrawnRow(): self
+    {
+        return new self(__('This story was withdrawn. Restore it to draft before changing it.'));
+    }
+
+    public static function tooManyChanges(): self
+    {
+        return new self(__('You’ve changed this too many times. Please try again later.'));
+    }
+
     public static function cannotCreate(): self
     {
         return new self(__('These are fixed page sections and can’t be added.'));

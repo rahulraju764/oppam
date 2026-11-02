@@ -24,6 +24,7 @@ enum SettingKey: string
     case SiteMaintenanceMessage = 'site.maintenance_message';
     case SeoIndexable = 'seo.indexable';
     case ContentHomeMembersMin = 'content.home_members_min';
+    case ContentHomeToggleMaxPerHour = 'content.home_toggle_max_per_hour';
 
     // ---- Business rules (A15) ----
     case MinAgeFemale = 'profile.min_age_female';
@@ -197,6 +198,7 @@ enum SettingKey: string
             self::BrokerImportFileRetentionDays => 30,       // B.9: source files purged after this many days
             self::BrokerPayoutMinimumPaise => 50_000,          // R-A07-5: balances under ₹500 roll forward
             self::BrokerPayoutSecondApproverPaise => 5_000_000,   // R-A07-4: a line above ₹50,000 needs a second approver
+            self::ContentHomeToggleMaxPerHour => 10,            // rule 10: each change is an append-only audit row
             self::ContentHomeMembersMin => 6,                  // M12: the featured band stays hidden below this many opted-in members (owner 2026-11-01)
             self::BrokerPayoutTdsBps => 0,                     // B.10 "TDS (if applicable)": 0 until the owner sets the 194H rate (decisions 2026-10-29)
             self::BrokerPayoutReminderDay => 1,                // B.23 payout-run reminders: from this day of the month (IST)
@@ -265,6 +267,7 @@ enum SettingKey: string
             self::SiteMaintenanceMessage => ['nullable', 'string', 'max:300'],
             self::SeoIndexable => ['required', 'boolean'],
             self::ContentHomeMembersMin => ['required', 'integer', 'min:1', 'max:6'],
+            self::ContentHomeToggleMaxPerHour => ['required', 'integer', 'min:1', 'max:100'],
             // Legal minimum marriage ages in India: never below 18 / 21.
             self::MinAgeFemale => ['required', 'integer', 'min:18', 'max:40'],
             self::MinAgeMale => ['required', 'integer', 'min:21', 'max:40'],

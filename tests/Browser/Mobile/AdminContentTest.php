@@ -41,6 +41,25 @@ it('A08: write in the editor, send for review, preview, publish, and only then i
         expect($row->status)->toBe(ContentStatus::Draft)
             ->and($row->answer)->toContain('Answer from the editor');
 
+        // Bold acts on what's selected now, not on the selection from before leaving the editor.
+        $select = fn (string $word): string => "const e = document.querySelector('#rich-answer'); e.focus();
+            const n = document.createTreeWalker(e, NodeFilter.SHOW_TEXT).nextNode(); const i = n.textContent.indexOf('{$word}');
+            const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + \$word_len);
+            const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);";
+        $browser->visit(adminDuskUrl('/content/faq'))->waitFor('@content-edit-'.$row->code)
+            ->click('@content-edit-'.$row->code)->waitForTextIn('@rich-answer', 'Answer from the editor');
+        $browser->script(str_replace('$word_len', '6', $select('Answer')));
+        $browser->click('#faq-question');
+        $browser->script(str_replace('$word_len', '6', $select('editor')));
+        $browser->click('.rich-text__btn[aria-label="Bold"]');
+        $browser->waitUsing(5, 100, fn (): bool => $browser->script("return document.querySelector('#rich-answer b')?.innerText === 'editor';")[0] === true);
+
+        // The toolbar works from the keyboard: Enter on a focused button, cursor kept in the editor.
+        $browser->click('@rich-answer')
+            ->script("document.querySelector('.rich-text__btn[aria-label=\"Bulleted list\"]').focus();");
+        $browser->driver->getKeyboard()->sendKeys("\u{E007}");
+        $browser->waitUsing(5, 100, fn (): bool => $browser->script("return document.querySelector('#rich-answer ul') !== null;")[0] === true);
+
         // Reopening shows what was saved, and a new item starts empty.
         $browser->visit(adminDuskUrl('/content/faq'))->waitFor('@content-edit-'.$row->code)
             ->click('@content-edit-'.$row->code)->waitFor('@rich-answer')->waitForTextIn('@rich-answer', 'Answer from the editor')

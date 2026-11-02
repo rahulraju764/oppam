@@ -13,16 +13,25 @@ final class PreviewContext
 
     private ?string $code = null;
 
-    public function set(ContentType $type, string $code): void
+    private ?int $version = null;
+
+    public function set(ContentType $type, string $code, int $version): void
     {
         $this->type = $type;
         $this->code = $code;
+        $this->version = $version;
     }
 
     public function clear(): void
     {
         $this->type = null;
         $this->code = null;
+        $this->version = null;
+    }
+
+    public function version(): ?int
+    {
+        return $this->version;
     }
 
     public function active(): bool

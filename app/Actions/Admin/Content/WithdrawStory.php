@@ -8,6 +8,7 @@ use App\Enums\ContentStatus;
 use App\Exceptions\Admin\ContentRefused;
 use App\Models\AdminUser;
 use App\Models\SuccessStory;
+use App\Queries\Content\HomeCounters;
 use App\Services\Audit\AuditLogger;
 use App\Services\Content\ContentImageStore;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -25,6 +26,7 @@ final class WithdrawStory
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly ContentImageStore $images,
+        private readonly HomeCounters $counters,
     ) {}
 
     /**
@@ -57,6 +59,7 @@ final class WithdrawStory
             $this->audit->record('content.story_withdrawn', $locked, ['status' => $from->value], ['status' => ContentStatus::Archived->value], $reason, actor: $admin, subjectLabel: $locked->code);
 
             DB::afterCommit(function () use ($photos): void {
+                $this->counters->forget();
                 foreach ($photos as $photo) {
                     $this->images->delete(is_string($photo) ? $photo : null);
                 }

@@ -24,11 +24,19 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable|null $published_at
  * @property CarbonImmutable|null $archived_at
  * @property array<string, mixed>|null $draft
+ * @property int $lock_version counts every write, so a screen can say which version it was looking at
  * @property string|null $image_path
  */
 abstract class EditorialContent extends Model
 {
     use HasUlids;
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $row): void {
+            $row->lock_version = (int) $row->getAttribute('lock_version') + 1;
+        });
+    }
 
     abstract public function contentType(): ContentType;
 
@@ -45,6 +53,7 @@ abstract class EditorialContent extends Model
             'published_at' => 'immutable_datetime',
             'archived_at' => 'immutable_datetime',
             'draft' => 'array',
+            'lock_version' => 'integer',
         ];
     }
 

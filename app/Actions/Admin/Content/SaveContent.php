@@ -23,12 +23,15 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * A08 edit (`content.edit`, audited): only the type's own fields are taken, rich text is sanitised.
  * A live row keeps showing its published text; the edit waits in `draft` until a publisher releases
- * it. An edit to a SCHEDULED row sends it back to DRAFT, so nothing reaches the site unapproved.
- * Consent is recorded on a row that isn't live; on a live story it only changes by withdrawing.
+ * it. An edit to an IN_REVIEW or SCHEDULED row sends it back to DRAFT: what a publisher approved is
+ * what goes out. Consent is recorded on a row that isn't live; on a live story it only changes by
+ * withdrawing. A dialog opened on an older version is refused, so a stale form can't overwrite a change
+ * or re-record consent on a story withdrawn meanwhile. A withdrawn story takes no edits until restored.
  */
 final class SaveContent
 {
@@ -45,7 +48,7 @@ final class SaveContent
      * @throws ValidationException
      * @throws ContentRefused
      */
-    public function handle(AdminUser $admin, ContentType $type, ?EditorialContent $row, array $input, ?UploadedFile $image = null, ?ConsentInput $consent = null): EditorialContent
+    public function handle(AdminUser $admin, ContentType $type, ?EditorialContent $row, array $input, ?UploadedFile $image = null, ?ConsentInput $consent = null, ?int $expectedVersion = null): EditorialContent
     {
         Gate::forUser($admin)->authorize('content.edit');
 
@@ -55,40 +58,69 @@ final class SaveContent
 
         $values = $this->validated($type, $row, $input, $image);
         $this->validateConsent($type, $row, $consent);
-        $stored = $image !== null ? $this->images->store($image) : [];
+        $stored = [];
 
-        return DB::transaction(function () use ($admin, $type, $row, $values, $stored, $consent): EditorialContent {
-            $class = $type->model();
-            /** @var EditorialContent $locked */
-            $locked = $row === null ? new $class : $class::query()->whereKey($row->id)->lockForUpdate()->firstOrFail();
-            $before = $locked->exists ? ['status' => $locked->status->value] : [];
-            $changes = [...$values, ...$stored];
+        try {
+            return DB::transaction(function () use ($admin, $type, $row, $values, $image, $consent, $expectedVersion, &$stored): EditorialContent {
+                $class = $type->model();
+                /** @var EditorialContent $locked */
+                $locked = $row === null ? new $class : $class::query()->whereKey($row->id)->lockForUpdate()->firstOrFail();
 
-            // The upload this one replaces, if nothing else shows it: a waiting image, or a row not on the site.
-            $replaced = $stored === [] ? null : ($locked->isLive() ? ($locked->draft['image_path'] ?? null) : $locked->getAttribute('image_path'));
-            DB::afterCommit(fn () => $this->images->delete(is_string($replaced) ? $replaced : null));
-
-            if ($locked->isLive()) {
-                $locked->forceFill(['draft' => [...($locked->draft ?? []), ...$changes]]);
-            } else {
-                $locked->forceFill($changes);
-                $this->applyConsent($locked, $consent);
-                if ($locked->status === ContentStatus::Scheduled) {
-                    $locked->forceFill(['status' => ContentStatus::Draft, 'scheduled_at' => null]);
+                if ($locked instanceof SuccessStory && $locked->isWithdrawn()) {
+                    throw ContentRefused::withdrawnRow();
                 }
-            }
+                if ($locked->exists && $expectedVersion !== null && $locked->lock_version !== $expectedVersion) {
+                    throw ContentRefused::changedMeanwhile();
+                }
 
-            if (! $locked->exists) {
-                $this->prepareNew($locked, $type);
-            }
+                $before = $locked->exists ? ['status' => $locked->status->value, ...$this->consentState($locked)] : [];
+                $stored = $image !== null ? $this->images->store($image) : [];
+                // First at commit: from here on the row points at this file, whatever a later callback does.
+                DB::afterCommit(function () use (&$stored): void {
+                    $stored = [];
+                });
+                $changes = [...$values, ...$stored];
 
-            $locked->forceFill(['updated_by_admin_id' => $admin->id])->save();
+                // The upload this one replaces, if nothing else shows it: a waiting image, or a row not on the site.
+                $replaced = $stored === [] ? null : ($locked->isLive() ? ($locked->draft['image_path'] ?? null) : $locked->getAttribute('image_path'));
+                DB::afterCommit(fn () => $this->images->delete(is_string($replaced) ? $replaced : null));
 
-            // Field names only: story text can name people and must be erasable, the audit log isn't.
-            $this->audit->record('content.saved', $locked, $before, ['status' => $locked->status->value, 'fields' => array_keys($changes), 'waiting' => $locked->hasPendingChanges()], actor: $admin, subjectLabel: $locked->code);
+                if ($locked->isLive()) {
+                    $locked->forceFill(['draft' => [...($locked->draft ?? []), ...$changes]]);
+                } else {
+                    $locked->forceFill($changes);
+                    $this->applyConsent($locked, $consent);
+                    if (in_array($locked->status, [ContentStatus::Scheduled, ContentStatus::InReview], true)) {
+                        $locked->forceFill(['status' => ContentStatus::Draft, 'scheduled_at' => null]);
+                    }
+                }
 
-            return $locked;
-        });
+                if (! $locked->exists) {
+                    $this->prepareNew($locked, $type);
+                }
+
+                $locked->forceFill(['updated_by_admin_id' => $admin->id])->save();
+
+                // Field names and consent yes / no only: story text can name people and must be erasable, the audit log isn't.
+                $this->audit->record('content.saved', $locked, $before, ['status' => $locked->status->value, 'fields' => array_keys($changes), 'waiting' => $locked->hasPendingChanges(), ...$this->consentState($locked)], actor: $admin, subjectLabel: $locked->code);
+
+                return $locked;
+            });
+        } catch (Throwable $failed) {
+            $this->images->delete($stored['image_path'] ?? null);
+
+            throw $failed;
+        }
+    }
+
+    /** @return array<string, array<string, bool>> who has consented, for the audit log; no note text */
+    private function consentState(EditorialContent $row): array
+    {
+        return match (true) {
+            $row instanceof SuccessStory => ['consent' => ['first' => $row->consent_a_at !== null, 'second' => $row->consent_b_at !== null]],
+            $row instanceof Testimonial => ['consent' => ['first' => $row->consent_at !== null]],
+            default => [],
+        };
     }
 
     /**
@@ -103,7 +135,7 @@ final class SaveContent
         $rules = $type->rules($block);
 
         foreach ($type->richFields() as $field) {
-            $input[$field] = $this->sanitizer->clean((string) ($input[$field] ?? ''));
+            $input[$field] = is_string($input[$field] ?? null) ? $this->sanitizer->clean($input[$field]) : '';
             if (trim(strip_tags((string) $input[$field])) === '') {
                 $input[$field] = '';
             }

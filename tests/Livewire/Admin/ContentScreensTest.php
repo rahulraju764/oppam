@@ -62,10 +62,10 @@ it('A08: an unknown type is a 404', function (): void {
     Livewire::test(ContentIndex::class, ['type' => 'nope'])->assertNotFound();
 });
 
-it('A08: the type and the row being edited can’t be tampered with', function (string $prop, string $value): void {
+it('A08: the type and the row being edited can’t be tampered with', function (string $prop, string|int $value): void {
     Livewire::test(ContentIndex::class, ['type' => 'branches'])->set($prop, $value);
 })->throws(CannotUpdateLockedPropertyException::class)
-    ->with([['type', 'stories'], ['editing', 'X'], ['acting', 'X'], ['previewUrl', 'https://evil.example']]);
+    ->with([['type', 'stories'], ['editing', 'X'], ['acting', 'X'], ['previewUrl', 'https://evil.example'], ['editingVersion', 99], ['actingVersion', 99]]);
 
 it('A08: a code from another type or nowhere is a 404, nothing changes', function (string $action): void {
     $story = SuccessStory::factory()->inReview()->create();
@@ -206,4 +206,68 @@ it('the member toggle: off by default, saves the choice, and explains who sees i
 it('the member toggle: a guest gets a 404', function (): void {
     auth('web')->logout();
     Livewire::test(HomeVisibilityToggle::class)->assertNotFound();
+});
+
+it('A08 review: a dialog left open when a story is withdrawn can’t bring it back', function (): void {
+    $story = SuccessStory::factory()->published()->create(['consent_note' => 'Signed forms 2024']);
+    $screen = Livewire::test(ContentIndex::class, ['type' => 'stories'])->call('edit', $story->code);
+
+    app(App\Actions\Admin\Content\WithdrawStory::class)->handle($this->admin, $story, 'Partner asked to remove it');
+
+    $screen->call('save')->assertDispatched('toast', type: 'danger');
+    expect($story->refresh()->hasBothConsents())->toBeFalse()->and($story->isWithdrawn())->toBeTrue();
+});
+
+it('A08 review: Publish buttons carry the version on screen, and a stale click is refused', function (): void {
+    $row = FaqItem::factory()->inReview()->create();
+
+    Livewire::test(ContentIndex::class, ['type' => 'faq'])
+        ->assertSeeHtml("publish('{$row->code}', {$row->lock_version})")
+        ->call('publish', $row->code, $row->lock_version - 1)->assertDispatched('toast', type: 'danger');
+
+    expect($row->refresh()->status)->toBe(ContentStatus::InReview);
+});
+
+it('A08 review: a withdrawn story offers no preview; block fields have readable labels', function (): void {
+    $story = SuccessStory::factory()->archived()->create(['withdrawn_at' => now()]);
+    Livewire::test(ContentIndex::class, ['type' => 'stories'])->assertDontSeeHtml("preview('{$story->code}')");
+
+    expect(App\Enums\HomeBlockKey::fieldLabel('step1_title'))->toBe('Step 1 title');
+});
+
+it('A08 review: a suspended admin is refused', function (): void {
+    $admin = adminWithRole('content_editor');
+    signInAdmin($this, $admin);
+    $admin->forceFill(['status' => App\Enums\AdminStatus::Suspended])->save();
+
+    $response = $this->get(adminUrl('/content/stories'));
+
+    expect($response->status())->toBeIn([302, 403]);
+    $response->assertDontSee('Success stories');
+});
+
+it('the member toggle: refused in a support session, and the box goes back', function (): void {
+    seedMasters();
+    $user = contentMember();
+    $this->actingAs($user, 'web');
+    chatImpersonate($user);
+
+    Livewire::test(HomeVisibilityToggle::class)->set('show', true)->assertDispatched('toast', type: 'danger')->assertSet('show', false);
+
+    expect(PrivacySetting::query()->find($user->profile->id)?->show_on_home ?? false)->toBeFalse();
+});
+
+it('A08 review: Schedule carries the version on screen too, and a withdrawn story offers no Edit', function (): void {
+    $row = FaqItem::factory()->inReview()->create();
+    $story = SuccessStory::factory()->archived()->create(['withdrawn_at' => now()]);
+    $seen = $row->lock_version;
+
+    Livewire::test(ContentIndex::class, ['type' => 'faq'])->assertSeeHtml("confirm('{$row->code}', 'content-schedule', {$seen})");
+    Livewire::test(ContentIndex::class, ['type' => 'stories'])->assertDontSeeHtml("edit('{$story->code}')");
+
+    $screen = Livewire::test(ContentIndex::class, ['type' => 'faq'])->call('confirm', $row->code, 'content-schedule', $seen);
+    $row->forceFill(['question' => 'Changed behind the list'])->save();
+
+    $screen->set('scheduleAt', now()->addDay()->format('Y-m-d\TH:i'))->call('schedule')->assertDispatched('toast', type: 'danger');
+    expect($row->refresh()->status)->toBe(ContentStatus::InReview);
 });

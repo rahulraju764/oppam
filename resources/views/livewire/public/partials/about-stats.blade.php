@@ -8,7 +8,11 @@
     @foreach ($counters as $counter)
         <div class="stat-tile">
             <div class="stat-icon">
-                <img src="{{ asset($counter->icon) }}" class="img-fluid" alt="" width="128" height="128" loading="lazy" decoding="async">
+                @if (str_starts_with($counter->icon, 'fa-'))
+                    <i class="fa {{ $counter->icon }}" aria-hidden="true"></i>
+                @else
+                    <img src="{{ asset($counter->icon) }}" class="img-fluid" alt="" width="128" height="128" loading="lazy" decoding="async">
+                @endif
             </div>
             <{{ $headingTag }}><span class="counter" data-target="{{ $counter->value }}">0</span></{{ $headingTag }}>
             <p class="text-muted-brand">{{ $counter->label }}</p>

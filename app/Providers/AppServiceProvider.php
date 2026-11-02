@@ -253,11 +253,11 @@ final class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // Horizon and Pulse live on the admin domain behind the admin middleware (config) and
-        // these permissions — in every environment, local included.
         // A08 opens for anyone who works on content; each change re-checks content.edit or content.publish.
         Gate::define('content.view', fn (mixed $user = null): bool => $user instanceof AdminUser && ($user->can('content.edit') || $user->can('content.publish')));
 
+        // Horizon and Pulse live on the admin domain behind the admin middleware (config) and
+        // these permissions — in every environment, local included.
         Gate::define('viewHorizon', fn (mixed $user = null): bool => $user instanceof AdminUser && $user->can('system.horizon'));
         Gate::define('viewPulse', fn (mixed $user = null): bool => $user instanceof AdminUser && $user->can('system.pulse'));
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Content;
 
+use GdImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,6 +21,9 @@ final class ContentImageStore
 
     private const MAX_SOURCE_SIDE = 8000;
 
+    /** Decoding costs memory per pixel, whatever the file size: an 8000 x 8000 image takes over 400 MB. */
+    private const MAX_SOURCE_PIXELS = 40_000_000;
+
     private const MAX_WIDTH = 1920;
 
     /**
@@ -32,7 +36,7 @@ final class ContentImageStore
         $size = @getimagesize($file->getRealPath());
         $allowed = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP];
 
-        if ($size === false || ! in_array($size[2], $allowed, true) || $size[0] > self::MAX_SOURCE_SIDE || $size[1] > self::MAX_SOURCE_SIDE) {
+        if ($size === false || ! in_array($size[2], $allowed, true) || $size[0] > self::MAX_SOURCE_SIDE || $size[1] > self::MAX_SOURCE_SIDE || $size[0] * $size[1] > self::MAX_SOURCE_PIXELS) {
             throw $this->unreadable();
         }
 
@@ -40,6 +44,11 @@ final class ContentImageStore
         if ($source === false) {
             throw $this->unreadable();
         }
+
+        // WebP can't hold a palette image: without this a PNG-8 is a fatal error, not a refusal.
+        imagepalettetotruecolor($source);
+        imagesavealpha($source, true);
+        $source = $this->upright($source, $file, $size[2]);
 
         $image = imagesx($source) > self::MAX_WIDTH ? imagescale($source, self::MAX_WIDTH) : $source;
         if ($image === false) {
@@ -54,6 +63,24 @@ final class ContentImageStore
         Storage::disk('public')->put($path, $bytes);
 
         return ['image_path' => $path, 'image_width' => imagesx($image), 'image_height' => imagesy($image)];
+    }
+
+    /** A phone's JPEG stores its rotation in EXIF, and re-encoding drops EXIF: apply it first. */
+    private function upright(GdImage $image, UploadedFile $file, int $type): GdImage
+    {
+        if ($type !== IMAGETYPE_JPEG || ! function_exists('exif_read_data')) {
+            return $image;
+        }
+
+        $exif = @exif_read_data($file->getRealPath());
+        $angle = match (is_array($exif) ? ($exif['Orientation'] ?? null) : null) {
+            3 => 180,
+            6 => -90,
+            8 => 90,
+            default => 0,
+        };
+
+        return $angle === 0 ? $image : (imagerotate($image, $angle, 0) ?: $image);
     }
 
     public function url(string $path): string

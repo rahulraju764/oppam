@@ -107,6 +107,7 @@ return new class extends Migration
         $table->timestamp('published_at')->nullable();
         $table->timestamp('archived_at')->nullable();
         $table->json('draft')->nullable();
+        $table->unsignedInteger('lock_version')->default(0);
         $table->foreignUlid('updated_by_admin_id')->nullable()->constrained('admin_users')->nullOnDelete();
         $table->foreignUlid('published_by_admin_id')->nullable()->constrained('admin_users')->nullOnDelete();
         $table->timestamps();

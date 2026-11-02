@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Actions\Admin\Content\TransitionContent;
+use App\Actions\Admin\Content\WithdrawStory;
+use App\Contracts\HtmlSanitizer;
 use App\Enums\ContentStatus;
 use App\Enums\HomeBlockKey;
 use App\Models\Banner;
@@ -12,6 +15,7 @@ use App\Models\SuccessStory;
 use App\Models\Testimonial;
 use Database\Seeders\ContentSeeder;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\DemoContentSeeder;
 use Database\Seeders\PlansSeeder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -123,17 +127,59 @@ it('M12: content pages don’t grow queries with their rows', function (string $
     DB::enableQueryLog();
     $this->get($uri)->assertOk();
     $few = count(DB::getQueryLog());
-    DB::flushQueryLog();
 
     $add(20);
+    DB::flushQueryLog();
     $this->get($uri)->assertOk();
-    expect(count(DB::getQueryLog()))->toBe($few);
+
+    expect(count(DB::getQueryLog()))->toBe($few)
+        ->and($few)->toBeGreaterThan(0);
 })->with([
-    'branches' => ['/branches', fn () => fn (int $n) => Branch::factory()->published()->count($n)->create()],
-    'stories' => ['/success-stories', fn () => fn (int $n) => SuccessStory::factory()->published()->count($n)->create()],
-    'faq' => ['/plans', fn () => fn (int $n) => FaqItem::factory()->published()->count($n)->create()],
-    'home' => ['/', fn () => fn (int $n) => Testimonial::factory()->published()->count($n)->create()],
+    'branches' => ['/branches', function (int $n): void {
+        Branch::factory()->published()->count($n)->create();
+        expect(Branch::query()->live()->count())->toBeGreaterThanOrEqual($n);
+    }],
+    'stories' => ['/success-stories', function (int $n): void {
+        SuccessStory::factory()->published()->count($n)->create();
+        expect(SuccessStory::query()->live()->count())->toBeGreaterThanOrEqual($n);
+    }],
+    'faq' => ['/plans', function (int $n): void {
+        FaqItem::factory()->published()->count($n)->create();
+        expect(FaqItem::query()->live()->count())->toBeGreaterThanOrEqual($n);
+    }],
+    'home' => ['/', function (int $n): void {
+        Testimonial::factory()->published()->count($n)->create();
+        expect(Testimonial::query()->live()->count())->toBeGreaterThanOrEqual($n);
+    }],
 ]);
+
+it('M12: the seeded counter label says what the figure counts', function (): void {
+    $this->seed(ContentSeeder::class);
+
+    expect(HomeBlock::query()->where('block_key', 'counters')->sole()->content['members_label'])->toBe('Members');
+});
+
+it('M12: a publish or withdrawal shows in the counters at once', function (): void {
+    $this->seed(ContentSeeder::class);
+    seedAdminRoles();
+    $admin = adminWithRole('content_editor');
+    Cache::flush();
+    $this->get('/')->assertDontSee('about-stats', false);
+
+    $story = SuccessStory::factory()->inReview()->create();
+    app(TransitionContent::class)->publish($admin, $story);
+    $this->get('/')->assertSee('data-target="1"', false);
+
+    app(WithdrawStory::class)->handle($admin, $story->refresh(), 'Partner asked to remove it');
+    $this->get('/')->assertDontSee('about-stats', false);
+});
+
+it('DemoContentSeeder refuses to run outside local and testing', function (): void {
+    app()->detectEnvironment(fn (): string => 'production');
+
+    expect(fn () => app(DemoContentSeeder::class)->run(app(HtmlSanitizer::class)))->toThrow(RuntimeException::class)
+        ->and(SuccessStory::query()->count())->toBe(0);
+});
 
 it('ContentSeeder: safe everywhere, re-runnable, never overwrites an edit, and has no people in it', function (): void {
     $this->seed(ContentSeeder::class);

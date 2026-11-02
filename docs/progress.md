@@ -6,7 +6,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 **Current phase:** 7 — Broker module: every session built and reviewer READY (2026-11-01); P7.2, P7.8a–c, P7.9 stay unticked until the owner's
 rule-5 review and browser try.
-**Next session:** P8.1b (legal versioning + re-acceptance, ad slots, contact inbox + Turnstile, community pages, sitemap), once P8.1a's review is done. P8.1a can't be committed until Phase 5 is: they share files. Phase 5: P5.2 and P5.3 reviewer READY, unticked until the owner's review and browser try.
+**Next session:** P8.1b (legal versioning + re-acceptance, ad slots, contact inbox + Turnstile, community pages, sitemap), once P8.1a's review is done. The owner committed and pushed Phase 5 (c33c990) and the first P8.1a (698b98b) on 2026-11-02, before P8.1a's review: **don't publish withdrawn-story content from 698b98b; its fixes are uncommitted.** Phase 5: P5.2 and P5.3 reviewer READY, unticked until the owner's review and browser try.
 Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner review of the P5.x, P6.2 and P7.x auth / payment changes (rule 5)
 
 ## Before starting (outside tasks — start early)
@@ -281,7 +281,8 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     workflow (`content.edit` / `content.publish`), waiting edits on live rows, signed preview, sanitised rich text, consent-gated stories + withdrawal, scheduled
     publishing, A08 screens (ContentIndex), home / about / branches / stories / FAQ from the DB, real counters, featured members by explicit opt-in. DemoContent removed.
     Found by Dusk, not by Livewire tests: the editor's text never reached the server (fixed). Found by a test: preview mode outlived its request in a kept-alive process (fixed).
-    Reviewer: see below.
+    The first version was committed and pushed by the owner in 698b98b BEFORE any verdict.
+    Reviewer: round 1 NOT READY, 1 Blocker + 7 Majors (a dialog left open re-recorded consent on a withdrawn story; unreviewed edits published under a publisher's click; palette PNG fatal; consent missing from audit; "Verified Members" counted all members; toolbar mouse-only; a query-growth test that added no rows; story text lost the template's styling). All fixed. Round 2 NOT READY, 0 Blockers + 2 Majors, both in round 1's fixes (Bold acted on an old selection; the toggle's rate limit could refuse an opt-out). Fixed. **Round 3 READY TO COMMIT, 0 Blockers / 0 Majors**; its cheap Minors fixed after. Open for the owner: testimonial withdrawal path and archived images left on disk; a typed reason in the audit log can name someone; same-gender featured members for a signed-in viewer; `inRandomOrder` cost on home (P9.4); 36 px dense admin row buttons; hardcoded copy on the /branches intro and /about story; a transparent PNG-8 over 1920 px wide gets a black background; image decode under the row lock. No MySQL 8 run, no real concurrency run.
   - [ ] P8.1b Legal versioning + forced re-acceptance, ad slots (`x-ads.rail` still shows demo creatives), contact inbox + Turnstile (owner: inbox first, replaces the direct ticket from P6.2), community landing pages, sitemap.xml. **P8.1's `Done when` is only met after this.**
 - [ ] P8.2 Settings & privacy, success-story submission (M14 + M16)
 - [ ] P8.3 Notifications, campaigns & journeys (A14)
@@ -298,6 +299,7 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
 - P8.1a → P9.5: run `php artisan db:seed --class=ContentSeeder` once in production (reference copy only; never overwrites an edit). Real stories, testimonials and branches are entered in A08 before launch: the demo ones are local only.
+- P8.1a → P9.5: check PHP `memory_limit` (a 40 MP upload peaked at 327 MB) and that `ext-exif` is loaded (phone photos go sideways without it). `lock_version` was added by editing the migration already pushed in 698b98b: any database other than local that ran 698b98b must roll that one migration back and re-run it.
 - P8.1a → P8.2: move the "Show me on the home page" toggle into the Privacy tab; M16 submissions arrive as story drafts, the member-side withdrawal request, marriages counter from closures.
 - P8.1a → P9.3: FAQ / Organization structured data.
 - P5.3 → P9.5: run `php artisan db:seed --class=MastersSeeder` once for `master_states.gst_code`; subscribe the Razorpay webhook to refund.created, refund.processed and refund.failed too.

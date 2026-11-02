@@ -80,7 +80,7 @@ it('A08: unsigned, tampered and expired preview links get 403', function (): voi
 it('A08: a signed link for a code of another type or no row is 404, not another row’s data', function (): void {
     $faq = FaqItem::factory()->create();
 
-    $this->get(URL::temporarySignedRoute('content.preview.branch', now()->addMinute(), ['code' => $faq->code]))->assertNotFound();
+    $this->get(URL::temporarySignedRoute('content.preview.branch', now()->addMinute(), ['code' => $faq->code, 'v' => $faq->lock_version]))->assertNotFound();
     $this->get(URL::temporarySignedRoute('content.preview.branch', now()->addMinute(), ['code' => 'NOPE']))->assertNotFound();
 });
 
@@ -103,4 +103,41 @@ it('A08: preview mode ends with its request, even in a process that stays alive'
     $this->get(app(IssueContentPreview::class)->handle($this->admin, $branch))->assertOk();
 
     expect(app(PreviewContext::class)->active())->toBeFalse();
+});
+
+it('A08 review: previewing a banner with no image yet gives a placeholder, not an empty src', function (): void {
+    $banner = Banner::factory()->create(['image_path' => null, 'heading' => 'No image yet']);
+
+    $this->get(app(IssueContentPreview::class)->handle($this->admin, $banner))->assertOk()->assertSee('No image yet')->assertSee('photo-processing.svg', false);
+});
+
+it('A08: the preview route is rate limited', function (): void {
+    $url = app(IssueContentPreview::class)->handle($this->admin, Branch::factory()->create());
+
+    foreach (range(1, 60) as $i) {
+        $this->get($url)->assertOk();
+    }
+
+    $this->get($url)->assertStatus(429);
+});
+
+it('A08 review: a preview link is for one version: it stops working when the row changes', function (): void {
+    $branch = Branch::factory()->published()->create(['city' => 'Live', 'draft' => ['city' => 'Seen text']]);
+    $url = app(IssueContentPreview::class)->handle($this->admin, $branch);
+    $this->get($url)->assertOk()->assertSee('Seen text')->assertSee('Version '.$branch->lock_version);
+
+    $branch->forceFill(['draft' => ['city' => 'Changed text']])->save();
+
+    $this->get($url)->assertNotFound();
+    $this->get(app(IssueContentPreview::class)->handle($this->admin, $branch->refresh()))->assertOk()->assertSee('Changed text');
+});
+
+it('A08 review: a link from before a withdrawal doesn’t come back when the story is restored', function (): void {
+    $story = SuccessStory::factory()->published()->create(['couple' => 'Withdrawn Couple']);
+    $url = app(IssueContentPreview::class)->handle($this->admin, $story);
+
+    app(WithdrawStory::class)->handle($this->admin, $story, 'Partner asked to remove it');
+    app(App\Actions\Admin\Content\TransitionContent::class)->backToDraft($this->admin, $story->refresh());
+
+    $this->get($url)->assertNotFound();
 });

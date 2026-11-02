@@ -19,7 +19,7 @@ final class BrokerImportBatchFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => 'B-'.fake()->unique()->numerify('####'),
+            'code' => 'B-9'.fake()->unique()->numerify('#####'),   // never meets the real B-0001, B-0002 … sequence (StoreImportBatch)
             'broker_id' => Broker::factory(),
             'uploaded_by_user_id' => User::factory(),
             'file_sha256' => hash('sha256', fake()->uuid()),
