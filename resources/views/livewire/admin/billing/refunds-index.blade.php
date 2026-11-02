@@ -7,6 +7,12 @@
         </div>
     </div>
 
+    @if ($stuck > 0)
+        <div class="mb-4">
+            <x-ui.alert type="warning">{{ trans_choice(':count refund needs checking in the Razorpay dashboard. Choose Processing to see it.|:count refunds need checking in the Razorpay dashboard. Choose Processing to see them.', $stuck) }}</x-ui.alert>
+        </div>
+    @endif
+
     <div class="ui-card mb-4">
         <div class="row g-3">
             <div class="col-12 col-md-4">
@@ -28,7 +34,14 @@
                 <td>₹{{ $refund->amount()->format() }}{{ $refund->ends_plan ? ' ('.__('ends the plan').')' : '' }}</td>
                 <td>{{ $refund->category->label() }}</td>
                 <td>{{ $refund->reason }}</td>
-                <td><x-ui.badge :variant="$refund->status->badge()">{{ $refund->status->label() }}</x-ui.badge></td>
+                <td>
+                    <x-ui.badge :variant="$refund->status->badge()">{{ $refund->status->label() }}</x-ui.badge>
+                    @if ($refund->isUnanswered())
+                        <div class="text-muted">{{ __('No answer from the gateway') }}</div>
+                    @elseif ($refund->status === \App\Enums\RefundStatus::Processing && $refund->gateway_refund_id !== null)
+                        <div class="text-muted">{{ __('Accepted: :id', ['id' => $refund->gateway_refund_id]) }}</div>
+                    @endif
+                </td>
                 <td>{{ $refund->requestedBy->name }}, {{ $refund->created_at->timezone($timezone)->format('d M, g:i a') }}</td>
                 <td class="text-nowrap">
                     @can('billing.refund')
@@ -39,6 +52,14 @@
                                 <x-ui.button size="sm" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-approve')" dusk="refund-approve-open">{{ __('Approve') }}</x-ui.button>
                                 <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-reject')">{{ __('Reject') }}</x-ui.button>
                             @endif
+                        @elseif ($refund->isUnanswered())
+                            <x-ui.button size="sm" variant="outline" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-sent')">{{ __('It was sent') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-unsent')">{{ __('It wasn’t sent') }}</x-ui.button>
+                        @elseif ($refund->isClosedAsNotSent())
+                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-sent')">{{ __('It was sent after all') }}</x-ui.button>
+                        @elseif ($refund->isAcceptedAndOverdue())
+                            <x-ui.button size="sm" variant="outline" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-sent')">{{ __('It was paid') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-failed')">{{ __('It failed at Razorpay') }}</x-ui.button>
                         @endif
                     @endcan
                 </td>
@@ -57,5 +78,15 @@
         </x-slot:footer>
     </x-ui.modal>
 
+    <x-admin.confirm-modal name="refund-close-sent" :title="__('Record :code as refunded', ['code' => $selected])" action="closeAsSent" reasonModel="note" :confirmLabel="__('Record as refunded')">
+        <p>{{ __('Only after you’ve seen this refund in the Razorpay dashboard. The credit note, plan change and commission follow.') }}</p>
+        <x-ui.input :label="__('Razorpay refund id')" name="gatewayRefundId" id="rfd-gateway-id" wire:model="gatewayRefundId" required />
+    </x-admin.confirm-modal>
+    <x-admin.confirm-modal name="refund-close-unsent" :title="__('Record :code as not sent', ['code' => $selected])" action="closeAsNotSent" reasonModel="note" :confirmLabel="__('Record as not sent')">
+        <p>{{ __('Only after you’ve checked the Razorpay dashboard: this frees the money to be refunded again.') }}</p>
+    </x-admin.confirm-modal>
+    <x-admin.confirm-modal name="refund-close-failed" :title="__('Record :code as failed', ['code' => $selected])" action="closeAsFailed" reasonModel="note" :confirmLabel="__('Record as failed')">
+        <p>{{ __('Only after Razorpay’s dashboard shows this refund failed: this frees the money to be refunded again.') }}</p>
+    </x-admin.confirm-modal>
     <x-admin.confirm-modal name="refund-reject" :title="__('Reject :code', ['code' => $selected])" action="reject" reasonModel="note" :confirmLabel="__('Reject')" />
 </div>

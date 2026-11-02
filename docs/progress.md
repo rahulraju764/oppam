@@ -6,8 +6,8 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 **Current phase:** 7 — Broker module: every session built and reviewer READY (2026-11-01); P7.2, P7.8a–c, P7.9 stay unticked until the owner's
 rule-5 review and browser try.
-**Next session:** P5.3 — Admin billing (A06), groundwork committed in e13f771 (breaks BillingTest.php's fake gateway), screens not built. Then P8.1.
-Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P5.2 / P6.1; owner review of the P6.2 + P7.1 auth changes (rule 5)
+**Next session:** P8.1 CMS & public pages, after the owner's rule 5 reviews. Phase 5: P5.2 and P5.3 reviewer READY, unticked until the owner's review and browser try.
+Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner review of the P5.x, P6.2 and P7.x auth / payment changes (rule 5)
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved
@@ -58,11 +58,22 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P5.2 / P6.1
 ## Phase 5 — Money
 - [x] P5.1 Plans, checkout & Razorpay (M10) — 2026-10-21 (reviewer READY in round 2 after 1 Major fixed: SimulateTestPayment's refusals untested; Dusk: composer unlocks live 1.4–3.0 s after a fake-gateway payment; NOT committed — payments change, owner review first (rule 5))
 - [ ] P5.2 Entitlement sweep, billing history & expiry — 2026-10-22: reviewer READY in round 2 after 1 Major fixed (ExpireSubscriptions
-  expired PAUSED plans + resume didn't re-sync flags); round-2 Minors fixed (EntitlementsChanged `until` on pause / resume, event asserted).
-  NOT ticked yet: Dusk unrun (tests/Browser/Mobile/BillingTest.php /billing step — dev servers were stopped for low memory) and NOT
-  committed (ActivateSubscription edit → owner review with P5.1, rule 5). Open Minors: matrix lacks "limit−1 allowed" for favourites / contacts; `isFeatured` shows on every
-  card list, not only search; /billing no loading state on pagination, query count unmeasured; migration down() not executed.
-- [ ] P5.3 Admin billing (A06)
+  expired PAUSED plans + resume didn't re-sync flags). 2026-11-01: fresh reviewer READY again. Its open Minors closed: "limit−1 allowed" rows for favourites and
+  contacts, /billing loading state + a query-growth test, migration down() run clean on the test database, Dusk /billing step passed. `isFeatured`
+  showing on every card list stays for the owner (decisions 2026-11-01). Unticked only for the owner's rule 5 review and browser try.
+- [ ] P5.3 Admin billing (A06) — 2026-11-01: built as one session (owner). The first version was committed and pushed by the owner in 337a900 BEFORE any review;
+  **don't enable real refunds from that commit.** Plan editor + entitlement matrix + consistency warning, coupons, subscription views + complimentary grants,
+  orders + timeline + raw webhooks, stuck orders (re-poll, mark failed, force-activate super admin), refunds with two admins (ManageRefund, SettleRefund,
+  ApplyRefundEffects, IssueCreditNote), GST CSV, reconciliation 02:00 IST, credit note PDF, A02 revenue + work queues, A03 order search + orders. Added at the
+  phase close (owner): members see refunds and download their credit note on /billing, live A02 revenue, numeric GST state codes, coupon Apply button.
+  Reviewer: round 1 NOT READY, 2 Blockers + 5 Majors (double refund after a timeout, credit notes above the invoice, force-activate of refunded money, stuck-order
+  dead end, commission voided by an extra payment's refund, GST heads, dashboard refunds unseen); round 2 NOT READY, 1 Blocker + 3 Majors, all in the first fixes (an
+  accepted refund could be closed as "not sent", reused / mistyped ids, plan not ended on a late success); round 3 NOT READY, 1 Major (reserved money counted as returned);
+  **round 4 READY TO COMMIT, 0 Blockers / 0 Majors**, its 3 Minors fixed after. Fixes are uncommitted: rule 5, the owner reviews first.
+  Runs: see the completion report; `composer test` runs whole again (test script no longer hits composer's 300 s limit).
+  Minors open: a timed-out refund closed as "not sent" too soon, then retried, can still go twice if the first was in flight (row raised; owner may want a wait before
+  "not sent" is offered); a revived refund's RefundStuck row isn't reopened (its own row stays open); closing as sent doesn't verify the id with Razorpay (P9.5); byPlan
+  chart is gross of refunds; no real concurrency run, no MySQL 8 run of `DROP CONSTRAINT` (CI), fake gateway only (Razorpay account is an outside task, P9.3 / P9.5).
 
 ## Phase 6 — Trust & support
 - [ ] P6.1 ID verification (M09 + A05) — 2026-10-22: built with Claude's defaults (decisions 2026-10-22, owner to confirm).
@@ -280,13 +291,12 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P5.2 / P6.1
 
 ## Notes / deviations
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
+- P5.3 → P9.5: run `php artisan db:seed --class=MastersSeeder` once for `master_states.gst_code`; subscribe the Razorpay webhook to refund.created, refund.processed and refund.failed too.
 - P5.1 → before launch (P9.5): the owner supplies the seller's legal name, GSTIN, address and SAC (A15 `billing.seller_*` —
   placeholders today; an invoice without a GSTIN says it is not a valid tax invoice); Razorpay live + test keys, webhook URL
   `/webhooks/razorpay` (payment.captured, payment.failed, order.paid) and **automatic capture** on; register the MSG91
   `payment_success` template (variables: plan name, end date); `PAYMENT_DRIVER=razorpay` in production.
-- P5.1 review Minors, open: (1) the coupon field is checked live (400 ms debounce) and every pause counts against
-  `billing.coupon_attempts_per_hour` — check on blur / an Apply button, or count only plausible codes; (2) the invoice prints
-  the letter state code ("KL") — GST invoices use the numeric state code (Kerala 32): add it to master_states or a setting.
+- P5.1 review Minors, open: both closed 2026-11-01 (coupon Apply button; `master_states.gst_code` on invoices and credit notes).
 - P5.1 → P5.2: billing history (orders, invoice downloads — the route exists), usage meters, expiry reminders + the job that
   ends subscriptions and clears `is_premium` (today `is_premium` is set on activation and never cleared), `highlighted_until`.
 - P5.1 → P5.3 (A06): stuck orders (`failure_reason` amount_mismatch, logs `billing.amount_mismatch` / `billing.extra_payment` /

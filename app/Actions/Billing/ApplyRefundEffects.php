@@ -20,10 +20,10 @@ use Illuminate\Support\Facades\DB;
 use LogicException;
 
 /**
- * A06 "automatic side-effects" of a refund the gateway accepted, once only (`effects_applied_at`),
- * inside SettleRefund's transaction: the credit note when it refunds the payment that activated the
- * order, the plan ended when it returns the rest of that payment, and the member told. The broker
- * commission is voided when it reaches PROCESSED (RefundProcessed).
+ * A06 "automatic side-effects" of a refund the gateway confirmed as PROCESSED, once only
+ * (`effects_applied_at`), inside SettleRefund's transaction: the credit note when it refunds the
+ * payment that activated the order, the plan ended when it returns the rest of that payment, and the
+ * member told. The broker commission is voided by RefundProcessed's listener.
  */
 final class ApplyRefundEffects
 {

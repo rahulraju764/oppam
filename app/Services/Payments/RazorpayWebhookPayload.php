@@ -72,7 +72,7 @@ final class RazorpayWebhookPayload
     }
 
     /** Payer details Razorpay includes in a payment entity — never stored (no PII outside the member record). */
-    private const PAYER_FIELDS = ['email', 'contact', 'vpa', 'card', 'bank_account', 'upi', 'customer_id', 'token_id'];
+    private const PAYER_FIELDS = ['email', 'contact', 'vpa', 'card', 'card_id', 'bank', 'wallet', 'bank_account', 'upi', 'acquirer_data', 'customer_id', 'token_id'];
 
     /**
      * The body as it is kept in payment_webhook_events (A06 shows it): unchanged except that the

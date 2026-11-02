@@ -93,6 +93,16 @@ it('A06: one featured plan at a time; bad prices and names are refused with noth
         ->and($this->gold->refresh()->name)->toBe($name);
 });
 
+it('A06: a cleared price leaves the catalogue; a duration we don’t sell is refused', function (): void {
+    $prices = goldCard($this->gold)->prices;
+    unset($prices[12]);
+
+    app(SavePlan::class)->handle($this->finance, $this->gold, goldCard($this->gold, ['prices' => $prices, 'offSale' => [12]]));
+    expect($this->gold->prices()->where('duration_months', 12)->sole()->is_active)->toBeFalse();
+
+    expect(fn () => app(SavePlan::class)->handle($this->finance, $this->gold, goldCard($this->gold, ['prices' => [2 => ['rupees' => 999, 'active' => true]]])))->toThrow(ValidationException::class);
+});
+
 it('A06 permission: billing.plans.edit for every plan change; support (view only) is refused', function (): void {
     $support = adminWithRole('support');
 

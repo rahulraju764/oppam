@@ -69,6 +69,26 @@ final class BillingRefused extends RuntimeException
         return new self(__('This refund has already been decided.'));
     }
 
+    public static function refundNotStuck(): self
+    {
+        return new self(__('This refund can’t be closed that way. The gateway may still report on it.'));
+    }
+
+    public static function refundIdDiffers(): self
+    {
+        return new self(__('That isn’t the refund id the gateway gave for this refund.'));
+    }
+
+    public static function refundIdInUse(): self
+    {
+        return new self(__('Another refund already has that id.'));
+    }
+
+    public static function paymentRefunded(): self
+    {
+        return new self(__('Part of this payment has been refunded or is being refunded, so it can’t activate the order.'));
+    }
+
     public static function ownRefund(): self
     {
         return new self(__('A refund must be decided by a different admin from the one who requested it.'));

@@ -94,6 +94,7 @@ final class OrderShow extends Component
             'refundable' => $order->payments->mapWithKeys(fn (Payment $p): array => [$p->id => $p->status === PaymentStatus::Captured ? $balance->left($p) : 0])->all(),
             'webhooks' => $order->gateway_order_id === null ? collect() : PaymentWebhookEvent::query()->where('gateway_order_id', $order->gateway_order_id)->latest()->limit(50)->get(),
             'categories' => RefundCategory::options(),
+            'canForce' => $this->admin()->can('billing.force_activate') && $this->admin()->hasRole('super_admin'),
             'timezone' => (string) config('oppam.display_timezone'),
         ]);
     }

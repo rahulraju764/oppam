@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin\Billing;
 
 use App\Actions\Admin\Billing\ManageRefund;
+use App\Actions\Billing\SettleRefund;
 use App\Enums\RefundStatus;
 use App\Exceptions\Admin\BillingRefused;
 use App\Models\AdminUser;
@@ -29,6 +30,8 @@ final class RefundsIndex extends Component
     public ?string $selected = null;
 
     public string $note = '';
+
+    public string $gatewayRefundId = '';
 
     public function mount(): void
     {
@@ -59,6 +62,21 @@ final class RefundsIndex extends Component
         $this->act(fn (Refund $r) => $refunds->reject($this->admin(), $r, $this->note), 'refund-reject', __('Refund rejected.'));
     }
 
+    public function closeAsSent(ManageRefund $refunds): void
+    {
+        $this->act(fn (Refund $r) => $refunds->closeAsSent($this->admin(), $r, $this->gatewayRefundId, $this->note), 'refund-close-sent', __('Recorded as refunded.'));
+    }
+
+    public function closeAsNotSent(ManageRefund $refunds): void
+    {
+        $this->act(fn (Refund $r) => $refunds->closeAsNotSent($this->admin(), $r, $this->note), 'refund-close-unsent', __('Recorded as not sent. It can be requested again.'));
+    }
+
+    public function closeAsFailed(ManageRefund $refunds): void
+    {
+        $this->act(fn (Refund $r) => $refunds->closeAsFailedAtGateway($this->admin(), $r, $this->note), 'refund-close-failed', __('Recorded as failed. It can be requested again.'));
+    }
+
     public function withdraw(ManageRefund $refunds, string $code): void
     {
         $this->selected = $this->find($code)->code;
@@ -74,6 +92,7 @@ final class RefundsIndex extends Component
                 ->latest()->orderByDesc('id')->paginate(25),
             'statuses' => collect(RefundStatus::cases())->mapWithKeys(fn (RefundStatus $s): array => [$s->value => $s->label()])->all(),
             'adminId' => $this->admin()->id,
+            'stuck' => Refund::query()->needsChecking()->count(),
             'timezone' => (string) config('oppam.display_timezone'),
         ]);
     }
@@ -96,9 +115,9 @@ final class RefundsIndex extends Component
         if ($modal !== null) {
             $this->dispatch('close-modal', name: $modal);
         }
-        $failed = $refund->status === RefundStatus::Failed;
-        $this->dispatch('toast', type: $failed ? 'danger' : 'success', title: $failed ? __('The gateway refused or couldn’t be reached. Nothing was sent; see Reconciliation.') : $done);
-        $this->reset('selected', 'note');
+        $unanswered = $refund->status === RefundStatus::Processing && $refund->failure_reason === SettleRefund::GATEWAY_UNANSWERED;
+        $this->dispatch('toast', type: $unanswered ? 'danger' : 'success', title: $unanswered ? __('The gateway didn’t answer, so this may or may not have gone through. Check the Razorpay dashboard before doing anything else, then close it here.') : $done);
+        $this->reset('selected', 'note', 'gatewayRefundId');
     }
 
     private function find(string $code): Refund

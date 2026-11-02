@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Actions\Billing\SettleRefund;
 use App\Enums\RefundCategory;
 use App\Enums\RefundStatus;
 use App\ValueObjects\Money;
 use Database\Factories\RefundFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +19,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * A refund of one captured payment (A06, P5.3), full or partial. Asked for by one admin and decided
- * by another (decisions 2026-10-23); moved through its states only by the Admin\Billing refund
+ * by another (decisions 2026-11-01); moved through its states only by the Admin\Billing refund
  * Actions and the gateway's webhook — nothing is mass-assignable. `ends_plan`: this refund returns
  * the rest of the payment that activated the order, so the plan ends with it.
  *
@@ -53,6 +55,45 @@ final class Refund extends Model
 
     /** @var list<string> */
     protected $fillable = [];
+
+    /** How long a refund may stay PROCESSING before it is treated as stuck (also the reconciliation row). */
+    public const STUCK_HOURS = 48;
+
+    /** The gateway never answered, so it may or may not have gone through: only a person who checked can say. */
+    public function isUnanswered(): bool
+    {
+        return $this->status === RefundStatus::Processing && $this->gateway_refund_id === null
+            && ($this->failure_reason === SettleRefund::GATEWAY_UNANSWERED || $this->isOverdue());
+    }
+
+    /** The gateway accepted it, then no confirmation came within STUCK_HOURS (a lost webhook). */
+    public function isAcceptedAndOverdue(): bool
+    {
+        return $this->status === RefundStatus::Processing && $this->gateway_refund_id !== null && $this->isOverdue();
+    }
+
+    /** Closed by hand as not sent; the dashboard may show otherwise later. */
+    public function isClosedAsNotSent(): bool
+    {
+        return $this->status === RefundStatus::Failed && $this->failure_reason === SettleRefund::CONFIRMED_NOT_SENT;
+    }
+
+    /**
+     * PROCESSING refunds someone should check in the gateway's dashboard (isUnanswered, isAcceptedAndOverdue).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeNeedsChecking(Builder $query): void
+    {
+        $query->where('status', RefundStatus::Processing)->where(fn (Builder $q) => $q
+            ->where('decided_at', '<=', now()->subHours(self::STUCK_HOURS))
+            ->orWhere(fn (Builder $n) => $n->whereNull('gateway_refund_id')->where('failure_reason', SettleRefund::GATEWAY_UNANSWERED)));
+    }
+
+    private function isOverdue(): bool
+    {
+        return $this->decided_at !== null && $this->decided_at->lte(now()->subHours(self::STUCK_HOURS));
+    }
 
     public function getRouteKeyName(): string
     {

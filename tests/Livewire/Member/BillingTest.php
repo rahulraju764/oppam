@@ -52,15 +52,18 @@ it('M10: checkout shows the server quote — subtotal, GST 18 %, total — and s
         ->assertSet('duration', 1);
 });
 
-it('M10: a coupon is checked live — accepted codes show the discount, others an error', function (): void {
+it('M10: Apply checks the coupon — accepted codes show the discount, others an error; typing alone uses no attempt', function (): void {
     Coupon::factory()->create(['code' => 'SAVE10']);
 
     Livewire::actingAs(groom(), 'web')->test(Checkout::class, ['plan' => 'gold'])
         ->set('coupon', 'nope')
+        ->assertHasNoErrors()
+        ->call('applyCoupon')
         ->assertHasErrors(['coupon'])
         ->assertSee('This code isn’t valid.')
         ->assertSet('appliedCoupon', null)
         ->set('coupon', 'save10')
+        ->call('applyCoupon')
         ->assertHasNoErrors()
         ->assertSet('appliedCoupon', 'SAVE10')
         ->assertSee('Code SAVE10 applied')

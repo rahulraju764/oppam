@@ -9,8 +9,8 @@ use Illuminate\Foundation\Events\Dispatchable;
 
 /**
  * A refund reached PROCESSED (the money went back). Internal only — not broadcast. Listened to by
- * the broker ledger (VoidReferralOnRefund, R-M13-5). Dispatched by A06's refund-processed path
- * (P5.3) once that path exists.
+ * the broker ledger (VoidReferralOnRefund, R-M13-5) and the A02 revenue signal. Dispatched by
+ * SettleRefund (P5.3).
  */
 final class RefundProcessed implements ShouldDispatchAfterCommit
 {

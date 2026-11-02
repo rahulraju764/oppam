@@ -46,7 +46,9 @@ final class RevenueSummary
     private function netSince(CarbonImmutable $from): int
     {
         $paid = (int) Order::query()->where('status', OrderStatus::Paid)->where('paid_at', '>=', $from->utc())->sum('total_paise');
-        $refunded = (int) Refund::query()->where('status', RefundStatus::Processed)->where('processed_at', '>=', $from->utc())->sum('amount_paise');
+        $refunded = (int) Refund::query()->where('status', RefundStatus::Processed)->where('processed_at', '>=', $from->utc())
+            ->whereHas('order', fn ($q) => $q->whereColumn('orders.paid_payment_id', 'refunds.payment_id'))   // an extra payment was never counted
+            ->sum('amount_paise');
 
         return $paid - $refunded;
     }

@@ -97,7 +97,8 @@
                             <x-ui.empty-state icon="fa-file-text-o" :title="__('No payments yet')"
                                               :message="__('Your orders and GST invoices will appear here after you buy a membership.')" />
                         @else
-                            <div class="table-responsive billing-orders">
+                            <p class="visually-hidden" wire:loading wire:target="gotoPage, nextPage, previousPage" role="status">{{ __('Loading orders…') }}</p>
+                            <div class="table-responsive billing-orders" wire:loading.class="opacity-50" wire:target="gotoPage, nextPage, previousPage">
                                 <table class="table">
                                     <caption class="visually-hidden">{{ __('Your orders') }}</caption>
                                     <thead>
@@ -119,6 +120,12 @@
                                                 <td class="text-end">&#8377;{{ $order->total()->format() }}</td>
                                                 <td>
                                                     <x-ui.badge :variant="$order->status === \App\Enums\OrderStatus::Paid ? 'success' : 'muted'">{{ $order->status->label() }}</x-ui.badge>
+                                                    @foreach ($order->refunds as $refund)
+                                                        <div class="billing-refund" wire:key="refund-{{ $refund->code }}">
+                                                            <x-ui.badge :variant="$refund->status->badge()">{{ $refund->status === \App\Enums\RefundStatus::Processed ? __('Refunded') : __('Refund on its way') }}</x-ui.badge>
+                                                            &#8377;{{ $refund->amount()->format() }}
+                                                        </div>
+                                                    @endforeach
                                                 </td>
                                                 <td>
                                                     @if ($order->invoice)
@@ -129,6 +136,16 @@
                                                     @else
                                                         <span class="text-muted-brand">—</span>
                                                     @endif
+                                                    @foreach ($order->refunds as $refund)
+                                                        @if ($refund->creditNote)
+                                                            <div class="billing-refund">
+                                                                <a href="{{ route('member.billing.credit-note', ['number' => $refund->creditNote->number]) }}">
+                                                                    <i class="fa fa-download" aria-hidden="true"></i>
+                                                                    {{ __('Credit note :number', ['number' => $refund->creditNote->number]) }}<span class="visually-hidden"> {{ __('(PDF)') }}</span>
+                                                                </a>
+                                                            </div>
+                                                        @endif
+                                                    @endforeach
                                                 </td>
                                             </tr>
                                         @endforeach

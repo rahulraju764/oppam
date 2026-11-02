@@ -62,7 +62,8 @@ final class EarnReferralCommission
                 return null;
             }
 
-            if (Refund::query()->where('order_id', $order->id)->where('status', RefundStatus::Processed)->exists()) {
+            // Only the payment that paid the order counts: an extra payment going back leaves the commission alone.
+            if (Refund::query()->where('order_id', $order->id)->where('payment_id', $order->paid_payment_id)->where('status', RefundStatus::Processed)->exists()) {
                 $referral->forceFill([
                     'order_id' => $order->id,
                     'status' => ReferralStatus::Void,

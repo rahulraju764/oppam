@@ -212,8 +212,9 @@ it('listens for live queue counts only when the admin may join admin.queues', fu
     dashAs('moderator');
     expect(Livewire::test(Dashboard::class)->instance()->getListeners())->toHaveKey('echo-private:admin.queues,.queue.count');
 
+    // Finance can't join admin.queues; it follows revenue instead (P5.3).
     dashAs('finance');
-    expect(Livewire::test(Dashboard::class)->instance()->getListeners())->toBe([]);
+    expect(Livewire::test(Dashboard::class)->instance()->getListeners())->toBe(['echo-private:admin.dashboard,.revenue.changed' => '$refresh']);
 });
 
 // ---- Sidebar badges (PRD §11.0) -----------------------------------------------------------------------

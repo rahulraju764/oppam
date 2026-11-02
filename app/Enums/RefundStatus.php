@@ -6,8 +6,8 @@ namespace App\Enums;
 
 /**
  * An A06 refund (P5.3). Every refund needs a second admin (decisions 2026-10-23): REQUESTED by one
- * admin with `billing.refund`, then approved by ANOTHER (→ PROCESSING: sent to the gateway, side
- * effects applied in one transaction once the gateway accepts it) or rejected / withdrawn. The
+ * admin with `billing.refund`, then approved by ANOTHER (→ PROCESSING: sent to the gateway; side
+ * effects applied in one transaction once it reports PROCESSED) or rejected / withdrawn. The
  * gateway confirms (→ PROCESSED) or reports a failure (→ FAILED, an "investigate" row for finance).
  */
 enum RefundStatus: string

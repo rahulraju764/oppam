@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Actions\Admin\Billing\ManageRefund;
+use App\Actions\Admin\Billing\ResolveStuckOrder;
 use App\Actions\Billing\HandlePaymentWebhook;
+use App\Actions\Billing\SettleRefund;
 use App\Enums\InvestigationType;
 use App\Enums\OrderStatus;
 use App\Enums\PlanCode;
@@ -73,7 +75,7 @@ it('★ B.21 / A06: a real refund, end to end — credit note, plan ended, membe
 
     $refund = app(ManageRefund::class)->approve($this->approver, askRefund());
 
-    // Gateway accepted and processed.
+    // The gateway processed it.
     expect($refund->status)->toBe(RefundStatus::Processed)
         ->and($refund->effects_applied_at)->not->toBeNull()
         ->and($refund->decided_by_id)->toBe($this->approver->id)
@@ -182,56 +184,6 @@ it('a refund of an extra payment never touches the plan and has no invoice to cr
         ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active);
 });
 
-it('gateway accepts, then the webhook confirms: effects once on acceptance; commission only on PROCESSED; a redelivery changes nothing', function (): void {
-    $referral = earnedCommission(Broker::factory()->create(), 60_000);
-    $referral->forceFill(['order_id' => $this->order->id])->save();
-    fakeGateway()->nextRefund('pending');
-
-    $refund = app(ManageRefund::class)->approve($this->approver, askRefund());
-
-    expect($refund->status)->toBe(RefundStatus::Processing)
-        ->and($refund->effects_applied_at)->not->toBeNull()
-        ->and(CreditNote::query()->count())->toBe(1)
-        ->and($referral->refresh()->status)->toBe(ReferralStatus::Earned);
-
-    $delivery = fakeGateway()->refundWebhook((string) $refund->gateway_refund_id);
-    postWebhook($delivery)->assertOk();
-    postWebhook(['event_id' => 'evt_second'] + $delivery)->assertOk();
-
-    expect($refund->refresh()->status)->toBe(RefundStatus::Processed)
-        ->and(CreditNote::query()->count())->toBe(1)
-        ->and(AuditLog::query()->where('action', 'billing.refund_effects_applied')->count())->toBe(1)
-        ->and($referral->refresh()->status)->toBe(ReferralStatus::Void);
-    Notification::assertSentToTimes($this->member, RefundIssued::class, 1);
-});
-
-it('the gateway can’t be reached: FAILED with an investigate row, nothing applied, and it can be requested again', function (): void {
-    fakeGateway()->nextRefund('unavailable');
-
-    $refund = app(ManageRefund::class)->approve($this->approver, askRefund());
-
-    expect($refund->status)->toBe(RefundStatus::Failed)
-        ->and($refund->effects_applied_at)->toBeNull()
-        ->and(CreditNote::query()->count())->toBe(0)
-        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active)
-        ->and(BillingInvestigation::query()->sole()->type)->toBe(InvestigationType::RefundFailed);
-
-    expect(askRefund()->status)->toBe(RefundStatus::Requested);
-});
-
-it('refund.failed after acceptance: FAILED, investigate row, the commission stays', function (): void {
-    $referral = earnedCommission(Broker::factory()->create(), 60_000);
-    $referral->forceFill(['order_id' => $this->order->id])->save();
-    fakeGateway()->nextRefund('pending');
-    $refund = app(ManageRefund::class)->approve($this->approver, askRefund());
-
-    postWebhook(fakeGateway()->refundWebhook((string) $refund->gateway_refund_id, 'refund.failed'))->assertOk();
-
-    expect($refund->refresh()->status)->toBe(RefundStatus::Failed)
-        ->and(BillingInvestigation::query()->sole()->details['effects_applied'])->toBe('yes')
-        ->and($referral->refresh()->status)->toBe(ReferralStatus::Earned);
-});
-
 it('a forged refund webhook is refused before anything is read; an unknown refund changes nothing', function (): void {
     $refund = askRefund();
     postWebhook(['body' => '{"event":"refund.processed"}', 'signature' => 'bad', 'event_id' => 'evt_forged'])->assertStatus(400);
@@ -270,4 +222,315 @@ it('every step is audited with its admin', function (): void {
     expect(AuditLog::query()->where('action', 'billing.refund_requested')->sole()->actor_id)->toBe($this->requester->id)
         ->and(AuditLog::query()->where('action', 'billing.refund_approved')->sole()->actor_id)->toBe($this->approver->id)
         ->and($refund->order->status)->toBe(OrderStatus::Paid);
+});
+
+it('gateway accepts, then the webhook confirms: nothing happens until PROCESSED, then every effect once; a redelivery changes nothing', function (): void {
+    $referral = earnedCommission(Broker::factory()->create(), 60_000);
+    $referral->forceFill(['order_id' => $this->order->id])->save();
+    fakeGateway()->nextRefund('pending');
+
+    $refund = app(ManageRefund::class)->approve($this->approver, askRefund());
+
+    expect($refund->status)->toBe(RefundStatus::Processing)
+        ->and($refund->effects_applied_at)->toBeNull()
+        ->and(CreditNote::query()->count())->toBe(0)
+        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active)
+        ->and($referral->refresh()->status)->toBe(ReferralStatus::Earned);
+    Notification::assertNotSentTo($this->member, RefundIssued::class);
+
+    $delivery = fakeGateway()->refundWebhook((string) $refund->gateway_refund_id);
+    postWebhook($delivery)->assertOk();
+    postWebhook(['event_id' => 'evt_second'] + $delivery)->assertOk();
+
+    expect($refund->refresh()->status)->toBe(RefundStatus::Processed)
+        ->and(CreditNote::query()->count())->toBe(1)
+        ->and(AuditLog::query()->where('action', 'billing.refund_effects_applied')->count())->toBe(1)
+        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Cancelled)
+        ->and($referral->refresh()->status)->toBe(ReferralStatus::Void);
+    Notification::assertSentToTimes($this->member, RefundIssued::class, 1);
+});
+
+it('★ no double refund: a gateway with no answer keeps the money reserved and the order blocked; nothing is applied; it can’t be requested again', function (): void {
+    fakeGateway()->nextRefund('unavailable');
+
+    $refund = app(ManageRefund::class)->approve($this->approver, askRefund());
+
+    expect($refund->status)->toBe(RefundStatus::Processing)
+        ->and($refund->failure_reason)->toBe(SettleRefund::GATEWAY_UNANSWERED)
+        ->and($refund->effects_applied_at)->toBeNull()
+        ->and(CreditNote::query()->count())->toBe(0)
+        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active)
+        ->and(BillingInvestigation::query()->sole()->type)->toBe(InvestigationType::RefundStuck)
+        ->and(fn () => askRefund())->toThrow(BillingRefused::class, 'still open');
+});
+
+it('★ no double refund: after no answer, the late webhook settles the same refund, once', function (): void {
+    fakeGateway()->nextRefund('unavailable');
+    $refund = app(ManageRefund::class)->approve($this->approver, askRefund());
+    $late = fakeGateway()->refund($this->payment->gateway_payment_id, $refund->amount_paise, $refund->code);   // it did go through
+
+    postWebhook(fakeGateway()->refundWebhook($late->id, 'refund.created'))->assertOk();
+    expect($refund->refresh()->status)->toBe(RefundStatus::Processing)->and($refund->failure_reason)->toBeNull();
+
+    postWebhook(fakeGateway()->refundWebhook($late->id))->assertOk();
+    expect($refund->refresh()->status)->toBe(RefundStatus::Processed)->and(CreditNote::query()->count())->toBe(1);
+});
+
+it('closing an unanswered refund by hand: not sent frees the money; sent settles like a webhook; a reason and a real id are required; billing.refund only', function (): void {
+    $refunds = app(ManageRefund::class);
+    fakeGateway()->nextRefund('unavailable');
+    $first = $refunds->approve($this->approver, askRefund());
+
+    expect(fn () => $refunds->closeAsNotSent(adminWithRole('support'), $first, 'Checked Razorpay'))->toThrow(AuthorizationException::class)
+        ->and(fn () => $refunds->closeAsSent(adminWithRole('support'), $first, 'rfnd_abc123', 'Checked Razorpay'))->toThrow(AuthorizationException::class)
+        ->and(fn () => $refunds->closeAsNotSent($this->approver, $first, ''))->toThrow(ValidationException::class)
+        ->and(fn () => $refunds->closeAsSent($this->approver, $first, 'nonsense', 'Checked Razorpay'))->toThrow(ValidationException::class);
+
+    expect($refunds->closeAsNotSent($this->approver, $first, 'Not in Razorpay')->status)->toBe(RefundStatus::Failed)
+        ->and(AuditLog::query()->where('action', 'billing.refund_closed_by_hand')->sole()->reason)->toBe('Not in Razorpay')
+        ->and(BillingInvestigation::query()->where('refund_id', $first->id)->where('type', InvestigationType::RefundStuck)->sole()->status)->toBe(App\Enums\InvestigationStatus::Resolved)
+        ->and(fn () => $refunds->closeAsNotSent($this->approver, $first->refresh(), 'A second time'))->toThrow(BillingRefused::class);
+
+    fakeGateway()->nextRefund('unavailable');
+    $second = $refunds->approve($this->approver, askRefund());
+    $closed = $refunds->closeAsSent($this->approver, $second, 'rfnd_abc123', 'Seen in Razorpay');
+
+    expect($closed->status)->toBe(RefundStatus::Processed)->and($closed->gateway_refund_id)->toBe('rfnd_abc123')
+        ->and(CreditNote::query()->where('refund_id', $closed->id)->count())->toBe(1);
+});
+
+it('★ no double refund: a refund the gateway accepted can’t be closed as not sent, so its money can’t be freed and refunded again', function (): void {
+    $refunds = app(ManageRefund::class);
+    fakeGateway()->nextRefund('pending');
+    $refund = $refunds->approve($this->approver, askRefund());
+
+    expect(fn () => $refunds->closeAsNotSent($this->approver, $refund, 'Clicked the wrong thing'))->toThrow(BillingRefused::class)
+        ->and(fn () => $refunds->closeAsFailedAtGateway($this->approver, $refund, 'Too early to say'))->toThrow(BillingRefused::class)
+        ->and(fn () => $refunds->closeAsSent($this->approver, $refund, (string) $refund->gateway_refund_id, 'Too early to say'))->toThrow(BillingRefused::class)
+        ->and($refund->refresh()->status)->toBe(RefundStatus::Processing)
+        ->and(fn () => askRefund())->toThrow(BillingRefused::class, 'still open');
+
+    postWebhook(fakeGateway()->refundWebhook((string) $refund->gateway_refund_id))->assertOk();
+    expect($refund->refresh()->status)->toBe(RefundStatus::Processed)->and(CreditNote::query()->count())->toBe(1);
+});
+
+it('★ no double refund: a request still in flight can’t be closed until it is overdue', function (): void {
+    $refund = askRefund();
+    $refund->forceFill(['status' => RefundStatus::Processing, 'decided_by_id' => $this->approver->id, 'decided_at' => now()])->save();   // crashed between commit and the gateway's answer
+    $refunds = app(ManageRefund::class);
+
+    expect(fn () => $refunds->closeAsNotSent($this->approver, $refund, 'Looks stuck'))->toThrow(BillingRefused::class);
+
+    $this->travel(Refund::STUCK_HOURS + 1)->hours();
+    expect($refunds->closeAsNotSent($this->approver, $refund->refresh(), 'Not in Razorpay')->status)->toBe(RefundStatus::Failed);
+});
+
+it('an accepted refund whose webhook was lost: closed after the wait, quoting its own id; or as failed at the gateway, and a late "created" doesn’t bring it back', function (): void {
+    $refunds = app(ManageRefund::class);
+    fakeGateway()->nextRefund('pending');
+    $paid = $refunds->approve($this->approver, askRefund(10_000));
+    $this->travel(Refund::STUCK_HOURS + 1)->hours();
+
+    expect(fn () => $refunds->closeAsSent($this->approver, $paid, 'rfnd_typo12345', 'Seen in Razorpay'))->toThrow(BillingRefused::class, 'isn’t the refund id')
+        ->and($paid->refresh()->gateway_refund_id)->not->toBe('rfnd_typo12345')
+        ->and($refunds->closeAsSent($this->approver, $paid, (string) $paid->gateway_refund_id, 'Seen in Razorpay')->status)->toBe(RefundStatus::Processed);
+
+    fakeGateway()->nextRefund('pending');
+    $failed = $refunds->approve($this->approver, askRefund(10_000));
+    $this->travel(Refund::STUCK_HOURS + 1)->hours();
+    expect($refunds->closeAsFailedAtGateway($this->approver, $failed, 'Failed in Razorpay')->status)->toBe(RefundStatus::Failed);
+
+    postWebhook(fakeGateway()->refundWebhook((string) $failed->gateway_refund_id, 'refund.created'))->assertOk();
+    expect($failed->refresh()->status)->toBe(RefundStatus::Failed);
+});
+
+it('closing as sent: an id another refund holds is refused, and nothing is recorded as closed', function (): void {
+    $refunds = app(ManageRefund::class);
+    $done = $refunds->approve($this->approver, askRefund(10_000));
+    fakeGateway()->nextRefund('unavailable');
+    $stuck = $refunds->approve($this->approver, askRefund(10_000));
+
+    expect(fn () => $refunds->closeAsSent($this->approver, $stuck, (string) $done->gateway_refund_id, 'Copied the wrong id'))->toThrow(BillingRefused::class, 'Another refund')
+        ->and($stuck->refresh()->status)->toBe(RefundStatus::Processing)
+        ->and(AuditLog::query()->where('action', 'billing.refund_closed_by_hand')->count())->toBe(0)
+        ->and(BillingInvestigation::query()->where('refund_id', $done->id)->count())->toBe(0);
+});
+
+it('a refund coming back after FAILED that completes the payment ends the plan', function (): void {
+    $refunds = app(ManageRefund::class);
+    $total = $this->payment->amount_paise;
+    $share = intdiv($total * 6, 10);
+    fakeGateway()->nextRefund('unavailable');
+    $first = $refunds->approve($this->approver, askRefund($share));
+    $refunds->closeAsNotSent($this->approver, $first, 'Not in Razorpay yet');
+    $refunds->approve($this->approver, askRefund($total - $share));
+    expect(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active);
+
+    $late = fakeGateway()->refund($this->payment->gateway_payment_id, $share, $first->code);
+    postWebhook(fakeGateway()->refundWebhook($late->id))->assertOk();
+
+    expect($first->refresh()->ends_plan)->toBeTrue()
+        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Cancelled)
+        ->and($this->member->profile->refresh()->is_premium)->toBeFalse();
+});
+
+it('a refund coming back while another is only waiting or processing doesn’t end the plan: reserved money isn’t returned money', function (string $other): void {
+    $refunds = app(ManageRefund::class);
+    $total = $this->payment->amount_paise;
+    $share = intdiv($total * 6, 10);
+    fakeGateway()->nextRefund('unavailable');
+    $first = $refunds->approve($this->approver, askRefund($share));
+    $refunds->closeAsNotSent($this->approver, $first, 'Not in Razorpay yet');
+    $second = askRefund($total - $share);
+    if ($other === 'failing') {
+        fakeGateway()->nextRefund('pending');
+        $second = $refunds->approve($this->approver, $second);
+    }
+
+    $late = fakeGateway()->refund($this->payment->gateway_payment_id, $share, $first->code);
+    postWebhook(fakeGateway()->refundWebhook($late->id))->assertOk();
+
+    if ($other === 'failing') {
+        postWebhook(fakeGateway()->refundWebhook((string) $second->gateway_refund_id, 'refund.failed'))->assertOk();
+    } else {
+        $refunds->reject($this->approver, $second->refresh(), 'Outside the policy');
+    }
+
+    expect($first->refresh()->status)->toBe(RefundStatus::Processed)->and($first->ends_plan)->toBeFalse()
+        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active);
+
+    // The rest goes back later: now it ends.
+    $refunds->approve($this->approver, askRefund($total - $share));
+    expect(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Cancelled);
+})->with(['waiting for approval' => 'waiting', 'processing, then failing' => 'failing']);
+
+it('a refund wrongly closed as not sent can be recorded as sent after all; one the gateway itself failed can’t', function (): void {
+    $refunds = app(ManageRefund::class);
+    fakeGateway()->nextRefund('unavailable');
+    $wrong = $refunds->approve($this->approver, askRefund(10_000));
+    $refunds->closeAsNotSent($this->approver, $wrong, 'Not in Razorpay yet');
+
+    expect($refunds->closeAsSent($this->approver, $wrong->refresh(), 'rfnd_found1234', 'It appeared in Razorpay')->status)->toBe(RefundStatus::Processed)
+        ->and(CreditNote::query()->where('refund_id', $wrong->id)->count())->toBe(1)
+        ->and(AuditLog::query()->where('action', 'billing.refund_closed_by_hand')->latest('created_at')->orderByDesc('id')->get()->first(fn (AuditLog $a): bool => ($a->after['outcome'] ?? null) === 'sent')?->before['status'])->toBe(RefundStatus::Failed->value);
+
+    fakeGateway()->nextRefund('pending');
+    $failed = $refunds->approve($this->approver, askRefund(10_000));
+    postWebhook(fakeGateway()->refundWebhook((string) $failed->gateway_refund_id, 'refund.failed'))->assertOk();
+
+    expect(fn () => $refunds->closeAsSent($this->approver, $failed->refresh(), (string) $failed->gateway_refund_id, 'Trying anyway'))->toThrow(BillingRefused::class);
+});
+
+it('force-activated after a refund was closed as not sent, then that refund turns out to have gone: the plan ends', function (): void {
+    $short = checkoutOrder(bride(), PlanCode::Gold);
+    capturePayment($short, $short->total_paise - 100);
+    $payment = Payment::query()->where('order_id', $short->id)->sole();
+    $refunds = app(ManageRefund::class);
+    fakeGateway()->nextRefund('unavailable');
+    $refund = $refunds->approve($this->approver, $refunds->request($this->requester, $short->refresh(), $payment->gateway_payment_id, RefundCategory::DuplicatePayment, $payment->amount_paise, 'Sending it back'));
+    $refunds->closeAsNotSent($this->approver, $refund, 'Not in Razorpay yet');
+    app(ResolveStuckOrder::class)->forceActivate(adminWithRole('super_admin'), $short->refresh(), 'Member confirmed');
+    expect(Subscription::query()->where('order_id', $short->id)->sole()->status)->toBe(SubscriptionStatus::Active);
+
+    $late = fakeGateway()->refund($payment->gateway_payment_id, $payment->amount_paise, $refund->code);
+    postWebhook(fakeGateway()->refundWebhook($late->id))->assertOk();
+
+    expect(Subscription::query()->where('order_id', $short->id)->sole()->status)->toBe(SubscriptionStatus::Cancelled);
+});
+
+it('★ no double refund: a success reported after FAILED is believed with a row; the retry then can’t be approved past the balance', function (): void {
+    $refunds = app(ManageRefund::class);
+    fakeGateway()->nextRefund('unavailable');
+    $first = $refunds->approve($this->approver, askRefund());
+    $refunds->closeAsNotSent($this->approver, $first, 'Not in Razorpay yet');
+    $retry = askRefund();                                                       // the money looked free
+    $late = fakeGateway()->refund($this->payment->gateway_payment_id, $first->amount_paise, $first->code);
+
+    postWebhook(fakeGateway()->refundWebhook($late->id))->assertOk();
+
+    expect($first->refresh()->status)->toBe(RefundStatus::Processed)
+        ->and(BillingInvestigation::query()->where('refund_id', $first->id)->where('type', InvestigationType::RefundFailed)->sole()->details['problem'])->toBe('processed_after_failed')
+        ->and(fn () => $refunds->approve($this->approver, $retry))->toThrow(BillingRefused::class)
+        ->and($retry->refresh()->status)->toBe(RefundStatus::Requested)
+        ->and(CreditNote::query()->count())->toBe(1);
+});
+
+it('refund.failed after acceptance: FAILED with a row, nothing applied, and the retry gives one correct credit note', function (): void {
+    $referral = earnedCommission(Broker::factory()->create(), 60_000);
+    $referral->forceFill(['order_id' => $this->order->id])->save();
+    $refunds = app(ManageRefund::class);
+    $invoice = Invoice::query()->where('order_id', $this->order->id)->sole();
+    fakeGateway()->nextRefund('pending');
+    $refund = $refunds->approve($this->approver, askRefund());
+
+    postWebhook(fakeGateway()->refundWebhook((string) $refund->gateway_refund_id, 'refund.failed'))->assertOk();
+
+    expect($refund->refresh()->status)->toBe(RefundStatus::Failed)
+        ->and(BillingInvestigation::query()->sole()->type)->toBe(InvestigationType::RefundFailed)
+        ->and(CreditNote::query()->count())->toBe(0)
+        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active)
+        ->and($referral->refresh()->status)->toBe(ReferralStatus::Earned);
+
+    $refunds->approve($this->approver, askRefund());
+    $note = CreditNote::query()->sole();
+
+    expect($note->total_paise)->toBe($invoice->total_paise)
+        ->and($note->taxable_paise)->toBe($invoice->taxable_paise)
+        ->and($note->cgst_paise)->toBe($invoice->cgst_paise)
+        ->and($note->sgst_paise)->toBe($invoice->sgst_paise);
+});
+
+it('credit notes: every GST head of partial then rest adds up to the invoice exactly; each note’s heads add up to its total', function (): void {
+    $refunds = app(ManageRefund::class);
+    $invoice = Invoice::query()->where('order_id', $this->order->id)->sole();
+    $refunds->approve($this->approver, askRefund(33_333));
+    $refunds->approve($this->approver, askRefund(25_001));
+    $refunds->approve($this->approver, askRefund($this->payment->amount_paise - 58_334));
+    $notes = CreditNote::query()->get();
+
+    foreach (['taxable_paise', 'cgst_paise', 'sgst_paise', 'igst_paise', 'total_paise'] as $head) {
+        expect((int) $notes->sum($head))->toBe($invoice->{$head});
+    }
+    $notes->each(fn (CreditNote $n) => expect($n->taxable_paise + $n->cgst_paise + $n->sgst_paise + $n->igst_paise)->toBe($n->total_paise));
+});
+
+it('credit notes: a refund of a force-activated short payment stays at the invoice’s rate', function (): void {
+    $short = checkoutOrder(bride(), PlanCode::Gold);
+    capturePayment($short, 50_000);
+    $super = adminWithRole('super_admin');
+    app(ResolveStuckOrder::class)->forceActivate($super, $short->refresh(), 'Member confirmed the short payment');
+    $payment = Payment::query()->where('order_id', $short->id)->sole();
+
+    $refund = app(ManageRefund::class)->request($this->requester, $short->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 50_000, 'Going back in full');
+    app(ManageRefund::class)->approve($this->approver, $refund);
+    $note = CreditNote::query()->where('refund_id', $refund->id)->sole();
+
+    expect($note->total_paise)->toBe(50_000)
+        ->and($note->cgst_paise + $note->sgst_paise + $note->igst_paise)->toBeGreaterThan(0)
+        ->and(abs($note->cgst_paise + $note->sgst_paise + $note->igst_paise - (int) round($note->taxable_paise * 0.18)))->toBeLessThanOrEqual(2);
+});
+
+it('an extra payment going back leaves the valid order’s commission alone; the activating payment voids it', function (): void {
+    $referral = earnedCommission(Broker::factory()->create(), 60_000);
+    $referral->forceFill(['order_id' => $this->order->id])->save();
+    $extra = fakeGateway()->capture((string) $this->order->gateway_order_id);
+    app(HandlePaymentWebhook::class)->handle($extra['body'], $extra['signature'], $extra['event_id']);
+    $payment = Payment::query()->where('gateway_payment_id', $extra['payment_id'])->sole();
+
+    app(ManageRefund::class)->approve($this->approver, askRefund($payment->amount_paise, payment: $payment));
+    expect($referral->refresh()->status)->toBe(ReferralStatus::Earned);
+
+    app(ManageRefund::class)->approve($this->approver, askRefund());
+    expect($referral->refresh()->status)->toBe(ReferralStatus::Void);
+});
+
+it('a refund made in the gateway’s dashboard raises a row and changes nothing else', function (): void {
+    $unknown = fakeGateway()->refund($this->payment->gateway_payment_id, 500, 'not-ours');
+    postWebhook(fakeGateway()->refundWebhook($unknown->id))->assertOk();
+
+    $row = BillingInvestigation::query()->sole();
+    expect($row->type)->toBe(InvestigationType::UnknownRefund)
+        ->and($row->order_id)->toBe($this->order->id)
+        ->and(Refund::query()->count())->toBe(0)
+        ->and(Subscription::query()->where('order_id', $this->order->id)->sole()->status)->toBe(SubscriptionStatus::Active);
 });

@@ -134,7 +134,11 @@ final class FakePaymentGateway implements PaymentGateway
     public function refundWebhook(string $refundId, string $event = 'refund.processed'): array
     {
         $refund = (array) $this->cache->get(self::KEY.'refund:'.$refundId, []);
-        $refund['status'] = $event === 'refund.failed' ? 'failed' : 'processed';
+        $refund['status'] = match ($event) {
+            'refund.failed' => 'failed',
+            'refund.created' => 'pending',
+            default => 'processed',
+        };
 
         $body = (string) json_encode([
             'entity' => 'event',

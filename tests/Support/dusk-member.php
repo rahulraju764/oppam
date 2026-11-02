@@ -177,6 +177,7 @@ function duskChatCleanup(): void
     App\Models\Refund::query()->whereIn('order_id', $orders)->delete();
     App\Models\Invoice::query()->whereIn('order_id', $orders)->delete();
     App\Models\CouponRedemption::query()->whereIn('order_id', $orders)->delete();
+    App\Models\Order::query()->whereIn('id', $orders)->update(['paid_payment_id' => null]);
     App\Models\Payment::query()->whereIn('order_id', $orders)->delete();
     App\Models\Order::query()->whereIn('id', $orders)->delete();
     // P6.1: the Dusk members' ID files leave the vault (the rows cascade with the profiles).

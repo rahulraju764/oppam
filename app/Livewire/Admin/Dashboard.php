@@ -35,9 +35,16 @@ final class Dashboard extends Component
     public function getListeners(): array
     {
         // Subscribe only to what this admin may join — Echo would otherwise report a refused channel.
-        return $this->admin()->can('moderation.view') || $this->admin()->can('chat.view_flagged')
+        $listeners = $this->admin()->can('moderation.view') || $this->admin()->can('chat.view_flagged')
             ? ['echo-private:admin.queues,.queue.count' => '$refresh']
             : [];
+
+        // A paid order or refund: the revenue tiles re-read themselves (the signal carries no figures).
+        if ($this->admin()->can('dashboard.view') && $this->admin()->can('billing.view')) {
+            $listeners['echo-private:admin.dashboard,.revenue.changed'] = '$refresh';
+        }
+
+        return $listeners;
     }
 
     public function render(DashboardMetrics $metrics, WorkQueues $queues, DashboardAlerts $alerts, PresenceCounter $presence, RevenueSummary $revenue): View

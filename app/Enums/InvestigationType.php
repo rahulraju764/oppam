@@ -18,6 +18,7 @@ enum InvestigationType: string
     case NotAtGateway = 'NOT_AT_GATEWAY';
     case RefundFailed = 'REFUND_FAILED';
     case RefundStuck = 'REFUND_STUCK';
+    case UnknownRefund = 'UNKNOWN_REFUND';
 
     public function label(): string
     {
@@ -28,6 +29,7 @@ enum InvestigationType: string
             self::NotAtGateway => __('Recorded here, not captured at the gateway'),
             self::RefundFailed => __('Refund failed at the gateway'),
             self::RefundStuck => __('Refund not confirmed by the gateway'),
+            self::UnknownRefund => __('Refund made outside Oppam'),
         };
     }
 
@@ -39,8 +41,9 @@ enum InvestigationType: string
             self::AmountMismatch => __('Check with the member; force-activate (super admin) or refund the payment.'),
             self::ExtraPayment => __('Refund the extra payment (category: duplicate / extra payment).'),
             self::NotAtGateway => __('Compare with the Razorpay dashboard before taking any action.'),
-            self::RefundFailed => __('Check whether the plan already ended (see the details). Request the refund again or settle it with the member.'),
-            self::RefundStuck => __('Look the refund up in the Razorpay dashboard and record the outcome.'),
+            self::RefundFailed => __('See the problem in the details. processed_after_failed or over_invoice: money may have gone back twice, so check Razorpay and settle with the member. Otherwise nothing went back and it can be requested again.'),
+            self::RefundStuck => __('Look the refund up in the Razorpay dashboard, then close it on the Refunds page as sent or not sent.'),
+            self::UnknownRefund => __('Money left through the Razorpay dashboard: Oppam’s plan, credit note and commission are unchanged. Settle them by hand.'),
         };
     }
 }

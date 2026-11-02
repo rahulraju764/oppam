@@ -176,6 +176,46 @@ it('A06 reconciliation: a gateway outage fails the job and writes nothing, so it
         ->and(BillingInvestigation::query()->count())->toBe($before);
 });
 
+it('★ A06 force-activate: a payment refunded, or being refunded, can’t pay for a plan', function (): void {
+    $order = mismatchedOrder();
+    $payment = Payment::query()->where('order_id', $order->id)->sole();
+    $refunds = app(ManageRefund::class);
+    $refund = $refunds->request($this->finance, $order, $payment->gateway_payment_id, RefundCategory::DuplicatePayment, $payment->amount_paise, 'Sending it back');
+
+    expect(fn () => app(ResolveStuckOrder::class)->forceActivate($this->super, $order->refresh(), 'While it is going back'))->toThrow(BillingRefused::class);
+
+    $refunds->approve(adminWithRole('finance'), $refund);
+
+    expect(fn () => app(ResolveStuckOrder::class)->forceActivate($this->super, $order->refresh(), 'After it went back'))->toThrow(BillingRefused::class)
+        ->and(Subscription::query()->where('order_id', $order->id)->count())->toBe(0);
+});
+
+it('A06 stuck orders: a fully refunded payment stops holding the order; it can then be marked failed', function (): void {
+    $order = mismatchedOrder();
+    $payment = Payment::query()->where('order_id', $order->id)->sole();
+    $refunds = app(ManageRefund::class);
+    $partial = $refunds->approve(adminWithRole('finance'), $refunds->request($this->finance, $order, $payment->gateway_payment_id, RefundCategory::DuplicatePayment, 1000, 'Part of it'));
+    expect($partial->status)->toBe(RefundStatus::Processed)
+        ->and(app(StuckOrdersQuery::class)->query()->pluck('code'))->toContain($order->code)
+        ->and(fn () => app(ResolveStuckOrder::class)->markFailed($this->finance, $order->refresh(), 'Still holding money'))->toThrow(BillingRefused::class);
+
+    $refunds->approve(adminWithRole('finance'), $refunds->request($this->finance, $order->refresh(), $payment->gateway_payment_id, RefundCategory::DuplicatePayment, $payment->amount_paise - 1000, 'The rest'));
+
+    expect(app(StuckOrdersQuery::class)->query()->pluck('code'))->not->toContain($order->code)
+        ->and(app(ResolveStuckOrder::class)->markFailed($this->finance, $order->refresh(), 'All of it went back')->status)->toBe(OrderStatus::Failed);
+});
+
+it('A02 revenue: an extra payment going back doesn’t lower revenue that never counted it', function (): void {
+    $order = checkoutOrder(groom(), PlanCode::Gold);
+    capturePayment($order);
+    $extra = fakeGateway()->capture((string) $order->gateway_order_id);
+    app(App\Actions\Billing\HandlePaymentWebhook::class)->handle($extra['body'], $extra['signature'], $extra['event_id']);
+    $refunds = app(ManageRefund::class);
+    $refunds->approve(adminWithRole('finance'), $refunds->request($this->finance, $order->refresh(), $extra['payment_id'], RefundCategory::DuplicatePayment, $order->total_paise, 'Paid twice'));
+
+    expect(app(RevenueSummary::class)->summary()['today']->paise)->toBe($order->total_paise);
+});
+
 it('A06 reconciliation is scheduled at 02:00 IST', function (): void {
     $event = collect(app(Illuminate\Console\Scheduling\Schedule::class)->events())
         ->first(fn ($e) => str_contains((string) $e->description, 'ReconcilePayments'));

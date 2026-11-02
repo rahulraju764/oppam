@@ -10,6 +10,7 @@ final readonly class PlanEditData
     /**
      * @param  list<string>  $displayFeatures
      * @param  array<int, array{rupees: int, active: bool}>  $prices
+     * @param  list<int>  $offSale  durations whose existing price leaves the catalogue
      */
     public function __construct(
         public string $name,
@@ -18,5 +19,6 @@ final readonly class PlanEditData
         public bool $isPurchasable,
         public array $displayFeatures,
         public array $prices,
+        public array $offSale = [],
     ) {}
 }

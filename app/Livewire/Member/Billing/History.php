@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Member\Billing;
 
 use App\Data\Content\SeoData;
+use App\Enums\RefundStatus;
 use App\Models\Order;
 use App\Models\User;
 use App\Queries\Billing\MembershipSummary;
@@ -41,7 +42,10 @@ final class History extends Component
         $orders = Order::query()
             ->where('profile_id', $profile->id)
             ->whereNotNull('gateway_order_id')
-            ->with(['plan:id,name', 'invoice:id,order_id,number'])
+            ->with(['plan:id,name', 'invoice:id,order_id,number',
+                // Money on its way or back. A request still waiting for an admin, or refused, isn't the member's yet.
+                'refunds' => fn ($q) => $q->whereIn('status', [RefundStatus::Processing, RefundStatus::Processed])->whereNotNull('gateway_refund_id')->orderBy('created_at'),
+                'refunds.creditNote:id,refund_id,number'])
             ->latest()
             ->orderByDesc('id')
             ->paginate(self::PER_PAGE);

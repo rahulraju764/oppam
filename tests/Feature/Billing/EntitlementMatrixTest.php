@@ -141,6 +141,14 @@ it('§7.3 favourites (total): Free 25 · Silver 200 · Gold / Diamond unlimited'
     }
 })->with('plans');
 
+it('§7.3 favourites: the last slot still works — one under the limit is allowed', function (PlanCode $plan): void {
+    $member = matrixMember($plan);
+    $limit = PLAN_MATRIX_7_3[$plan->value]['favorites'];
+    matrixFill($member, Entitlement::FavoritesTotal, $limit === null ? null : $limit - 1);
+
+    expect(app(ToggleFavorite::class)->handle($member, matrixTarget()->profile, true))->toBeTrue();
+})->with('plans');
+
 it('§7.3 see who liked me: Free count + blurred list · Silver / Gold / Diamond the members', function (PlanCode $plan): void {
     $member = matrixMember($plan);
     $liker = matrixTarget()->profile;
@@ -204,6 +212,18 @@ it('§7.3 verified phone numbers per month: Free 0 · Silver 10 · Gold 50 · Di
 
     $limit === null ? expect($reveal()->phone)->not->toBeNull() : expect($reveal)->toThrow(ContactNotAvailable::class);
 })->with('plans');
+
+it('§7.3 phone numbers: the last one still works — one under the limit is allowed (Free has none)', function (PlanCode $plan): void {
+    $member = matrixMember($plan);
+    $limit = PLAN_MATRIX_7_3[$plan->value]['contacts'];
+    $target = matrixTarget();
+    (new ContactDetail)->forceFill(['profile_id' => $target->profile->id, 'contact_person' => 'Gopalan', 'contact_relation' => 'Father'])->save();
+    $privacy = PrivacySetting::query()->whereKey($target->profile->id)->first() ?? new PrivacySetting;
+    $privacy->forceFill(['profile_id' => $target->profile->id, 'phone_visibility' => PhoneVisibility::PremiumOnly, 'contact_filter_enabled' => false])->save();
+    matrixFill($member, Entitlement::ContactViewsPerMonth, $limit === null ? null : $limit - 1);
+
+    expect(app(ViewContact::class)->handle($member, $target->profile->refresh())->phone)->not->toBeNull();
+})->with([PlanCode::Silver, PlanCode::Gold, PlanCode::Diamond]);
 
 it('§7.3 see who viewed me: Free / Silver count only · Gold / Diamond the members', function (PlanCode $plan): void {
     $member = matrixMember($plan);

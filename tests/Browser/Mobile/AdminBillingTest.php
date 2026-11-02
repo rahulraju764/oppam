@@ -36,7 +36,7 @@ it('A06: a second admin approves a refund at 375px — refunded, credit note on 
         capturePayment($order);
         $payment = Payment::query()->where('order_id', $order->id)->sole();
 
-        (new App\Models\AdminUser)->newQuery();
+        (new AdminUser)->newQuery();
         $finance = AdminUser::factory()->role('finance')->create(['email' => 'dusk.finance.'.Str::lower(Str::random(8)).'@example.com']);
         $refund = app(ManageRefund::class)->request($finance, $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, $payment->amount_paise, 'Dusk: member asked');
 
@@ -59,6 +59,26 @@ it('A06: a second admin approves a refund at 375px — refunded, credit note on 
             ->waitForTextIn('.pricing-card .plan-name', 'Gold Preview Only');
         assertNoHorizontalScroll($browser);
         expect(App\Models\Plan::query()->where('code', 'GOLD')->sole()->name)->not->toBe('Gold Preview Only');
+    });
+});
+
+it('A02: an open dashboard’s revenue tile follows a payment without a reload', function (): void {
+    $this->browse(function (Browser $browser): void {
+        $groom = duskSecondMember();
+        $browser->visit('/')->driver->manage()->deleteAllCookies();
+        duskSignInAdmin($browser);
+
+        $browser->visit(adminDuskUrl('/'))->waitFor('.admin-stat');
+        $browser->waitUsing(10, 100, fn (): bool => str_contains(mb_strtolower((string) $browser->script('return document.body.innerText;')[0]), 'revenue today'));
+        $browser->waitUsing(20, 100, fn (): bool => (bool) $browser->script(
+            "return window.Echo?.connector?.channels?.['private-admin.dashboard']?.subscription?.subscribed === true;")[0]);
+
+        capturePayment(checkoutOrder($groom, PlanCode::Gold));
+        $expected = app(App\Queries\Admin\RevenueSummary::class)->summary()['today']->format();
+
+        $started = microtime(true);
+        $browser->waitUsing(20, 100, fn (): bool => str_contains((string) $browser->script('return document.body.innerText;')[0], '₹'.$expected));
+        fwrite(STDERR, sprintf("\n[A02] payment → revenue tile in %.1f s\n", microtime(true) - $started));
     });
 });
 

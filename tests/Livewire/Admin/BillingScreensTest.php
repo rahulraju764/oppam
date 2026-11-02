@@ -156,6 +156,68 @@ it('refunds page: approve is offered to another admin, withdraw to the requester
     expect(fn () => $page->set('selected', 'RFD1'))->toThrow(CannotUpdateLockedPropertyException::class);
 });
 
+it('refunds page: a refund with no answer tells the admin to check, and can be closed either way', function (): void {
+    $order = checkoutOrder(groom(), PlanCode::Gold);
+    capturePayment($order);
+    $payment = Payment::query()->where('order_id', $order->id)->sole();
+    $refund = app(ManageRefund::class)->request(adminWithRole('finance'), $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 1000, 'Member asked');
+    fakeGateway()->nextRefund('unavailable');
+
+    Livewire::test(RefundsIndex::class)->call('confirm', $refund->code, 'refund-approve')->call('approve')
+        ->assertDispatched('toast', fn (string $event, array $params): bool => $params['type'] === 'danger' && str_contains($params['title'], 'may or may not'));
+    expect($refund->refresh()->status)->toBe(RefundStatus::Processing);
+
+    Livewire::test(RefundsIndex::class)->set('status', 'PROCESSING')->assertSee('It wasn’t sent')
+        ->call('confirm', $refund->code, 'refund-close-unsent')->set('note', 'Not in Razorpay')->call('closeAsNotSent')->assertDispatched('toast', type: 'success');
+    expect($refund->refresh()->status)->toBe(RefundStatus::Failed);
+});
+
+it('refunds page: closing as sent; an accepted refund shows its id and offers no "wasn’t sent"; the warning shows what needs checking', function (): void {
+    $order = checkoutOrder(groom(), PlanCode::Gold);
+    capturePayment($order);
+    $payment = Payment::query()->where('order_id', $order->id)->sole();
+    $other = adminWithRole('finance');
+    $refunds = app(ManageRefund::class);
+
+    fakeGateway()->nextRefund('unavailable');
+    $stuck = $refunds->approve($this->finance, $refunds->request($other, $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 1000, 'Member asked'));
+    Livewire::test(RefundsIndex::class)->assertSee('needs checking')
+        ->set('status', 'PROCESSING')->assertSee('No answer from the gateway')
+        ->call('confirm', $stuck->code, 'refund-close-sent')->set('note', 'Seen in Razorpay')->set('gatewayRefundId', 'nonsense')->call('closeAsSent')->assertHasErrors('gatewayRefundId')
+        ->set('gatewayRefundId', 'rfnd_abc123')->call('closeAsSent')->assertDispatched('toast', type: 'success');
+    expect($stuck->refresh()->status)->toBe(RefundStatus::Processed);
+
+    fakeGateway()->nextRefund('pending');
+    $accepted = $refunds->approve($this->finance, $refunds->request($other, $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 1000, 'Member asked'));
+    Livewire::test(RefundsIndex::class)->assertDontSee('needs checking')
+        ->set('status', 'PROCESSING')->assertSee($accepted->gateway_refund_id)->assertDontSee('It wasn’t sent')->assertDontSee('It failed at Razorpay')
+        ->call('confirm', $accepted->code, 'refund-close-unsent')->set('note', 'Clicked anyway')->call('closeAsNotSent')->assertDispatched('toast', type: 'danger');
+    expect($accepted->refresh()->status)->toBe(RefundStatus::Processing);
+
+    $this->travel(App\Models\Refund::STUCK_HOURS + 1)->hours();
+    Livewire::test(RefundsIndex::class)->assertSee('needs checking')->set('status', 'PROCESSING')->assertSee('It failed at Razorpay')
+        ->call('confirm', $accepted->code, 'refund-close-failed')->set('note', 'Failed in Razorpay')->call('closeAsFailed')->assertDispatched('toast', type: 'success');
+    expect($accepted->refresh()->status)->toBe(RefundStatus::Failed);
+
+    // Closed as not sent, it can still be recorded as sent; a gateway failure like this one can't.
+    fakeGateway()->nextRefund('unavailable');
+    $closed = $refunds->approve($this->finance, $refunds->request($other, $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 1000, 'Member asked'));
+    $refunds->closeAsNotSent($this->finance, $closed, 'Not in Razorpay');
+    Livewire::test(RefundsIndex::class)->set('status', 'FAILED')->assertSee('It was sent after all')
+        ->assertSeeHtml("confirm('{$closed->code}', 'refund-close-sent')")
+        ->assertDontSeeHtml("confirm('{$accepted->code}', 'refund-close-sent')");
+});
+
+it('order page: force-activate is offered only to a super admin holding the key', function (): void {
+    $order = checkoutOrder(groom(), PlanCode::Gold);
+    $this->finance->givePermissionTo('billing.force_activate');
+
+    Livewire::test(OrderShow::class, ['order' => $order->code])->assertDontSee('Force-activate');
+
+    $this->actingAs(adminWithRole('super_admin'), 'admin');
+    Livewire::test(OrderShow::class, ['order' => $order->code])->assertSee('Force-activate');
+});
+
 it('plan editor: live preview and warning; saves prices and entitlements; the Free plan has no prices; support can’t save', function (): void {
     $page = Livewire::test(PlanEditor::class, ['plan' => 'GOLD'])->assertSee('Enforced entitlements')
         ->set('name', 'Gold Plus')->assertSee('Gold Plus')

@@ -16,9 +16,9 @@
                     <x-ui.button variant="outline" type="button" icon="fa-refresh" wire:click="repoll" loading="repoll" dusk="order-repoll">{{ __('Re-poll gateway') }}</x-ui.button>
                     <x-ui.button variant="outline" type="button" x-on:click="$dispatch('open-modal', { name: 'order-fail' })" dusk="order-fail-open">{{ __('Mark failed') }}</x-ui.button>
                 @endcan
-                @can('billing.force_activate')
+                @if ($canForce)
                     <x-ui.button variant="danger" type="button" x-on:click="$dispatch('open-modal', { name: 'order-force' })" dusk="order-force-open">{{ __('Force-activate') }}</x-ui.button>
-                @endcan
+                @endif
             </div>
         @endif
     </div>
@@ -122,9 +122,9 @@
             <p>{{ __('Only an order with no captured payment can be marked failed.') }}</p>
         </x-admin.confirm-modal>
     @endcan
-    @can('billing.force_activate')
+    @if ($canForce)
         <x-admin.confirm-modal name="order-force" :title="__('Force-activate :code', ['code' => $order->code])" action="forceActivate" :confirmLabel="__('Force-activate')">
             <p>{{ __('This activates the plan with the captured payment, even if the amount differs from the order. Super admins only.') }}</p>
         </x-admin.confirm-modal>
-    @endcan
+    @endif
 </div>

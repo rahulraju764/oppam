@@ -82,9 +82,12 @@ final class PlanEditor extends Component
     {
         $this->resetErrorBag();
         $prices = [];
+        $offSale = [];
         foreach ($this->prices as $months => $price) {
-            // A duration left empty stays off sale; a typed price must be a whole number of rupees.
+            // A duration left empty stays off sale, or comes off it; a typed price must be a whole number of rupees.
             if (trim($price['rupees']) === '' && ! $price['active']) {
+                $offSale[] = (int) $months;
+
                 continue;
             }
             if (preg_match('/^\d{1,7}$/', trim($price['rupees'])) !== 1) {
@@ -93,7 +96,7 @@ final class PlanEditor extends Component
             $prices[(int) $months] = ['rupees' => (int) $price['rupees'], 'active' => $price['active']];
         }
 
-        $save->handle($this->admin(), $this->plan(), new PlanEditData($this->name, $this->badge, $this->isFeatured, $this->isPurchasable, $this->lines(), $prices));
+        $save->handle($this->admin(), $this->plan(), new PlanEditData($this->name, $this->badge, $this->isFeatured, $this->isPurchasable, $this->lines(), $prices, $offSale));
         $this->dispatch('toast', type: 'success', title: __('Plan saved. New orders use these prices.'));
     }
 

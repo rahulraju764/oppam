@@ -26,6 +26,9 @@ final class SavePlan
 
     private const MAX_RUPEES = 200_000;
 
+    /** @var list<int> months (decisions 2026-10-21) */
+    private const DURATIONS = [1, 3, 6, 12];
+
     public function __construct(private readonly AuditLogger $audit) {}
 
     /**
@@ -60,6 +63,9 @@ final class SavePlan
                     $row = $prices->get($months) ?? (new PlanPrice)->forceFill(['plan_id' => $locked->id, 'duration_months' => $months]);
                     $row->forceFill(['price_paise' => $price['rupees'] * 100, 'is_active' => $price['active']])->save();
                 }
+                foreach ($data->offSale as $months) {
+                    $prices->get($months)?->forceFill(['is_active' => false])->save();
+                }
             }
 
             $this->audit->record('billing.plan_saved', $locked, $before, $this->snapshot($locked, $locked->prices()->get()->keyBy('duration_months')->all()),
@@ -93,6 +99,9 @@ final class SavePlan
         }
 
         foreach ($data->prices as $months => $price) {
+            if (! in_array($months, self::DURATIONS, true)) {
+                throw ValidationException::withMessages(['prices' => __('Choose a duration of 1, 3, 6 or 12 months.')]);
+            }
             if ($price['rupees'] < 1 || $price['rupees'] > self::MAX_RUPEES) {
                 throw ValidationException::withMessages(['prices.'.$months => __('Enter a price from ₹1 to ₹:max.', ['max' => number_format(self::MAX_RUPEES)])]);
             }

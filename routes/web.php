@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Member\ChatImageController;
+use App\Http\Controllers\Member\CreditNoteDownloadController;
 use App\Http\Controllers\Member\HoroscopeController;
 use App\Http\Controllers\Member\ImpersonationController;
 use App\Http\Controllers\Member\InvoiceDownloadController;
@@ -117,6 +118,8 @@ Route::middleware(['auth', 'verified.phone'])->group(function (): void {
         Route::get('/billing/success/{order}', CheckoutSuccess::class)->where('order', 'ORD[0-9]+')->name('member.billing.success');
         Route::get('/billing/invoices/{invoice}', InvoiceDownloadController::class)
             ->where('invoice', 'OPM-[0-9]{4}-[0-9]{6}')->middleware('throttle:30,1')->name('member.billing.invoice');
+        Route::get('/billing/credit-notes/{number}', CreditNoteDownloadController::class)
+            ->where('number', 'CN-[0-9]{4}-[0-9]{6}')->middleware('throttle:30,1')->name('member.billing.credit-note');
 
         // Safety & support (M09, A10): own blocks / ignores, in-app help and own requests only.
         Route::get('/settings/blocked', BlockedProfiles::class)->name('member.settings.blocked');

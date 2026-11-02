@@ -33,6 +33,9 @@ function earnedReferral(): array
 {
     $member = referredMember(Broker::factory()->create());
     $order = paidOrder($member);
+    // As ActivateSubscription leaves it: the payment that paid the order is the one a refund voids on.
+    $payment = App\Models\Payment::factory()->create(['order_id' => $order->id]);
+    $order->forceFill(['paid_payment_id' => $payment->id])->save();
     app(EarnReferralCommission::class)->handle($member->profile->id);
     expect(ledgerRow($member)->status)->toBe(ReferralStatus::Earned);
 
@@ -90,6 +93,29 @@ it('a refund of a later, uncommissioned order leaves the first order’s commiss
     expect(ledgerRow($member)->status)->toBe(ReferralStatus::Earned);
 });
 
+it('R-M13-5: a refund of an extra payment on the order leaves the commission alone', function (): void {
+    [$member, $order] = earnedReferral();
+    $extra = App\Models\Payment::factory()->create(['order_id' => $order->id]);
+    $refund = Refund::factory()->processed()->create(['order_id' => $order->id, 'payment_id' => $extra->id]);
+
+    RefundProcessed::dispatch($refund->id);
+
+    expect(ledgerRow($member)->status)->toBe(ReferralStatus::Earned);
+});
+
+it('R-M13-5: a member paid before approval whose extra payment went back still earns on first approval', function (): void {
+    $member = referredMember(Broker::factory()->create());
+    $order = paidOrder($member);
+    $payment = App\Models\Payment::factory()->create(['order_id' => $order->id]);
+    $extra = App\Models\Payment::factory()->create(['order_id' => $order->id]);
+    $order->forceFill(['paid_payment_id' => $payment->id])->save();
+    Refund::factory()->processed()->create(['order_id' => $order->id, 'payment_id' => $extra->id]);
+
+    app(EarnReferralCommission::class)->handle($member->profile->id);
+
+    expect(ledgerRow($member)->status)->toBe(ReferralStatus::Earned);
+});
+
 it('voiding is idempotent: a repeated event and an unknown refund id do nothing more', function (): void {
     [$member, $order] = earnedReferral();
     $refund = Refund::factory()->processed()->create(['order_id' => $order->id]);
@@ -107,7 +133,9 @@ it('voiding is idempotent: a repeated event and an unknown refund id do nothing 
 it('first order refunded before the commission was evaluated → VOID, never earned, a later order doesn’t earn instead', function (): void {
     $member = referredMember(Broker::factory()->create());
     $first = paidOrder($member, paidAt: now()->subDays(10));
-    Refund::factory()->processed()->create(['order_id' => $first->id]);
+    $payment = App\Models\Payment::factory()->create(['order_id' => $first->id]);
+    $first->forceFill(['paid_payment_id' => $payment->id])->save();
+    Refund::factory()->processed()->create(['order_id' => $first->id, 'payment_id' => $payment->id]);
     paidOrder($member, subtotal: 199_900);
 
     expect(app(EarnReferralCommission::class)->handle($member->profile->id))->toBeNull()

@@ -619,6 +619,7 @@ body.search-sheet-open .mobile-footer { display: none; }
 .usage-meter__bar > span { display: block; width: var(--progress, 0%); height: 100%; background: var(--color-primary); }
 .usage-meter__reset { margin: var(--space-1) 0 0; font-size: var(--text-xs); color: var(--color-gr-dark); }
 .billing-orders { position: relative; }
+.billing-refund { margin-top: var(--space-1); }
 .billing-orders table { min-width: 640px; margin: 0; font-size: var(--text-sm); }
 
 /* ---------- Broker portal (P7.1, §11A B.11) ----------

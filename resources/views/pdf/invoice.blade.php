@@ -49,13 +49,13 @@
                 {{ $invoice->seller['name'] }}<br>
                 {!! nl2br(e($invoice->seller['address'])) !!}<br>
                 {{ __('GSTIN: :gstin', ['gstin' => $invoice->seller['gstin'] !== '' ? $invoice->seller['gstin'] : '—']) }}<br>
-                {{ __('State code: :code', ['code' => $invoice->seller['state_code']]) }}
+                {{ __('State code: :code', ['code' => $invoice->seller['gst_state_code'] ?? $invoice->seller['state_code']]) }}
             </td>
             <td>
                 <strong>{{ __('Recipient') }}</strong><br>
                 {{ $invoice->buyer['name'] }} ({{ $invoice->buyer['code'] }})<br>
                 {{ __('Unregistered (B2C)') }}<br>
-                {{ __('Place of supply: :state', ['state' => $invoice->buyer['state'] ?? __('Not on record — supplier’s state')]) }}
+                {{ __('Place of supply: :state', ['state' => ($invoice->buyer['state'] ?? __('Not on record — supplier’s state')).(isset($invoice->buyer['gst_state_code']) ? ' ('.$invoice->buyer['gst_state_code'].')' : '')]) }}
             </td>
         </tr>
     </table>

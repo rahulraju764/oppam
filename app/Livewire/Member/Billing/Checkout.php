@@ -25,7 +25,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Checkout (template checkout.php, PRD M10 / F04): plan summary, duration, a coupon checked live,
+ * Checkout (template checkout.php, PRD M10 / F04): plan summary, duration, a coupon the member applies,
  * the GST line and the total — all from QuoteCheckout on the server; the page holds only the plan
  * KEY, a duration and a coupon code the server re-checks. "Continue to payment" creates the order
  * (CreateOrder) and opens Razorpay Checkout (UPI, cards, netbanking, wallets) — no card fields here.
@@ -68,12 +68,7 @@ final class Checkout extends Component
         $this->refusal = null;
     }
 
-    /** Typed or changed: checked live (debounced in the view), counted against the hourly limit. */
-    public function updatedCoupon(ApplyCoupon $apply): void
-    {
-        $this->applyCoupon($apply);
-    }
-
+    /** The Apply button or Enter: one attempt against the hourly limit, not one per pause in typing. */
     public function applyCoupon(ApplyCoupon $apply): void
     {
         $this->resetErrorBag('coupon');

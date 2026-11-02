@@ -14,8 +14,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
 
 /**
- * R-M13-5 / B.19: a processed refund of the commissioned order — full or partial (owner
- * 2026-10-24) — voids the ledger row. An EARNED row simply stops counting; a PAID row keeps its
+ * R-M13-5 / B.19: a processed refund of the payment that paid the commissioned order — full or
+ * partial (owner 2026-10-24) — voids the ledger row. An EARNED row simply stops counting; a PAID row keeps its
  * payout_item_id, so the next payout run (P7.8) takes it back as a clawback. Idempotent.
  */
 final class VoidReferralOnRefund implements ShouldQueue
@@ -24,11 +24,14 @@ final class VoidReferralOnRefund implements ShouldQueue
 
     public function handle(RefundProcessed $event): void
     {
-        $orderId = Refund::query()->whereKey($event->refundId)->where('status', RefundStatus::Processed)->value('order_id');
+        $refund = Refund::query()->whereKey($event->refundId)->where('status', RefundStatus::Processed)->with('order:id,paid_payment_id')->first();
 
-        if (! is_string($orderId)) {
+        // An extra payment on the order going back leaves what paid for it, and so the commission, alone.
+        if ($refund === null || $refund->payment_id !== $refund->order->paid_payment_id) {
             return;
         }
+
+        $orderId = $refund->order_id;
 
         DB::transaction(function () use ($orderId): void {
             BrokerReferral::query()->where('order_id', $orderId)

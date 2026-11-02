@@ -116,13 +116,13 @@
                                     <x-ui.button variant="link" size="sm" type="button" wire:click="removeCoupon" loading="removeCoupon">{{ __('Remove') }}</x-ui.button>
                                 </div>
                             @else
-                                <x-ui.input :label="__('Coupon code')" name="coupon" wire:model.live.debounce.400ms="coupon"
+                                <x-ui.input :label="__('Coupon code')" name="coupon" wire:model="coupon" wire:keydown.enter.prevent="applyCoupon"
                                             autocomplete="off" maxlength="30" autocapitalize="characters" spellcheck="false" />
-                                <p class="visually-hidden" wire:loading wire:target="coupon" role="status">{{ __('Checking the code…') }}</p>
+                                <x-ui.button variant="outline" size="sm" type="button" wire:click="applyCoupon" loading="applyCoupon" dusk="coupon-apply">{{ __('Apply') }}</x-ui.button>
                             @endif
                         </div>
 
-                        <dl class="checkout-lines" wire:loading.class="opacity-50" wire:target="duration, coupon, removeCoupon">
+                        <dl class="checkout-lines" wire:loading.class="opacity-50" wire:target="duration, applyCoupon, removeCoupon">
                             <div>
                                 <dt>{{ __('Subtotal') }}</dt>
                                 <dd>&#8377;{{ $quote->price->subtotal()->format() }}</dd>

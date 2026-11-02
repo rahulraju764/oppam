@@ -39,6 +39,10 @@ it('P5.1: plans, checkout and the success page work at 375px without sideways sc
             ->assertVisible('@checkout-pay');
         assertNoHorizontalScroll($browser);
 
+        // The coupon is checked by Apply, not while typing.
+        $browser->type('#f-coupon', 'NOPE')->click('@coupon-apply')->waitForText('This code isn’t valid.');
+        assertNoHorizontalScroll($browser);
+
         $order = checkoutOrder($groom, PlanCode::Gold, 3);
         capturePayment($order);
         $browser->visit('/billing/success/'.$order->code)

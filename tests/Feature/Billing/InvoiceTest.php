@@ -84,7 +84,8 @@ it('GST split: CGST + SGST for a Kerala member, IGST for another state', functio
     expect($invoice->gst_split)->toBe($split)
         ->and($invoice->cgst_paise + $invoice->sgst_paise + $invoice->igst_paise)->toBe($order->gst_paise)
         ->and($invoice->buyer['state_code'])->toBe($stateCode)
-        ->and($invoice->seller['state_code'])->toBe('KL');
+        ->and($invoice->seller['state_code'])->toBe('KL')
+        ->and($invoice->seller['gst_state_code'])->toBe('32');   // the numeric GST code invoices print
 
     if ($split === GstSplit::IntraState) {
         expect($invoice->cgst_paise)->toBe(8_991)->and($invoice->sgst_paise)->toBe(8_991)->and($invoice->igst_paise)->toBe(0);

@@ -32,8 +32,6 @@ final class ReconcilePayments implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    private const REFUND_STUCK_HOURS = 48;
-
     public int $tries = 3;
 
     public int $backoff = 900;
@@ -52,7 +50,8 @@ final class ReconcilePayments implements ShouldBeUnique, ShouldQueue
         $to = $today->utc();
 
         $seen = [];
-        foreach ($gateway->paymentsBetween($from, $to) as $payment) {
+        // A day earlier than the local window: a payment we recorded late was created earlier at the gateway.
+        foreach ($gateway->paymentsBetween($from->subDay(), $to) as $payment) {
             $seen[$payment->id] = true;
             if ($payment->status !== PaymentStatus::Captured) {
                 continue;
@@ -84,7 +83,7 @@ final class ReconcilePayments implements ShouldBeUnique, ShouldQueue
                 }
             });
 
-        Refund::query()->where('status', RefundStatus::Processing)->where('decided_at', '<=', now()->subHours(self::REFUND_STUCK_HOURS))
+        Refund::query()->where('status', RefundStatus::Processing)->where('decided_at', '<=', now()->subHours(Refund::STUCK_HOURS))
             ->lazyById(500)
             ->each(fn (Refund $refund) => BillingInvestigation::raise(InvestigationType::RefundStuck, $refund->code, ['refund' => $refund->code, 'amount_paise' => $refund->amount_paise], $refund->order_id, $refund->id));
     }

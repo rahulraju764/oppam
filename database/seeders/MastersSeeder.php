@@ -47,6 +47,9 @@ final class MastersSeeder extends Seeder
 
             $this->seedChildren(Caste::class, Religion::class, 'religion_id', $data['castes']);
             $this->seedChildren(State::class, Country::class, 'country_id', $data['states']);
+            foreach ($data['state_gst_codes'] as $code => $gstCode) {
+                State::query()->where('code', $code)->whereNull('gst_code')->update(['gst_code' => $gstCode]);   // never overwrites an A11 edit
+            }
             $this->seedChildren(District::class, State::class, 'state_id', $data['districts']);
 
             $this->seedIncomeBands($data['income_bands']);

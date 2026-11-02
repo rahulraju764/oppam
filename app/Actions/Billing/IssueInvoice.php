@@ -9,6 +9,7 @@ use App\Enums\GstSplit;
 use App\Enums\SettingKey;
 use App\Models\Invoice;
 use App\Models\Masters\District;
+use App\Models\Masters\State;
 use App\Models\Order;
 use App\Models\Profile;
 use App\Services\Sequences\SequenceAllocator;
@@ -46,6 +47,7 @@ final class IssueInvoice
             'gstin' => Settings::string(SettingKey::BillingSellerGstin),
             'address' => Settings::string(SettingKey::BillingSellerAddress),
             'state_code' => Settings::string(SettingKey::BillingSellerStateCode),
+            'gst_state_code' => State::query()->where('code', Settings::string(SettingKey::BillingSellerStateCode))->value('gst_code'),
             'sac' => Settings::string(SettingKey::BillingSacCode),
         ];
 
@@ -67,6 +69,7 @@ final class IssueInvoice
                 'code' => $profile->code,
                 'state' => $state?->label,
                 'state_code' => $state?->code,
+                'gst_state_code' => $state?->gst_code,
             ],
             'gst_split' => $split,
             'taxable_paise' => $order->taxable_paise,
