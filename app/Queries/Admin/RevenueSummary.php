@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * A02 revenue tiles and chart (P3.5 hand-over): paid orders less processed refunds, GST included,
- * by IST day and month; revenue by plan over 30 days. Grouped queries on indexed date columns.
+ * by IST day and month; revenue by plan over 30 days, net the same way. Grouped queries on indexed
+ * date columns.
  */
 final class RevenueSummary
 {
@@ -29,17 +30,29 @@ final class RevenueSummary
         ];
     }
 
-    /** @return array{labels: list<string>, values: list<int>} whole rupees by plan, last 30 days */
+    /**
+     * Whole rupees by plan over the last 30 days, net the same way as the tiles: paid orders less the
+     * refunds processed in the window of the payment that paid each order (an extra payment was never
+     * counted). Plans that sold in the window; a plan's bar never goes below zero.
+     *
+     * @return array{labels: list<string>, values: list<int>}
+     */
     public function byPlan(): array
     {
-        $rows = DB::table('orders')->join('plans', 'plans.id', '=', 'orders.plan_id')
-            ->where('orders.status', OrderStatus::Paid->value)->where('orders.paid_at', '>=', now()->subDays(30))
+        $since = now()->subDays(30);
+        $paid = DB::table('orders')->join('plans', 'plans.id', '=', 'orders.plan_id')
+            ->where('orders.status', OrderStatus::Paid->value)->where('orders.paid_at', '>=', $since)
             ->groupBy('plans.name')->orderBy('plans.name')
             ->selectRaw('plans.name as name, sum(orders.total_paise) as paise')->get();
+        $refunded = DB::table('refunds')->join('orders', 'orders.id', '=', 'refunds.order_id')->join('plans', 'plans.id', '=', 'orders.plan_id')
+            ->where('refunds.status', RefundStatus::Processed->value)->where('refunds.processed_at', '>=', $since)
+            ->whereColumn('orders.paid_payment_id', 'refunds.payment_id')
+            ->groupBy('plans.name')
+            ->selectRaw('plans.name as name, sum(refunds.amount_paise) as paise')->pluck('paise', 'name');
 
         return [
-            'labels' => $rows->pluck('name')->map(fn (mixed $n): string => (string) $n)->values()->all(),
-            'values' => $rows->pluck('paise')->map(fn (mixed $p): int => intdiv((int) $p, 100))->values()->all(),
+            'labels' => $paid->pluck('name')->map(fn (mixed $n): string => (string) $n)->values()->all(),
+            'values' => $paid->map(fn (object $row): int => intdiv(max(0, (int) $row->paise - (int) ($refunded[$row->name] ?? 0)), 100))->values()->all(),
         ];
     }
 

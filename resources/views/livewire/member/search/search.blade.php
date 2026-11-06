@@ -247,7 +247,7 @@
 
                             <div class="profile-grid" wire:loading.remove wire:target="filters,clearFilters">
                                 @forelse ($cards as $card)
-                                    <x-profile.row :profile="$card" wire:key="result-{{ $card->code }}" />
+                                    <x-profile.row :profile="$card" highlight wire:key="result-{{ $card->code }}" />
                                 @empty
                                     <x-ui.empty-state icon="fa-search" :title="__('No profiles match')"
                                                       :message="__('Try fewer filters, a wider age range or another district.')" />

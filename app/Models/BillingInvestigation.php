@@ -84,6 +84,28 @@ final class BillingInvestigation extends Model
         ]) === 1;
     }
 
+    /**
+     * raise(), except that a row the system closed by itself (no admin: the thing settled) opens again,
+     * because the thing it asks about is back — a refund that was settled, then revived and stuck again.
+     * A row a person resolved stays resolved: re-runs don't nag about what they already looked at.
+     * Returns whether a row is open now because of this call.
+     *
+     * @param  array<string, int|string|null>  $details
+     */
+    public static function raiseOrReopen(InvestigationType $type, string $key, array $details, ?string $orderId = null, ?string $refundId = null): bool
+    {
+        if (self::raise($type, $key, $details, $orderId, $refundId)) {
+            return true;
+        }
+
+        return self::query()->where('fingerprint', substr($type->value.':'.$key, 0, 100))
+            ->where('status', InvestigationStatus::Resolved)->whereNull('resolved_by_id')
+            ->update([
+                'status' => InvestigationStatus::Open->value, 'resolved_at' => null, 'resolution_note' => null,
+                'details' => json_encode($details, JSON_THROW_ON_ERROR), 'updated_at' => now(),
+            ]) === 1;
+    }
+
     /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {

@@ -144,6 +144,11 @@ it('with Razorpay, pay hands the browser the server\'s order and amount — noth
         {
             throw App\Exceptions\Billing\PaymentGatewayUnavailable::because('not used');
         }
+
+        public function refundsForPayment(string $paymentId): array
+        {
+            return [];
+        }
     });
 
     Livewire::actingAs(groom(), 'web')->test(Checkout::class, ['plan' => 'silver'])

@@ -156,3 +156,16 @@ it('the search page needs a signed-in, onboarded member', function (): void {
     $this->actingAs(groom('+919888800008'), 'web');
     $this->get(memberUrl('/search'))->assertOk()->assertSee('Search Results');
 });
+
+it('§7.3 "highlighted in search" (owner 2026-11-03): Gold / Diamond profiles carry the Featured mark on Search and All profiles only, not on other lists', function (): void {
+    $this->seed(Database\Seeders\PlansSeeder::class);   // the favourites page reads the viewer's limits
+    $me = groom('+919888800031');
+    $featured = searchBride(['highlighted_until' => now()->addDays(5)]);
+    App\Models\Favorite::factory()->between($me->profile, $featured)->create();
+    $this->actingAs($me, 'web');
+
+    Livewire::test(Search::class)->assertSee($featured->code)->assertSeeHtml('profile-featured')->assertSeeHtml('is-featured');
+    Livewire::test(App\Livewire\Member\Browse\AllProfiles::class)->assertSee($featured->code)->assertSeeHtml('profile-featured');
+    Livewire::test(App\Livewire\Member\Engagement\Favorites::class)->assertSee($featured->code)
+        ->assertDontSeeHtml('profile-featured')->assertDontSeeHtml('is-featured');
+});

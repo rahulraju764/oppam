@@ -167,9 +167,33 @@ it('refunds page: a refund with no answer tells the admin to check, and can be c
         ->assertDispatched('toast', fn (string $event, array $params): bool => $params['type'] === 'danger' && str_contains($params['title'], 'may or may not'));
     expect($refund->refresh()->status)->toBe(RefundStatus::Processing);
 
-    Livewire::test(RefundsIndex::class)->set('status', 'PROCESSING')->assertSee('It wasn’t sent')
+    // Disabled until the wait is over (owner 2026-11-03), with the time it opens; a call anyway is refused.
+    Livewire::test(RefundsIndex::class)->set('status', 'PROCESSING')->assertSee('It wasn’t sent')->assertSee('Can be recorded as not sent from')
+        ->assertDontSeeHtml("confirm('{$refund->code}', 'refund-close-unsent')")
+        ->call('confirm', $refund->code, 'refund-close-unsent')->set('note', 'Not in Razorpay')->call('closeAsNotSent')
+        ->assertDispatched('toast', fn (string $event, array $params): bool => $params['type'] === 'danger' && str_contains($params['title'], 'Wait until'));
+    expect($refund->refresh()->status)->toBe(RefundStatus::Processing);
+
+    $this->travel(31)->minutes();
+    Livewire::test(RefundsIndex::class)->set('status', 'PROCESSING')->assertDontSee('Can be recorded as not sent from')
+        ->assertSeeHtml("confirm('{$refund->code}', 'refund-close-unsent')")
         ->call('confirm', $refund->code, 'refund-close-unsent')->set('note', 'Not in Razorpay')->call('closeAsNotSent')->assertDispatched('toast', type: 'success');
     expect($refund->refresh()->status)->toBe(RefundStatus::Failed);
+});
+
+it('refunds page: "it wasn’t sent" on a refund Razorpay does have is refused, and what Razorpay shows is recorded', function (): void {
+    $order = checkoutOrder(groom(), PlanCode::Gold);
+    capturePayment($order);
+    $payment = Payment::query()->where('order_id', $order->id)->sole();
+    $refund = app(ManageRefund::class)->request(adminWithRole('finance'), $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 1000, 'Member asked');
+    fakeGateway()->nextRefund('sent-unanswered');
+    Livewire::test(RefundsIndex::class)->call('confirm', $refund->code, 'refund-approve')->call('approve');
+    $this->travel(31)->minutes();
+
+    Livewire::test(RefundsIndex::class)->set('status', 'PROCESSING')
+        ->call('confirm', $refund->code, 'refund-close-unsent')->set('note', 'Not in Razorpay')->call('closeAsNotSent')
+        ->assertDispatched('toast', fn (string $event, array $params): bool => $params['type'] === 'danger' && str_contains($params['title'], 'so it was sent'));
+    expect($refund->refresh()->status)->toBe(RefundStatus::Processing)->and($refund->gateway_refund_id)->not->toBeNull();
 });
 
 it('refunds page: closing as sent; an accepted refund shows its id and offers no "wasn’t sent"; the warning shows what needs checking', function (): void {
@@ -181,10 +205,12 @@ it('refunds page: closing as sent; an accepted refund shows its id and offers no
 
     fakeGateway()->nextRefund('unavailable');
     $stuck = $refunds->approve($this->finance, $refunds->request($other, $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 1000, 'Member asked'));
+    $byHand = fakeGateway()->plantRefund($payment->gateway_payment_id, 1000, null);   // made in the Razorpay dashboard
     Livewire::test(RefundsIndex::class)->assertSee('needs checking')
         ->set('status', 'PROCESSING')->assertSee('No answer from the gateway')
         ->call('confirm', $stuck->code, 'refund-close-sent')->set('note', 'Seen in Razorpay')->set('gatewayRefundId', 'nonsense')->call('closeAsSent')->assertHasErrors('gatewayRefundId')
-        ->set('gatewayRefundId', 'rfnd_abc123')->call('closeAsSent')->assertDispatched('toast', type: 'success');
+        ->set('gatewayRefundId', 'rfnd_notatrazorpay')->call('closeAsSent')->assertDispatched('toast', type: 'danger')
+        ->call('confirm', $stuck->code, 'refund-close-sent')->set('note', 'Seen in Razorpay')->set('gatewayRefundId', $byHand->id)->call('closeAsSent')->assertDispatched('toast', type: 'success');
     expect($stuck->refresh()->status)->toBe(RefundStatus::Processed);
 
     fakeGateway()->nextRefund('pending');
@@ -195,6 +221,7 @@ it('refunds page: closing as sent; an accepted refund shows its id and offers no
     expect($accepted->refresh()->status)->toBe(RefundStatus::Processing);
 
     $this->travel(App\Models\Refund::STUCK_HOURS + 1)->hours();
+    fakeGateway()->refundStatusAtGateway((string) $accepted->gateway_refund_id, 'failed');   // failed there; its webhook was lost
     Livewire::test(RefundsIndex::class)->assertSee('needs checking')->set('status', 'PROCESSING')->assertSee('It failed at Razorpay')
         ->call('confirm', $accepted->code, 'refund-close-failed')->set('note', 'Failed in Razorpay')->call('closeAsFailed')->assertDispatched('toast', type: 'success');
     expect($accepted->refresh()->status)->toBe(RefundStatus::Failed);
@@ -202,6 +229,7 @@ it('refunds page: closing as sent; an accepted refund shows its id and offers no
     // Closed as not sent, it can still be recorded as sent; a gateway failure like this one can't.
     fakeGateway()->nextRefund('unavailable');
     $closed = $refunds->approve($this->finance, $refunds->request($other, $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, 1000, 'Member asked'));
+    $this->travel(31)->minutes();
     $refunds->closeAsNotSent($this->finance, $closed, 'Not in Razorpay');
     Livewire::test(RefundsIndex::class)->set('status', 'FAILED')->assertSee('It was sent after all')
         ->assertSeeHtml("confirm('{$closed->code}', 'refund-close-sent')")

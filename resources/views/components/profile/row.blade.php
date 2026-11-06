@@ -8,12 +8,16 @@
               page, "Not interested" on daily matches …). The Like button follows them whenever
               the card carries the viewer's like state (ProfileCards::forViewers).
     hideInterest  true on pages that bring their own interest controls (/interests).
+    highlight true on the search listings only (Search, All profiles): Gold / Diamond profiles get
+              the "Featured" mark and outline there — PRD §7.3 "highlighted in search" (owner
+              2026-11-03). Other lists show the same row without it.
     shortlist optional slot replacing the bookmark on the photo; by default the Favorite button,
               whenever the card carries the viewer's bookmark state.
 --}}
-@props(['profile', 'hideInterest' => false])
+@props(['profile', 'hideInterest' => false, 'highlight' => false])
 
-<div {{ $attributes->class(['profiles', 'is-featured' => $profile->isFeatured]) }}>
+@php($featured = $highlight && $profile->isFeatured)
+<div {{ $attributes->class(['profiles', 'is-featured' => $featured]) }}>
     <div class="profile-img">
         {{-- alt="" — the name is the adjacent <h2>; a filled alt would be read twice. --}}
         <img src="{{ $profile->photoUrl }}" class="img-fluid" alt="" width="600" height="600" loading="lazy" decoding="async">
@@ -49,7 +53,7 @@
             @if ($profile->isVerified)
                 <x-ui.badge variant="verified" icon="fa-check-circle">{{ __('Verified') }}</x-ui.badge>
             @endif
-            @if ($profile->isFeatured)
+            @if ($featured)
                 <x-ui.badge variant="premium" icon="fa-star" class="profile-featured">{{ __('Featured') }}</x-ui.badge>
             @endif
             @if ($profile->meta)

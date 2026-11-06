@@ -98,6 +98,7 @@ enum SettingKey: string
     case BillingOrderTtlMinutes = 'billing.order_ttl_minutes';
     case BillingCheckoutsMaxPerHour = 'billing.checkouts_max_per_hour';
     case BillingCouponAttemptsPerHour = 'billing.coupon_attempts_per_hour';
+    case BillingRefundNotSentWaitMinutes = 'billing.refund_not_sent_wait_minutes';
     case BillingSellerName = 'billing.seller_name';
     case BillingSellerGstin = 'billing.seller_gstin';
     case BillingSellerAddress = 'billing.seller_address';
@@ -225,6 +226,7 @@ enum SettingKey: string
             self::BillingOrderTtlMinutes => 30,     // an unpaid checkout order expires after this (a late capture still activates)
             self::BillingCheckoutsMaxPerHour => 20, // rule 10: orders a member may start per hour
             self::BillingCouponAttemptsPerHour => 20, // rule 10: coupon codes a member may try per hour (no guessing)
+            self::BillingRefundNotSentWaitMinutes => 30, // A06: an unanswered refund can be closed as "not sent" only this long after approval (owner 2026-11-03)
             // Seller details printed on GST invoices — PLACEHOLDERS until the owner supplies the legal
             // entity (decisions 2026-10-21). An invoice issued without a GSTIN says so on its face.
             self::BillingSellerName => 'Oppam Matrimony',
@@ -332,6 +334,7 @@ enum SettingKey: string
             self::BillingGstRateBps => ['required', 'integer', 'min:0', 'max:2800'],
             self::BillingOrderTtlMinutes => ['required', 'integer', 'min:5', 'max:1440'],
             self::BillingCheckoutsMaxPerHour, self::BillingCouponAttemptsPerHour => ['required', 'integer', 'min:3', 'max:200'],
+            self::BillingRefundNotSentWaitMinutes => ['required', 'integer', 'min:10', 'max:1440'],
             self::BillingSellerName => ['required', 'string', 'max:150'],
             self::BillingSellerGstin => ['nullable', 'string', 'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/'],
             self::BillingSellerAddress => ['required', 'string', 'max:300'],

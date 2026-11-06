@@ -106,7 +106,7 @@
 
                             <div class="profile-grid" wire:loading.remove wire:target="sort">
                                 @forelse ($cards as $card)
-                                    <x-profile.row :profile="$card" wire:key="all-{{ $card->code }}" />
+                                    <x-profile.row :profile="$card" highlight wire:key="all-{{ $card->code }}" />
                                 @empty
                                     <x-ui.empty-state icon="fa-users" :title="__('No profiles yet')"
                                                       :message="__('New members join every day. Try Advanced Search with wider filters.')">

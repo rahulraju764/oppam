@@ -212,6 +212,11 @@ it('a gateway outage leaves a FAILED order and a friendly refusal (no gateway te
         {
             throw PaymentGatewayUnavailable::because('timeout');
         }
+
+        public function refundsForPayment(string $paymentId): array
+        {
+            throw PaymentGatewayUnavailable::because('timeout');
+        }
     });
 
     try {

@@ -142,6 +142,27 @@ final class RazorpayGateway implements PaymentGateway
         return $data;
     }
 
+    public function refundsForPayment(string $paymentId): array
+    {
+        try {
+            new Api($this->keyId, $this->keySecret);
+            // GET /payments/{id}/refunds — at most 100, far more than one payment ever has.
+            $items = (new RazorpayPayment)->fetch($paymentId)->fetchMultipleRefund(['count' => 100])->toArray()['items'] ?? [];
+        } catch (Throwable $e) {
+            throw PaymentGatewayUnavailable::because('refunds fetch failed', $e);
+        }
+
+        $refunds = [];
+        foreach (is_array($items) ? $items : [] as $item) {
+            $refund = is_array($item) ? RazorpayWebhookPayload::refund($item) : null;
+            if ($refund instanceof GatewayRefundData && $refund->paymentId === $paymentId) {
+                $refunds[] = $refund;
+            }
+        }
+
+        return $refunds;
+    }
+
     /**
      * The SDK's Orders resource. `new Api(…)` stores the credentials on the SDK (static), which is
      * what its own `$api->order` magic getter relies on; this is the same, minus the magic.

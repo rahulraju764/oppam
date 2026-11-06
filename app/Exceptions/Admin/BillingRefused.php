@@ -84,6 +84,46 @@ final class BillingRefused extends RuntimeException
         return new self(__('Another refund already has that id.'));
     }
 
+    public static function refundTooEarlyToClose(string $from): self
+    {
+        return new self(__('Wait until :time before recording this as not sent: a refund still on its way may yet appear at Razorpay.', ['time' => $from]));
+    }
+
+    public static function refundFoundAtGateway(string $status): self
+    {
+        return new self(__('Razorpay has this refund (:status), so it was sent. That is now recorded here; it can’t be closed as not sent.', ['status' => $status]));
+    }
+
+    public static function refundNotAtGateway(string $id): self
+    {
+        return new self(__('Razorpay has no refund :id on this payment.', ['id' => $id]));
+    }
+
+    public static function refundBelongsToAnother(string $code): self
+    {
+        return new self(__('That Razorpay refund belongs to refund :code.', ['code' => $code]));
+    }
+
+    public static function refundAmountDiffers(string $amount): self
+    {
+        return new self(__('That Razorpay refund is for ₹:amount, not this refund’s amount.', ['amount' => $amount]));
+    }
+
+    public static function refundNotPaidAtGateway(string $status): self
+    {
+        return new self(__('Razorpay shows that refund as :status, not paid. It can be recorded as refunded once Razorpay shows it paid.', ['status' => $status]));
+    }
+
+    public static function refundNotFailedAtGateway(string $status): self
+    {
+        return new self(__('Razorpay shows this refund as :status, not failed. That is now recorded here.', ['status' => $status]));
+    }
+
+    public static function shortPayment(string $captured, string $total): self
+    {
+        return new self(__('Only ₹:captured of ₹:total was captured, so it can’t pay for this plan. Refund it; the member can pay again, or give a complimentary grant.', ['captured' => $captured, 'total' => $total]));
+    }
+
     public static function paymentRefunded(): self
     {
         return new self(__('Part of this payment has been refunded or is being refunded, so it can’t activate the order.'));

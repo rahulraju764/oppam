@@ -7,7 +7,10 @@ namespace App\Models;
 use App\Actions\Billing\SettleRefund;
 use App\Enums\RefundCategory;
 use App\Enums\RefundStatus;
+use App\Enums\SettingKey;
+use App\Support\Facades\Settings;
 use App\ValueObjects\Money;
+use Carbon\CarbonImmutable;
 use Database\Factories\RefundFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -70,6 +73,15 @@ final class Refund extends Model
     public function isAcceptedAndOverdue(): bool
     {
         return $this->status === RefundStatus::Processing && $this->gateway_refund_id !== null && $this->isOverdue();
+    }
+
+    /**
+     * When an unanswered refund may first be closed as not sent: `billing.refund_not_sent_wait_minutes`
+     * after approval, so a request still in flight lands at the gateway first (owner 2026-11-03).
+     */
+    public function notSentFrom(): CarbonImmutable
+    {
+        return ($this->decided_at ?? $this->created_at)->toImmutable()->addMinutes(Settings::int(SettingKey::BillingRefundNotSentWaitMinutes));
     }
 
     /** Closed by hand as not sent; the dashboard may show otherwise later. */

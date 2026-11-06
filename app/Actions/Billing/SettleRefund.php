@@ -86,7 +86,7 @@ final class SettleRefund
             $locked = Refund::query()->whereKey($refund->id)->lockForUpdate()->firstOrFail();
             if ($locked->status === RefundStatus::Processing && $locked->gateway_refund_id === null) {
                 $locked->forceFill(['failure_reason' => self::GATEWAY_UNANSWERED])->save();
-                BillingInvestigation::raise(InvestigationType::RefundStuck, $locked->code, ['refund' => $locked->code, 'amount_paise' => $locked->amount_paise, 'problem' => self::GATEWAY_UNANSWERED], $locked->order_id, $locked->id);
+                BillingInvestigation::raiseOrReopen(InvestigationType::RefundStuck, $locked->code, ['refund' => $locked->code, 'amount_paise' => $locked->amount_paise, 'problem' => self::GATEWAY_UNANSWERED], $locked->order_id, $locked->id);
             }
         });
     }
@@ -114,7 +114,13 @@ final class SettleRefund
             $this->raise($refund, ['problem' => 'accepted_after_failed', 'gateway_refund_id' => $refund->gateway_refund_id]);
             $refund->forceFill(['status' => RefundStatus::Processing]);
         }
+        $wasUnanswered = $refund->getOriginal('gateway_refund_id') === null;
         $refund->forceFill(['failure_reason' => $refund->status === RefundStatus::Processing ? null : $refund->failure_reason])->save();
+        if ($wasUnanswered && $refund->status === RefundStatus::Processing) {
+            // The gateway has it now: "no answer" is answered. If it then stays unconfirmed, the
+            // reconciliation's stuck check opens the row again.
+            $this->closeStuckRow($refund, 'Accepted by the gateway: '.$refund->gateway_refund_id);
+        }
     }
 
     private function markProcessed(Refund $refund): void
@@ -153,11 +159,11 @@ final class SettleRefund
         $this->raise($refund, ['problem' => $reason]);
     }
 
-    /** The refund's outcome is known now: its "not confirmed" row has nothing left to ask. */
-    private function closeStuckRow(Refund $refund): void
+    /** The refund's outcome is known now: its "not confirmed" row has nothing left to ask (closed by the system, no admin). */
+    private function closeStuckRow(Refund $refund, ?string $note = null): void
     {
         BillingInvestigation::query()->open()->where('refund_id', $refund->id)->where('type', InvestigationType::RefundStuck)
-            ->update(['status' => InvestigationStatus::Resolved->value, 'resolved_at' => now(), 'resolution_note' => 'Settled: '.$refund->status->value]);
+            ->update(['status' => InvestigationStatus::Resolved->value, 'resolved_at' => now(), 'resolution_note' => $note ?? 'Settled: '.$refund->status->value]);
     }
 
     /** @param  array<string, int|string|null>  $details */

@@ -16,6 +16,7 @@ use App\Models\AdminUser;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Audit\AuditLogger;
+use App\ValueObjects\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +25,9 @@ use Illuminate\Validation\ValidationException;
  * A06 stuck orders. Re-poll (`billing.refund`): ask the gateway again, the same idempotent path as
  * a webhook. Mark failed (`billing.refund`, reason): only while no unrefunded money is held.
  * Force-activate (`billing.force_activate` AND a super admin, reason): activates with the captured
- * payment that was held back, none of it refunded, the same path as a webhook. All audited.
+ * payment that was held back, none of it refunded, the same path as a webhook. Never with a payment
+ * short of the order total (owner 2026-11-03): the invoice would charge GST on money never received;
+ * that payment is refunded instead, and the member pays again or gets a complimentary grant. All audited.
  */
 final class ResolveStuckOrder
 {
@@ -109,6 +112,9 @@ final class ResolveStuckOrder
             }
             $payment = Payment::query()->where('order_id', $locked->id)->where('status', PaymentStatus::Captured)
                 ->orderBy('captured_at')->orderBy('id')->lockForUpdate()->first() ?? throw BillingRefused::noCapturedPayment();
+            if ($payment->amount_paise < $locked->total_paise) {
+                throw BillingRefused::shortPayment(Money::paise($payment->amount_paise)->format(), $locked->total()->format());
+            }
             // Money being or already returned can't pay for a plan.
             if ($this->balance->left($payment) !== $payment->amount_paise) {
                 throw BillingRefused::paymentRefunded();

@@ -57,11 +57,11 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
 
 ## Phase 5 — Money
 - [x] P5.1 Plans, checkout & Razorpay (M10) — 2026-10-21 (reviewer READY in round 2 after 1 Major fixed: SimulateTestPayment's refusals untested; Dusk: composer unlocks live 1.4–3.0 s after a fake-gateway payment; NOT committed — payments change, owner review first (rule 5))
-- [ ] P5.2 Entitlement sweep, billing history & expiry — 2026-10-22: reviewer READY in round 2 after 1 Major fixed (ExpireSubscriptions
+- [x] P5.2 Entitlement sweep, billing history & expiry — 2026-10-22 (owner reviewed + committed 2026-11-06, rule 5): reviewer READY in round 2 after 1 Major fixed (ExpireSubscriptions
   expired PAUSED plans + resume didn't re-sync flags). 2026-11-01: fresh reviewer READY again. Its open Minors closed: "limit−1 allowed" rows for favourites and
   contacts, /billing loading state + a query-growth test, migration down() run clean on the test database, Dusk /billing step passed. `isFeatured`
   showing on every card list stays for the owner (decisions 2026-11-01). Unticked only for the owner's rule 5 review and browser try.
-- [ ] P5.3 Admin billing (A06) — 2026-11-01: built as one session (owner). The first version was committed and pushed by the owner in 337a900 BEFORE any review;
+- [x] P5.3 Admin billing (A06) — 2026-11-01 (owner reviewed + committed 2026-11-06, rule 5): built as one session (owner). The first version was committed and pushed by the owner in 337a900 BEFORE any review;
   **don't enable real refunds from that commit.** Plan editor + entitlement matrix + consistency warning, coupons, subscription views + complimentary grants,
   orders + timeline + raw webhooks, stuck orders (re-poll, mark failed, force-activate super admin), refunds with two admins (ManageRefund, SettleRefund,
   ApplyRefundEffects, IssueCreditNote), GST CSV, reconciliation 02:00 IST, credit note PDF, A02 revenue + work queues, A03 order search + orders. Added at the

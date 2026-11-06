@@ -25,7 +25,8 @@ use Illuminate\Queue\InteractsWithQueue;
  * (a late capture isn't missed). Each captured gateway payment goes through ActivateSubscription,
  * which activates one we never heard about and is idempotent otherwise; whatever that can't settle
  * becomes a row. Captured here but absent at the gateway → a row; a refund still PROCESSING after
- * 48 h → a row. Rows are fingerprinted, so a re-run adds nothing. If the gateway is down the job
+ * 48 h → a row (reopened when the system had closed it and the refund is stuck again). Rows are
+ * fingerprinted, so a re-run adds nothing. If the gateway is down the job
  * fails and retries; nothing is written from a partial list.
  */
 final class ReconcilePayments implements ShouldBeUnique, ShouldQueue
@@ -85,7 +86,8 @@ final class ReconcilePayments implements ShouldBeUnique, ShouldQueue
 
         Refund::query()->where('status', RefundStatus::Processing)->where('decided_at', '<=', now()->subHours(Refund::STUCK_HOURS))
             ->lazyById(500)
-            ->each(fn (Refund $refund) => BillingInvestigation::raise(InvestigationType::RefundStuck, $refund->code, ['refund' => $refund->code, 'amount_paise' => $refund->amount_paise], $refund->order_id, $refund->id));
+            // raiseOrReopen: a refund settled once, then revived by a late report and stuck again, gets its row back.
+            ->each(fn (Refund $refund) => BillingInvestigation::raiseOrReopen(InvestigationType::RefundStuck, $refund->code, ['refund' => $refund->code, 'amount_paise' => $refund->amount_paise], $refund->order_id, $refund->id));
     }
 
     /** A captured payment recorded earlier on an order another payment paid. */

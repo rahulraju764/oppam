@@ -25,6 +25,8 @@ final class FakePaymentGateway implements PaymentGateway
 
     private const TTL_SECONDS = 86_400;
 
+    private const REFUND_TTL_SECONDS = 2_592_000;
+
     public function __construct(
         private readonly Cache $cache,
         private readonly string $webhookSecret,
@@ -105,6 +107,70 @@ final class FakePaymentGateway implements PaymentGateway
             throw PaymentGatewayUnavailable::because('fake gateway set to refuse the refund');
         }
 
+        $data = $this->plantRefund($paymentId, $amountPaise, $receipt, $mode === 'processed' || $mode === null ? 'processed' : 'pending');
+        if ($mode === 'sent-unanswered') {
+            // The gateway took it, but the answer never arrived (a timeout): the caller can't know it went.
+            throw PaymentGatewayUnavailable::because('fake gateway: refund created, answer lost');
+        }
+
+        return $data;
+    }
+
+    public function refundsForPayment(string $paymentId): array
+    {
+        if ($this->cache->pull(self::KEY.'next-lookup') === 'unavailable') {
+            throw PaymentGatewayUnavailable::because('fake gateway set to refuse the lookup');
+        }
+
+        $refunds = [];
+        foreach ((array) $this->cache->get(self::KEY.'payment-refunds:'.$paymentId, []) as $refundId) {
+            $entity = $this->cache->get(self::KEY.'refund:'.$refundId);
+            $refund = is_array($entity) ? RazorpayWebhookPayload::refund($entity) : null;
+            if ($refund instanceof GatewayRefundData) {
+                $refunds[] = $refund;
+            }
+        }
+
+        return $refunds;
+    }
+
+    /**
+     * Tests / local: how the next refund call behaves — 'processed' (the default), 'pending' (accepted,
+     * not yet processed), 'unavailable' (refused, nothing sent) or 'sent-unanswered' (sent, but the
+     * answer was lost: the call fails although the refund exists at the gateway).
+     */
+    public function nextRefund(string $mode): void
+    {
+        $this->cache->put(self::KEY.'next-refund', $mode, self::TTL_SECONDS);
+    }
+
+    /**
+     * Tests: what the gateway's own records say about a refund, with no webhook sent (one that was lost).
+     *
+     * @param  'pending'|'processed'|'failed'  $status
+     */
+    public function refundStatusAtGateway(string $refundId, string $status): void
+    {
+        $refund = $this->cache->get(self::KEY.'refund:'.$refundId);
+        if (is_array($refund)) {
+            $this->cache->put(self::KEY.'refund:'.$refundId, [...$refund, 'status' => $status], self::REFUND_TTL_SECONDS);
+        }
+    }
+
+    /** Tests: the next refundsForPayment() can't reach the gateway. */
+    public function failNextRefundLookup(): void
+    {
+        $this->cache->put(self::KEY.'next-lookup', 'unavailable', self::TTL_SECONDS);
+    }
+
+    /**
+     * A refund as the gateway holds it — one of ours ($receipt = its RFD… code), or one made by hand in
+     * the dashboard ($receipt null). Kept a month: the stuck-refund rules wait 48 hours.
+     *
+     * @param  'pending'|'processed'|'failed'  $status
+     */
+    public function plantRefund(string $paymentId, int $amountPaise, ?string $receipt, string $status = 'processed'): GatewayRefundData
+    {
         $entity = [
             'id' => 'rfnd_'.Str::random(14),
             'entity' => 'refund',
@@ -112,18 +178,14 @@ final class FakePaymentGateway implements PaymentGateway
             'amount' => $amountPaise,
             'currency' => 'INR',
             'receipt' => $receipt,
-            'notes' => ['refund_code' => $receipt],
-            'status' => $mode === 'pending' ? 'pending' : 'processed',
+            'notes' => $receipt === null ? [] : ['refund_code' => $receipt],
+            'status' => $status,
         ];
-        $this->cache->put(self::KEY.'refund:'.$entity['id'], $entity, self::TTL_SECONDS);
+        $this->cache->put(self::KEY.'refund:'.$entity['id'], $entity, self::REFUND_TTL_SECONDS);
+        $index = self::KEY.'payment-refunds:'.$paymentId;
+        $this->cache->put($index, [...(array) $this->cache->get($index, []), $entity['id']], self::REFUND_TTL_SECONDS);
 
         return RazorpayWebhookPayload::refund($entity) ?? throw PaymentGatewayUnavailable::because('fake refund');
-    }
-
-    /** Tests / local: how the next refund call behaves — 'pending' (accepted, not yet processed) or 'unavailable'. */
-    public function nextRefund(string $mode): void
-    {
-        $this->cache->put(self::KEY.'next-refund', $mode, self::TTL_SECONDS);
     }
 
     /**
@@ -133,12 +195,16 @@ final class FakePaymentGateway implements PaymentGateway
      */
     public function refundWebhook(string $refundId, string $event = 'refund.processed'): array
     {
-        $refund = (array) $this->cache->get(self::KEY.'refund:'.$refundId, []);
+        $stored = $this->cache->get(self::KEY.'refund:'.$refundId);
+        $refund = is_array($stored) ? $stored : [];
         $refund['status'] = match ($event) {
             'refund.failed' => 'failed',
             'refund.created' => 'pending',
             default => 'processed',
         };
+        if (is_array($stored)) {
+            $this->cache->put(self::KEY.'refund:'.$refundId, $refund, self::REFUND_TTL_SECONDS);   // a later lookup sees what was announced
+        }
 
         $body = (string) json_encode([
             'entity' => 'event',

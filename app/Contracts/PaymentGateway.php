@@ -64,4 +64,14 @@ interface PaymentGateway
      * @throws PaymentGatewayUnavailable the gateway refused or could not be reached — nothing was refunded
      */
     public function refund(string $paymentId, int $amountPaise, string $receipt): GatewayRefundData;
+
+    /**
+     * Every refund the gateway holds for one captured payment, ours (carrying an RFD… code) and any
+     * made in its dashboard. A06: asked before a refund the gateway never answered is closed by hand.
+     *
+     * @return list<GatewayRefundData>
+     *
+     * @throws PaymentGatewayUnavailable
+     */
+    public function refundsForPayment(string $paymentId): array;
 }

@@ -49,11 +49,11 @@ beforeEach(function (): void {
     $this->super = adminWithRole('super_admin');
 });
 
-/** An order whose capture came in for the wrong amount: money held, not activated. */
-function mismatchedOrder(): Order
+/** An order whose capture came in for the wrong amount: money held, not activated. Short by default; +100 is an over-payment. */
+function mismatchedOrder(int $difference = -100): Order
 {
     $order = checkoutOrder(groom(), PlanCode::Gold);
-    capturePayment($order, $order->total_paise - 100);
+    capturePayment($order, $order->total_paise + $difference);
 
     return $order->refresh();
 }
@@ -106,9 +106,9 @@ it('A06 mark failed: only with no money held, with a reason, audited', function 
     expect(fn () => $resolve->markFailed($this->finance, $paid->refresh(), 'Trying anyway'))->toThrow(BillingRefused::class);
 });
 
-it('★ A06 force-activate: super admin only, needs a captured payment and a reason; activates once, audited with both amounts', function (): void {
+it('★ A06 force-activate: super admin only, needs a captured payment covering the order and a reason; activates once, audited with both amounts', function (): void {
     $resolve = app(ResolveStuckOrder::class);
-    $order = mismatchedOrder();
+    $order = mismatchedOrder(+100);
 
     expect(fn () => $resolve->forceActivate($this->finance, $order, 'Finance tries'))->toThrow(AuthorizationException::class);
 
@@ -118,9 +118,15 @@ it('★ A06 force-activate: super admin only, needs a captured payment and a rea
     expect(fn () => $resolve->forceActivate($granted->refresh(), $order, 'Permission, wrong role'))->toThrow(BillingRefused::class, 'super admin')
         ->and(fn () => $resolve->forceActivate($this->super, $order, ''))->toThrow(ValidationException::class);
 
-    expect($resolve->forceActivate($this->super, $order, 'Member confirmed the short payment')->status)->toBe(OrderStatus::Paid)
+    // Owner 2026-11-03: a short payment never activates (no GST invoice on money never received).
+    $short = checkoutOrder(bride('+919800000201'), PlanCode::Gold);
+    capturePayment($short, $short->total_paise - 100);
+    expect(fn () => $resolve->forceActivate($this->super, $short->refresh(), 'Member confirmed the short payment'))->toThrow(BillingRefused::class, 'can’t pay for this plan')
+        ->and(Subscription::query()->where('order_id', $short->id)->count())->toBe(0);
+
+    expect($resolve->forceActivate($this->super, $order, 'Member paid a little more')->status)->toBe(OrderStatus::Paid)
         ->and(Subscription::query()->where('order_id', $order->id)->sole()->status)->toBe(SubscriptionStatus::Active)
-        ->and(AuditLog::query()->where('action', 'billing.order_force_activated')->sole()->after['captured_paise'])->toBe($order->total_paise - 100);
+        ->and(AuditLog::query()->where('action', 'billing.order_force_activated')->sole()->after['captured_paise'])->toBe($order->total_paise + 100);
 
     expect(fn () => $resolve->forceActivate($this->super, $order->refresh(), 'A second time'))->toThrow(BillingRefused::class);
 
@@ -177,7 +183,7 @@ it('A06 reconciliation: a gateway outage fails the job and writes nothing, so it
 });
 
 it('★ A06 force-activate: a payment refunded, or being refunded, can’t pay for a plan', function (): void {
-    $order = mismatchedOrder();
+    $order = mismatchedOrder(+100);
     $payment = Payment::query()->where('order_id', $order->id)->sole();
     $refunds = app(ManageRefund::class);
     $refund = $refunds->request($this->finance, $order, $payment->gateway_payment_id, RefundCategory::DuplicatePayment, $payment->amount_paise, 'Sending it back');
@@ -213,7 +219,8 @@ it('A02 revenue: an extra payment going back doesn’t lower revenue that never 
     $refunds = app(ManageRefund::class);
     $refunds->approve(adminWithRole('finance'), $refunds->request($this->finance, $order->refresh(), $extra['payment_id'], RefundCategory::DuplicatePayment, $order->total_paise, 'Paid twice'));
 
-    expect(app(RevenueSummary::class)->summary()['today']->paise)->toBe($order->total_paise);
+    expect(app(RevenueSummary::class)->summary()['today']->paise)->toBe($order->total_paise)
+        ->and(app(RevenueSummary::class)->byPlan()['values'])->toBe([intdiv($order->total_paise, 100)]);
 });
 
 it('A06 reconciliation is scheduled at 02:00 IST', function (): void {
@@ -258,7 +265,7 @@ it('A06 GST CSV: invoices and negative credit notes of the IST month, no names, 
         ->and(AuditLog::query()->where('action', 'billing.gst_exported')->sole()->actor_id)->toBe($this->finance->id);
 });
 
-it('A02 revenue: paid orders less processed refunds, by IST day and month; by plan', function (): void {
+it('A02 revenue: paid orders less processed refunds, by IST day and month; by plan, net the same way (P5.3 Minor)', function (): void {
     $order = checkoutOrder(groom(), PlanCode::Gold);
     capturePayment($order);
     $payment = Payment::query()->where('order_id', $order->id)->sole();
@@ -270,8 +277,12 @@ it('A02 revenue: paid orders less processed refunds, by IST day and month; by pl
 
     expect($summary['today']->paise)->toBe($order->total_paise - 10_000)
         ->and($summary['month']->paise)->toBeGreaterThanOrEqual($summary['today']->paise)
-        ->and($byPlan['labels'])->toContain($order->plan->name)
-        ->and($byPlan['values'])->toContain(intdiv($order->total_paise, 100));
+        ->and($byPlan['labels'])->toBe([$order->plan->name])
+        ->and($byPlan['values'])->toBe([intdiv($order->total_paise - 10_000, 100)]);
+
+    // The rest goes back too: the bar reaches zero, never below.
+    $refunds->approve(adminWithRole('finance'), $refunds->request($this->finance, $order->refresh(), $payment->gateway_payment_id, RefundCategory::Goodwill, $order->total_paise - 10_000, 'The rest'));
+    expect(app(RevenueSummary::class)->byPlan()['values'])->toBe([0]);
 });
 
 it('A03: the member search finds a member by order code', function (): void {

@@ -124,7 +124,7 @@
     @endcan
     @if ($canForce)
         <x-admin.confirm-modal name="order-force" :title="__('Force-activate :code', ['code' => $order->code])" action="forceActivate" :confirmLabel="__('Force-activate')">
-            <p>{{ __('This activates the plan with the captured payment, even if the amount differs from the order. Super admins only.') }}</p>
+            <p>{{ __('This activates the plan with the captured payment, which must cover the order total: a short payment is refunded instead, and the member can pay again or get a complimentary grant. Super admins only.') }}</p>
         </x-admin.confirm-modal>
     @endif
 </div>

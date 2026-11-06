@@ -54,7 +54,13 @@
                             @endif
                         @elseif ($refund->isUnanswered())
                             <x-ui.button size="sm" variant="outline" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-sent')">{{ __('It was sent') }}</x-ui.button>
-                            <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-unsent')">{{ __('It wasn’t sent') }}</x-ui.button>
+                            @php($notSentFrom = $refund->notSentFrom())
+                            @if ($notSentFrom->isFuture())
+                                <x-ui.button size="sm" variant="ghost" type="button" disabled aria-describedby="rfd-wait-{{ $refund->code }}">{{ __('It wasn’t sent') }}</x-ui.button>
+                                <div class="text-muted small" id="rfd-wait-{{ $refund->code }}">{{ __('Can be recorded as not sent from :time', ['time' => $notSentFrom->timezone($timezone)->format('g:i a')]) }}</div>
+                            @else
+                                <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-unsent')">{{ __('It wasn’t sent') }}</x-ui.button>
+                            @endif
                         @elseif ($refund->isClosedAsNotSent())
                             <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $refund->code }}', 'refund-close-sent')">{{ __('It was sent after all') }}</x-ui.button>
                         @elseif ($refund->isAcceptedAndOverdue())
@@ -79,14 +85,14 @@
     </x-ui.modal>
 
     <x-admin.confirm-modal name="refund-close-sent" :title="__('Record :code as refunded', ['code' => $selected])" action="closeAsSent" reasonModel="note" :confirmLabel="__('Record as refunded')">
-        <p>{{ __('Only after you’ve seen this refund in the Razorpay dashboard. The credit note, plan change and commission follow.') }}</p>
+        <p>{{ __('Only after you’ve seen this refund in the Razorpay dashboard. The id is checked with Razorpay: it must be paid, for this amount, on this payment. The credit note, plan change and commission follow.') }}</p>
         <x-ui.input :label="__('Razorpay refund id')" name="gatewayRefundId" id="rfd-gateway-id" wire:model="gatewayRefundId" required />
     </x-admin.confirm-modal>
     <x-admin.confirm-modal name="refund-close-unsent" :title="__('Record :code as not sent', ['code' => $selected])" action="closeAsNotSent" reasonModel="note" :confirmLabel="__('Record as not sent')">
-        <p>{{ __('Only after you’ve checked the Razorpay dashboard: this frees the money to be refunded again.') }}</p>
+        <p>{{ __('Only after you’ve checked the Razorpay dashboard: this frees the money to be refunded again. Razorpay is asked first; if it has this refund, that is recorded instead.') }}</p>
     </x-admin.confirm-modal>
     <x-admin.confirm-modal name="refund-close-failed" :title="__('Record :code as failed', ['code' => $selected])" action="closeAsFailed" reasonModel="note" :confirmLabel="__('Record as failed')">
-        <p>{{ __('Only after Razorpay’s dashboard shows this refund failed: this frees the money to be refunded again.') }}</p>
+        <p>{{ __('Only after Razorpay’s dashboard shows this refund failed: this frees the money to be refunded again. Razorpay is asked first; if it shows anything else, that is recorded instead.') }}</p>
     </x-admin.confirm-modal>
     <x-admin.confirm-modal name="refund-reject" :title="__('Reject :code', ['code' => $selected])" action="reject" reasonModel="note" :confirmLabel="__('Reject')" />
 </div>
