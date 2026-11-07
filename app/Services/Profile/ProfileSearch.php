@@ -28,8 +28,8 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
  * profiles of the opposite gender (an ACTIVE profile always has an active member account —
  * SuspendMember / DeleteMember change both; page() re-checks the account), never the searcher,
  * never a profile in a
- * blocked pair (either direction, BlockList), never one the searcher ignored, never an incognito
- * profile. Every filter value comes from SearchCriteria (allow-listed) and is bound.
+ * blocked pair (either direction, BlockList), never one the searcher ignored, never one hidden from
+ * search (privacy_settings.hide_from_search, M14). Every filter value comes from SearchCriteria (allow-listed) and is bound.
  *
  * Results are keyset-paginated ("load more"): ordered by the sort key, then published_at, then id,
  * and the next page starts strictly after the last row — stable while new profiles arrive, and
@@ -66,7 +66,7 @@ final class ProfileSearch
             ->where('profiles.id', '!=', $searcher->id)
             ->whereNotExists(fn (QueryBuilder $q) => $q->selectRaw('1')->from('privacy_settings')
                 ->whereColumn('privacy_settings.profile_id', 'profiles.id')
-                ->where('privacy_settings.incognito', true))
+                ->where('privacy_settings.hide_from_search', true))
             ->whereNotExists(fn (QueryBuilder $q) => $q->selectRaw('1')->from('ignores')
                 ->whereColumn('ignores.ignored_profile_id', 'profiles.id')
                 ->where('ignores.ignorer_profile_id', $searcher->id));

@@ -111,13 +111,13 @@ it('fires ProfileViewed to the viewed member once per viewer per day, with today
         && $e->broadcastWith() === ['count_today' => 2]);
 });
 
-it('records nothing for the owner, an incognito viewer or a blocked pair', function (string $case): void {
+it('records nothing for the owner, a Diamond viewer browsing incognito (M14) or a blocked pair', function (string $case): void {
     $bride = bride();
     $groom = groom();
 
     $viewer = match ($case) {
         'owner' => $bride,
-        'incognito' => tap($groom, function (User $u): void {
+        'incognito' => tap(chatOnPlan($groom, App\Enums\PlanCode::Diamond), function (User $u): void {
             $privacy = PrivacySetting::query()->whereKey($u->profile->id)->first() ?? new PrivacySetting;
             $privacy->forceFill(['profile_id' => $u->profile->id, 'incognito' => true])->save();
         })->refresh(),

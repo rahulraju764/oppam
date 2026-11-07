@@ -52,7 +52,7 @@ abstract class MemberNotification extends Notification implements ShouldQueue
         return [InAppChannel::class => 'notifications', 'mail' => 'mail', SmsChannel::class => 'notifications'];
     }
 
-    /** @return array<string, DateTimeInterface> quiet hours: SMS waits until 07:00 IST */
+    /** @return array<string, DateTimeInterface> quiet hours: SMS waits until they end (IST, A15) */
     public function withDelay(object $notifiable, string $channel): array
     {
         $delay = app(NotificationRouter::class)->smsDelay();
@@ -120,6 +120,6 @@ abstract class MemberNotification extends Notification implements ShouldQueue
 
     protected function withPreferencesLink(MailMessage $mail): MailMessage
     {
-        return $mail->line(__('Manage which notifications you get on your [notifications page](:url).', ['url' => route('member.notifications')]));
+        return $mail->line(__('Manage which notifications you get in your [notification settings](:url).', ['url' => route('member.settings', ['tab' => 'notifications'])]));
     }
 }

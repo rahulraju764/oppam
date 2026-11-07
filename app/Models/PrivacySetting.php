@@ -17,7 +17,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property PhotoVisibility $photo_visibility
  * @property PhoneVisibility $phone_visibility
  * @property HoroscopeVisibility $horoscope_visibility
- * @property bool $incognito
+ * @property bool $incognito browse without appearing in "who viewed me" — only while the plan has Entitlement::Incognito (Domain\Profile\Incognito)
+ * @property bool $hide_from_search out of search, matches, alerts and the home page (every plan, M14)
  * @property bool $contact_filter_enabled
  * @property bool $show_online_status
  * @property bool $show_last_seen
@@ -40,6 +41,7 @@ final class PrivacySetting extends Model
         'show_last_seen',
         'read_receipts',
         'incognito',
+        'hide_from_search',
         'contact_filter_enabled',
     ];
 
@@ -54,6 +56,7 @@ final class PrivacySetting extends Model
             'show_last_seen' => 'boolean',
             'read_receipts' => 'boolean',
             'incognito' => 'boolean',
+            'hide_from_search' => 'boolean',
             'contact_filter_enabled' => 'boolean',
             'show_on_home' => 'boolean',
         ];

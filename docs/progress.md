@@ -4,9 +4,9 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 7 — Broker module: every session built and reviewer READY (2026-11-01); P7.2, P7.8a–c, P7.9 stay unticked until the owner's
-rule-5 review and browser try.
-**Next session:** finish P8.1b (full test run, Dusk, oppam-reviewer, then owner browser try + commit); then P8.2a. Phase 5 committed 93cdce0 (2026-11-06).
+**Current phase:** 8 — Content, settings & communication (Phase 7: every session built and reviewer READY 2026-11-01; P7.2, P7.8a–c, P7.9 stay unticked
+until the owner's rule-5 review and browser try).
+**Next session:** P8.2a owner browser try + commit; then P8.2b (Account tab — rule 5). Remaining order (decisions 2026-11-07): P8.2b → P8.2c → P8.3a → P8.3b → P8.4. P8.1b committed e9cd4e4 (2026-11-07).
 Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner review of the P5.x, P6.2 and P7.x auth / payment changes (rule 5)
 
 ## Before starting (outside tasks — start early)
@@ -283,14 +283,37 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     Found by Dusk, not by Livewire tests: the editor's text never reached the server (fixed). Found by a test: preview mode outlived its request in a kept-alive process (fixed).
     The first version was committed and pushed by the owner in 698b98b BEFORE any verdict.
     Reviewer: round 1 NOT READY, 1 Blocker + 7 Majors (a dialog left open re-recorded consent on a withdrawn story; unreviewed edits published under a publisher's click; palette PNG fatal; consent missing from audit; "Verified Members" counted all members; toolbar mouse-only; a query-growth test that added no rows; story text lost the template's styling). All fixed. Round 2 NOT READY, 0 Blockers + 2 Majors, both in round 1's fixes (Bold acted on an old selection; the toggle's rate limit could refuse an opt-out). Fixed. **Round 3 READY TO COMMIT, 0 Blockers / 0 Majors**; its cheap Minors fixed after. Open for the owner: testimonial withdrawal path and archived images left on disk; a typed reason in the audit log can name someone; same-gender featured members for a signed-in viewer; `inRandomOrder` cost on home (P9.4); 36 px dense admin row buttons; hardcoded copy on the /branches intro and /about story; a transparent PNG-8 over 1920 px wide gets a black background; image decode under the row lock. No MySQL 8 run, no real concurrency run.
-  - [ ] P8.1b Legal versioning + forced re-acceptance, ad slots, contact inbox + Turnstile, community landing pages, sitemap.xml — 2026-11-06: **built, review pending** (decisions 2026-11-06). `legal_documents` (one row per version, publish archives the previous, published = fixed) + `legal_acceptances` (recorded at registration, `/legal/accept` blocking page via `legal.accepted` on member + bureau routes, non-material → notice); /terms, /privacy, new /grievance read the live version (seeded v1 = reference copy, not material, not legally reviewed); A08 legal screen with New version + Compare (TextDiff); `ad_creatives` + AdRotation (audience, window, weight) in `x-ads.rail`, demo creatives gone; contact form → SubmitContact (honeypot, Turnstile via CaptchaVerifier, rate limit, spam tab) → `contact_submissions` inbox `/content/contact` (assign / reply / convert via OpenTicket::fromContact / spam), retention job; `community_pages` content type + `/{slug}-matrimony…` route; `/sitemap.xml` + `/robots.txt` routes (static robots.txt removed). New tests green: LegalVersioningTest 22, AdRotationTest 14, ContactSubmissionTest 19, CommunityPagesTest 15, LegalContactScreensTest 13; pint + phpstan clean.
-    **Finished 2026-11-07 — reviewer READY TO COMMIT (round 1: 0 Blockers / 0 Majors, 7 Minors; round 2 on the fixes: READY).** NOT committed: CompleteRegistration changed → owner review first (rule 5).
+  - [x] P8.1b Legal versioning + forced re-acceptance, ad slots, contact inbox + Turnstile, community landing pages, sitemap.xml — 2026-11-06: **built, review pending** (decisions 2026-11-06). `legal_documents` (one row per version, publish archives the previous, published = fixed) + `legal_acceptances` (recorded at registration, `/legal/accept` blocking page via `legal.accepted` on member + bureau routes, non-material → notice); /terms, /privacy, new /grievance read the live version (seeded v1 = reference copy, not material, not legally reviewed); A08 legal screen with New version + Compare (TextDiff); `ad_creatives` + AdRotation (audience, window, weight) in `x-ads.rail`, demo creatives gone; contact form → SubmitContact (honeypot, Turnstile via CaptchaVerifier, rate limit, spam tab) → `contact_submissions` inbox `/content/contact` (assign / reply / convert via OpenTicket::fromContact / spam), retention job; `community_pages` content type + `/{slug}-matrimony…` route; `/sitemap.xml` + `/robots.txt` routes (static robots.txt removed). New tests green: LegalVersioningTest 22, AdRotationTest 14, ContactSubmissionTest 19, CommunityPagesTest 15, LegalContactScreensTest 13; pint + phpstan clean.
+    **Finished 2026-11-07 — reviewer READY TO COMMIT (round 1: 0 Blockers / 0 Majors, 7 Minors; round 2 on the fixes: READY).** Owner reviewed CompleteRegistration (rule 5); committed e9cd4e4 (2026-11-07).
     Full suite folder by folder (whole `composer test` runs out of memory on this machine): it found two P8.1b faults, fixed: (1) `legal_acceptances.accepted_at` / `contact_replies.created_at` were bare `timestamp` → MariaDB implicit ON UPDATE (TimestampColumnsTest) → `useCurrent()`; (2) SafetyScreensTest's /contact test still asserted the P6.2 direct ticket, replaced by owner decision 2026-11-02 (3) → asserts the inbox row now (reviewer: an update, not a weakening).
     Found by Dusk: after agreeing, members landed on `GET /broadcasting/auth` (405), because Echo's channel-auth POST (inside `legal.accepted`) became `url.intended` → only GET page loads are remembered / redirected, background requests get 409 (regression test, seen failing on the old code).
     Reviewer Minors fixed: `EnsureLegalTermsAccepted` is now Livewire persistent middleware (an action on a page opened before a material version went live → 409; test seen failing without it); already-checked session stopped by a new material version (test); `contact_submissions (ip_hash, created_at)` index (local DB: this one migration rolled back + re-run, ContentSeeder re-run); stray whitespace in build-prompts.md reverted.
     Runs after the last change: pint passed; phpstan OK; every test folder one at a time **3,591 passed, 0 failed, 1 skipped** (ext-exif); Dusk (DUSK_DRIVER_PORT=9615, `composer dev` up) new `tests/Browser/Mobile/LegalContactTest.php` 3 passed (re-acceptance + contact form at 375 px; legal / contact / community pages and A08 legal / ads / communities / contact at 320 / 768 / 1024 / 1440), InterestFlowTest 1, BrokerPortalTest 11; before the persistent-middleware change MemberAuthTest 9, RegistrationJourneyTest 2, AdminContentTest 2.
     Minors open: a member blocked mid-session gets Livewire's error dialog (409) on an open page's actions, logout included, until the next page load → accept page (better: Livewire redirect, P9.3); SaveContent's new legal version number is `max+1` unlocked (two editors at once → unique-constraint 500); TextDiff MAX_BLOCKS 2000 + recompute per render (memory on huge documents); honeypot shows "—" instead of a code; real Turnstile not run end-to-end (driver none locally; Http::fake tests); local dev DB has `moderation_items.submitted_at` ON UPDATE (old local drift, test DB fine). Owner to confirm: decisions 2026-11-06 (a)–(k).
-- [ ] P8.2 Settings & privacy, success-story submission (M14 + M16)
+- [ ] P8.2 Settings & privacy, success-story submission (M14 + M16) — split by the owner (decisions 2026-11-07) into:
+  - [ ] P8.2a /settings: Privacy, Notifications, Blocked & ignored — 2026-11-07: built, **reviewer READY TO COMMIT** (round 1: 0 Blockers / 0 Majors, 7 Minors; 6 fixed, round 2 on the fixes: READY).
+    Runs after the last change: pint passed; phpstan OK; every test folder one at a time **3,660 passed, 0 failed, 1 skipped** (ext-exif) before the Minor fixes, then the
+    affected folders again (Settings 160, Notifications 54, Billing 234, Search 41, Livewire/Member 349 — all passed); Dusk (DUSK_DRIVER_PORT=9615) SettingsTest 2,
+    LegalContactTest 3, SafetyPagesResponsiveTest 1, BlockLiveTest 1 passed. Found by Dusk, not by Livewire tests: the matrix's visually-hidden cell text widened the page at
+    375 px (fixed: `.nt-matrix-wrap { position: relative }`); the width helper only waits for `main`, so the test now also checks each lazy tab loaded at 320 px.
+    Reviewer Minors fixed: notification opt-outs never rate-limited (only a save that switches something on counts); both entitlement CHECKs (plan_features + entitlement_usages)
+    rebuilt; `NotificationEvent::usesChannel()` shared by view + Action; privacy row inserted before the lock; bulk seeder seeds hide_from_search (command not run).
+    Minors open: two-browser Dusk proof that the green dot goes when online status is switched off (→ P9.3; Livewire test proves the `presence-hidden` dispatch only); other
+    open tabs of the same member stay on the roster until their next page load, and switching online status back on rejoins only on the next page load; a refused privacy save
+    can leave a row of defaults (same meaning as no row); no MySQL 8 run. Local dev: the `composer dev` queue worker had died and public/hot pointed at a dead Vite port
+    (5174 → fixed to 5173) — restart `composer dev` before trying it in the browser. Owner to confirm: decisions 2026-11-07 (a)–(f).
+    `/settings` (one page, `?tab=`, lazy tabs; /settings/blocked → `?tab=blocked`; header menu "Settings & privacy"). Privacy: UpdatePrivacySettings (photo / phone / horoscope visibility,
+    online status, last seen, read receipts, **hide_from_search** (new column, every plan) and **incognito** (now Diamond-only, `Entitlement::Incognito` + plan_features row;
+    `Domain\Profile\Incognito` — lapses with the plan), contact filter); a stricter save is never rate-limited; switching online off leaves presence at once (`presence-hidden`).
+    The home-page switch moved here from My Profile. Search / matches / alerts / featured read hide_from_search; incognito only stops view recording (+ presence).
+    Migration copied every old incognito row to hide_from_search (nobody became visible) and swapped the search index. Notifications: events × channels matrix
+    (UpdateNotificationPreferences — switch off only, mandatory fixed, push "soon"); SMS quiet hours = ONE window for everyone, A15 `notifications.quiet_from` / `quiet_until`
+    (owner 2026-11-06 / 11-07; a per-member version was built first and removed on the owner's answer). Mail preference links + /notifications point at the tab.
+    Blocked & ignored moved in as a lazy tab (flash message read by the page). New tests: PrivacySettingsTest 28, NotificationPreferencesTest, SettingsScreensTest; Dusk tests/Browser/Mobile/SettingsTest.php.
+    Updated (not weakened): the tests that used `incognito` to mean "hidden from search" now use hide_from_search; incognito tests now use a Diamond member; tests that used
+    /settings/blocked as a sample page use /settings.
+  - [ ] P8.2b Account tab: change mobile (OTP to old + new), email add + verify (switches on the deferred emails), password, sessions list (rule 5)
+  - [ ] P8.2c Hide / delete with reasons (30-day recovery, anonymise job), download my data, M16 story submission + partner confirmation (submitter hidden, not deleted)
 - [ ] P8.3 Notifications, campaigns & journeys (A14)
 - [ ] P8.4 Settings & configuration (A15)
 
@@ -306,7 +329,7 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
 <!-- Record anything built differently from the PRD, with the reason and a link to docs/decisions.md -->
 - P8.1a → P9.5: run `php artisan db:seed --class=ContentSeeder` once in production (reference copy only; never overwrites an edit). Real stories, testimonials and branches are entered in A08 before launch: the demo ones are local only.
 - P8.1a → P9.5: check PHP `memory_limit` (a 40 MP upload peaked at 327 MB) and that `ext-exif` is loaded (phone photos go sideways without it). `lock_version` was added by editing the migration already pushed in 698b98b: any database other than local that ran 698b98b must roll that one migration back and re-run it.
-- P8.1a → P8.2: move the "Show me on the home page" toggle into the Privacy tab; M16 submissions arrive as story drafts, the member-side withdrawal request, marriages counter from closures.
+- P8.1a → P8.2: ~~move the "Show me on the home page" toggle into the Privacy tab~~ (done in P8.2a); → P8.2c: M16 submissions arrive as story drafts, the member-side withdrawal request, marriages counter from closures.
 - P8.1a → P9.3: FAQ / Organization structured data.
 - P5.3 → P9.5: run `php artisan db:seed --class=MastersSeeder` once for `master_states.gst_code`; subscribe the Razorpay webhook to refund.created, refund.processed and refund.failed too.
 - P5.1 → before launch (P9.5): the owner supplies the seller's legal name, GSTIN, address and SAC (A15 `billing.seller_*` —
@@ -319,7 +342,7 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
 - P5.1 → P5.3 (A06): stuck orders (`failure_reason` amount_mismatch, logs `billing.amount_mismatch` / `billing.extra_payment` /
   `billing.coupon_over_limit`), raw webhook viewer (`payment_webhook_events`, payer details redacted), refunds, coupon admin,
   monthly GST CSV, reconciliation job; P7.8: the `OrderPaid` listener (broker commission).
-- P5.1 → P8.2 (M14): the invoice email (no email before verification, 2026-10-06); today the invoice is downloaded from
+- P5.1 → P8.2b (M14): the invoice email (no email before verification, 2026-10-06); today the invoice is downloaded from
   `/billing/success/{order}`.
 - P5.1 → P9.3 / P9.4: real Razorpay test-mode keys not yet exercised end to end (fake gateway only); time the live unlock
   with OPcache (1.4–3.0 s locally without it, through `queue:listen`); a member with no profile on SimulateTestPayment untested
@@ -371,7 +394,7 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
 - P4.1 → P4.3: ContentSafety in SendMessage (masking in the first 10 messages, profanity, repetition), message flags,
   report from chat, auto-freeze; `ConversationFrozen` live event (today a frozen thread is read-only on the next render).
 - P4.1 → P6.2 (block): freeze the pair's thread on a block (ChatAccess already hides a blocked pair's thread: 404).
-- P4.1 → P8.2 (M14): the read-receipts switch (the rule is live: `privacy_settings.read_receipts`).
+- P4.1 → P8.2 (M14): ~~the read-receipts switch~~ — done in P8.2a (Privacy tab).
 - P4.1 → P9.4: no rate limit on mark read / delivered / archive or the inbox name search (all owner-scoped and cheap);
   measure /messages and the header badge (UnreadChats: two queries per page; MarkMessagesDelivered on page load when
   something is unread); the free-reply count and "has the other member written" are two counts per send.
@@ -408,7 +431,7 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
 - P3.4 → P6.2 (block): a new block withdraws / closes pending interests and requests of the pair and freezes their
   conversation; decide whether an approved photo / horoscope request can be revoked on its own (today only by changing the
   visibility setting); frozen / closed conversation rules when a pair connects again.
-- P3.4 → P8.2 (M14): the privacy screen where members set ON_REQUEST / ACCEPTED_ONLY (the rules are live now); whether a
+- P3.4 → P8.2 (M14): ~~the privacy screen for ON_REQUEST / ACCEPTED_ONLY~~ (done in P8.2a); → P8.2c: whether a
   member with a hidden / unapproved profile may accept an interest (today: yes).
 - P3.4 → P8.3 (A14): the day-3 reminder for unanswered interests.
 - P3.4 → P9.4: the interest button isn't re-read on a socket reconnect outside /interests; no rate limit on accept / decline /
@@ -437,8 +460,8 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
   deletes rows by `data->actor_code`.
 - P3.2 → P6.2 (block): on a new block, delete both members' notification rows that name the other (`data->actor_code`) —
   today a "<name> viewed your profile" row written before the block keeps the name.
-- P3.2 → P8.2 (M14): email verification (until then NO notification email goes out — owner decision 2026-10-06), the
-  notification preferences screen (mails link to /notifications, which has no settings yet), and an open /notifications
+- P3.2 → P8.2b (M14): email verification (until then NO notification email goes out — owner decision 2026-10-06), the
+  notification preferences screen (done in P8.2a: mails link to /settings?tab=notifications); → P9.3: an open /notifications
   list in another tab reacting to `.notifications.read` (only the bell count syncs today).
 - P3.2 → P8.3: email digests (likes daily, views weekly, messages after 10 min offline); "daily roll-up" of profile-view
   rows for Free members (today: one "Someone viewed your profile" row per viewer per day).

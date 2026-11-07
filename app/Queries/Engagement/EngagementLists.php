@@ -15,7 +15,7 @@ use Illuminate\Database\Query\JoinClause;
 
 /**
  * The member's like and favourite lists (PRD M06 `/likes`, `/favorites`, M15), newest first. Every
- * list is read through ProfileSearch, so a profile in a blocked pair, ignored, incognito or no
+ * list is read through ProfileSearch, so a profile in a blocked pair, ignored, hidden from search or no
  * longer ACTIVE is never listed nor counted — exactly like search. Always for ONE member: every
  * query is scoped to the profile passed in.
  */

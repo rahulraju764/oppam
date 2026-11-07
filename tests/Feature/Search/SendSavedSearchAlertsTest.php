@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Notification;
 
 /*
 | P2.2 — saved-search alerts (M04): the job counts profiles published since the last alert with the
-| owner's search rules (blocked / ignored / incognito never count), honours DAILY / WEEKLY / OFF,
+| owner's search rules (blocked / ignored / hidden from search never count), honours DAILY / WEEKLY / OFF,
 | skips owners who may not browse or turned the email off, and the email carries a count and links.
 */
 
@@ -84,7 +84,7 @@ it('M04: the saved filters apply', function (): void {
     Notification::assertSentTo($owner, SavedSearchMatchesNotification::class, fn (SavedSearchMatchesNotification $n): bool => $n->newMatchesCount === 1);
 });
 
-it('blocked (either way), ignored and incognito profiles never count', function (): void {
+it('blocked (either way), ignored and hidden-from-search profiles never count', function (): void {
     $owner = alertOwner();
     savedSearchOf($owner);
     $blocked = newBride();
@@ -96,7 +96,7 @@ it('blocked (either way), ignored and incognito profiles never count', function 
     Block::factory()->create(['blocker_profile_id' => $blocker->id, 'blocked_profile_id' => $owner->profile->id]);
     Ignore::factory()->create(['ignorer_profile_id' => $owner->profile->id, 'ignored_profile_id' => $ignored->id]);
     (PrivacySetting::query()->whereKey($incognito->id)->first() ?? new PrivacySetting)
-        ->forceFill(['profile_id' => $incognito->id, 'incognito' => true])->save();
+        ->forceFill(['profile_id' => $incognito->id, 'hide_from_search' => true])->save();
 
     runAlerts();
 

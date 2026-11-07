@@ -120,17 +120,19 @@ it('presence.online: a visible member joins with their code only, and it refresh
         ->and($me->profile->refresh()->last_active_at)->not->toBeNull();
 });
 
-it('presence.online: hidden online status, incognito, a non-ACTIVE profile and a suspended account never join', function (string $case): void {
+it('presence.online: hidden online status, hidden from search, Diamond incognito, a non-ACTIVE profile and a suspended account never join', function (string $case): void {
+    $this->seed(Database\Seeders\PlansSeeder::class);
     $me = groom();
     match ($case) {
         'hides online status' => setPrivacy($me, ['show_online_status' => false]),
-        'incognito' => setPrivacy($me, ['incognito' => true]),
+        'hidden from search' => setPrivacy($me, ['hide_from_search' => true]),
+        'incognito' => setPrivacy(chatOnPlan($me, App\Enums\PlanCode::Diamond), ['incognito' => true]),
         'profile hidden' => $me->profile->forceFill(['status' => ProfileStatus::Hidden])->save(),
         'account suspended' => $me->forceFill(['status' => UserStatus::Suspended])->save(),
     };
 
     expect(app(OnlinePresenceChannel::class)->join($me->refresh()))->toBeFalse();
-})->with(['hides online status', 'incognito', 'profile hidden', 'account suspended']);
+})->with(['hides online status', 'hidden from search', 'incognito', 'profile hidden', 'account suspended']);
 
 it('P1.7b: an admin support session never puts the member online', function (): void {
     $me = groom();

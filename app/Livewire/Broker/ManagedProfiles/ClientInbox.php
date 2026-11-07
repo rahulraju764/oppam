@@ -34,7 +34,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * interests received by one managed client, to accept or decline on their behalf after speaking
  * to the family, the interests sent for them, and "send an interest" by profile code against the
  * bureau's monthly allowance (R-M13-35, decisions 2026-10-25). Lists come from InterestLists with
- * the client as "me" (blocked, ignored, incognito and non-ACTIVE members never appear). Members
+ * the client as "me" (blocked, ignored, hidden-from-search and non-ACTIVE members never appear). Members
  * are shown by first name + initial and their short facts — never contact details or photos
  * (R-M13-7). Every action is an Action that checks the permission and the scope again; the code
  * is locked. Live: a new interest refreshes the page; a claim leaves it.

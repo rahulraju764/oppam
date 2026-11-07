@@ -25,7 +25,7 @@ use App\Services\Profile\ProfileSearch;
 
 /*
 | P2.1 — M04 search service: the always-on exclusions (status, gender, own profile, blocked either
-| way, ignored, incognito, inactive account), the filters, the sorts and keyset paging.
+| way, ignored, hidden from search, inactive account), the filters, the sorts and keyset paging.
 */
 
 beforeEach(function (): void {
@@ -73,10 +73,10 @@ it('M04 acceptance: blocked (either direction) and ignored profiles never appear
         ->toContain($ignoredMe->code);   // an ignore is one-way: being ignored doesn't hide them from me
 });
 
-it('M04: incognito profiles and profiles of inactive accounts never appear', function (): void {
+it('M04 / M14: profiles hidden from search and profiles of inactive accounts never appear', function (): void {
     $me = groom('+919877700003');
     $incognito = bride2();
-    PrivacySetting::factory()->create(['profile_id' => $incognito->id, 'incognito' => true]);
+    PrivacySetting::factory()->create(['profile_id' => $incognito->id, 'hide_from_search' => true]);
     // An account suspended through A03 makes its profile SUSPENDED too (covered above); this is the
     // safety net for an inconsistent row: page() re-checks the owning account before showing it.
     $suspendedAccount = bride2();

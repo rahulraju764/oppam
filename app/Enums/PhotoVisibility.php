@@ -22,6 +22,17 @@ enum PhotoVisibility: string
         };
     }
 
+    /** How private this choice is (higher = fewer viewers): a stricter choice is never rate-limited (M14). */
+    public function strictness(): int
+    {
+        return match ($this) {
+            self::AllMembers => 0,
+            self::PremiumOnly => 1,
+            self::OnRequest => 2,
+            self::AcceptedOnly => 3,
+        };
+    }
+
     /** @return array<string, string> value => label, for selects */
     public static function options(): array
     {

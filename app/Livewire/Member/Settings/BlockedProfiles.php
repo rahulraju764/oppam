@@ -7,7 +7,6 @@ namespace App\Livewire\Member\Settings;
 use App\Actions\Safety\ReportProfile;
 use App\Actions\Safety\UnblockProfile;
 use App\Actions\Safety\UnignoreProfile;
-use App\Data\Content\SeoData;
 use App\Enums\ReportReason;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Safety\ReportRefused;
@@ -17,15 +16,17 @@ use App\Models\Ignore;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Lazy;
 use Livewire\Component;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * /settings/blocked (PRD M09): the members this member blocked and ignored, newest first, with
+ * /settings → Blocked & ignored (PRD M09 / M14; /settings/blocked redirects here): the members this member blocked and ignored, newest first, with
  * Unblock / Show again, and Report for a blocked member ("block, then report", decisions 2026-10-23). Only the member's OWN rows — never who blocked them. Blocked profiles show
  * code and first name only (no photo: the pair no longer sees each other). Every change goes
  * through UnblockProfile / UnignoreProfile, which re-check the row is the member's own.
  */
+#[Lazy]
 final class BlockedProfiles extends Component
 {
     /** The report dialog ("block, then report"): which blocked member, reason, details. */
@@ -67,6 +68,11 @@ final class BlockedProfiles extends Component
         $this->dispatch('toast', type: 'success', title: __('Thank you for telling us. Our safety team will review it — they won’t be told who reported.'));
     }
 
+    public function placeholder(): View
+    {
+        return view('livewire.member.settings.placeholder');
+    }
+
     public function unblock(string $code, UnblockProfile $unblock): void
     {
         $this->attempt(fn (Profile $p) => $unblock->handle($this->member(), $p), $code, __('Unblocked. You can see each other again.'));
@@ -90,7 +96,7 @@ final class BlockedProfiles extends Component
                 ->get(['ignores.id', 'ignores.created_at', 'profiles.code', 'profiles.first_name']),
             'timezone' => (string) config('oppam.display_timezone'),
             'reasons' => ReportReason::options(),
-        ])->layout('layouts::member', ['seo' => SeoData::private(__('Blocked & ignored').' | Oppam Matrimony')]);
+        ]);
     }
 
     private function attempt(callable $action, string $code, string $done): void

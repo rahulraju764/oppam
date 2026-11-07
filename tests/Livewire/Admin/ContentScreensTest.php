@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Enums\ContentStatus;
 use App\Enums\ContentType;
 use App\Livewire\Admin\Content\ContentIndex;
-use App\Livewire\Member\Profile\HomeVisibilityToggle;
+use App\Livewire\Member\Settings\HomeVisibilityToggle;
 use App\Models\Branch;
 use App\Models\FaqItem;
 use App\Models\HomeBlock;

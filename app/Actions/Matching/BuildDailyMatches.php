@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 /**
  * One member's daily matches for one IST date (M05 / F06):
  *  1. candidates = the member's "All matches" (their partner preferences, through ProfileSearch —
- *     blocked, ignored, incognito and non-ACTIVE never qualify), minus profiles the member already
+ *     blocked, ignored, hidden-from-search and non-ACTIVE never qualify), minus profiles the member already
  *     viewed and anyone in their batches of the last REPEAT_DAYS days;
  *  2. the best POOL of those by relevance (in SQL), scored with MatchScorer (60 / 25 / 10 / 5);
  *  3. diversity: at most MAX_PER_DISTRICT from one district;

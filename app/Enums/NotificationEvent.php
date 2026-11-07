@@ -98,4 +98,72 @@ enum NotificationEvent: string
     {
         return $this->group()->icon();
     }
+
+    /** Does this event ever go out on this channel ('in_app' | 'email' | 'sms')? A member may switch it off, never add it. */
+    public function usesChannel(string $channel): bool
+    {
+        return match ($channel) {
+            'in_app' => $this->defaultInApp(),
+            'email' => $this->defaultEmail(),
+            'sms' => $this->defaultSms(),
+            default => false,
+        };
+    }
+
+    /** Sent to members (shown in the /settings matrix); the rest go to bureau logins only. */
+    public function isForMembers(): bool
+    {
+        return ! in_array($this, [
+            self::CommissionEarned, self::ManagedProfileReviewed, self::FollowUpDue, self::ManagedProfileClaimed, self::PayoutPaid,
+        ], true);
+    }
+
+    /**
+     * The /settings matrix rows (M14), in the /notifications filter order. A member can switch OFF
+     * a channel the event uses (defaultEmail / defaultSms) but never add one (decisions 2026-11-07):
+     * no per-like email, no SMS without a DLT template.
+     *
+     * @return list<self>
+     */
+    public static function forMemberSettings(): array
+    {
+        $order = array_flip(array_map(fn (NotificationGroup $g): string => $g->value, NotificationGroup::cases()));
+        $events = array_values(array_filter(self::cases(), fn (self $e): bool => $e->isForMembers()));
+        usort($events, fn (self $a, self $b): int => $order[$a->group()->value] <=> $order[$b->group()->value]);
+
+        return $events;
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::InterestReceived => __('Someone sends me an interest'),
+            self::InterestAccepted => __('My interest is accepted'),
+            self::InterestDeclined => __('My interest is declined'),
+            self::NewMessage => __('New chat messages (email: a summary while I’m away)'),
+            self::ProfileLiked => __('Someone likes my profile'),
+            self::MutualLike => __('A like becomes mutual'),
+            self::ProfileViewed => __('Someone views my profile'),
+            self::PhotoRequest => __('Photo requests'),
+            self::HoroscopeRequest => __('Horoscope requests'),
+            self::DailyMatchesReady => __('My daily matches are ready'),
+            self::SavedSearchAlert => __('New profiles for my saved searches'),
+            self::ProfileApproved => __('My profile is approved'),
+            self::ProfileRejected => __('My profile needs changes'),
+            self::VerificationApproved => __('My ID verification is approved'),
+            self::VerificationRejected => __('My ID verification needs another try'),
+            self::PaymentSuccess => __('Payment received'),
+            self::RefundIssued => __('Refund issued'),
+            self::PlanExpiring => __('My plan is about to end'),
+            self::PlanExpired => __('My plan has ended'),
+            self::AccountStatus => __('Account notices'),
+            self::AdminAnnouncement => __('Offers and announcements from Oppam'),
+            self::SafetyWarning => __('Safety warnings'),
+            self::CommissionEarned => __('Commission earned'),
+            self::ManagedProfileReviewed => __('Client profile reviewed'),
+            self::FollowUpDue => __('Follow-ups due'),
+            self::ManagedProfileClaimed => __('Client claimed their profile'),
+            self::PayoutPaid => __('Payout sent'),
+        };
+    }
 }

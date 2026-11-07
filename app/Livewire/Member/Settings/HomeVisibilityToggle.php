@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Livewire\Member\Profile;
+namespace App\Livewire\Member\Settings;
 
 use App\Actions\Profile\SetHomeVisibility;
 use App\Enums\PhotoVisibility;
@@ -13,8 +13,8 @@ use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
- * <livewire:member.profile.home-visibility-toggle /> on My Profile: the member's opt-in to the public
- * home page (owner 2026-11-01). Off by default. Moves into the Privacy tab with P8.2.
+ * <livewire:member.settings.home-visibility-toggle /> in the /settings Privacy tab (moved from My
+ * Profile in P8.2a): the member's opt-in to the public home page (owner 2026-11-01). Off by default.
  */
 final class HomeVisibilityToggle extends Component
 {
@@ -44,9 +44,9 @@ final class HomeVisibilityToggle extends Component
         $profile = $this->member()->profile;
         $eligible = $profile?->is_premium === true && $profile->is_verified === true
             && ($profile->privacySetting->photo_visibility ?? PhotoVisibility::AllMembers) === PhotoVisibility::AllMembers
-            && $profile->privacySetting?->incognito !== true;
+            && $profile->privacySetting?->hide_from_search !== true;
 
-        return view('livewire.member.profile.home-visibility-toggle', ['eligible' => $eligible]);
+        return view('livewire.member.settings.home-visibility-toggle', ['eligible' => $eligible]);
     }
 
     private function member(): User

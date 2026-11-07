@@ -57,7 +57,7 @@ final class SavedSearchMatchesNotification extends MemberNotification
                 'frequency' => mb_strtolower($this->savedSearch->alert_frequency->label()),
             ]))
             ->line(__('To stop these alerts, [turn them off here](:url).', ['url' => $unsubscribeUrl]))
-            ->line(__('Manage which notifications you get on your [notifications page](:url).', ['url' => route('member.notifications')]))
+            ->line(__('Manage which notifications you get in your [notification settings](:url).', ['url' => route('member.settings', ['tab' => 'notifications'])]))
             ->withSymfonyMessage(function (Email $message) use ($unsubscribeUrl): void {
                 $message->getHeaders()->addTextHeader('List-Unsubscribe', '<'.$unsubscribeUrl.'>');
                 $message->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');

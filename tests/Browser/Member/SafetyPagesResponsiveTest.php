@@ -7,7 +7,7 @@ use Laravel\Dusk\Browser;
 
 /*
 | P6.2 â€” oppam-ui-standards responsive check for the new member pages: no sideways scrolling at
-| 320 / 375 / 768 / 1024 / 1440 px on /safety, /contact, /settings/blocked, /help and the profile
+| 320 / 375 / 768 / 1024 / 1440 px on /safety, /contact, /settings?tab=blocked, /help and the profile
 | page's More menu (needs `composer dev`).
 */
 
@@ -21,7 +21,7 @@ it('oppam-ui-standards: the safety & support pages never scroll sideways at 320â
 
         foreach ([320, 375, 768, 1024, 1440] as $width) {
             $browser->resize($width, 900);
-            foreach (['/safety', '/contact', '/settings/blocked', '/help', '/profile/'.$groom->profile->code] as $path) {
+            foreach (['/safety', '/contact', '/settings?tab=blocked', '/help', '/profile/'.$groom->profile->code] as $path) {
                 $browser->visit($path)->waitFor('main');
                 assertNoHorizontalScroll($browser);
             }

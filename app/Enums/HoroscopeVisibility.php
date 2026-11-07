@@ -20,6 +20,16 @@ enum HoroscopeVisibility: string
         };
     }
 
+    /** How private this choice is (higher = fewer viewers): a stricter choice is never rate-limited (M14). */
+    public function strictness(): int
+    {
+        return match ($this) {
+            self::AllMembers => 0,
+            self::OnRequest => 1,
+            self::AcceptedOnly => 2,
+        };
+    }
+
     /** @return array<string, string> value => label, for selects */
     public static function options(): array
     {

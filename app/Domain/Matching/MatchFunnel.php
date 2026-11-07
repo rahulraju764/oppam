@@ -13,7 +13,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 
 /**
  * The member's match funnel (M05, My Matches + dashboard strips). Every tab is a ProfileSearch
- * (so blocked, ignored, incognito and non-ACTIVE profiles never appear) built from the member's
+ * (so blocked, ignored, hidden-from-search and non-ACTIVE profiles never appear) built from the member's
  * partner preferences (owner decision 2026-10-04):
  *   All = profiles that meet MY preferences · Mutual = those that also accept ME ·
  *   New = joined in 7 days · Yet to be viewed / Viewed = by me · Near me = my district ·

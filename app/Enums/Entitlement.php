@@ -21,6 +21,8 @@ enum Entitlement: string
     case SeeWhoViewedMe = 'see_who_viewed_me';
     case SearchHighlight = 'search_highlight';
     case TopPlacement = 'top_placement';
+    /** M14: browse without appearing in "who viewed me" (Diamond; owner 2026-11-07). */
+    case Incognito = 'incognito';
 
     public function period(): EntitlementPeriod
     {
@@ -28,7 +30,7 @@ enum Entitlement: string
             self::LikesPerDay => EntitlementPeriod::Daily,
             self::InterestsPerMonth, self::ContactViewsPerMonth => EntitlementPeriod::Monthly,
             self::FavoritesTotal, self::FreeRepliesPerConversation => EntitlementPeriod::Lifetime,
-            self::ChatSend, self::SeeWhoLikedMe, self::SeeWhoViewedMe, self::SearchHighlight, self::TopPlacement => EntitlementPeriod::None,
+            self::ChatSend, self::SeeWhoLikedMe, self::SeeWhoViewedMe, self::SearchHighlight, self::TopPlacement, self::Incognito => EntitlementPeriod::None,
         };
     }
 
@@ -50,6 +52,7 @@ enum Entitlement: string
             self::SeeWhoViewedMe => __('See who viewed me'),
             self::SearchHighlight => __('Highlighted in search'),
             self::TopPlacement => __('Top placement in search'),
+            self::Incognito => __('Incognito browsing'),
         };
     }
 }

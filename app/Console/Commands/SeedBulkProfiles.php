@@ -180,8 +180,8 @@ final class SeedBulkProfiles extends Command
                 ];
             }
 
-            // Like real members (onboarding creates one for everybody): a privacy row each, ~2% incognito.
-            $rows['privacy_settings'][] = ['profile_id' => $profileId, 'incognito' => mt_rand(1, 100) <= 2, 'created_at' => $published, 'updated_at' => $published];
+            // Like real members (onboarding creates one for everybody): a privacy row each, ~2% hidden from search (M14).
+            $rows['privacy_settings'][] = ['profile_id' => $profileId, 'hide_from_search' => mt_rand(1, 100) <= 2, 'created_at' => $published, 'updated_at' => $published];
         }
 
         return $rows;

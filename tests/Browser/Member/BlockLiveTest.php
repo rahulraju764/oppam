@@ -38,7 +38,7 @@ it('M09 / R-M06-4: a block takes effect live on both sides', function (): void {
             ->click('.safety-menu__item--danger')
             ->waitFor('@block-confirm')
             ->press('@block-confirm')
-            ->waitForLocation('/settings/blocked', 10)
+            ->waitForLocation('/settings', 10)
             ->assertSee('You blocked');
 
         expect(Block::query()->where('blocker_profile_id', $brideUser->profile->id)->exists())->toBeTrue();

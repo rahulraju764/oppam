@@ -24,6 +24,7 @@ final class PlanConsistency
         Entitlement::SeeWhoViewedMe->value => '/\bwho viewed\b/i',
         Entitlement::SearchHighlight->value => '/\bhighlight/i',
         Entitlement::TopPlacement->value => '/\btop (placement|of)\b/i',
+        Entitlement::Incognito->value => '/\bincognito\b/i',
     ];
 
     /**

@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 /**
  * Today's daily matches (M05 / F06): the batch GenerateDailyMatches wrote for the member's IST
  * date, best score first, without the ones already dismissed. Read through ProfileSearch, so a
- * profile blocked, ignored, gone incognito or no longer ACTIVE since 05:00 drops out at once.
+ * profile blocked, ignored, hidden from search or no longer ACTIVE since 05:00 drops out at once.
  * The batch expires at 23:59:59 IST.
  */
 final class DailyBatch

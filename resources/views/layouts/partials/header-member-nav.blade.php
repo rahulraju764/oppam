@@ -120,7 +120,7 @@
                 ['member.messages', 'Messages', 'fa-envelope-o', ['member.messages']],
                 ['member.billing', 'Membership & billing', 'fa-credit-card', ['member.billing', 'member.billing.*', 'member.checkout']],
                 ['member.verification', 'Verify profile', 'fa-id-card-o', ['member.verification']],
-                ['member.settings.blocked', 'Blocked & ignored', 'fa-ban', ['member.settings.blocked']],
+                ['member.settings', 'Settings & privacy', 'fa-cog', ['member.settings', 'member.settings.*']],
                 ['member.help', 'Help & support', 'fa-life-ring', ['member.help', 'member.help.*']],
                 ['plans', 'Packages & FAQ', 'fa-question-circle-o', ['plans'], '#faq'],
                 ['contact', 'Contact', 'fa-phone', ['contact']],

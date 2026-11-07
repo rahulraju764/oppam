@@ -33,6 +33,7 @@ final class MembershipSummary
         Entitlement::SeeWhoViewedMe,
         Entitlement::SearchHighlight,
         Entitlement::TopPlacement,
+        Entitlement::Incognito,
     ];
 
     public function __construct(

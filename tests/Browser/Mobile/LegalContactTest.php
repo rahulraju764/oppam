@@ -75,11 +75,11 @@ it('A08: after a material terms change a member is stopped at the accept page un
         $browser->visit('/')->driver->manage()->deleteAllCookies();
         $member = duskLiveMember($browser);   // agreed to the live versions at registration
 
-        $browser->visit('/settings/blocked')->waitFor('main#main')->assertPathIs('/settings/blocked');
+        $browser->visit('/settings')->waitFor('main#main')->assertPathIs('/settings');
 
         $terms = duskPublishMaterialTerms();
 
-        $browser->visit('/settings/blocked')->waitForLocation('/legal/accept')
+        $browser->visit('/settings')->waitForLocation('/legal/accept')
             ->assertSee('We’ve updated our terms')->assertSee('Dusk: the refund clause was rewritten.');
         assertNoHorizontalScroll($browser);
 
@@ -96,7 +96,7 @@ it('A08: after a material terms change a member is stopped at the accept page un
         $row = LegalAcceptance::query()->where('user_id', $member->id)->where('legal_document_id', $terms->id)->sole();
         expect($row->version)->toBe($terms->version)->and($row->context)->toBe(LegalAcceptanceContext::Required);
 
-        $browser->visit('/settings/blocked')->waitFor('main#main')->assertPathIs('/settings/blocked');
+        $browser->visit('/settings')->waitFor('main#main')->assertPathIs('/settings');
     });
 });
 

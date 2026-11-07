@@ -24,7 +24,7 @@ use Livewire\WithPagination;
 /**
  * /likes (PRD M06, M15): three tabs — "Liked me" (the members for plans with see_who_liked_me;
  * otherwise only their number behind a data-free blurred teaser and an upgrade link), "I liked"
- * and "Mutual" (every plan). All read through EngagementLists, so blocked, ignored, incognito and
+ * and "Mutual" (every plan). All read through EngagementLists, so blocked, ignored, hidden-from-search and
  * non-ACTIVE members are never listed nor counted. Likes the member hasn't seen yet carry a "new"
  * dot for this visit and are then marked seen. A new like (".like.changed"), a like made on this
  * page or a socket reconnect re-reads the page.

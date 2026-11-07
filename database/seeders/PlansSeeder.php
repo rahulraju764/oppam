@@ -83,6 +83,7 @@ final class PlansSeeder extends Seeder
                     'see_who_viewed_me' => false,              // count only
                     'search_highlight' => false,
                     'top_placement' => false,
+                    'incognito' => false,
                 ],
             ],
             [
@@ -101,6 +102,7 @@ final class PlansSeeder extends Seeder
                     'see_who_viewed_me' => false,
                     'search_highlight' => false,
                     'top_placement' => false,
+                    'incognito' => false,
                 ],
             ],
             [
@@ -121,6 +123,7 @@ final class PlansSeeder extends Seeder
                     'see_who_viewed_me' => true,
                     'search_highlight' => true,
                     'top_placement' => false,
+                    'incognito' => false,
                 ],
             ],
             [
@@ -141,6 +144,7 @@ final class PlansSeeder extends Seeder
                     'see_who_viewed_me' => true,
                     'search_highlight' => true,
                     'top_placement' => true,
+                    'incognito' => true,                         // M14: Diamond only (owner 2026-11-07)
                 ],
             ],
         ];

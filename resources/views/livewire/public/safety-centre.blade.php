@@ -59,7 +59,7 @@
             </ol>
             @if ($member)
                 <p>
-                    <a href="{{ route('member.settings.blocked') }}" wire:navigate><i class="fa fa-ban" aria-hidden="true"></i> {{ __('Your blocked & ignored members') }}</a>
+                    <a href="{{ route('member.settings', ['tab' => 'blocked']) }}" wire:navigate><i class="fa fa-ban" aria-hidden="true"></i> {{ __('Your blocked & ignored members') }}</a>
                     · <a href="{{ route('member.help') }}" wire:navigate><i class="fa fa-life-ring" aria-hidden="true"></i> {{ __('Ask our support team') }}</a>
                 </p>
             @endif

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Profile;
 
+use App\Domain\Profile\Incognito;
 use App\Domain\Profile\ProfileVisibility;
 use App\Enums\SettingKey;
 use App\Events\Profile\ProfileViewed;
@@ -20,7 +21,7 @@ use Illuminate\Support\Str;
 /**
  * Count a profile view (M03, M15): one profile_views row per viewer / viewed / IST day, its
  * count bumped on repeat visits. Nothing is recorded for the owner, for a viewer who may not
- * see the profile, or for an incognito viewer (privacy_settings.incognito). The viewed member
+ * see the profile, or for a viewer browsing incognito (Diamond, Domain\Profile\Incognito). The viewed member
  * gets a live ProfileViewed with today's distinct-viewer count, once per viewer per day.
  * At most `profile_views.max_per_minute` views per viewer are recorded (A15).
  */
@@ -29,6 +30,7 @@ final class RecordProfileView
     public function __construct(private readonly ProfileVisibility $visibility,
         private readonly Impersonation $impersonation,
         private readonly RateLimiter $limiter,
+        private readonly Incognito $incognito,
     ) {}
 
     public function handle(User $viewer, Profile $target): void
@@ -39,7 +41,8 @@ final class RecordProfileView
             return;
         }
 
-        if ($own->privacySetting?->incognito === true) {
+        // M14: a Diamond member browsing incognito leaves no trace in "who viewed me".
+        if ($this->incognito->isActive($own)) {
             return;
         }
 

@@ -48,7 +48,7 @@ function featuredProfile(array $profile = [], array $privacy = [], PhotoStatus $
     $row->forceFill(['first_name' => 'Featured', 'is_premium' => true, 'is_verified' => true, ...$profile])->save();
 
     $settings = PrivacySetting::query()->find($row->id) ?? (new PrivacySetting)->forceFill(['profile_id' => $row->id]);
-    $settings->forceFill(['photo_visibility' => PhotoVisibility::AllMembers, 'show_on_home' => true, 'incognito' => false, ...$privacy])->save();
+    $settings->forceFill(['photo_visibility' => PhotoVisibility::AllMembers, 'show_on_home' => true, 'hide_from_search' => false, ...$privacy])->save();
 
     return $row->refresh();
 }
@@ -82,7 +82,7 @@ it('M12: each condition failing alone keeps the member off the home page', funct
     'premium-only photos' => [[], ['photo_visibility' => PhotoVisibility::PremiumOnly]],
     'on-request photos' => [[], ['photo_visibility' => PhotoVisibility::OnRequest]],
     'accepted-only photos' => [[], ['photo_visibility' => PhotoVisibility::AcceptedOnly]],
-    'incognito' => [[], ['incognito' => true]],
+    'hidden from search' => [[], ['hide_from_search' => true]],
     'hidden' => [['status' => ProfileStatus::Hidden], []],
     'suspended profile' => [['status' => ProfileStatus::Suspended], []],
     'pending review' => [['status' => ProfileStatus::PendingReview], []],

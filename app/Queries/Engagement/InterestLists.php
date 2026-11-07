@@ -16,7 +16,7 @@ use Illuminate\Database\Query\JoinClause;
  * The member's interest lists for /interests (PRD M06, template interest.php): two boxes —
  * Received and Sent — each filtered by status (all / pending / accepted / declined / expired),
  * plus the photo / horoscope requests waiting for them. Read through ProfileSearch, so a profile
- * in a blocked pair, ignored, incognito or no longer ACTIVE is never listed nor counted. Always
+ * in a blocked pair, ignored, hidden from search or no longer ACTIVE is never listed nor counted. Always
  * for ONE member: every query is scoped to the profile passed in.
  *
  * A WITHDRAWN interest stays in the sender's history only (under "expired"); the member it was

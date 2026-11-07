@@ -799,3 +799,14 @@ body.search-sheet-open .mobile-footer { display: none; }
     color: var(--color-primary);
     font-size: var(--text-2xl);
 }
+
+/* ---- /settings Notifications matrix (M14, P8.2a): scrolls inside its own box on phones ---- */
+.nt-matrix-wrap { position: relative; overflow-x: auto; }   /* relative: the cells' visually-hidden text is clipped here, not widening the page */
+.nt-matrix { min-width: 30rem; margin-bottom: 0; font-size: var(--text-sm); }
+.nt-matrix th[scope="row"] { font-weight: var(--fw-regular); }
+.nt-matrix .form-check-input { width: 1.25rem; height: 1.25rem; margin: 0; }
+.nt-matrix td { vertical-align: middle; }
+.nt-matrix__group th { background: var(--bg-mist); font-weight: var(--fw-semibold); color: var(--color-secondary-dark); }
+.nt-matrix__fixed,
+.nt-matrix__soon { display: block; font-size: var(--text-xs); color: var(--color-gr-dark); }
+.nt-matrix__hit { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: 0; cursor: pointer; }

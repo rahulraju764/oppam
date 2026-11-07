@@ -163,7 +163,7 @@ it('R-M08-3: every notification email links to the member\'s notification settin
 
     foreach ([new DailyMatchesReady(2), new ProfileApproved($member->profile->code), new App\Notifications\Account\AdminMessage('Subject here', 'A body of the message.')] as $notification) {
         $mail = $notification->toMail($member);   // lines land before or after the button, depending on the mail
-        expect(implode(' ', array_map(strval(...), [...$mail->introLines, ...$mail->outroLines])))->toContain(route('member.notifications'));
+        expect(implode(' ', array_map(strval(...), [...$mail->introLines, ...$mail->outroLines])))->toContain(route('member.settings', ['tab' => 'notifications']));
     }
 });
 

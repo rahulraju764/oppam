@@ -5,6 +5,6 @@
         {{ __('Anyone visiting Oppam, signed in or not, may see your photo, first name and district on the home page. Your profile and contact details stay private.') }}
     </p>
     @if (! $eligible)
-        <p class="form-text">{{ __('You’ll only appear while you have a paid plan, a verified ID, your photos are visible to all members, and incognito is off.') }}</p>
+        <p class="form-text">{{ __('You’ll only appear while you have a paid plan, a verified ID, your photos are visible to all members, and you are not hidden from search.') }}</p>
     @endif
 </div>

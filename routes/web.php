@@ -34,7 +34,7 @@ use App\Livewire\Member\Onboarding\Wizard;
 use App\Livewire\Member\Profile\MyProfile;
 use App\Livewire\Member\Profile\Show;
 use App\Livewire\Member\Search\Search;
-use App\Livewire\Member\Settings\BlockedProfiles;
+use App\Livewire\Member\Settings\Settings as MemberSettings;
 use App\Livewire\Member\Support\Help;
 use App\Livewire\Member\Support\TicketThread;
 use App\Livewire\Member\Verification\Upload as VerificationUpload;
@@ -145,8 +145,11 @@ Route::middleware(['auth', 'verified.phone', 'legal.accepted'])->group(function 
         Route::get('/billing/credit-notes/{number}', CreditNoteDownloadController::class)
             ->where('number', 'CN-[0-9]{4}-[0-9]{6}')->middleware('throttle:30,1')->name('member.billing.credit-note');
 
-        // Safety & support (M09, A10): own blocks / ignores, in-app help and own requests only.
-        Route::get('/settings/blocked', BlockedProfiles::class)->name('member.settings.blocked');
+        // Settings (M14): privacy, notifications, blocked & ignored — tabs in one page (?tab=).
+        Route::get('/settings', MemberSettings::class)->name('member.settings');
+        Route::redirect('/settings/blocked', '/settings?tab=blocked')->name('member.settings.blocked');
+
+        // Safety & support (M09, A10): in-app help and own requests only.
         Route::get('/help', Help::class)->name('member.help');
         Route::get('/help/{ticket}', TicketThread::class)->where('ticket', 'TKT[0-9]+')->name('member.help.ticket');
     });

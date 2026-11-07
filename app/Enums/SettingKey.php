@@ -31,6 +31,9 @@ enum SettingKey: string
     case MinAgeMale = 'profile.min_age_male';
     case ProfileAutoHideInactiveDays = 'profile.auto_hide_inactive_days';
     case MembersPurgeAfterDays = 'members.purge_after_days';
+    case MembersSettingsChangesPerHour = 'members.settings_changes_per_hour';
+    case NotificationsQuietFrom = 'notifications.quiet_from';
+    case NotificationsQuietUntil = 'notifications.quiet_until';
     case InterestExpiryDays = 'interest.expiry_days';
     case InterestResendCooldownDays = 'interest.resend_cooldown_days';
     case ChatUnsendWindowMinutes = 'chat.unsend_window_minutes';
@@ -160,6 +163,9 @@ enum SettingKey: string
             self::MinAgeMale => 21,
             self::ProfileAutoHideInactiveDays => 180,
             self::MembersPurgeAfterDays => 30,   // A03: 30-day restore window, then anonymise
+            self::MembersSettingsChangesPerHour => 30,   // M14: privacy / notification saves per member (rule 10)
+            self::NotificationsQuietFrom => 22,          // M08: no SMS from this IST hour … (one window for everyone, owner 2026-11-06 / 11-07)
+            self::NotificationsQuietUntil => 7,          // … until this IST hour
             self::InterestExpiryDays => 30,
             self::InterestResendCooldownDays => 90,
             self::ChatUnsendWindowMinutes => 60,
@@ -281,6 +287,8 @@ enum SettingKey: string
             self::MinAgeMale => ['required', 'integer', 'min:21', 'max:40'],
             self::ProfileAutoHideInactiveDays => ['required', 'integer', 'min:30', 'max:730'],
             self::MembersPurgeAfterDays => ['required', 'integer', 'min:30', 'max:365'],
+            self::MembersSettingsChangesPerHour => ['required', 'integer', 'min:5', 'max:200'],
+            self::NotificationsQuietFrom, self::NotificationsQuietUntil => ['required', 'integer', 'min:0', 'max:23'],
             self::InterestExpiryDays => ['required', 'integer', 'min:1', 'max:365'],
             self::InterestResendCooldownDays => ['required', 'integer', 'min:0', 'max:365'],
             self::ChatUnsendWindowMinutes => ['required', 'integer', 'min:0', 'max:1440'],

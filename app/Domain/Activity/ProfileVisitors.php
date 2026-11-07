@@ -13,7 +13,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 /**
  * "Who viewed my profile" (M15): distinct members who opened the member's profile in the last
  * `days` days, newest visit first (`last_viewed_at`). Read through ProfileSearch, so a visitor
- * in a blocked pair, ignored, incognito or no longer ACTIVE is never listed nor counted.
+ * in a blocked pair, ignored, hidden from search or no longer ACTIVE is never listed nor counted.
  */
 final class ProfileVisitors
 {

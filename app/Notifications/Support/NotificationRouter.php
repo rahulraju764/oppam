@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Notifications\Support;
 
 use App\Enums\NotificationEvent;
+use App\Enums\SettingKey;
 use App\Models\NotificationPreference;
 use App\Models\User;
+use App\Support\Facades\Settings;
 use Carbon\CarbonImmutable;
 
 /**
@@ -14,15 +16,12 @@ use Carbon\CarbonImmutable;
  * the row, then the live broadcast), email, SMS — each from the member's `notification_preferences`
  * row for the event, else the event's default. Mandatory events (transactional / safety, R-M08-3)
  * always use their defaults: the member can't switch one off.
- * Email needs a verified address (canReceiveAccountMail), SMS a verified phone. SMS in quiet hours (22:00–07:00 IST) waits until
- * 07:00 (smsDelay).
+ * Email needs a verified address (canReceiveAccountMail), SMS a verified phone. SMS in quiet hours
+ * (M08: one window for everyone, A15 `notifications.quiet_from` / `quiet_until`, 22:00–07:00 IST by
+ * default) waits until they end (smsDelay) — mandatory events too: nobody is texted at night.
  */
 final class NotificationRouter
 {
-    public const QUIET_FROM = 22;
-
-    public const QUIET_UNTIL = 7;
-
     /** @return list<string> Laravel channel names / classes */
     public function channels(object $notifiable, NotificationEvent $event): array
     {
@@ -54,18 +53,30 @@ final class NotificationRouter
         return $channels;
     }
 
-    /** How long an SMS sent now must wait: until 07:00 IST during quiet hours, else not at all. */
+    /**
+     * Until when an SMS sent now must wait: the end of quiet hours (IST) when now is inside them,
+     * else null. The window may wrap midnight (22 → 7) or not (13 → 15); the same start and end
+     * hour means no quiet hours.
+     */
     public function smsDelay(?CarbonImmutable $now = null): ?CarbonImmutable
     {
+        $from = Settings::int(SettingKey::NotificationsQuietFrom);
+        $until = Settings::int(SettingKey::NotificationsQuietUntil);
         $local = ($now ?? CarbonImmutable::now())->setTimezone((string) config('oppam.display_timezone'));
+        $hour = $local->hour;
 
-        if ($local->hour >= self::QUIET_FROM) {
-            return $local->addDay()->setTime(self::QUIET_UNTIL, 0);
-        }
-        if ($local->hour < self::QUIET_UNTIL) {
-            return $local->setTime(self::QUIET_UNTIL, 0);
+        if ($from === $until) {
+            return null;   // never "always quiet"
         }
 
-        return null;
+        if ($from < $until) {
+            return $hour >= $from && $hour < $until ? $local->setTime($until, 0) : null;
+        }
+
+        if ($hour >= $from) {
+            return $local->addDay()->setTime($until, 0);
+        }
+
+        return $hour < $until ? $local->setTime($until, 0) : null;
     }
 }

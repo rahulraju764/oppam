@@ -34,7 +34,7 @@ use Livewire\Component;
  * Search (M04): find by profile ID, or filter. Every filter lives in the URL (`?f[...]`), so a
  * copied link or the back button gives the same search; inputs update live (text debounced).
  * Results load 20 at a time — "Load more" or scrolling to the end. The query and every
- * exclusion (blocked, ignored, incognito, same gender…) are in ProfileSearch via SearchProfiles;
+ * exclusion (blocked, ignored, hidden from search, same gender…) are in ProfileSearch via SearchProfiles;
  * this component only holds the state and renders cards (codes and display data only).
  */
 final class Search extends Component

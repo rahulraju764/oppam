@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Data\Realtime;
 
+use App\Domain\Profile\Incognito;
 use App\Enums\Flag;
 use App\Enums\ProfileStatus;
 use App\Enums\UserRole;
@@ -16,7 +17,7 @@ use App\Support\Facades\Feature;
  * What the member layout tells the browser about real-time (PRD §9, rendered as <meta> tags):
  * the user channel id (the member's own — Laravel's user channel is keyed by the user ULID, so
  * this is the one place the page carries it), whether to join the online roster (same rule as
- * OnlinePresenceChannel: ACTIVE profile, online status shown, not incognito, not a support
+ * OnlinePresenceChannel: ACTIVE profile, online status shown, not hidden (DomainProfileIncognito::hidesPresence), not a support
  * session), whether this tab is a support session (it obeys IMPERSONATION-scoped forced
  * logouts) and whether the polling fallback is switched on.
  */
@@ -48,7 +49,7 @@ final readonly class RealtimeContextData
         $profile = $user->profile;
         $privacy = $profile === null ? null : PrivacySetting::query()->whereKey($profile->id)->first();
         $presence = $profile !== null && $profile->status === ProfileStatus::Active && ! $impersonating
-            && ($privacy === null || ($privacy->show_online_status && ! $privacy->incognito));
+            && ! app(Incognito::class)->hidesPresence($profile, $privacy);
 
         return new self(
             userId: (string) $user->id,

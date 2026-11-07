@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * The home page's featured members (M12, owner 2026-11-01): ACTIVE, premium, verified, photos
- * visible to all members, not incognito, and opted in to the home page, with an approved photo.
+ * visible to all members, not hidden from search, and opted in to the home page, with an approved photo.
  * Only first name, district and photo leave here: no code, no link. Not cached, so opting out or
  * being suspended applies on the next page load. A signed-in viewer never sees a blocked pair.
  * Empty below the A15 minimum, so a thin band doesn't single a few members out.
@@ -47,7 +47,7 @@ final class FeaturedMembers
             ->whereHas('user', fn (Builder $user) => $user->where('status', UserStatus::Active))
             ->whereHas('privacySetting', fn (Builder $privacy) => $privacy
                 ->where('show_on_home', true)
-                ->where('incognito', false)
+                ->where('hide_from_search', false)
                 ->where('photo_visibility', PhotoVisibility::AllMembers))
             ->when($hidden !== [], fn (Builder $query) => $query->whereNotIn('profiles.id', $hidden))
             ->inRandomOrder()

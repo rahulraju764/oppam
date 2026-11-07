@@ -20,7 +20,7 @@ use Illuminate\Queue\InteractsWithQueue;
  * Saved-search alerts (M04), scheduled daily at 08:00 IST: every DAILY search not alerted in the
  * last 20 hours and every WEEKLY one not alerted in 6 days counts the profiles published since its
  * last alert (or since it was saved) with the owner's full search rules — blocked, ignored,
- * incognito and non-ACTIVE profiles never count. Owners who may not browse (suspended account or
+ * hidden-from-search and non-ACTIVE profiles never count. Owners who may not browse (suspended account or
  * profile) get nothing; an email goes only when there is something new and the owner hasn't turned
  * `saved_search_alert` emails off. The window moves on either way, so nothing is counted twice.
  */

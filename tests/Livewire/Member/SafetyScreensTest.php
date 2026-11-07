@@ -44,13 +44,13 @@ it('profile page: the More menu is on another member’s profile (not my own pre
         ->assertSeeHtml('wire:target="block"')->assertSeeHtml('wire:target="report"')->assertSee('Block');
 });
 
-it('block from the menu: the block is stored and the page moves to /settings/blocked with a confirmation', function (): void {
+it('block from the menu: the block is stored and the page moves to /settings?tab=blocked with a confirmation', function (): void {
     $groom = groom();
     $bride = bride();
 
     Livewire::actingAs($groom, 'web')->test(SafetyMenu::class, ['profileCode' => $bride->profile->code, 'name' => 'Asha'])
         ->call('block')
-        ->assertRedirect(route('member.settings.blocked'));
+        ->assertRedirect(route('member.settings', ['tab' => 'blocked']));
 
     expect(Block::query()->where('blocker_profile_id', $groom->profile->id)->exists())->toBeTrue()
         ->and(session('status'))->toContain('You blocked Asha');
@@ -105,7 +105,7 @@ it('live: the lists listen for `.connections.changed`', function (string $compon
     App\Livewire\Member\Chat\Inbox::class,
 ]);
 
-it('/settings/blocked: my blocks and ignores only (never who blocked me); unblock / show again work; empty states', function (): void {
+it('/settings → Blocked & ignored: my blocks and ignores only (never who blocked me); unblock / show again work; empty states', function (): void {
     $groom = groom();
     $bride = bride();
     $other = bride('+919800000472');
@@ -113,7 +113,7 @@ it('/settings/blocked: my blocks and ignores only (never who blocked me); unbloc
     app(IgnoreProfile::class)->handle($groom, $other->profile);
     app(BlockProfile::class)->handle(bride('+919800000473'), $groom->profile);   // someone blocked ME — not listed
 
-    $page = Livewire::actingAs($groom, 'web')->test(BlockedProfiles::class)
+    $page = Livewire::withoutLazyLoading()->actingAs($groom, 'web')->test(BlockedProfiles::class)
         ->assertSee($bride->profile->code)->assertSee($other->profile->code)->assertDontSee('OPM'.'none')
         ->assertSeeHtml('wire:target="unblock(&#039;'.$bride->profile->code.'&#039;)"');
     expect(substr_count($page->html(), 'blocked-OPM'))->toBe(1);
@@ -127,12 +127,12 @@ it('/settings/blocked: my blocks and ignores only (never who blocked me); unbloc
     $page->call('unblock', 'OPM999999')->assertDispatched('toast', type: 'danger');
 });
 
-it('/settings/blocked: Report on a blocked member files a report (block, then report); a code not on my list is refused', function (): void {
+it('/settings → Blocked & ignored: Report on a blocked member files a report (block, then report); a code not on my list is refused', function (): void {
     $groom = groom();
     $bride = bride();
     app(BlockProfile::class)->handle($groom, $bride->profile);
 
-    $page = Livewire::actingAs($groom, 'web')->test(BlockedProfiles::class)
+    $page = Livewire::withoutLazyLoading()->actingAs($groom, 'web')->test(BlockedProfiles::class)
         ->call('openReport', $bride->profile->code)->assertDispatched('open-modal', name: 'report-blocked')
         ->set('reportReason', 'OTHER')->call('report')->assertHasErrors(['details'])
         ->set('reportReason', 'ABUSIVE_MESSAGES')->call('report')->assertHasNoErrors()

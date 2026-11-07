@@ -20,6 +20,16 @@ enum PhoneVisibility: string
         };
     }
 
+    /** How private this choice is (higher = fewer viewers): a stricter choice is never rate-limited (M14). */
+    public function strictness(): int
+    {
+        return match ($this) {
+            self::PremiumOnly => 0,
+            self::AcceptedOnly => 1,
+            self::Hidden => 2,
+        };
+    }
+
     /** @return array<string, string> value => label, for selects */
     public static function options(): array
     {

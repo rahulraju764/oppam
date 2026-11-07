@@ -113,6 +113,10 @@ function joinPresence(echo) {
         .here((members) => store('online')?.replace(members.map(code).filter(Boolean)))
         .joining((member) => code(member) && store('online')?.add(code(member)))
         .leaving((member) => code(member) && store('online')?.remove(code(member)));
+
+    // M14: switching "show online status" off (or hiding from search / incognito) in /settings
+    // leaves the roster at once in this tab; other tabs drop out on their next page load.
+    window.addEventListener('presence-hidden', () => echo.leave('presence.online'), { once: true });
 }
 
 function listenForLogout(echo) {

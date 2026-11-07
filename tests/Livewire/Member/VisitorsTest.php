@@ -70,7 +70,7 @@ it('M15: Gold sees each visitor once, newest visit first, with when', function (
         ->and(strpos($html, $newer->code))->toBeLessThan(strpos($html, $older->code));
 });
 
-it('blocked (either way), suspended and incognito visitors and visits older than 90 days are never listed nor counted', function (): void {
+it('blocked (either way), suspended and hidden-from-search visitors and visits older than 90 days are never listed nor counted', function (): void {
     $me = groom();
     $blocked = visitorOf($me);
     $blocker = visitorOf($me);
@@ -78,7 +78,7 @@ it('blocked (either way), suspended and incognito visitors and visits older than
     $old = visitorOf($me, daysAgo: 100);
     $incognito = visitorOf($me);
     (App\Models\PrivacySetting::query()->whereKey($incognito->id)->first() ?? new App\Models\PrivacySetting)
-        ->forceFill(['profile_id' => $incognito->id, 'incognito' => true])->save();
+        ->forceFill(['profile_id' => $incognito->id, 'hide_from_search' => true])->save();
     $ok = visitorOf($me);
     Block::factory()->create(['blocker_profile_id' => $me->profile->id, 'blocked_profile_id' => $blocked->id]);
     Block::factory()->create(['blocker_profile_id' => $blocker->id, 'blocked_profile_id' => $me->profile->id]);

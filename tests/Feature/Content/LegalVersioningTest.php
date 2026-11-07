@@ -128,7 +128,7 @@ it('sends a member who has not agreed to a material version to the accept page (
     publishLegal();
     $member = memberWithPhone();
 
-    $this->actingAs($member)->get(memberUrl('/settings/blocked'))->assertRedirect(route('legal.accept'));
+    $this->actingAs($member)->get(memberUrl('/settings'))->assertRedirect(route('legal.accept'));
     $this->actingAs($member)->get(memberUrl('/legal/accept'))->assertOk()->assertSee('updated our terms');
 });
 
@@ -137,16 +137,16 @@ it('refuses a background request with 409 and never makes it the page to return 
     $member = memberWithPhone();
     $this->actingAs($member);
 
-    $this->get(memberUrl('/settings/blocked'))->assertRedirect(route('legal.accept'));
-    expect(session('url.intended'))->toBe(memberUrl('/settings/blocked'));
+    $this->get(memberUrl('/settings'))->assertRedirect(route('legal.accept'));
+    expect(session('url.intended'))->toBe(memberUrl('/settings'));
 
     // Echo's channel auth (pusher-js sends no JSON Accept header), a fetch, a Livewire call.
     $this->post(memberUrl('/broadcasting/auth'), ['channel_name' => 'private-App.Models.User.'.$member->id, 'socket_id' => '1.1'])->assertStatus(409);
     $this->get(memberUrl('/dashboard'), ['X-Requested-With' => 'XMLHttpRequest'])->assertStatus(409);
     $this->get(memberUrl('/dashboard'), ['X-Livewire' => '1'])->assertStatus(409);
-    expect(session('url.intended'))->toBe(memberUrl('/settings/blocked'));
+    expect(session('url.intended'))->toBe(memberUrl('/settings'));
 
-    Livewire::test(AcceptTerms::class)->set('agree', true)->call('accept')->assertRedirect(memberUrl('/settings/blocked'));
+    Livewire::test(AcceptTerms::class)->set('agree', true)->call('accept')->assertRedirect(memberUrl('/settings'));
 });
 
 it('lets the member in once they agree, recording the live version the server chose (A08)', function (): void {
@@ -160,7 +160,7 @@ it('lets the member in once they agree, recording the live version the server ch
     $row = LegalAcceptance::query()->where('user_id', $member->id)->sole();
     expect($row->legal_document_id)->toBe($live->id)->and($row->version)->toBe(1)
         ->and($row->context)->toBe(LegalAcceptanceContext::Required);
-    $this->get(memberUrl('/settings/blocked'))->assertOk();
+    $this->get(memberUrl('/settings'))->assertOk();
 });
 
 it('asks again after a newer material version, not after a non-material one (A08)', function (): void {
@@ -169,11 +169,11 @@ it('asks again after a newer material version, not after a non-material one (A08
     app(RecordLegalAcceptance::class)->handle($member, LegalAcceptanceContext::Required, '10.0.0.1', 'test');
 
     publishLegal(['is_material' => false, 'summary' => 'Typo fixed']);
-    $this->actingAs($member)->get(memberUrl('/settings/blocked'))->assertOk();
+    $this->actingAs($member)->get(memberUrl('/settings'))->assertOk();
     expect(app(LegalVersions::class)->pendingFor($member)->notices)->toBe([LegalKind::Terms]);
 
     publishLegal(['is_material' => true]);
-    $this->actingAs($member)->withSession([])->get(memberUrl('/settings/blocked'))->assertRedirect(route('legal.accept'));
+    $this->actingAs($member)->withSession([])->get(memberUrl('/settings'))->assertRedirect(route('legal.accept'));
 });
 
 it('shows a dismissible notice for a non-material update, and dismissing records it (A08)', function (): void {
@@ -192,7 +192,7 @@ it('shows a dismissible notice for a non-material update, and dismissing records
 it('never asks anything while no version is published (A08)', function (): void {
     $member = memberWithPhone();
 
-    $this->actingAs($member)->get(memberUrl('/settings/blocked'))->assertOk();
+    $this->actingAs($member)->get(memberUrl('/settings'))->assertOk();
     expect(app(LegalVersions::class)->pendingFor($member)->blocks())->toBeFalse();
 });
 
@@ -201,17 +201,17 @@ it('checks once per session and again when a new version goes live (A08 performa
     $member = memberWithPhone();
     app(RecordLegalAcceptance::class)->handle($member, LegalAcceptanceContext::Required, null, null);
 
-    $this->actingAs($member)->get(memberUrl('/settings/blocked'))->assertOk()->assertSessionHas(EnsureLegalTermsAccepted::SESSION_KEY);
+    $this->actingAs($member)->get(memberUrl('/settings'))->assertOk()->assertSessionHas(EnsureLegalTermsAccepted::SESSION_KEY);
 
     // Same session (already checked): a new material version still stops it on the next page.
     publishLegal(['is_material' => true]);
-    $this->get(memberUrl('/settings/blocked'))->assertRedirect(route('legal.accept'));
+    $this->get(memberUrl('/settings'))->assertRedirect(route('legal.accept'));
 });
 
 it('refuses an action on a page opened before a material version went live (A08, persistent middleware)', function (): void {
     $member = memberWithPhone();
     $this->actingAs($member);
-    $page = $this->withCredentials()->get(memberUrl('/settings/blocked'))->assertOk()->getContent();
+    $page = $this->withCredentials()->get(memberUrl('/settings'))->assertOk()->getContent();
 
     publishLegal();
     bureauLivewireUpdate((string) $page)->assertStatus(409);
@@ -222,7 +222,7 @@ it('never stops an admin support session, and it cannot agree for the member (A0
     $member = memberWithPhone();
     chatImpersonate($member);
 
-    $request = Illuminate\Http\Request::create(memberUrl('/settings/blocked'));
+    $request = Illuminate\Http\Request::create(memberUrl('/settings'));
     $request->setLaravelSession(app('session.store'));
     $request->setUserResolver(fn () => $member);
     $response = app(EnsureLegalTermsAccepted::class)->handle($request, fn () => response('passed'));

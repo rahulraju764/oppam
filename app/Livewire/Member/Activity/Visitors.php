@@ -22,7 +22,7 @@ use Livewire\WithPagination;
  * Visitors (M15, /visitors): "Who viewed my profile" — distinct visible members of the last 90
  * days with their last visit, for plans with see_who_viewed_me (Gold / Diamond); others see only
  * the number, a data-free blurred teaser and an upgrade link — and "Profiles I viewed" (all plans,
- * 90 days). Both read through ProfileVisitors, so blocked, ignored, incognito and non-ACTIVE
+ * 90 days). Both read through ProfileVisitors, so blocked, ignored, hidden-from-search and non-ACTIVE
  * members are never listed nor counted. A new visit (".profile.viewed") or a socket reconnect
  * re-reads the page (P3.1).
  */

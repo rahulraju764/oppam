@@ -89,7 +89,7 @@ final class SafetyMenu extends Component
         }
 
         session()->flash('status', $done);
-        $this->redirectRoute('member.settings.blocked', navigate: true);
+        $this->redirectRoute('member.settings', ['tab' => 'blocked'], navigate: true);
     }
 
     private function target(): Profile

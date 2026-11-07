@@ -83,7 +83,7 @@ it('F06 diversity: at most 3 from one district', function (): void {
     expect($kannur)->toBe(3);
 });
 
-it('F06 exclusions: blocked (both ways), ignored, incognito, already viewed and shown in the last 30 days', function (): void {
+it('F06 exclusions: blocked (both ways), ignored, hidden from search, already viewed and shown in the last 30 days', function (): void {
     $groom = dailyGroom();
     $me = $groom->profile;
     $blocked = dailyBride();
@@ -97,7 +97,7 @@ it('F06 exclusions: blocked (both ways), ignored, incognito, already viewed and 
     Block::factory()->create(['blocker_profile_id' => $me->id, 'blocked_profile_id' => $blocked->id]);
     Block::factory()->create(['blocker_profile_id' => $blocker->id, 'blocked_profile_id' => $me->id]);
     Ignore::factory()->create(['ignorer_profile_id' => $me->id, 'ignored_profile_id' => $ignored->id]);
-    (PrivacySetting::query()->whereKey($incognito->id)->first() ?? new PrivacySetting)->forceFill(['profile_id' => $incognito->id, 'incognito' => true])->save();
+    (PrivacySetting::query()->whereKey($incognito->id)->first() ?? new PrivacySetting)->forceFill(['profile_id' => $incognito->id, 'hide_from_search' => true])->save();
     ProfileView::factory()->create(['viewer_profile_id' => $me->id, 'viewed_profile_id' => $viewed->id]);
     DailyMatch::factory()->create(['profile_id' => $me->id, 'matched_profile_id' => $shownLastWeek->id, 'match_date' => now('Asia/Kolkata')->subDays(7)->toDateString()]);
     DailyMatch::factory()->create(['profile_id' => $me->id, 'matched_profile_id' => $shownLongAgo->id, 'match_date' => now('Asia/Kolkata')->subDays(40)->toDateString()]);

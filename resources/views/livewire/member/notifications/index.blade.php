@@ -37,6 +37,10 @@
                                 <input class="form-check-input" type="checkbox" id="nt-unread" name="unread" wire:model.live="unread">
                                 <label class="form-check-label" for="nt-unread">{{ __('Unread only') }}</label>
                             </div>
+                            <div class="sidebar-divider"></div>
+                            <a href="{{ route('member.settings', ['tab' => 'notifications']) }}" class="nav-link-custom" wire:navigate>
+                                <span class="nav-link-label"><i class="fa fa-sliders" aria-hidden="true"></i> {{ __('Notification settings') }}</span>
+                            </a>
                         </nav>
                     </div>
                 </div>
