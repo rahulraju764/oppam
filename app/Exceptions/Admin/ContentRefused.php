@@ -53,4 +53,14 @@ final class ContentRefused extends RuntimeException
     {
         return new self(__('These are fixed page sections and can’t be added.'));
     }
+
+    public static function publishedVersion(): self
+    {
+        return new self(__('This version has been published and members have agreed to it, so it can’t be changed. Start a new version instead.'));
+    }
+
+    public static function liveLegalVersion(): self
+    {
+        return new self(__('The live version can’t be taken off the site. Publish a newer version; this one is archived automatically.'));
+    }
 }

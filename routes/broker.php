@@ -43,7 +43,7 @@ Route::get('/validate', ReferralCodeController::class)->middleware('throttle:30,
 Route::get('/staff/invite/{token}', Staff\AcceptInvite::class)->middleware(['guest', 'throttle:30,1'])
     ->where('token', '[A-Za-z0-9]{64}')->name('staff.accept');
 
-Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active'])->group(function (): void {
+Route::middleware(['auth', 'role:BROKER', 'broker.active', 'broker.staff.active', 'legal.accepted'])->group(function (): void {
     Route::get('/verify-device', VerifyDevice::class)->middleware('throttle:30,1')->name('device');
 
     Route::middleware('broker.device')->group(function (): void {

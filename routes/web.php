@@ -8,6 +8,8 @@ use App\Http\Controllers\Member\HoroscopeController;
 use App\Http\Controllers\Member\ImpersonationController;
 use App\Http\Controllers\Member\InvoiceDownloadController;
 use App\Http\Controllers\Member\UnsubscribeSavedSearchController;
+use App\Http\Controllers\Public\RobotsController;
+use App\Http\Controllers\Public\SitemapController;
 use App\Livewire\Member\Activity\Visitors;
 use App\Livewire\Member\Auth\ClaimProfile;
 use App\Livewire\Member\Auth\ForgotPassword;
@@ -23,6 +25,7 @@ use App\Livewire\Member\Dashboard\Dashboard;
 use App\Livewire\Member\Engagement\Favorites;
 use App\Livewire\Member\Engagement\Interests;
 use App\Livewire\Member\Engagement\Likes;
+use App\Livewire\Member\Legal\AcceptTerms;
 use App\Livewire\Member\Matches\Daily;
 use App\Livewire\Member\Matches\MyMatches;
 use App\Livewire\Member\Notifications\Index as NotificationsIndex;
@@ -36,12 +39,16 @@ use App\Livewire\Member\Support\Help;
 use App\Livewire\Member\Support\TicketThread;
 use App\Livewire\Member\Verification\Upload as VerificationUpload;
 use App\Livewire\Public\About;
+use App\Livewire\Public\AdPreview;
 use App\Livewire\Public\Branches;
+use App\Livewire\Public\CommunityLanding;
 use App\Livewire\Public\Contact;
 use App\Livewire\Public\Home;
+use App\Livewire\Public\LegalPage;
 use App\Livewire\Public\Plans;
 use App\Livewire\Public\SafetyCentre;
 use App\Livewire\Public\SuccessStories;
+use App\Models\CommunityPage;
 use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,8 +66,10 @@ Route::get('/success-stories', SuccessStories::class)->name('success-stories');
 Route::get('/plans', Plans::class)->name('plans');
 Route::get('/contact', Contact::class)->name('contact');
 Route::get('/safety', SafetyCentre::class)->name('safety');
-Route::view('/privacy', 'pages.privacy')->name('privacy');
-Route::view('/terms', 'pages.terms')->name('terms');
+// Versioned legal pages (A08, P8.1b): the live version of each kind.
+Route::get('/privacy', LegalPage::class)->defaults('kind', 'PRIVACY')->name('privacy');
+Route::get('/terms', LegalPage::class)->defaults('kind', 'TERMS')->name('terms');
+Route::get('/grievance', LegalPage::class)->defaults('kind', 'GRIEVANCE')->name('grievance');
 
 // A08 signed preview (P8.1a): the real pages with one unpublished row. Issued by IssueContentPreview.
 Route::middleware(['signed', 'throttle:60,1'])->prefix('content-preview')->name('content.preview.')->group(function (): void {
@@ -69,6 +78,9 @@ Route::middleware(['signed', 'throttle:60,1'])->prefix('content-preview')->name(
     Route::get('/story/{code}', SuccessStories::class)->middleware('content.preview:stories')->name('story');
     Route::get('/branch/{code}', Branches::class)->middleware('content.preview:branches')->name('branch');
     Route::get('/faq/{code}', Plans::class)->middleware('content.preview:faq')->name('faq');
+    Route::get('/legal/{code}', LegalPage::class)->middleware('content.preview:legal')->name('legal');
+    Route::get('/community/{code}', CommunityLanding::class)->middleware('content.preview:communities')->name('community');
+    Route::get('/ad/{code}', AdPreview::class)->middleware('content.preview:ads')->name('ad');
 });
 
 // The FAQ lives on the plans page (template faq.php was a 301 stub to package#faq).
@@ -96,7 +108,10 @@ Route::post('/impersonation/end', [ImpersonationController::class, 'end'])->midd
 Route::view('/impersonation/ended', 'pages.impersonation-ended')->name('impersonation.ended');
 
 // Member area. Pages after onboarding also get `profile.onboarded` (PRD §13); the wizard can't.
-Route::middleware(['auth', 'verified.phone'])->group(function (): void {
+// Forced re-acceptance (A08, P8.1b): outside `legal.accepted`, which sends members here.
+Route::get('/legal/accept', AcceptTerms::class)->middleware('auth')->name('legal.accept');
+
+Route::middleware(['auth', 'verified.phone', 'legal.accepted'])->group(function (): void {
     // §11A B.6 claim flow: "Is this you?" straight after the registration OTP (one-time session flag).
     Route::get('/register/claim', ClaimProfile::class)->middleware('throttle:30,1')->name('register.claim');
     Route::get('/onboarding/{step}', Wizard::class)->whereNumber('step')->name('member.onboarding');
@@ -157,6 +172,15 @@ Route::middleware('throttle:30,1')->group(function (): void {
     Route::post('/saved-searches/unsubscribe/{token}', [UnsubscribeSavedSearchController::class, 'store'])
         ->where('token', '[A-Za-z0-9]{48}');
 });
+
+// SEO (M12, P8.1b): robots and sitemap follow A15 `seo.indexable`.
+Route::get('/robots.txt', RobotsController::class)->name('robots');
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+
+// Community landing pages (M12, A08), e.g. /nair-matrimony. Only addresses shaped like one, and only
+// published pages (404 otherwise). Last, so no other route is ever shadowed.
+Route::get('/{community}', CommunityLanding::class)->where('community', CommunityPage::SLUG_PATTERN)
+    ->middleware('throttle:60,1')->name('community');
 
 // Living styleguide for visual checks (P0.2). Local only: never registered in testing/production.
 if (app()->environment('local')) {

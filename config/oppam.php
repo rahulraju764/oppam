@@ -113,6 +113,12 @@ return [
         'driver' => env('SMS_DRIVER', 'log'),
     ],
 
+    'captcha' => [
+        // turnstile (production) | none (local / testing: no widget). Bound in AppServiceProvider;
+        // `none` is refused in production. Keys in config/services.php `turnstile` (P8.1b, M12 contact).
+        'driver' => env('CAPTCHA_DRIVER', in_array(env('APP_ENV'), ['local', 'testing'], true) ? 'none' : 'turnstile'),
+    ],
+
     'payments' => [
         // razorpay | fake (local / testing / Dusk: simulated payments, no money). Bound in
         // AppServiceProvider; `fake` is refused in production. Defaults to fake only in local / testing.

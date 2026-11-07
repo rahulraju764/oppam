@@ -48,11 +48,11 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        format(command) {
+        format(command, value = null) {
             this.remember();   // a mouse click doesn't blur: the selection now is the one meant
             this.restore();
             document.execCommand('defaultParagraphSeparator', false, 'p');
-            document.execCommand(command);
+            document.execCommand(command, false, value);
             this.sync();
         },
 

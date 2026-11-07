@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
 use App\Http\Controllers\Admin\PayoutStatementController;
 use App\Http\Controllers\Admin\VerificationDocumentController;
+use App\Http\Controllers\Public\RobotsController;
 use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
@@ -43,6 +44,7 @@ use App\Livewire\Admin\Chat\FlagReview;
 use App\Livewire\Admin\Chat\Overview as ChatOverview;
 use App\Livewire\Admin\Chat\Rules as ChatRules;
 use App\Livewire\Admin\Chat\Signals as ChatSignals;
+use App\Livewire\Admin\Contact\Inbox as ContactInbox;
 use App\Livewire\Admin\Content\ContentIndex;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\Masters\Index as MastersIndex;
@@ -75,6 +77,9 @@ use Illuminate\Support\Facades\Route;
 | name('admin.'). Every page is a Livewire full-page component under App\Livewire\Admin; every
 | data-changing action authorizes again inside its Action (a hidden link is not security).
 */
+
+// The admin host is never crawled (P8.1b): RobotsController always answers Disallow: / here.
+Route::get('/robots.txt', RobotsController::class)->name('robots');
 
 // Sign-in flow (A01). Password → (first time) 2FA enrolment | 2FA challenge → panel.
 Route::middleware('guest:admin')->group(function (): void {
@@ -166,6 +171,9 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
             Route::get('/'.$contentType->value, ContentIndex::class)->defaults('type', $contentType->value)->name($contentType->value);
         }
     });
+
+    // Contact inbox (A08, P8.1b): support work, so support.view to read; changes re-check support.respond.
+    Route::get('/content/contact', ContactInbox::class)->middleware('can:support.view')->name('contact.index');
 
     // Plans, orders, refunds, coupons (A06, P5.3). Viewing needs billing.view; every change re-checks its
     // own permission in its Action. The GST CSV: billing.export.

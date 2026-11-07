@@ -1,7 +1,7 @@
 {{--
     The /contact form (template contact.php markup kept: .matrimony-forms, .mat-label, .mat-text,
-    .contact-button). Sends a support ticket (OpenTicket). `website` is a honeypot, hidden from
-    people and screen readers.
+    .contact-button). Goes to the A08 contact inbox (SubmitContact). `website` is a honeypot, hidden
+    from people and screen readers. The Turnstile widget shows only when CAPTCHA_DRIVER=turnstile.
 --}}
 <div>
     @if ($sentCode !== null)
@@ -10,7 +10,7 @@
             <h2>{{ __('Thank you — we’ve got your message') }}</h2>
             <p>
                 @if ($sentCode !== '—')
-                    {{ __('Your request number is :code. Our support team will reply by email, usually within one working day.', ['code' => $sentCode]) }}
+                    {{ __('Your reference is :code. Our support team will reply by email, usually within one working day.', ['code' => $sentCode]) }}
                 @else
                     {{ __('Our support team will reply by email, usually within one working day.') }}
                 @endif
@@ -53,6 +53,15 @@
                               placeholder="{{ __('How can we help?') }}" maxlength="5000" required @error('message') aria-describedby="contact-message-error" aria-invalid="true" @enderror></textarea>
                     @error('message')<p class="invalid-feedback d-block" id="contact-message-error" role="alert">{{ $message }}</p>@enderror
                 </div>
+                @if ($captchaKey)
+                    <div class="col-12">
+                        <div wire:ignore x-data="turnstile(@js($captchaKey))" x-on:captcha-reset.window="reset()">
+                            <div x-ref="widget"></div>
+                            <p class="form-text" x-show="failed" x-cloak role="alert">{{ __('The robot check could not load. Check your connection and reload the page.') }}</p>
+                        </div>
+                        @error('captcha')<p class="invalid-feedback d-block" id="contact-captcha-error" role="alert">{{ $message }}</p>@enderror
+                    </div>
+                @endif
                 <div class="contact-hp" aria-hidden="true">
                     <label for="contact-website">{{ __('Website') }}</label>
                     <input type="text" id="contact-website" name="website" wire:model="website" tabindex="-1" autocomplete="off">

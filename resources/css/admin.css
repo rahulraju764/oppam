@@ -495,3 +495,10 @@ tr[draggable="true"] { cursor: grab; }
 .rich-text__area {
     min-height: 10rem;
 }
+.contact-message__text { overflow-wrap: anywhere; white-space: pre-line; }
+
+/* A08 legal version comparison (P8.1b) */
+.legal-diff { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow-y: auto; }
+.legal-diff__line { padding: var(--space-1) var(--space-2); border-left: 3px solid transparent; overflow-wrap: anywhere; }
+.legal-diff__line.is-added { background: var(--bg-teal); border-left-color: var(--color-secondary-dark); }
+.legal-diff__line.is-removed { background: var(--bg-rose); border-left-color: var(--color-primary); text-decoration: line-through; }

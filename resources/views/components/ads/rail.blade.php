@@ -2,45 +2,68 @@
     Right-hand ad rail on 3/6/3 member pages (template ads.php). Sticky on desktop; put it LAST
     in the row so phones get content first. Units carry data-rail="weave" so mobile-rail.js can
     weave them between result cards below 992px.
-    The creative is the template's demo set until ads are managed in A08 (P8.1). The "Wedding
-    Services" unit is rendered only when its entries have real destinations (template: href="#").
+    Creatives come from A08 ad slots (AdRotation, P8.1b): audience, running window, weighted
+    rotation. With no live promo a free member sees the membership card; paid members see none.
+    The "Wedding Services" unit is rendered only when its entries have real destinations.
 
     services  list<array{label: string, icon: string, url: string}>  (default: none)
 --}}
 @props(['services' => []])
 @inject('nav', 'App\Support\Navigation\Navigation')
-@php($plansUrl = $nav->url('plans'))
+@inject('rotation', 'App\Queries\Content\AdRotation')
+@php
+    $plansUrl = $nav->url('plans');
+    $rail = $rotation->forViewer(auth('web')->user());
+@endphp
 
 <aside class="ad-rail" aria-label="{{ __('Sponsored') }}">
-    @if ($plansUrl)
+    @if ($rail->promo)
+        <div class="ad-unit ad-promo" data-rail="weave">
+            <span class="ad-promo-icon"><i class="fa fa-diamond" aria-hidden="true"></i></span>
+            <h3>{{ $rail->promo->heading }}</h3>
+            @if ($rail->promo->copy)
+                <p>{{ $rail->promo->copy }}</p>
+            @endif
+            <a href="{{ $rail->promo->ctaUrl }}" class="ad-promo-btn"
+               @if ($rail->promo->external) target="_blank" rel="noopener sponsored" @else wire:navigate @endif>{{ $rail->promo->ctaLabel }}</a>
+        </div>
+    @elseif ($rail->showUpgrade && $plansUrl)
         <div class="ad-unit ad-promo" data-rail="weave">
             <span class="ad-promo-icon"><i class="fa fa-diamond" aria-hidden="true"></i></span>
             <h3>{{ __('Go Premium') }}</h3>
             <p>{{ __('Call and chat with your matches, see who viewed you, and get 3x more responses.') }}</p>
             <a href="{{ $plansUrl }}" class="ad-promo-btn" wire:navigate>{{ __('Upgrade Now') }}</a>
         </div>
+    @endif
 
-        <a href="{{ $plansUrl }}" class="ad-unit ad-banner" data-rail="weave" wire:navigate>
+    @if ($rail->banner && $rail->banner->imageUrl)
+        <a href="{{ $rail->banner->ctaUrl }}" class="ad-unit ad-banner" data-rail="weave"
+           @if ($rail->banner->external) target="_blank" rel="noopener sponsored" @else wire:navigate @endif>
             <span class="ad-label">{{ __('Sponsored') }}</span>
-            <img src="{{ asset('images/home/ad1.jpg') }}" class="img-fluid" alt="{{ __('Limited time membership offer') }}" width="800" height="800" loading="lazy" decoding="async">
+            <img src="{{ $rail->banner->imageUrl }}" class="img-fluid" alt="{{ $rail->banner->alt ?: $rail->banner->heading }}"
+                 width="{{ $rail->banner->imageWidth }}" height="{{ $rail->banner->imageHeight }}" loading="lazy" decoding="async">
         </a>
     @endif
 
-    <div class="ad-unit ad-carousel" data-rail="weave">
-        <span class="ad-label">{{ __('Sponsored') }}</span>
-        <div class="ad-oppam swiper">
-            <div class="swiper-wrapper">
-                @foreach (['images/search/ed-ad1.jpeg', 'images/search/ed-ad2.jpeg'] as $creative)
-                    <div class="oppam-ad swiper-slide">
-                        <div class="oppam-img">
-                            <img src="{{ asset($creative) }}" alt="" width="810" height="1013" loading="lazy" decoding="async">
+    @if ($rail->carousel !== [])
+        <div class="ad-unit ad-carousel" data-rail="weave">
+            <span class="ad-label">{{ __('Sponsored') }}</span>
+            <div class="ad-oppam swiper">
+                <div class="swiper-wrapper">
+                    @foreach ($rail->carousel as $slide)
+                        <div class="oppam-ad swiper-slide">
+                            <a href="{{ $slide->ctaUrl }}" class="oppam-img d-block"
+                               @if ($slide->external) target="_blank" rel="noopener sponsored" @else wire:navigate @endif>
+                                <img src="{{ $slide->imageUrl }}" alt="{{ $slide->alt ?: $slide->heading }}"
+                                     width="{{ $slide->imageWidth }}" height="{{ $slide->imageHeight }}" loading="lazy" decoding="async">
+                            </a>
                         </div>
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
+                <div class="swiper-pagination"></div>
             </div>
-            <div class="swiper-pagination"></div>
         </div>
-    </div>
+    @endif
 
     @if ($services !== [])
         <div class="ad-unit ad-services" data-rail="weave">

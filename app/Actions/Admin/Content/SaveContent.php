@@ -6,22 +6,27 @@ namespace App\Actions\Admin\Content;
 
 use App\Contracts\HtmlSanitizer;
 use App\Data\Content\ConsentInput;
+use App\Domain\Content\LegalBodyFormatter;
 use App\Enums\ContentStatus;
 use App\Enums\ContentType;
 use App\Exceptions\Admin\ContentRefused;
 use App\Models\AdminUser;
 use App\Models\EditorialContent;
 use App\Models\HomeBlock;
+use App\Models\LegalDocument;
 use App\Models\SuccessStory;
 use App\Models\Testimonial;
+use App\Rules\CasteBelongsToReligion;
 use App\Services\Audit\AuditLogger;
 use App\Services\Content\ContentImageStore;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -32,6 +37,8 @@ use Throwable;
  * what goes out. Consent is recorded on a row that isn't live; on a live story it only changes by
  * withdrawing. A dialog opened on an older version is refused, so a stale form can't overwrite a change
  * or re-record consent on a story withdrawn meanwhile. A withdrawn story takes no edits until restored.
+ * A published legal version takes no edits at all (P8.1b): members agreed to that exact text, so the
+ * change goes into a new version. A version's kind and number are fixed when it is created.
  */
 final class SaveContent
 {
@@ -39,6 +46,7 @@ final class SaveContent
         private readonly AuditLogger $audit,
         private readonly HtmlSanitizer $sanitizer,
         private readonly ContentImageStore $images,
+        private readonly LegalBodyFormatter $legal,
     ) {}
 
     /**
@@ -68,6 +76,9 @@ final class SaveContent
 
                 if ($locked instanceof SuccessStory && $locked->isWithdrawn()) {
                     throw ContentRefused::withdrawnRow();
+                }
+                if ($locked instanceof LegalDocument && $locked->exists && ($locked->isLive() || $locked->published_at !== null)) {
+                    throw ContentRefused::publishedVersion();
                 }
                 if ($locked->exists && $expectedVersion !== null && $locked->lock_version !== $expectedVersion) {
                     throw ContentRefused::changedMeanwhile();
@@ -132,10 +143,17 @@ final class SaveContent
     private function validated(ContentType $type, ?EditorialContent $row, array $input, ?UploadedFile $image): array
     {
         $block = $row instanceof HomeBlock ? $row->block_key : null;
-        $rules = $type->rules($block);
+        $rules = [...$type->rules($block), ...$this->contextRules($type, $row, $input)];
+        if ($row !== null) {
+            foreach ($type->createOnlyFields() as $field) {
+                unset($rules[$field], $input[$field]);
+            }
+        }
 
         foreach ($type->richFields() as $field) {
-            $input[$field] = is_string($input[$field] ?? null) ? $this->sanitizer->clean($input[$field]) : '';
+            $input[$field] = is_string($input[$field] ?? null)
+                ? ($type->allowsDocumentMarkup() ? $this->legal->format($this->sanitizer->cleanDocument($input[$field])) : $this->sanitizer->clean($input[$field]))
+                : '';
             if (trim(strip_tags((string) $input[$field])) === '') {
                 $input[$field] = '';
             }
@@ -146,7 +164,34 @@ final class SaveContent
 
         $checked = array_map(fn (mixed $value): mixed => $value === '' ? null : $value, $checked);
 
+        // Typed in IST on a datetime-local input, stored in UTC.
+        foreach ($type->dateTimeFields() as $field) {
+            if (is_string($checked[$field] ?? null)) {
+                $checked[$field] = CarbonImmutable::parse($checked[$field], (string) config('oppam.display_timezone'))->utc();
+            }
+        }
+
         return $checked;
+    }
+
+    /**
+     * Rules that depend on the row or the other input.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, list<mixed>>
+     */
+    private function contextRules(ContentType $type, ?EditorialContent $row, array $input): array
+    {
+        if ($type !== ContentType::Community) {
+            return [];
+        }
+
+        $religion = is_numeric($input['religion_id'] ?? null) ? (int) $input['religion_id'] : null;
+
+        return [
+            'slug' => [...$type->rules()['slug'], Rule::unique('community_pages', 'slug')->ignore($row?->id)],
+            'caste_id' => [...$type->rules()['caste_id'], new CasteBelongsToReligion($religion)],
+        ];
     }
 
     /** @throws ValidationException */
@@ -187,6 +232,10 @@ final class SaveContent
         } while ($class::query()->where('code', $code)->exists());
 
         $row->forceFill(['code' => $code, 'status' => ContentStatus::Draft]);
+
+        if ($row instanceof LegalDocument) {
+            $row->forceFill(['version' => (int) LegalDocument::query()->where('kind', $row->kind)->max('version') + 1]);
+        }
 
         if ($row instanceof SuccessStory) {
             // The anchor stays the same for the story's life, whatever is edited later.

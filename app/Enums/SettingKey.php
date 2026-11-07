@@ -128,6 +128,9 @@ enum SettingKey: string
     case SupportSlaPaymentsHours = 'support.sla_payments_hours';
     case SupportSlaDefaultHours = 'support.sla_default_hours';
     case SupportTicketsMaxPerHour = 'support.tickets_max_per_hour';
+    case ContactMaxPerHour = 'contact.max_per_hour';
+    case ContactSpamRetentionDays = 'contact.spam_retention_days';
+    case ContactRetentionDays = 'contact.retention_days';
 
     public function type(): SettingType
     {
@@ -254,6 +257,9 @@ enum SettingKey: string
             self::SupportSlaPaymentsHours => 24,        // … payments …
             self::SupportSlaDefaultHours => 48,         // … everything else
             self::SupportTicketsMaxPerHour => 5,        // rule 10: tickets per member / visitor per hour
+            self::ContactMaxPerHour => 5,               // rule 10: contact-form messages per visitor IP / member per hour (P8.1b)
+            self::ContactSpamRetentionDays => 30,       // spam-tab messages are deleted after this
+            self::ContactRetentionDays => 365,          // every other contact message is deleted after this
         };
     }
 
@@ -357,6 +363,9 @@ enum SettingKey: string
             self::SafetyOncallPhones => ['nullable', 'string', 'max:300', 'regex:/^(\+?[0-9]{10,15})?(\s*,\s*\+?[0-9]{10,15})*$/'],
             self::SupportSlaSafetyHours, self::SupportSlaPaymentsHours, self::SupportSlaDefaultHours => ['required', 'integer', 'min:1', 'max:336'],
             self::SupportTicketsMaxPerHour => ['required', 'integer', 'min:1', 'max:50'],
+            self::ContactMaxPerHour => ['required', 'integer', 'min:1', 'max:50'],
+            self::ContactSpamRetentionDays => ['required', 'integer', 'min:1', 'max:365'],
+            self::ContactRetentionDays => ['required', 'integer', 'min:30', 'max:3650'],
         };
     }
 

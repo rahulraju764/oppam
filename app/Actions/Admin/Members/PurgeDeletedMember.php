@@ -7,6 +7,8 @@ namespace App\Actions\Admin\Members;
 use App\Actions\Profile\EraseProfileData;
 use App\Enums\SettingKey;
 use App\Enums\UserRole;
+use App\Models\ContactSubmission;
+use App\Models\LegalAcceptance;
 use App\Models\LoginEvent;
 use App\Models\NotificationPreference;
 use App\Models\OtpChallenge;
@@ -77,6 +79,10 @@ final class PurgeDeletedMember
             // OTP challenges carry the real phone + IP; sessions the IP + browser.
             OtpChallenge::query()->where('user_id', $member->id)->orWhere('phone', $member->phone)->delete();
             DB::table('sessions')->where('user_id', $member->id)->delete();
+            // P8.1b: contact-form messages carry a name, email and free text; acceptances an IP and
+            // browser. Which legal version the account agreed to stays (it names no one).
+            ContactSubmission::query()->where('user_id', $member->id)->delete();
+            LegalAcceptance::query()->where('user_id', $member->id)->update(['ip_address' => null, 'user_agent' => null]);
 
             $member->forceFill([
                 // Unique, never a real number, frees the real one for a new registration.

@@ -11,7 +11,6 @@ use App\Enums\ContentStatus;
 use App\Enums\ContentType;
 use App\Exceptions\Admin\ContentRefused;
 use App\Jobs\Content\PublishScheduledContent;
-use App\Models\AdminUser;
 use App\Models\AuditLog;
 use App\Models\Banner;
 use App\Models\Branch;
@@ -24,8 +23,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 /*
 | A08 editorial workflow (P8.1a): DRAFT → IN_REVIEW → SCHEDULED → PUBLISHED → ARCHIVED, content.edit
@@ -38,16 +35,6 @@ beforeEach(function (): void {
     $this->publisher = contentAdmin('content.publish');
     $this->flow = app(TransitionContent::class);
 });
-
-function contentAdmin(string ...$permissions): AdminUser
-{
-    $admin = adminWithRole('content_editor');
-    $role = Role::query()->create(['name' => 'only-'.uniqid(), 'guard_name' => 'admin']);
-    $role->syncPermissions(array_map(fn (string $p) => Permission::findByName($p, 'admin'), $permissions));
-    $admin->syncRoles([$role]);
-
-    return $admin->refresh();
-}
 
 function storyInput(array $overrides = []): array
 {

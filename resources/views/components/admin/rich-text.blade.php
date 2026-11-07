@@ -3,9 +3,9 @@
     contenteditable with bold, italic, lists and a link. A convenience only: whatever it sends is
     sanitised on the server (HtmlSanitizer).
 
-    label, name, model (Livewire property)
+    label, name, model (Livewire property); headings adds clause-heading / paragraph buttons (legal pages)
 --}}
-@props(['label', 'name', 'model'])
+@props(['label', 'name', 'model', 'headings' => false])
 
 @php
     $id = 'rich-'.$name;
@@ -16,6 +16,10 @@
 <div class="ui-field rich-text" x-data="richText('{{ $model }}')">
     <span class="form-label d-block" id="{{ $id }}-label">{{ $label }} *</span>
     <div class="rich-text__toolbar" role="toolbar" aria-labelledby="{{ $id }}-label">
+        @if ($headings)
+            <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('formatBlock', 'h3')" aria-label="{{ __('Clause heading') }}"><i class="fa fa-header" aria-hidden="true"></i></button>
+            <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('formatBlock', 'p')" aria-label="{{ __('Normal paragraph') }}"><i class="fa fa-paragraph" aria-hidden="true"></i></button>
+        @endif
         <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('bold')" aria-label="{{ __('Bold') }}"><i class="fa fa-bold" aria-hidden="true"></i></button>
         <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('italic')" aria-label="{{ __('Italic') }}"><i class="fa fa-italic" aria-hidden="true"></i></button>
         <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('insertUnorderedList')" aria-label="{{ __('Bulleted list') }}"><i class="fa fa-list-ul" aria-hidden="true"></i></button>

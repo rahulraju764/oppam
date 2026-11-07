@@ -15,6 +15,7 @@ use App\Enums\TicketStatus;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Safety\SafetyRefused;
 use App\Models\AuditLog;
+use App\Models\ContactSubmission;
 use App\Models\LoginEvent;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
@@ -66,6 +67,48 @@ final class OpenTicket
             throw new InvalidArgumentException('In-app help needs a signed-in member.');
         }
 
+        $valid = $this->validated($member, $data);
+
+        $key = 'support-ticket:'.($member !== null ? 'u:'.$member->id : 'ip:'.$ip);
+        if ($this->limiter->tooManyAttempts($key, Settings::int(SettingKey::SupportTicketsMaxPerHour))) {
+            throw SafetyRefused::tooMany();
+        }
+        $this->limiter->hit($key, 3600);
+
+        $context = $source === TicketSource::InApp ? $this->context($member) : null;
+
+        return $this->create($member, $valid, $source, $context);
+    }
+
+    /**
+     * An admin turns an A08 contact-inbox message into a ticket (P8.1b): same validation, no visitor
+     * rate limit (the message already passed the contact form's own), linked to the sender's account
+     * when they were signed in. The caller authorises and audits.
+     *
+     * @throws ValidationException
+     */
+    public function fromContact(ContactSubmission $submission): SupportTicket
+    {
+        $member = $submission->user_id !== null ? User::query()->find($submission->user_id) : null;
+        $valid = $this->validated($member, new TicketRequestData(
+            name: $submission->name,
+            email: $submission->email,
+            phone: null,
+            category: $submission->category->value,
+            subject: $submission->category->label(),
+            message: $submission->message,
+        ));
+
+        return $this->create($member, $valid, TicketSource::ContactForm, null);
+    }
+
+    /**
+     * @return array{name: string, email: string|null, phone: string|null, category: string, subject: string, message: string}
+     *
+     * @throws ValidationException
+     */
+    private function validated(?User $member, TicketRequestData $data): array
+    {
         $name = trim($data->name) !== '' ? trim($data->name) : ($member?->profile?->fullName() ?? '');
         $email = $data->email !== null && trim($data->email) !== '' ? Str::lower(trim($data->email)) : $member?->email;
         $phone = $data->phone !== null && trim($data->phone) !== '' ? trim($data->phone) : null;
@@ -85,14 +128,17 @@ final class OpenTicket
             'subject' => __('subject'), 'message' => __('message'),
         ])->validate();
 
-        $key = 'support-ticket:'.($member !== null ? 'u:'.$member->id : 'ip:'.$ip);
-        if ($this->limiter->tooManyAttempts($key, Settings::int(SettingKey::SupportTicketsMaxPerHour))) {
-            throw SafetyRefused::tooMany();
-        }
-        $this->limiter->hit($key, 3600);
+        /** @var array{name: string, email: string|null, phone: string|null, category: string, subject: string, message: string} $valid */
+        return $valid;
+    }
 
+    /**
+     * @param  array{name: string, email: string|null, phone: string|null, category: string, subject: string, message: string}  $valid
+     * @param  array<string, mixed>|null  $context
+     */
+    private function create(?User $member, array $valid, TicketSource $source, ?array $context): SupportTicket
+    {
         $category = TicketCategory::from($valid['category']);
-        $context = $source === TicketSource::InApp ? $this->context($member) : null;
 
         return DB::transaction(function () use ($member, $valid, $source, $category, $context): SupportTicket {
             $ticket = new SupportTicket;

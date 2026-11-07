@@ -55,3 +55,14 @@ function currentTotp(string $secret = TEST_TOTP_SECRET): string
 {
     return app(Google2FA::class)->getCurrentOtp($secret);
 }
+
+/** An admin holding exactly these permissions (A08 tests: content.edit vs content.publish, support.*). */
+function contentAdmin(string ...$permissions): AdminUser
+{
+    $admin = adminWithRole('content_editor');
+    $role = Spatie\Permission\Models\Role::query()->create(['name' => 'only-'.uniqid(), 'guard_name' => 'admin']);
+    $role->syncPermissions(array_map(fn (string $p) => Spatie\Permission\Models\Permission::findByName($p, 'admin'), $permissions));
+    $admin->syncRoles([$role]);
+
+    return $admin->refresh();
+}

@@ -16,9 +16,28 @@ final class PurifierHtmlSanitizer implements HtmlSanitizer
 {
     private ?HTMLPurifier $purifier = null;
 
+    private ?HTMLPurifier $document = null;
+
     public function clean(string $html): string
     {
         return trim($this->purifier()->purify($html));
+    }
+
+    public function cleanDocument(string $html): string
+    {
+        if ($this->document === null) {
+            $config = HTMLPurifier_Config::createDefault();
+            $config->set('Cache.DefinitionImpl', null);
+            $config->set('HTML.Allowed', 'h2[id],h3[id],p[class],br,strong,em,b,i,ul,ol,li,a[href],span[class]');
+            $config->set('Attr.EnableID', true);
+            $config->set('Attr.AllowedClasses', ['legal-fill', 'p-intro']);
+            $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
+            $config->set('HTML.Nofollow', true);
+            $config->set('AutoFormat.RemoveEmpty', true);
+            $this->document = new HTMLPurifier($config);
+        }
+
+        return trim($this->document->purify($html));
     }
 
     private function purifier(): HTMLPurifier

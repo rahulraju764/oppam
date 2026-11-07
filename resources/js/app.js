@@ -28,6 +28,7 @@ import './alpine/toasts';
 import './alpine/engagement';
 import './alpine/chat';
 import './alpine/checkout';
+import './alpine/turnstile';
 
 window.bootstrap = bootstrap;
 

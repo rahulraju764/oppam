@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Contracts\BiodataPdfRenderer;
+use App\Contracts\CaptchaVerifier;
 use App\Contracts\ContentSafety;
 use App\Contracts\CreditNoteRenderer;
 use App\Contracts\DocumentVault;
@@ -29,6 +30,7 @@ use App\Http\Middleware\EnsureBrokerDeviceTrusted;
 use App\Http\Middleware\EnsureBrokerIsActive;
 use App\Http\Middleware\EnsureBrokerStaffIsActive;
 use App\Http\Middleware\EnsureBureauPermission;
+use App\Http\Middleware\EnsureLegalTermsAccepted;
 use App\Http\Middleware\EnsurePhoneIsVerified;
 use App\Http\Middleware\EnsureProfileOnboarded;
 use App\Http\Middleware\EnsureTwoFactorConfirmed;
@@ -50,12 +52,15 @@ use App\Models\User;
 use App\Observers\MasterDataObserver;
 use App\Observers\NewMemberTickObserver;
 use App\Queries\Admin\WorkQueues;
+use App\Queries\Content\AdRotation;
 use App\Queries\Content\PreviewContext;
 use App\Services\Admin\Impersonation;
 use App\Services\Billing\DompdfCreditNoteRenderer;
 use App\Services\Billing\DompdfInvoiceRenderer;
 use App\Services\Broker\DompdfBiodataRenderer;
 use App\Services\Broker\DompdfPayoutStatementRenderer;
+use App\Services\Captcha\DisabledCaptcha;
+use App\Services\Captcha\TurnstileVerifier;
 use App\Services\Chat\RuleBasedContentSafety;
 use App\Services\Content\PurifierHtmlSanitizer;
 use App\Services\Entitlements\EntitlementService;
@@ -109,6 +114,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(EntitlementService::class);
         $this->app->scoped(Impersonation::class);
         $this->app->scoped(PreviewContext::class);   // A08 signed preview: this request only
+        $this->app->scoped(AdRotation::class);       // the rail picks its ads once per request (P8.1b)
         $this->app->scoped(Connections::class);   // memoises "who is connected" for the request (P3.4)
         $this->app->scoped(WorkQueues::class);    // the sidebar and the dashboard ask for the same counts (P3.5)
         $this->app->scoped(ChatSafetyRules::class);         // A13 rules: cached overrides, memoised per request / job (P4.3b)
@@ -149,6 +155,20 @@ final class AppServiceProvider extends ServiceProvider
             $keys = (array) config('services.razorpay.'.(Feature::active(Flag::PaymentsRazorpayLive) ? 'live' : 'test'));
 
             return new RazorpayGateway((string) ($keys['key_id'] ?? ''), (string) ($keys['key_secret'] ?? ''), (string) ($keys['webhook_secret'] ?? ''));
+        });
+
+        // The contact form's human check (P8.1b). `none` shows no widget: never in production.
+        $this->app->singleton(CaptchaVerifier::class, function (): CaptchaVerifier {
+            $driver = (string) config('oppam.captcha.driver');
+            if ($driver === 'none' && $this->app->isProduction()) {
+                throw new RuntimeException('CAPTCHA_DRIVER=none is not allowed in production.');
+            }
+
+            return match ($driver) {
+                'turnstile' => new TurnstileVerifier((string) config('services.turnstile.site_key'), (string) config('services.turnstile.secret_key')),
+                'none' => new DisabledCaptcha,
+                default => throw new RuntimeException("Unknown CAPTCHA_DRIVER [{$driver}]."),
+            };
         });
 
         $this->app->singleton(SmsGateway::class, function (): SmsGateway {
@@ -211,6 +231,9 @@ final class AppServiceProvider extends ServiceProvider
         Livewire::addPersistentMiddleware([
             EnsurePhoneIsVerified::class,
             EnsureProfileOnboarded::class,
+            // A08 re-acceptance: an action on a page opened before a material version went live is
+            // refused (409) too, on member and bureau pages alike (only where the route had it).
+            EnsureLegalTermsAccepted::class,
         ]);
 
         // Broker portal (P7.1): the same, for bureau status, login status, device and permission.

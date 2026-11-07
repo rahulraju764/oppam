@@ -29,6 +29,9 @@
     <x-ui.toast-stack />
 
     <main id="main" tabindex="-1">
+        @auth('web')
+            <livewire:member.legal.update-notice :key="'legal-notice'" />
+        @endauth
         @if ($bureau)
             <section class="dashboard-section broker-section">
                 <div class="container">

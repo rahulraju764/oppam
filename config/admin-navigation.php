@@ -55,6 +55,10 @@ return [
         ['admin.content.testimonials', 'Testimonials', 'fa-quote-left', 'content.view'],
         ['admin.content.branches', 'Branches', 'fa-map-marker', 'content.view'],
         ['admin.content.faq', 'FAQ', 'fa-question-circle', 'content.view'],
+        ['admin.content.legal', 'Legal pages', 'fa-gavel', 'content.view'],
+        ['admin.content.ads', 'Ads', 'fa-bullhorn', 'content.view'],
+        ['admin.content.communities', 'Community pages', 'fa-users', 'content.view'],
+        ['admin.contact.index', 'Contact inbox', 'fa-envelope-o', 'support.view'],
     ],
     'Billing' => [
         ['admin.billing.orders', 'Orders', 'fa-file-text-o', 'billing.view'],

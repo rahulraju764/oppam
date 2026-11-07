@@ -12,6 +12,7 @@ use App\Livewire\Member\Support\Help;
 use App\Livewire\Member\Support\TicketThread;
 use App\Livewire\Public\ContactForm;
 use App\Models\Block;
+use App\Models\ContactSubmission;
 use App\Models\Ignore;
 use App\Models\Report;
 use App\Models\SupportTicket;
@@ -147,20 +148,24 @@ it('/safety is public: tips, how to report, emergency numbers', function (): voi
     $this->get(memberUrl('/safety'))->assertOk()->assertSee('Never send money')->assertSee('1930')->assertSee('How to block or report someone');
 });
 
-it('/contact: the form opens a ticket and shows its number; a filled honeypot stores nothing; errors show inline', function (): void {
+// Since P8.1b (owner 2026-11-02 (3)) /contact goes to the A08 contact inbox first, not straight to a
+// ticket; support converts it (ContactSubmissionTest covers the inbox).
+it('/contact: the form reaches the contact inbox and shows its reference; a filled honeypot stores nothing; errors show inline', function (): void {
     Livewire::test(ContactForm::class)
         ->set('firstName', 'Asha')->set('email', 'not-mail')->set('category', 'ACCOUNT')->set('message', 'short')
         ->call('send')->assertHasErrors(['email', 'message']);
+    expect(ContactSubmission::query()->count())->toBe(0);
 
     $form = Livewire::test(ContactForm::class)
         ->set('firstName', 'Asha')->set('lastName', 'Menon')->set('email', 'asha@example.com')->set('category', 'ACCOUNT')
         ->set('message', 'My OTP does not arrive on my phone.')->call('send')->assertHasNoErrors();
-    $ticket = SupportTicket::query()->sole();
-    $form->assertSet('sentCode', $ticket->code)->assertSee($ticket->code);
+    $submission = ContactSubmission::query()->sole();
+    $form->assertSet('sentCode', $submission->code)->assertSee($submission->code);
+    expect(SupportTicket::query()->count())->toBe(0);
 
     Livewire::test(ContactForm::class)->set('website', 'http://spam.example')->set('firstName', 'Bot')
         ->set('email', 'bot@example.com')->set('category', 'OTHER')->set('message', 'Buy cheap things now!!')->call('send');
-    expect(SupportTicket::query()->count())->toBe(1);
+    expect(ContactSubmission::query()->count())->toBe(1);
 });
 
 it('/help: a member sends a request and sees only their own; /help/{ticket} replies; another member’s code is a 404', function (): void {

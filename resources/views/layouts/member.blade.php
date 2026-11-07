@@ -38,6 +38,9 @@
     @endif
 
     <main id="main" tabindex="-1">
+        @if ($member)
+            <livewire:member.legal.update-notice :key="'legal-notice'" />
+        @endif
         {{ $slot }}
     </main>
 

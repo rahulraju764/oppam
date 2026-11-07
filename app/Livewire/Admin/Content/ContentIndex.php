@@ -9,6 +9,8 @@ use App\Actions\Admin\Content\SaveContent;
 use App\Actions\Admin\Content\TransitionContent;
 use App\Actions\Admin\Content\WithdrawStory;
 use App\Data\Content\ConsentInput;
+use App\Domain\Content\LegalBodyFormatter;
+use App\Domain\Content\TextDiff;
 use App\Enums\ContentStatus;
 use App\Enums\ContentType;
 use App\Enums\HomeBlockKey;
@@ -16,8 +18,10 @@ use App\Exceptions\Admin\ContentRefused;
 use App\Models\AdminUser;
 use App\Models\EditorialContent;
 use App\Models\HomeBlock;
+use App\Models\LegalDocument;
 use App\Models\SuccessStory;
 use App\Models\Testimonial;
+use BackedEnum;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Contracts\View\View;
@@ -34,6 +38,8 @@ use Throwable;
  * A08 (P8.1a): one screen for each content type (route default `type`). List by status, edit in a
  * dialog, move through the workflow, signed preview. State and calls only: every rule and permission
  * is in the Actions, which re-check on every call. Buttons are only hidden with @can.
+ * Legal pages (P8.1b) list newest version first, start a new version from a published one and
+ * compare a version with the one before it.
  */
 final class ContentIndex extends Component
 {
@@ -77,6 +83,10 @@ final class ContentIndex extends Component
     #[Locked]
     public ?string $previewUrl = null;
 
+    /** The legal version being compared with the one before it. */
+    #[Locked]
+    public ?string $comparing = null;
+
     public function mount(string $type): void
     {
         $this->authorize('content.view');
@@ -94,8 +104,41 @@ final class ContentIndex extends Component
         $this->authorize('content.edit');
         abort_unless($this->contentType()->canCreate(), 404);
         $this->resetForm();
-        $this->fields = ['sort_order' => 0];
+        $this->fields = ['sort_order' => 0] + match ($this->contentType()) {
+            ContentType::Legal => ['effective_on' => now((string) config('oppam.display_timezone'))->format('Y-m-d'), 'is_material' => false, 'legally_reviewed' => false],
+            ContentType::Ad => ['weight' => 1],
+            default => [],
+        };
         $this->dispatch('open-modal', name: 'content-form');
+    }
+
+    /** A new legal version, starting from the text of an existing one (P8.1b). */
+    public function newVersion(string $code): void
+    {
+        $this->authorize('content.edit');
+        abort_unless($this->contentType() === ContentType::Legal, 404);
+        $source = $this->find($code);
+        abort_unless($source instanceof LegalDocument, 404);
+        $this->resetForm();
+
+        $this->fields = [
+            'sort_order' => 0,
+            'kind' => $source->kind->value,
+            'title' => $source->title,
+            'summary' => '',
+            'body' => $source->body,
+            'effective_on' => now((string) config('oppam.display_timezone'))->format('Y-m-d'),
+            'is_material' => false,
+            'legally_reviewed' => false,
+        ];
+        $this->dispatch('open-modal', name: 'content-form');
+    }
+
+    public function compare(string $code): void
+    {
+        abort_unless($this->contentType() === ContentType::Legal, 404);
+        $this->comparing = $this->find($code)->code;
+        $this->dispatch('open-modal', name: 'content-compare');
     }
 
     public function edit(string $code): void
@@ -109,7 +152,7 @@ final class ContentIndex extends Component
         $current = $row->withDraft();
         $this->fields = collect(array_keys($this->contentType()->rules($row instanceof HomeBlock ? $row->block_key : null)))
             ->reject(fn (string $field): bool => str_starts_with($field, 'content.'))
-            ->mapWithKeys(fn (string $field): array => [$field => $this->formValue($current->getAttribute($field))])
+            ->mapWithKeys(fn (string $field): array => [$field => $this->formValue($field, $current->getAttribute($field))])
             ->all();
 
         if ($current instanceof HomeBlock) {
@@ -241,7 +284,9 @@ final class ContentIndex extends Component
             'contentType' => $type,
             'rows' => $type->model()::query()
                 ->when($status !== null, fn ($q) => $q->where('status', $status))
-                ->orderBy('sort_order')->orderBy('id')->paginate(25),
+                ->when($type === ContentType::Legal, fn ($q) => $q->orderBy('kind')->orderByDesc('version'), fn ($q) => $q->orderBy('sort_order')->orderBy('id'))
+                ->paginate(25),
+            'comparison' => $this->comparison(),
             'statuses' => ContentStatus::cases(),
             'blockKey' => $this->editingBlockKey(),
             'timezone' => (string) config('oppam.display_timezone'),
@@ -281,9 +326,35 @@ final class ContentIndex extends Component
         return $row instanceof HomeBlock ? $row->block_key : null;
     }
 
-    private function formValue(mixed $value): mixed
+    private function formValue(string $field, mixed $value): mixed
     {
-        return $value instanceof CarbonImmutable ? $value->format('Y-m-d') : $value;
+        if ($value instanceof CarbonImmutable) {
+            return in_array($field, $this->contentType()->dateTimeFields(), true)
+                ? $value->timezone((string) config('oppam.display_timezone'))->format('Y-m-d\TH:i')
+                : $value->format('Y-m-d');
+        }
+
+        return $value instanceof BackedEnum ? $value->value : $value;
+    }
+
+    /** @return array{version: LegalDocument, previous: LegalDocument|null, lines: list<\App\Data\Content\DiffLineData>|null}|null */
+    private function comparison(): ?array
+    {
+        if ($this->comparing === null) {
+            return null;
+        }
+        $version = LegalDocument::query()->where('code', $this->comparing)->first();
+        if ($version === null) {
+            return null;
+        }
+        $previous = $version->previous();
+        $formatter = app(LegalBodyFormatter::class);
+
+        return [
+            'version' => $version,
+            'previous' => $previous,
+            'lines' => app(TextDiff::class)->compare($formatter->blocks((string) $previous?->body), $formatter->blocks($version->body)),
+        ];
     }
 
     private function contentType(): ContentType

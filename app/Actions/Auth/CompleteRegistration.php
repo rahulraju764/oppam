@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Actions\Content\RecordLegalAcceptance;
+use App\Enums\LegalAcceptanceContext;
 use App\Enums\LoginMethod;
 use App\Enums\OtpPurpose;
 use App\Exceptions\Auth\LoginFailed;
@@ -20,12 +22,16 @@ use Illuminate\Support\Facades\DB;
  *
  * $pendingUserId comes from the server session (never the browser) and is null when the number
  * already had an account — then no code can succeed, with the same error as a wrong code.
+ *
+ * The terms / privacy box ticked on the form is recorded here, once the account is real, against the
+ * versions live now (A08, PRD §14 consent at sign-up).
  */
 final class CompleteRegistration
 {
     public function __construct(
         private readonly VerifyOtp $verifyOtp,
         private readonly SignInMember $signIn,
+        private readonly RecordLegalAcceptance $acceptance,
     ) {}
 
     /**
@@ -55,6 +61,7 @@ final class CompleteRegistration
             throw LoginFailed::accountBlocked();
         }
 
+        $this->acceptance->handle($user, LegalAcceptanceContext::Registration, $request->ip(), $request->userAgent());
         $this->signIn->handle($user, LoginMethod::Registration, remember: false, request: $request);
 
         return $user;

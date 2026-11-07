@@ -100,6 +100,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'ip.allowlist' => EnsureAdminIpAllowed::class,
             'verified.phone' => EnsurePhoneIsVerified::class,
             'profile.onboarded' => EnsureProfileOnboarded::class,
+            // Forced re-acceptance of material legal changes (A08, P8.1b).
+            'legal.accepted' => App\Http\Middleware\EnsureLegalTermsAccepted::class,
             // Broker portal (§8.1, §11A B.11).
             'role' => EnsureUserRole::class,
             'broker.active' => EnsureBrokerIsActive::class,

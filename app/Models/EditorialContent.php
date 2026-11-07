@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable|null $scheduled_at
  * @property CarbonImmutable|null $published_at
  * @property CarbonImmutable|null $archived_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property array<string, mixed>|null $draft
  * @property int $lock_version counts every write, so a screen can say which version it was looking at
  * @property string|null $image_path

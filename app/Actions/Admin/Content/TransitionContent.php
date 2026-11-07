@@ -8,8 +8,10 @@ use App\Enums\ContentStatus;
 use App\Exceptions\Admin\ContentRefused;
 use App\Models\AdminUser;
 use App\Models\EditorialContent;
+use App\Models\LegalDocument;
 use App\Models\SuccessStory;
 use App\Queries\Content\HomeCounters;
+use App\Queries\Content\LegalVersions;
 use App\Services\Audit\AuditLogger;
 use App\Services\Content\ContentImageStore;
 use Carbon\CarbonImmutable;
@@ -23,6 +25,9 @@ use Illuminate\Validation\ValidationException;
  * A08 workflow moves, under the row's lock. `content.edit` moves work between draft and review;
  * `content.publish` schedules, publishes, releases waiting edits and archives. Every step that puts
  * something on the site re-checks publishBlocker() (consent, image), and the scheduled job does too.
+ * Legal versions (P8.1b): publishing one archives the version it replaces, in the same transaction, so
+ * a kind always has exactly one live version; the live version can't be archived on its own and a
+ * version that was ever published never goes back to draft.
  */
 final class TransitionContent
 {
@@ -30,6 +35,7 @@ final class TransitionContent
         private readonly AuditLogger $audit,
         private readonly ContentImageStore $images,
         private readonly HomeCounters $counters,
+        private readonly LegalVersions $legal,
     ) {}
 
     public function submit(AdminUser $admin, EditorialContent $row): EditorialContent
@@ -44,6 +50,9 @@ final class TransitionContent
         Gate::forUser($admin)->authorize('content.edit');
 
         return $this->move($admin, $row, ContentStatus::Draft, 'content.back_to_draft', function (EditorialContent $locked): void {
+            if ($locked instanceof LegalDocument && $locked->published_at !== null) {
+                throw ContentRefused::publishedVersion();
+            }
             $locked->forceFill(['scheduled_at' => null, 'archived_at' => null]);
             if ($locked instanceof SuccessStory) {
                 // Back to work, but withdrawal already cleared its consent and photo: both must come again.
@@ -77,6 +86,7 @@ final class TransitionContent
             $this->assertVersion($locked, $expectedVersion);
             $this->assertPublishable($locked);
             $locked->forceFill(['scheduled_at' => null, 'published_at' => now(), 'published_by_admin_id' => $admin->id]);
+            $this->retireOlderVersions($locked, $admin);
         });
     }
 
@@ -102,6 +112,7 @@ final class TransitionContent
 
             $locked->forceFill(['status' => ContentStatus::Published, 'scheduled_at' => null, 'published_at' => now()])->save();
             $this->audit->record('content.published', $locked, ['status' => ContentStatus::Scheduled->value], ['status' => ContentStatus::Published->value], subjectLabel: $locked->code);
+            $this->retireOlderVersions($locked, null);
             DB::afterCommit(fn () => $this->counters->forget());
         });
     }
@@ -159,6 +170,9 @@ final class TransitionContent
         $reason = ReasonRule::check($reason);
 
         return $this->move($admin, $row, ContentStatus::Archived, 'content.archived', function (EditorialContent $locked): void {
+            if ($locked instanceof LegalDocument && $locked->isLive()) {
+                throw ContentRefused::liveLegalVersion();
+            }
             $unused = $locked->draft['image_path'] ?? null;
             $locked->forceFill(['draft' => null, 'scheduled_at' => null, 'archived_at' => now()]);
             DB::afterCommit(fn () => $this->images->delete(is_string($unused) ? $unused : null));
@@ -184,6 +198,22 @@ final class TransitionContent
 
             return $locked;
         });
+    }
+
+    /** A legal version going live replaces the one before it: that one is archived, under lock. */
+    private function retireOlderVersions(EditorialContent $published, ?AdminUser $admin): void
+    {
+        if (! $published instanceof LegalDocument) {
+            return;
+        }
+
+        $older = LegalDocument::query()->live()->where('kind', $published->kind)
+            ->whereKeyNot($published->id)->lockForUpdate()->get();
+        foreach ($older as $version) {
+            $version->forceFill(['status' => ContentStatus::Archived, 'archived_at' => now()])->save();
+            $this->audit->record('content.archived', $version, ['status' => ContentStatus::Published->value], ['status' => ContentStatus::Archived->value], 'Replaced by version '.$published->version, actor: $admin, subjectLabel: $version->code);
+        }
+        DB::afterCommit(fn () => $this->legal->forget());
     }
 
     private function locked(EditorialContent $row): EditorialContent

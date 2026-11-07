@@ -28,6 +28,13 @@
             <tr wire:key="content-{{ $row->code }}">
                 <td>
                     <strong>{{ \Illuminate\Support\Str::limit($row->title(), 80) }}</strong>
+                    @if ($row instanceof \App\Models\LegalDocument)
+                        <br><small class="text-muted-brand">
+                            {{ __('Takes effect :date', ['date' => $row->effective_on->format('d M Y')]) }}
+                            · {{ $row->is_material ? __('Material: members must agree again') : __('Not material: notice only') }}
+                            · {{ $row->legally_reviewed ? __('Legally reviewed') : __('Not legally reviewed') }}
+                        </small>
+                    @endif
                     @if ($row instanceof \App\Models\SuccessStory)
                         <br><small class="text-muted-brand">
                             {{ $row->isWithdrawn() ? __('Withdrawn: needs fresh consent and a new photo') : ($row->hasBothConsents() ? __('Both partners consented') : __('Consent missing')) }}
@@ -47,8 +54,17 @@
                 <td>{{ $row->sort_order }}</td>
                 <td class="text-nowrap">
                     @php($status = $row->status)
+                    @php($fixedVersion = $row instanceof \App\Models\LegalDocument && $row->published_at !== null)
+                    @if ($fixedVersion)
+                        @can('content.edit')
+                            <x-ui.button size="sm" variant="outline" type="button" loading="newVersion" wire:click="newVersion('{{ $row->code }}')" dusk="content-new-version-{{ $row->code }}">{{ __('New version') }}</x-ui.button>
+                        @endcan
+                    @endif
+                    @if ($row instanceof \App\Models\LegalDocument)
+                        <x-ui.button size="sm" variant="ghost" type="button" loading="compare" wire:click="compare('{{ $row->code }}')">{{ __('Compare') }}</x-ui.button>
+                    @endif
                     @can('content.edit')
-                        @unless ($row instanceof \App\Models\SuccessStory && $row->isWithdrawn())
+                        @unless (($row instanceof \App\Models\SuccessStory && $row->isWithdrawn()) || $fixedVersion)
                         <x-ui.button size="sm" variant="outline" type="button" loading="edit" wire:click="edit('{{ $row->code }}')" dusk="content-edit-{{ $row->code }}">{{ __('Edit') }}</x-ui.button>
                         @endunless
                     @endcan
@@ -59,7 +75,7 @@
                     @can('content.edit')
                         @if ($status === \App\Enums\ContentStatus::Draft)
                             <x-ui.button size="sm" variant="ghost" type="button" loading="submit" wire:click="submit('{{ $row->code }}')" dusk="content-submit-{{ $row->code }}">{{ __('Send for review') }}</x-ui.button>
-                        @elseif ($status !== \App\Enums\ContentStatus::Published)
+                        @elseif ($status !== \App\Enums\ContentStatus::Published && ! $fixedVersion)
                             <x-ui.button size="sm" variant="ghost" type="button" loading="backToDraft" wire:click="backToDraft('{{ $row->code }}')">{{ $status === \App\Enums\ContentStatus::Archived ? __('Restore to draft') : __('Back to draft') }}</x-ui.button>
                         @endif
                         @if ($row->hasPendingChanges())
@@ -77,7 +93,7 @@
                         @if ($row->hasPendingChanges())
                             <x-ui.button size="sm" type="button" loading="publishChanges" wire:click="publishChanges('{{ $row->code }}', {{ $row->lock_version }})" dusk="content-publish-changes-{{ $row->code }}">{{ __('Publish changes') }}</x-ui.button>
                         @endif
-                        @if ($status !== \App\Enums\ContentStatus::Archived)
+                        @if ($status !== \App\Enums\ContentStatus::Archived && ! ($row instanceof \App\Models\LegalDocument && $status === \App\Enums\ContentStatus::Published))
                             <x-ui.button size="sm" variant="ghost" type="button" wire:click="confirm('{{ $row->code }}', 'content-archive')">{{ __('Archive') }}</x-ui.button>
                         @endif
                         @if ($row instanceof \App\Models\SuccessStory && ! $row->isWithdrawn())
@@ -143,4 +159,31 @@
         <p>{{ __('It leaves the site at once, its photo is deleted and the recorded consent is cleared. It can only return with fresh consent and a new photo. Please don’t name anyone in the reason: the audit log can’t be erased.') }}</p>
     </x-admin.confirm-modal>
     @endcan
+    @if ($contentType === \App\Enums\ContentType::Legal)
+        <x-ui.modal name="content-compare" :title="__('Compare versions')">
+            @if ($comparison)
+                <p class="small text-muted-brand">
+                    @if ($comparison['previous'])
+                        {{ __('Version :old → version :new. Added text is marked +, removed text −.', ['old' => $comparison['previous']->version, 'new' => $comparison['version']->version]) }}
+                    @else
+                        {{ __('This is the first published version: everything is new.') }}
+                    @endif
+                </p>
+                @if ($comparison['lines'] === null)
+                    <x-ui.alert type="info">{{ __('These versions are too long to compare here.') }}</x-ui.alert>
+                @else
+                    <ol class="legal-diff" aria-label="{{ __('Changes') }}">
+                        @foreach ($comparison['lines'] as $line)
+                            @continue($line->type === \App\Data\Content\DiffLineData::SAME && $comparison['previous'] === null)
+                            <li @class(['legal-diff__line', 'is-added' => $line->type === 'added', 'is-removed' => $line->type === 'removed'])>
+                                <span class="visually-hidden">{{ match ($line->type) { 'added' => __('Added:'), 'removed' => __('Removed:'), default => __('Unchanged:') } }}</span>
+                                <span aria-hidden="true">{{ match ($line->type) { 'added' => '+', 'removed' => '−', default => ' ' } }}</span>
+                                {{ $line->text }}
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            @endif
+        </x-ui.modal>
+    @endif
 </div>

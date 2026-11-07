@@ -31,6 +31,13 @@ return [
     ],
 
     // SMS / OTP (PRD §4). SMS_DRIVER in config/oppam.php picks the gateway.
+    // Cloudflare Turnstile, the contact form's human check (P8.1b). Test keys always pass:
+    // site 1x00000000000000000000AA, secret 1x0000000000000000000000000000000AA.
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
     'msg91' => [
         'auth_key' => env('MSG91_AUTH_KEY'),
         'sender_id' => env('MSG91_SENDER_ID', 'OPPAMM'),
