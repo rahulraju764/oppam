@@ -51,10 +51,17 @@ final class SessionRotation
                 'remember_token' => Str::random(60),
             ])->save();
 
+            // Best-effort, like LiveSignal: a queue that can't take the job (e.g. Redis down) is
+            // reported, never turns a done change into an error; the epoch already ends the sessions.
             $userId = (string) $fresh->id;
-            dispatch(static function () use ($userId): void {
-                event(new ForceLogout($userId));
-            })->onQueue('broadcasts')->delay(now()->addSeconds((int) config('oppam.auth.force_logout_delay_seconds')))->afterCommit();
+            DB::afterCommit(static function () use ($userId): void {
+                rescue(static function () use ($userId): void {
+                    // A statement, not a return value: PendingDispatch pushes when destroyed — here, inside rescue.
+                    dispatch(static function () use ($userId): void {
+                        event(new ForceLogout($userId));
+                    })->onQueue('broadcasts')->delay(now()->addSeconds((int) config('oppam.auth.force_logout_delay_seconds')));
+                }, report: true);
+            });
 
             return $fresh->session_epoch;
         });

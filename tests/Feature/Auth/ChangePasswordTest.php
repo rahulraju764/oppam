@@ -91,3 +91,14 @@ it('a suspended account or a bureau login can\'t change the password here (404)'
         ->toThrow(Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
     expect(Hash::check(TEST_MEMBER_PASSWORD, $member->refresh()->password))->toBeTrue();
 })->with(['suspended', 'broker']);
+
+it('P8.2b review: a queue that refuses the live sign-out job never turns a done change into an error (reported instead)', function (): void {
+    $member = cpwMember();
+    Illuminate\Support\Facades\Exceptions::fake();
+    $this->mock(Illuminate\Contracts\Bus\Dispatcher::class, fn ($bus) => $bus->shouldReceive('dispatch')->andThrow(new RuntimeException('queue down')));
+
+    app(ChangePassword::class)->handle($member, TEST_MEMBER_PASSWORD, 'NewPass2026', requestWithSession());
+
+    expect(Hash::check('NewPass2026', $member->refresh()->password))->toBeTrue();
+    Illuminate\Support\Facades\Exceptions::assertReported(RuntimeException::class);
+});

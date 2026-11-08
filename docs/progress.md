@@ -313,7 +313,11 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     Updated (not weakened): the tests that used `incognito` to mean "hidden from search" now use hide_from_search; incognito tests now use a Diamond member; tests that used
     /settings/blocked as a sample page use /settings.
   - [ ] P8.2b Account tab: change mobile (OTP to old + new), email add + verify (switches on the deferred emails), password, sessions list (rule 5) — 2026-11-08: built,
-    %%RESULT%%
+    **reviewer READY TO COMMIT** (round 1 NOT READY: 1 Blocker, 1 Major, Minors — all fixed; round 2 READY, 2 Minors: the live-signal push made
+    best-effort (rescue; test seen failing without it), the commit process noted below). NOT pushed past origin: rule 5 — owner review first.
+    Runs: pint passed; phpstan OK; every folder one at a time **3,724 passed, 0 failed, 1 skipped** (ext-exif); Feature/Auth after the fixes 170 passed
+    (+1 best-effort test since); Dusk (DUSK_DRIVER_PORT=9615, temporary queue worker — the `composer dev` worker is down) Mobile/AccountSettingsTest 3,
+    Mobile/SettingsTest 2, Member/ForceLogoutTest 1, Mobile/MemberAuthTest 9.
     /settings → Account (first tab; Privacy stays the default landing): **ChangePhone** (CHANGE_PHONE code to the old number, then the new; taken / client_phone / banned
     numbers refused with one generic message, send limits spent either way; swap under the user lock + SessionRotation), **RequestEmailChange / ConfirmEmailChange /
     RemoveEmail** (`email_change_requests`, sha256 token, 24 h, single use, A15 `members.email_changes_per_day`,
@@ -324,7 +328,8 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     devices now sends it too); the email-link reset rotates exactly like the SMS reset. Reset / verification emails are sent right after the response, never queued
     (their links carry the token). Commits: the owner committed + pushed ec537bd (WIP) and 1748dfc (plan alignment: Account tab first, refusals with one generic
     message, email limit in A15, two extras removed, SignInMember comment-only, tests split into the plan's file names) BEFORE the full suite, the reviewer and the
-    rule-5 review; the review fixes below are uncommitted.
+    rule-5 review; the round-1 review fixes were committed by the owner as de531a7 (local, not pushed); the round-2 fix (best-effort live-signal push + its
+    test) and this entry are uncommitted.
     Found by Dusk, not by feature tests: a changed number signed the member out on their OWN device — the live reload beat the response that carried the new
     session cookie (`php artisan serve` sends it only after deferred work). A first fix kept the session id; the reviewer rejected it (a stolen cookie would survive
     "sign out other devices" / a password change; remembered devices still got a new id) → new id kept, signal delayed through the queue; Dusk now proves the
@@ -333,7 +338,10 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     1 Major (the session-id trade-off above), Minors: stale comments; limits checked before counting; ban not re-checked at confirm; unique-index race → 500;
     unindexed password_reset_tokens.token; old address's reset link kept on change / removal; device list limit before grouping + compressed IPv6; audit rows
     outside the transaction; security-matrix gaps. All fixed (index migration 2026_11_08_110000), tests added for each.
-    New tests: ChangePhoneTest 18, EmailChangeTest 23, ChangePasswordTest 6, PasswordResetByEmailTest 11, MemberSessionTest +3 (ForceLogout, new session id with /
+    Minors open: none from the reviewer. Owner to confirm: decisions 2026-11-08 (a)–(k); (a) the single generic refusal tells a signed-in member a number /
+    email "can't be used" (the plan's choice; ec537bd's "same screen, no code" was more private). Not covered: a two-browser Dusk proof that ANOTHER device is
+    signed out live (ForceLogoutTest covers the signal; the epoch ends that session on its next request either way) → P9.3.
+    New tests: ChangePhoneTest 18, EmailChangeTest 23, ChangePasswordTest 7, PasswordResetByEmailTest 11, MemberSessionTest +3 (ForceLogout, new session id with /
     without "stay logged in"), UserAgentLabelTest 10, AccountSettingsTest 10; Dusk Mobile/AccountSettingsTest 3.
   - [ ] P8.2c Hide / delete with reasons (30-day recovery, anonymise job), download my data, M16 story submission + partner confirmation (submitter hidden, not deleted)
 - [ ] P8.3 Notifications, campaigns & journeys (A14)
