@@ -147,3 +147,27 @@ it('in an admin support session every action is refused with a toast', function 
 
     expect(statusOf($bride))->toBe(ProfileStatus::Active)->and($bride->refresh()->trashed())->toBeFalse();
 });
+
+it('the recovery window in the text follows A15 members.purge_after_days', function (): void {
+    App\Models\Setting::factory()->keyed(App\Enums\SettingKey::MembersPurgeAfterDays, 45)->create();
+    $this->actingAs(bride(), 'web');
+
+    mpTab()->assertSee('You have 45 days to change your mind')->assertDontSee('30 days');
+});
+
+it('the partner sees the whole story, escaped; a story from a pair blocked since is not shown', function (): void {
+    $bride = bride();
+    $groom = groom();
+    Interest::factory()->accepted()->create(['from_profile_id' => $groom->profile->id, 'to_profile_id' => $bride->profile->id]);
+    $this->actingAs($bride, 'web');
+    mpTab()->set('showStoryForm', true)->set('partnerCode', $groom->profile->code)->set('weddingDate', '2026-10-12')
+        ->set('quote', 'Two families, one Oppam interest.')
+        ->set('storyBody', '<script>alert(1)</script> '.str_repeat('A long and happy story. ', 3))->call('submitStory');
+
+    $this->actingAs($groom, 'web');
+    mpTab()->assertSee('A long and happy story.')->assertDontSeeHtml('<script>alert(1)</script>')
+        ->assertSeeHtml('&lt;script&gt;alert(1)&lt;/script&gt;');
+
+    App\Models\Block::query()->forceCreate(['blocker_profile_id' => $bride->profile->id, 'blocked_profile_id' => $groom->profile->id]);
+    mpTab()->assertDontSee('A long and happy story.')->assertDontSee('Yes, share our story');
+});

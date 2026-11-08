@@ -135,6 +135,33 @@ it('refuses a partner the member can\'t name — one message for every reason', 
     Notification::assertNothingSent();
 })->with(['own code', 'unknown code', 'same gender', 'not connected', 'blocked pair', 'partner suspended']);
 
+it('rule 4: a block after the story was shared → the partner can\'t confirm (404) and the submitter hears nothing', function (): void {
+    [$bride, $groom] = msCouple();
+    $story = app(SubmitMemberSuccessStory::class)->handle($bride, msData($groom->profile->code));
+    Block::query()->forceCreate(['blocker_profile_id' => $bride->profile->id, 'blocked_profile_id' => $groom->profile->id]);
+    Notification::fake();
+
+    expect(fn () => app(ConfirmPartnerSuccessStory::class)->handle($groom, $story->code, true))->toThrow(NotFoundHttpException::class);
+    expect($story->refresh()->consent_b_at)->toBeNull()->and(statusOf($groom))->toBe(ProfileStatus::Active);
+    Notification::assertNothingSent();
+});
+
+it('withdraw / decline archive the story and delete the couple\'s photo, like the admin withdrawal', function (): void {
+    Illuminate\Support\Facades\Storage::fake('public');
+    [$bride, $groom] = msCouple();
+    $story = app(SubmitMemberSuccessStory::class)->handle($bride, msData($groom->profile->code, [
+        'photo' => Illuminate\Http\UploadedFile::fake()->image('us.jpg', 800, 600),
+    ]));
+    $photo = (string) $story->image_path;
+    Illuminate\Support\Facades\Storage::disk('public')->assertExists($photo);
+
+    app(ConfirmPartnerSuccessStory::class)->handle($groom, $story->code, false);
+
+    $story->refresh();
+    expect($story->status)->toBe(ContentStatus::Archived)->and($story->image_path)->toBeNull();
+    Illuminate\Support\Facades\Storage::disk('public')->assertMissing($photo);
+});
+
 it('one open story per couple (either way round); a withdrawn one doesn\'t count', function (): void {
     [$bride, $groom] = msCouple();
     $story = app(SubmitMemberSuccessStory::class)->handle($bride, msData($groom->profile->code));

@@ -800,6 +800,9 @@ body.search-sheet-open .mobile-footer { display: none; }
     font-size: var(--text-2xl);
 }
 
+/* ---- /settings Hide / delete (M16, P8.2c): a shared story keeps its line breaks, escaped as text ---- */
+.story-body-text { white-space: pre-line; overflow-wrap: anywhere; }
+
 /* ---- /settings Notifications matrix (M14, P8.2a): scrolls inside its own box on phones ---- */
 .nt-matrix-wrap { position: relative; overflow-x: auto; }   /* relative: the cells' visually-hidden text is clipped here, not widening the page */
 .nt-matrix { min-width: 30rem; margin-bottom: 0; font-size: var(--text-sm); }

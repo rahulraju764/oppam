@@ -8,12 +8,12 @@
     <div class="ui-card mb-4">
         <h2 class="safety-list__title">{{ __('Hide my profile') }}</h2>
         @if ($isHidden)
-            <x-ui.alert type="info">{{ __('Your profile is hidden. Nobody can find or open it, and your matches and alerts are paused.') }}</x-ui.alert>
+            <x-ui.alert type="info">{{ __('Your profile is hidden. Nobody can find or open it, and your matches and alerts are paused. Chats you already have still work.') }}</x-ui.alert>
             <x-ui.button type="button" variant="primary" wire:click="unhide" loading="unhide" dusk="manage-unhide">
                 {{ __('Show my profile again') }}
             </x-ui.button>
         @else
-            <p>{{ __('Taking a break? Hide your profile: nobody can find or open it — not even members you already talk to — until you show it again. Nothing is deleted.') }}</p>
+            <p>{{ __('Taking a break? Hide your profile: nobody can find or open it until you show it again. Chats you already have keep working, and you can still answer interests you received. Nothing is deleted.') }}</p>
             @if ($canHide)
                 <x-ui.button type="button" variant="outline" wire:click="hide" loading="hide" dusk="manage-hide">
                     {{ __('Hide my profile') }}
@@ -66,7 +66,7 @@
                 </x-ui.alert>
                 <blockquote class="mb-2">“{{ $story->quote }}”</blockquote>
                 <p class="mb-2">{{ __('Wedding date: :date', ['date' => $story->wedding_date->format('j M Y')]) }} · {{ $story->place }}</p>
-                <p class="mb-2">{!! nl2br(e($story->body)) !!}</p>
+                <p class="mb-2 story-body-text">{{ $story->body }}</p>
                 <p class="form-text">{{ __('Confirming also hides your profile, as you’ve found your match.') }}</p>
                 <div class="d-flex flex-wrap gap-2">
                     <x-ui.button type="button" variant="primary" wire:click="answerStory('{{ $story->code }}', true)" loading="answerStory">

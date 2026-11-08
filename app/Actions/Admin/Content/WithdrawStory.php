@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Admin\Content;
 
+use App\Domain\Content\StoryWithdrawal;
 use App\Enums\ContentStatus;
 use App\Exceptions\Admin\ContentRefused;
 use App\Models\AdminUser;
 use App\Models\SuccessStory;
-use App\Queries\Content\HomeCounters;
 use App\Services\Audit\AuditLogger;
-use App\Services\Content\ContentImageStore;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -25,8 +24,7 @@ final class WithdrawStory
 {
     public function __construct(
         private readonly AuditLogger $audit,
-        private readonly ContentImageStore $images,
-        private readonly HomeCounters $counters,
+        private readonly StoryWithdrawal $withdrawal,
     ) {}
 
     /**
@@ -47,23 +45,9 @@ final class WithdrawStory
             }
 
             $from = $locked->status;
-            $photos = [$locked->image_path, $locked->draft['image_path'] ?? null];
-
-            $locked->forceFill([
-                'status' => ContentStatus::Archived, 'archived_at' => now(), 'scheduled_at' => null, 'draft' => null,
-                'withdrawn_at' => now(), 'withdrawn_reason' => $reason,
-                'consent_a_at' => null, 'consent_b_at' => null, 'consent_note' => null,
-                'image_path' => null, 'image_width' => null, 'image_height' => null,
-            ])->save();
+            $this->withdrawal->withdraw($locked, $reason);
 
             $this->audit->record('content.story_withdrawn', $locked, ['status' => $from->value], ['status' => ContentStatus::Archived->value], $reason, actor: $admin, subjectLabel: $locked->code);
-
-            DB::afterCommit(function () use ($photos): void {
-                $this->counters->forget();
-                foreach ($photos as $photo) {
-                    $this->images->delete(is_string($photo) ? $photo : null);
-                }
-            });
 
             return $locked;
         });

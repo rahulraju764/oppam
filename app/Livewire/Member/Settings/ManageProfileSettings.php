@@ -12,6 +12,7 @@ use App\Actions\Profile\RequestDataExport;
 use App\Actions\Profile\UnhideProfile;
 use App\Actions\Profile\WithdrawMemberSuccessStory;
 use App\Data\Content\MemberStoryData;
+use App\Domain\Safety\BlockList;
 use App\Enums\ClosureReason;
 use App\Enums\ProfileStatus;
 use App\Enums\SettingKey;
@@ -75,7 +76,7 @@ final class ManageProfileSettings extends Component
         $this->run(function () use ($hide): void {
             $hide->handle($this->member());
             $this->dispatch('presence-hidden');
-            $this->dispatch('toast', type: 'success', title: __('Your profile is hidden. Nobody can find or open it until you show it again.'));
+            $this->dispatch('toast', type: 'success', title: __('Your profile is hidden. Nobody can find or open it until you show it again — your existing chats still work.'));
         });
     }
 
@@ -204,6 +205,16 @@ final class ManageProfileSettings extends Component
             ->latest('created_at')
             ->limit(5)
             ->get();
+
+        // Rule 4: a pair blocked since the story was shared never sees each other here either.
+        if ($profile !== null && $stories->isNotEmpty()) {
+            $hidden = array_flip(app(BlockList::class)->hiddenFrom($profile));
+            $stories = $stories->reject(function (SuccessStory $s) use ($profile, $hidden): bool {
+                $other = $s->profile_a_id === $profile->id ? $s->profile_b_id : $s->profile_a_id;
+
+                return $other !== null && isset($hidden[$other]);
+            })->values();
+        }
 
         return view('livewire.member.settings.manage-profile-settings', [
             'profile' => $profile,

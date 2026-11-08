@@ -99,3 +99,16 @@ it('refused in an admin support session; a suspended member or one without a pro
         ->toThrow($case === 'support session' ? ImpersonationRestricted::class : NotFoundHttpException::class);
     expect(statusOf($bride))->toBe(ProfileStatus::Active);
 })->with(['support session', 'suspended', 'no profile']);
+
+it('owner decision (3): a hidden member can still accept an interest they received; the conversation opens', function (): void {
+    $bride = bride();
+    $groom = groom();
+    App\Models\Interest::factory()->create(['from_profile_id' => $groom->profile->id, 'to_profile_id' => $bride->profile->id]);
+    app(HideProfile::class)->handle($bride);
+
+    $conversation = app(App\Actions\Engagement\AcceptInterest::class)->handle($bride->refresh(), $groom->profile);
+
+    expect($conversation->exists)->toBeTrue()
+        ->and(App\Models\Interest::query()->sole()->status)->toBe(App\Enums\InterestStatus::Accepted)
+        ->and(statusOf($bride))->toBe(ProfileStatus::Hidden);   // still hidden from everyone else
+});

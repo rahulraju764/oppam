@@ -179,3 +179,55 @@ it('the window closing between the sign-in and the click: refused with the gener
 
     expect(User::withTrashed()->findOrFail($member->id)->trashed())->toBeTrue()->and(auth('web')->check())->toBeFalse();
 });
+
+// ---- Review round 1 (P8.2c): session fixation and the remaining auth cases ------------------------
+
+it('session fixation: the session id changes when a closed account proves itself, and again when it is restored', function (): void {
+    rcClosedMember();
+    $planted = session()->getId();
+
+    Livewire::test(Login::class)->set('loginId', '9811300001')->set('password', TEST_MEMBER_PASSWORD)->call('loginWithPassword');
+    $afterProof = session()->getId();
+    expect($afterProof)->not->toBe($planted);
+
+    Livewire::test(RestoreAccount::class)->call('restore');
+    expect(session()->getId())->not->toBe($afterProof)->and(auth('web')->check())->toBeTrue();
+});
+
+it('R-M01-4: asking for a login code gives the same answer for a closed number and an unknown one', function (): void {
+    rcClosedMember();
+    $ask = fn (string $e164, string $ip): ?string => rcFailure(fn () => app(RequestMemberOtp::class)->handle(PhoneNumber::fromE164($e164), OtpPurpose::Login, $ip));
+
+    expect($ask(RC_PHONE, '10.2.1.1'))->toBeNull()->and($ask('+919811399999', '10.2.1.2'))->toBeNull();
+});
+
+it('an admin-deleted account is never offered the restore through a login code either', function (): void {
+    $member = memberWithPhone(RC_PHONE);
+    app(DeleteMember::class)->handle(adminWithRole(), $member, $member->profile->code, 'Asked by email to delete.');
+    $phone = PhoneNumber::fromE164(RC_PHONE);
+
+    app(RequestMemberOtp::class)->handle($phone, OtpPurpose::Login, '10.2.1.3');
+    expect($this->sms->lastCodeFor(RC_PHONE, OtpPurpose::Login))->toBeNull();   // no code to a number with no restorable account
+    expect(fn () => app(LoginWithOtp::class)->handle($phone, '123456', false, requestWithSession()))->toThrow(OtpInvalid::class);
+});
+
+it('closed, then suspended by an admin before the click: restore refused with the generic answer', function (): void {
+    $member = rcClosedMember();
+    Livewire::test(Login::class)->set('loginId', '9811300001')->set('password', TEST_MEMBER_PASSWORD)->call('loginWithPassword');
+    $page = Livewire::test(RestoreAccount::class);
+
+    $member->forceFill(['suspended_at' => now()])->save();
+    $page->call('restore')->assertRedirect(route('login'));
+
+    expect(User::withTrashed()->findOrFail($member->id)->trashed())->toBeTrue()->and(auth('web')->check())->toBeFalse();
+});
+
+it('a support restore closes the member\'s old closure: a later admin delete can\'t be self-restored', function (): void {
+    $member = rcClosedMember();
+    app(App\Actions\Admin\Members\RestoreMember::class)->handle(adminWithRole(), $member, 'Member asked by phone.');
+    $member = User::query()->findOrFail($member->id);
+    app(DeleteMember::class)->handle(adminWithRole(), $member, $member->profile->code, 'Asked by email to delete.');
+
+    expect(rcFailure(fn () => rcPasswordLogin('9811300001')))
+        ->toBe(LoginFailed::class.': '.LoginFailed::invalidCredentials()->getMessage());
+});
