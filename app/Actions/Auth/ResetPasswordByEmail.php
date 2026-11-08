@@ -7,13 +7,11 @@ namespace App\Actions\Auth;
 use App\Enums\AccountSecurityChange;
 use App\Enums\LoginMethod;
 use App\Enums\UserRole;
-use App\Events\Account\ForceLogout;
 use App\Exceptions\Auth\AccountChangeRefused;
 use App\Exceptions\Auth\LoginFailed;
 use App\Models\User;
 use App\Notifications\Account\AccountSecurityChanged;
 use App\Services\Audit\AuditLogger;
-use App\Support\Realtime\LiveSignal;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +65,6 @@ final class ResetPasswordByEmail
                 'session_epoch' => $member->session_epoch + 1,
                 'remember_token' => Str::random(60),
             ])->save();
-            LiveSignal::afterCommit(new ForceLogout((string) $member->id));   // other devices' open tabs leave now
 
             return $member;
         });

@@ -31,9 +31,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *  1. start → a CHANGE_PHONE code to the CURRENT number; confirmOld proves the member still has it
  *     (good for `oppam.auth.change_phone_window_minutes`);
  *  2. sendNew → a code to the NEW number; confirmNew proves it and swaps the number.
- * A new number that is taken (another account, a bureau-managed profile's client number, the ban
- * list) gets exactly the same screen as a free one but no code — nothing reveals that a number is
- * registered (R-M01-1, R-M01-4); the member is told to contact support if no code arrives.
+ * A new number that can't be used (another account holds it, a bureau-managed profile's client
+ * holds it, or it is banned) is refused with ONE generic message — never which reason (R-M01-1,
+ * R-M01-4); the send limits are spent first either way, so probing numbers costs the same as
+ * texting them.
  * Swapping: re-checked under the user row lock, phone_verified_at = now, every other device signed
  * out (SessionRotation: epoch, remember token, live ForceLogout); this device stays in. Then a
  * security notice (in-app + verified email, no SMS — owner) and an audit row (phone masked).
@@ -86,7 +87,7 @@ final class ChangePhone
     }
 
     /**
-     * Step 2a: a code to the new number (none when the number can't be used — same screen).
+     * Step 2a: a code to the new number; a number that can't be used is refused (one message).
      *
      * @throws AccountChangeRefused
      * @throws OtpThrottled
@@ -101,7 +102,11 @@ final class ChangePhone
             throw AccountChangeRefused::sameNumber();
         }
 
-        $this->sendOtp->handle($new, OtpPurpose::ChangePhone, $ip, $this->isFree($new) ? $member : null);
+        $free = $this->isFree($new);
+        $this->sendOtp->handle($new, OtpPurpose::ChangePhone, $ip, $free ? $member : null);   // limits spent either way
+        if (! $free) {
+            throw AccountChangeRefused::numberUnavailable();
+        }
 
         $this->session->put(self::SESSION_KEY, [...$state, 'new' => $new->e164()]);
     }

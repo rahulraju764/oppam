@@ -44,7 +44,7 @@
             </form>
         @else
             <form wire:submit="confirmNewCode" novalidate>
-                <p class="form-text">{{ __('Enter the code we sent to :phone. No code after a minute? If that number already has an Oppam account, sign in with it or contact our support team.', ['phone' => $progress->newNumberMasked]) }}</p>
+                <p class="form-text">{{ __('Enter the code we sent to :phone.', ['phone' => $progress->newNumberMasked]) }}</p>
                 <x-ui.input :label="__('Code sent to your new number')" name="newCode" id="accountNewCode" wire:model="newCode"
                             inputmode="numeric" maxlength="6" autocomplete="one-time-code" dusk="phone-new-code" required />
                 <div class="d-flex flex-wrap gap-2 mt-2">

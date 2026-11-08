@@ -21,7 +21,7 @@ final class AccountChangeRefused extends RuntimeException
 
     public static function numberUnavailable(): self
     {
-        return new self(__('We couldn’t change your number. If that number already has an Oppam account, contact our support team.'));
+        return new self(__('This number can’t be used. Try another one, or contact our support team.'));
     }
 
     public static function wrongPassword(): self

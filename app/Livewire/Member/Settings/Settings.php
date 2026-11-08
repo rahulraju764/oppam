@@ -18,8 +18,8 @@ final class Settings extends Component
 {
     /** @var array<string, string> tab => label key */
     public const TABS = [
-        'privacy' => 'Privacy',
         'account' => 'Account',
+        'privacy' => 'Privacy',
         'notifications' => 'Notifications',
         'blocked' => 'Blocked & ignored',
     ];

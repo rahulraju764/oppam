@@ -6,6 +6,7 @@ namespace App\Actions\Auth;
 
 use App\Domain\Safety\BanList;
 use App\Enums\BannedIdentifierType;
+use App\Enums\SettingKey;
 use App\Enums\UserRole;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Auth\AccountChangeRefused;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Notifications\Auth\EmailChangeRequested;
 use App\Notifications\Auth\VerifyEmailAddress;
 use App\Services\Admin\Impersonation;
+use App\Support\Facades\Settings;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -25,8 +27,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * single-use link goes to the address asked for; the account's email changes only when it is
  * opened (ConfirmEmailChange), so the current address stays in use until then — and, when it is
  * verified, is told a change was asked for. An address held by another account or on the ban
- * list gets the same answer but no mail (nothing reveals who is registered; R-M01-1, R-M01-4).
- * Earlier open links stop working. At most `oppam.auth.email_changes_per_day` requests a day.
+ * list is refused with ONE generic message — never which reason (R-M01-1, R-M01-4); the daily
+ * limit is spent first either way. Earlier open links stop working. At most A15
+ * `members.email_changes_per_day` requests a day.
  * Members only; never in an admin support session.
  */
 final class RequestEmailChange
@@ -54,21 +57,21 @@ final class RequestEmailChange
         }
 
         $key = 'email-change:'.$member->id;
-        if ($this->limiter->tooManyAttempts($key, (int) config('oppam.auth.email_changes_per_day'))) {
+        if ($this->limiter->tooManyAttempts($key, Settings::int(SettingKey::MembersEmailChangesPerDay))) {
             throw AccountChangeRefused::tooManyEmails();
         }
         $this->limiter->hit($key, 86_400);
 
+        if (! $this->isFree($member, $email)) {
+            throw AccountChangeRefused::emailUnavailable();
+        }
+
         $token = Str::random(64);
         $hours = (int) config('oppam.auth.email_verify_hours');
 
-        $sent = DB::transaction(function () use ($member, $email, $token, $hours): bool {
+        DB::transaction(function () use ($member, $email, $token, $hours): void {
             EmailChangeRequest::query()->where('user_id', $member->id)->whereNull('consumed_at')
                 ->where('expires_at', '>', now())->update(['expires_at' => now()]);
-
-            if (! $this->isFree($member, $email)) {
-                return false;
-            }
 
             $row = new EmailChangeRequest;
             $row->forceFill([
@@ -77,13 +80,9 @@ final class RequestEmailChange
                 'token_hash' => hash('sha256', $token),
                 'expires_at' => now()->addHours($hours),
             ])->save();
-
-            return true;
         });
 
-        if ($sent) {
-            Notification::route('mail', $email)->notify(new VerifyEmailAddress(route('member.email.verify', ['token' => $token]), $hours));
-        }
+        Notification::route('mail', $email)->notify(new VerifyEmailAddress(route('member.email.verify', ['token' => $token]), $hours));
 
         if ($member->canReceiveAccountMail() && $member->email !== $email) {
             Notification::route('mail', (string) $member->email)->notify(new EmailChangeRequested);

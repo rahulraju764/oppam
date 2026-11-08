@@ -142,7 +142,6 @@ return [
         'change_phone_window_minutes' => 10,     // the old number's code stays good for the new-number step this long
         'password_change_attempts' => 5,         // wrong current passwords per member …
         'password_change_lockout_minutes' => 15, // … then wait
-        'email_changes_per_day' => 5,            // verification links a member may ask for
         'email_verify_hours' => 24,              // a verification link's life
         'reset_link_minutes' => 60,              // a password-reset email link's life
         'reset_links_per_hour' => 3,             // reset emails per address (and 20 per IP)

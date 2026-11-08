@@ -314,15 +314,20 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     /settings/blocked as a sample page use /settings.
   - [ ] P8.2b Account tab: change mobile (OTP to old + new), email add + verify (switches on the deferred emails), password, sessions list (rule 5) — 2026-11-08: built,
     %%RESULT%%
-    /settings → Account (lazy): **ChangePhone** (CHANGE_PHONE code to the old number, then the new; taken / client_phone / banned numbers get the same screen and no
-    code; swap under the user lock + SessionRotation), **RequestEmailChange / ConfirmEmailChange / RemoveEmail** (`email_change_requests`, sha256 token, 24 h, single use,
+    /settings → Account (first tab; Privacy stays the default landing): **ChangePhone** (CHANGE_PHONE code to the old number, then the new; taken / client_phone / banned
+    numbers refused with one generic message, send limits spent either way; swap under the user lock + SessionRotation), **RequestEmailChange / ConfirmEmailChange /
+    RemoveEmail** (`email_change_requests`, sha256 token, 24 h, single use, A15 `members.email_changes_per_day`,
     button-click confirm page `/settings/email/verify/{token}`), **ChangePassword** (current password, 5 tries / 15 min), recent sign-ins (`RecentDevices` from login_events,
     UserAgentLabel, masked IP) + Sign out all other devices. Forgot password gained **Email me a link** (SendPasswordResetLink → `password_reset_tokens` sha256, 60 min →
     `/reset-password/{token}` ResetPasswordByEmail). New mandatory `account_security` notice (AccountSecurityChanged). `SessionRotation` shared by logout-others /
-    phone / password: epoch + remember token, SAME session id, live ForceLogout after the response (log out other devices now sends it too).
+    phone / password: epoch + remember token, SAME session id, live ForceLogout after the response (log out other devices now sends it too); the email-link reset
+    rotates exactly like the SMS reset. Committed by the owner as ec537bd (2026-11-08, pushed) BEFORE the full suite / reviewer / rule-5 review; then aligned to
+    the approved plan (uncommitted): Account tab first, refusals with one generic message, email limit in A15, removed two extras (a mail to a removed address,
+    a live signal on the email reset), SignInMember back to a comment-only change, tests split into the plan's file names.
     Found by Dusk, not by feature tests: a changed number signed the member out on their OWN device — the new session id reached the browser after the live reload
     (`php artisan serve` sends the response only after deferred work) → session id kept, signal deferred; the Dusk test now proves the reload stays signed in.
-    New tests: ChangePhoneTest 15, EmailChangeTest 15, PasswordChangeAndEmailResetTest 13, UserAgentLabelTest 9, AccountSettingsTest 10; Dusk Mobile/AccountSettingsTest 3.
+    New tests: ChangePhoneTest 16, EmailChangeTest 15, ChangePasswordTest 4, PasswordResetByEmailTest 8, MemberSessionTest +1 (ForceLogout), UserAgentLabelTest 9,
+    AccountSettingsTest 10; Dusk Mobile/AccountSettingsTest 3.
   - [ ] P8.2c Hide / delete with reasons (30-day recovery, anonymise job), download my data, M16 story submission + partner confirmation (submitter hidden, not deleted)
 - [ ] P8.3 Notifications, campaigns & journeys (A14)
 - [ ] P8.4 Settings & configuration (A15)

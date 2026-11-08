@@ -87,7 +87,7 @@ final class AccountSettings extends Component
         $this->attempt(
             fn () => $change->sendNew($this->member(), PhoneNumber::fromParts($this->newCountry, $this->newMobile), (string) request()->ip()),
             'newMobile',
-            fn () => $this->dispatch('toast', type: 'success', title: __('If this number can be used, a code is on its way to it.')),
+            fn () => $this->dispatch('toast', type: 'success', title: __('We sent a code to your new number.')),
         );
     }
 
@@ -116,7 +116,7 @@ final class AccountSettings extends Component
         $this->validate(['email' => ['required', 'string', 'email:rfc', 'max:255']]);
 
         $this->attempt(fn () => $request->handle($this->member(), $this->email), 'email', function (): void {
-            $this->dispatch('toast', type: 'success', title: __('If this address can be used, a confirmation link is on its way to it.'));
+            $this->dispatch('toast', type: 'success', title: __('We sent a confirmation link to that address.'));
         });
     }
 

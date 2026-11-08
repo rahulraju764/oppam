@@ -73,7 +73,7 @@ final class SignInMember
             'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
         ])->save();
 
-        if (! $knownDevice && ! $firstSignIn && $user->canReceiveAccountMail()) {
+        if (! $knownDevice && ! $firstSignIn && $user->email !== null && $user->email_verified_at !== null) {
             $user->notify(new NewDeviceSignIn($event));
         }
 

@@ -7,10 +7,12 @@ use App\Actions\Auth\SignInMember;
 use App\Enums\LoginMethod;
 use App\Enums\ProfileStatus;
 use App\Enums\UserStatus;
+use App\Events\Account\ForceLogout;
 use App\Models\LoginEvent;
 use App\Models\User;
 use App\Notifications\Auth\NewDeviceSignIn;
 use Database\Seeders\PlansSeeder;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 
 /*
@@ -196,4 +198,13 @@ it('keeps this device\'s "stay logged in" when logging out the others', function
 
     expect($reissued)->not->toBeNull()
         ->and($reissued->getValue())->toContain($user->refresh()->getRememberToken());
+});
+
+it('M01 / P8.2b: log out other devices also tells every open tab to leave (ForceLogout)', function (): void {
+    $member = memberWithPhone('+919876533001');
+    Event::fake([ForceLogout::class]);
+
+    app(LogoutOtherDevices::class)->handle($member, requestWithSession());
+
+    Event::assertDispatched(ForceLogout::class, fn (ForceLogout $e): bool => $e->userId === (string) $member->id && $e->broadcastWith() === ['scope' => ForceLogout::ALL]);
 });

@@ -27,8 +27,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /*
 | P8.2b — change mobile number (PRD M14 Account, R-M01-1 / R-M01-2 / R-M01-4; owner decisions
 | 2026-11-08): a code to the current number, then to the new one; taken / managed / banned numbers
-| get the same screen and no code; the swap signs every other device out (epoch, remember token,
-| live ForceLogout), keeps this one, notifies and audits. Never in a support session.
+| are refused with one generic message (never which reason) and get no code; the swap signs every
+| other device out (epoch, remember token, live ForceLogout), keeps this one, notifies and audits.
+| Never in a support session.
 */
 
 beforeEach(function (): void {
@@ -131,7 +132,7 @@ it('the step-1 proof belongs to its member: another member in the same session c
         ->toThrow(AccountChangeRefused::class);
 });
 
-it('R-M01-4: a taken, client-held or banned number gets the same screen and no code — then the swap can\'t happen', function (string $case): void {
+it('R-M01-1 / R-M01-4: a taken, client-held or banned number is refused with one generic message and gets no code', function (string $case): void {
     $member = cpMember();
     match ($case) {
         'another account' => memberWithPhone(CP_NEW),
@@ -140,13 +141,23 @@ it('R-M01-4: a taken, client-held or banned number gets the same screen and no c
     };
     cpThroughStepOne($this, $member);
 
-    app(ChangePhone::class)->sendNew($member, PhoneNumber::fromE164(CP_NEW), '10.1.1.1');   // no exception: same as a free number
+    expect(fn () => app(ChangePhone::class)->sendNew($member, PhoneNumber::fromE164(CP_NEW), '10.1.1.1'))
+        ->toThrow(AccountChangeRefused::class, AccountChangeRefused::numberUnavailable()->getMessage());   // same words for every reason
 
     expect($this->sms->lastCodeFor(CP_NEW, OtpPurpose::ChangePhone))->toBeNull()
-        ->and(app(ChangePhone::class)->progress($member)->newNumberMasked)->not->toBeNull();
-    expect(fn () => app(ChangePhone::class)->confirmNew($member, '123456', request()))->toThrow(OtpInvalid::class);
+        ->and(app(ChangePhone::class)->progress($member)->newNumberMasked)->toBeNull();
+    expect(fn () => app(ChangePhone::class)->confirmNew($member, '123456', request()))->toThrow(AccountChangeRefused::class);
     expect($member->refresh()->phone)->toBe(CP_OLD);
 })->with(['another account', 'managed profile client', 'banned']);
+
+it('R-M01-2: a refused number still spends the send limits (probing costs the same as texting)', function (): void {
+    $member = cpMember();
+    memberWithPhone(CP_NEW);
+    cpThroughStepOne($this, $member);
+
+    expect(fn () => app(ChangePhone::class)->sendNew($member, PhoneNumber::fromE164(CP_NEW), '10.1.1.1'))->toThrow(AccountChangeRefused::class);
+    expect(fn () => app(ChangePhone::class)->sendNew($member, PhoneNumber::fromE164(CP_NEW), '10.1.1.1'))->toThrow(OtpThrottled::class);   // 30 s gap
+});
 
 it('a number taken between the two steps is refused at the swap, and nothing changes', function (): void {
     $member = cpMember();

@@ -10,14 +10,15 @@ use App\Domain\Safety\BanList;
 use App\Enums\BannedIdentifierType;
 use App\Enums\LoginMethod;
 use App\Enums\NotificationEvent;
+use App\Enums\SettingKey;
 use App\Enums\UserStatus;
 use App\Exceptions\Admin\ImpersonationRestricted;
 use App\Exceptions\Auth\AccountChangeRefused;
 use App\Models\AuditLog;
 use App\Models\EmailChangeRequest;
+use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\Account\AccountSecurityChanged;
-use App\Notifications\Auth\AccountEmailNotice;
 use App\Notifications\Auth\EmailChangeRequested;
 use App\Notifications\Auth\NewDeviceSignIn;
 use App\Notifications\Auth\VerifyEmailAddress;
@@ -29,7 +30,7 @@ use Illuminate\Support\Facades\Notification;
 /*
 | P8.2b — the account email (PRD M14 Account; owner decisions 2026-11-08): a single-use, 24-hour
 | link to the address asked for proves it; the old address stays until then and is told; taken /
-| banned addresses get the same answer and no mail (R-M01-4); removing it stops all email. Once an
+| banned addresses are refused with one generic message (R-M01-4); removing it stops all email. Once an
 | address is verified, the emails that waited for verification go out (new-device alert, invoice
 | email, chat digest — decisions 2026-10-06 / 2026-10-16).
 */
@@ -106,7 +107,7 @@ it('the already verified address is refused as "same email"', function (): void 
     expect(fn () => app(RequestEmailChange::class)->handle($member, 'MINE@example.com'))->toThrow(AccountChangeRefused::class);
 });
 
-it('R-M01-4: an address held by another account or banned gets the same answer and no mail', function (string $case): void {
+it('R-M01-1 / R-M01-4: an address held by another account or banned is refused with one generic message and gets no mail', function (string $case): void {
     $member = ecMember();
     if ($case === 'another account') {
         memberWithPhone('+919876522009')->forceFill(['email' => 'taken@example.com'])->save();
@@ -114,7 +115,8 @@ it('R-M01-4: an address held by another account or banned gets the same answer a
         app(BanList::class)->add(BannedIdentifierType::Email, 'taken@example.com', null, null, null);
     }
 
-    app(RequestEmailChange::class)->handle($member, 'taken@example.com');   // no exception
+    expect(fn () => app(RequestEmailChange::class)->handle($member, 'taken@example.com'))
+        ->toThrow(AccountChangeRefused::class, AccountChangeRefused::emailUnavailable()->getMessage());   // same words for every reason
 
     Notification::assertSentOnDemandTimes(VerifyEmailAddress::class, 0);
     expect(EmailChangeRequest::query()->count())->toBe(0);
@@ -167,8 +169,8 @@ it('a suspended account\'s link does nothing', function (): void {
     expect(fn () => app(ConfirmEmailChange::class)->handle(ecMailedToken('asha@example.com'), null))->toThrow(AccountChangeRefused::class);
 });
 
-it('rate limit: oppam.auth.email_changes_per_day requests a day', function (): void {
-    config(['oppam.auth.email_changes_per_day' => 2]);
+it('rule 10: at most A15 members.email_changes_per_day requests a day', function (): void {
+    Setting::factory()->keyed(SettingKey::MembersEmailChangesPerDay, 2)->create();
     $member = ecMember();
     app(RequestEmailChange::class)->handle($member, 'a@example.com');
     app(RequestEmailChange::class)->handle($member, 'b@example.com');
@@ -185,7 +187,7 @@ it('refused in an admin support session', function (): void {
     expect(fn () => app(RemoveEmail::class)->handle($member))->toThrow(ImpersonationRestricted::class);
 });
 
-it('remove email: no more email; the removed (verified) address is told; open links stop working', function (): void {
+it('remove email: no more email; an in-app notice; open links stop working', function (): void {
     $member = ecMember('old@example.com', verified: true);
     app(RequestEmailChange::class)->handle($member, 'new@example.com');
     $token = ecMailedToken('new@example.com');
@@ -193,7 +195,7 @@ it('remove email: no more email; the removed (verified) address is told; open li
     app(RemoveEmail::class)->handle($member);
 
     expect($member->refresh()->email)->toBeNull()->and($member->canReceiveAccountMail())->toBeFalse();
-    Notification::assertSentOnDemand(AccountEmailNotice::class, fn ($n, array $c, AnonymousNotifiable $to): bool => ($to->routes['mail'] ?? null) === 'old@example.com');
+    Notification::assertSentTo($member, AccountSecurityChanged::class, fn (AccountSecurityChanged $n): bool => $n->change === App\Enums\AccountSecurityChange::EmailRemoved);
     expect(fn () => app(ConfirmEmailChange::class)->handle($token, null))->toThrow(AccountChangeRefused::class);
 });
 
