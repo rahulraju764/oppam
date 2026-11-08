@@ -12,9 +12,9 @@ use Carbon\CarbonImmutable;
 
 /**
  * "Recent sign-ins" on the Account tab (M14): the member's own login_events of the last 90 days,
- * one line per device (the newest sign-in of each), at most 10. Sessions themselves can't be listed
- * (decisions 2026-09-29), so this is history, and "Sign out all other devices" is the action.
- * IPv4 shows its first three parts, IPv6 its first four groups.
+ * one line per device (the newest sign-in of each, picked in SQL), at most 10. Sessions themselves
+ * can't be listed (decisions 2026-09-29), so this is history, and "Sign out all other devices" is
+ * the action. IPv4 shows its first three parts, IPv6 its first four groups (expanded first).
  */
 final class RecentDevices
 {
@@ -27,15 +27,21 @@ final class RecentDevices
     {
         $current = is_string($currentDeviceId) && strlen($currentDeviceId) === 40 ? hash('sha256', $currentDeviceId) : null;
 
-        $events = LoginEvent::query()
+        // ULIDs sort by time: MAX(id) per device is that device's newest sign-in.
+        $newest = LoginEvent::query()
+            ->selectRaw('MAX(id)')
             ->where('user_id', $member->id)
             ->where('created_at', '>=', now()->subDays(self::DAYS))
+            ->groupBy('device_hash');
+
+        $events = LoginEvent::query()
+            ->whereIn('id', $newest)
             ->orderByDesc('created_at')
-            ->limit(200)
+            ->limit(self::LIMIT)
             ->get(['device_hash', 'ip_address', 'user_agent', 'created_at']);
 
         $devices = [];
-        foreach ($events->unique('device_hash')->take(self::LIMIT) as $event) {
+        foreach ($events as $event) {
             $devices[] = new DeviceData(
                 label: UserAgentLabel::for($event->user_agent),
                 ipMasked: self::maskIp($event->ip_address),
@@ -58,6 +64,12 @@ final class RecentDevices
             return $parts[0].'.'.$parts[1].'.'.$parts[2].'.*';
         }
 
-        return implode(':', array_slice(explode(':', $ip), 0, 4)).':…';
+        $packed = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false ? inet_pton($ip) : false;
+        if ($packed === false) {
+            return __('unknown');
+        }
+        $groups = array_map(static fn (string $g): string => ltrim($g, '0') === '' ? '0' : ltrim($g, '0'), str_split(bin2hex($packed), 4));
+
+        return implode(':', array_slice($groups, 0, 4)).':…';
     }
 }

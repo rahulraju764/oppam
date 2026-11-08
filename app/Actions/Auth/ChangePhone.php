@@ -22,6 +22,7 @@ use App\Services\Audit\AuditLogger;
 use App\Support\Auth\SessionRotation;
 use App\ValueObjects\PhoneNumber;
 use Illuminate\Contracts\Session\Session;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -133,15 +134,19 @@ final class ChangePhone
         }
 
         $old = $member->phone;
-        $this->rotation->rotateKeepingThisDevice($member, $request, function (User $locked) use ($new): void {
-            if (! $this->isFree($new)) {   // taken between the two steps
-                throw AccountChangeRefused::numberUnavailable();
-            }
-            $locked->forceFill(['phone' => $new->e164(), 'phone_verified_at' => now()]);
-        });
+        try {
+            $this->rotation->rotateKeepingThisDevice($member, $request, function (User $locked) use ($new, $old, $member): void {
+                if (! $this->isFree($new)) {   // taken between the two steps
+                    throw AccountChangeRefused::numberUnavailable();
+                }
+                $locked->forceFill(['phone' => $new->e164(), 'phone_verified_at' => now()]);
+                $this->audit->record('account.phone_changed', $member, ['phone' => $old], ['phone' => $new->e164()], actor: $member, subjectLabel: $member->profile?->code);
+            });
+        } catch (UniqueConstraintViolationException) {   // claimed by someone else at the same moment
+            throw AccountChangeRefused::numberUnavailable();
+        }
 
         $this->session->forget(self::SESSION_KEY);
-        $this->audit->record('account.phone_changed', $member, ['phone' => $old], ['phone' => $new->e164()], actor: $member, subjectLabel: $member->profile?->code);
         $member->notify(new AccountSecurityChanged(AccountSecurityChange::PhoneChanged));
     }
 

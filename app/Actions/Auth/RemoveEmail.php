@@ -38,6 +38,7 @@ final class RemoveEmail
         }
 
         DB::transaction(function () use ($member): void {
+            DB::table('password_reset_tokens')->where('email', (string) $member->email)->delete();
             $member->forceFill(['email' => null, 'email_verified_at' => null])->save();
             EmailChangeRequest::query()->where('user_id', $member->id)->whereNull('consumed_at')->update(['expires_at' => now()]);
         });

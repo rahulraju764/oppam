@@ -4,26 +4,21 @@ declare(strict_types=1);
 
 namespace App\Notifications\Auth;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * "Confirm your email address" (M14, P8.2b) — sent to the NEW address only (an on-demand mail
  * route, never the account's current address). Carries the single-use link; nothing else about
- * the account.
+ * the account. NOT queued: the token must never sit in jobs / failed_jobs / Redis (same rule as
+ * OTPs); RequestEmailChange sends it after the response.
  */
-final class VerifyEmailAddress extends Notification implements ShouldQueue
+final class VerifyEmailAddress extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public readonly string $url,
         public readonly int $hours,
-    ) {
-        $this->onQueue('mail');
-    }
+    ) {}
 
     /** @return list<string> */
     public function via(object $notifiable): array

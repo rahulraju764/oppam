@@ -57,7 +57,7 @@ it('Account tab: renders the four cards with masked number, verified email, load
         ->assertSee('Chrome on Android')->assertSee('203.0.113.*')->assertDontSee('203.0.113.45')
         ->assertDontSee('Firefox on Windows')->assertDontSee('198.51.100')
         ->assertSeeHtml('wire:target="changePassword"')->assertSeeHtml('wire:target="startPhoneChange"')
-        ->assertSeeHtml('wire:target="signOutOtherDevices"');
+        ->assertSeeHtml('wire:target="signOutOtherDevices"')->assertSeeHtml('wire:target="sendEmailLink"');
 });
 
 it('Account tab: change mobile through both codes on screen', function (): void {
@@ -69,6 +69,7 @@ it('Account tab: change mobile through both codes on screen', function (): void 
     $page->set('oldCode', '12')->call('confirmOldCode')->assertHasErrors(['oldCode']);
     $page->set('oldCode', (string) $this->sms->lastCodeFor('+919876544001', OtpPurpose::ChangePhone))->call('confirmOldCode')
         ->assertHasNoErrors()->assertSee('Step 2 of 2');
+    $page->set('newMobile', '12')->call('sendNewCode')->assertHasErrors(['newMobile']);
     $page->set('newMobile', '9876544002')->call('sendNewCode')->assertHasNoErrors()->assertSee('Change my number');
     $page->set('newCode', (string) $this->sms->lastCodeFor('+919876544002', OtpPurpose::ChangePhone))->call('confirmNewCode')
         ->assertHasNoErrors()->assertDispatched('toast', type: 'success');

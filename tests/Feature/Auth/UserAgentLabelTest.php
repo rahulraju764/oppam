@@ -23,5 +23,6 @@ it('masks the IP: three parts of IPv4, four groups of IPv6', function (?string $
 })->with([
     ['203.0.113.45', '203.0.113.*'],
     ['2001:db8:85a3:8d3:1319:8a2e:370:7348', '2001:db8:85a3:8d3:…'],
+    ['2001:db8::1', '2001:db8:0:0:…'],   // compressed: expanded before masking
     [null, 'unknown'],
 ]);

@@ -208,3 +208,19 @@ it('M01 / P8.2b: log out other devices also tells every open tab to leave (Force
 
     Event::assertDispatched(ForceLogout::class, fn (ForceLogout $e): bool => $e->userId === (string) $member->id && $e->broadcastWith() === ['scope' => ForceLogout::ALL]);
 });
+
+it('P8.2b review: a rotation gives THIS session a new id, with or without "stay logged in" (a stolen copy of the old cookie dies)', function (bool $remembered): void {
+    $user = memberWithPhone(status: ProfileStatus::Draft);
+    $request = requestWithSession();
+    if ($remembered) {
+        $request->cookies->set(auth('web')->getRecallerName(), 'present');
+    }
+    $this->actingAs($user, 'web');
+    $before = $request->session()->getId();
+
+    app(LogoutOtherDevices::class)->handle($user, $request);
+
+    expect($request->session()->getId())->not->toBe($before)
+        ->and($request->session()->get(SignInMember::EPOCH_SESSION_KEY))->toBe($user->refresh()->session_epoch)
+        ->and(auth('web')->id())->toBe($user->id);   // this device stays signed in
+})->with(['not remembered' => false, 'remembered' => true]);

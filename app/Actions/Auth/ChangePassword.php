@@ -46,13 +46,13 @@ final class ChangePassword
             throw new NotFoundHttpException;
         }
 
+        // Counted before the check (parallel requests can't all slip under the limit); cleared on success.
         $key = 'password-change:'.$member->id;
-        if ($this->limiter->tooManyAttempts($key, (int) config('oppam.auth.password_change_attempts'))) {
+        if ($this->limiter->hit($key, (int) config('oppam.auth.password_change_lockout_minutes') * 60) > (int) config('oppam.auth.password_change_attempts')) {
             throw AccountChangeRefused::passwordLocked($this->limiter->availableIn($key));
         }
 
         if (! Hash::check($current, $member->password)) {
-            $this->limiter->hit($key, (int) config('oppam.auth.password_change_lockout_minutes') * 60);
             throw AccountChangeRefused::wrongPassword();
         }
         $this->limiter->clear($key);
@@ -61,11 +61,11 @@ final class ChangePassword
             throw AccountChangeRefused::samePassword();
         }
 
-        $this->rotation->rotateKeepingThisDevice($member, $request, function (User $locked) use ($new): void {
+        $this->rotation->rotateKeepingThisDevice($member, $request, function (User $locked) use ($new, $member): void {
             $locked->forceFill(['password' => $new]);   // hashed by the model cast
+            $this->audit->record('account.password_changed', $member, actor: $member, subjectLabel: $member->profile?->code);
         });
 
-        $this->audit->record('account.password_changed', $member, actor: $member, subjectLabel: $member->profile?->code);
         $member->notify(new AccountSecurityChanged(AccountSecurityChange::PasswordChanged));
     }
 }

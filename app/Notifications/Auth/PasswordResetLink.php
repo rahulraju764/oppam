@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace App\Notifications\Auth;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-/** "Reset your password" (PRD §8.2 method 3, email link; P8.2b) — only ever to a verified account address. */
-final class PasswordResetLink extends Notification implements ShouldQueue
+/**
+ * "Reset your password" (PRD §8.2 method 3, email link; P8.2b) — only ever to a verified account address.
+ * NOT queued: the link carries the reset token, which must never sit in jobs / failed_jobs / Redis
+ * (same rule as OTPs and staff invitations); SendPasswordResetLink sends it after the response.
+ */
+final class PasswordResetLink extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public readonly string $url,
         public readonly int $minutes,
-    ) {
-        $this->onQueue('mail');
-    }
+    ) {}
 
     /** @return list<string> */
     public function via(object $notifiable): array

@@ -19,10 +19,14 @@ use Illuminate\Support\Str;
  * "Every other device out, this one stays" (M01 logout everywhere; M14 mobile / password change):
  * under a row lock, bump users.session_epoch (other sessions end on their next request —
  * EnsureMemberSessionIsValid) and rotate the remember token (other "stay logged in" cookies stop
- * working), together with any change the caller makes to the same row. Then this session is
- * re-stamped (same id), this device's own "stay logged in" cookie is re-issued, and once the
- * response has gone out `.session.revoked` tells every open tab to reload (other devices land
- * signed out; this browser's tabs already hold the new session cookie and stay in).
+ * working), together with any change the caller makes to the same row (it runs inside the same
+ * transaction). Then this session is re-stamped and gets a NEW id (a stolen copy of the old cookie
+ * dies with it), and this device's own "stay logged in" cookie is re-issued.
+ *
+ * The live `.session.revoked` (ForceLogout) goes out through the `broadcasts` queue after commit,
+ * `oppam.auth.force_logout_delay_seconds` later: every open tab reloads on it — this one too — so
+ * this browser must already hold the new session cookie from this response. Sent at once, it beat
+ * the response on the local server and signed the member out on their own device (found by Dusk).
  */
 final class SessionRotation
 {
@@ -48,23 +52,17 @@ final class SessionRotation
             ])->save();
 
             $userId = (string) $fresh->id;
-            DB::afterCommit(static function () use ($userId): void {
-                // AFTER the response: this tab reloads on the signal too, and must already hold the
-                // new session cookie (session->migrate below) — sent earlier, it would reload with the
-                // old, now stale session and be signed out (found by Dusk). Best-effort, like LiveSignal.
-                defer(static fn () => rescue(static fn () => event(new ForceLogout($userId)), report: true));
-            });
+            dispatch(static function () use ($userId): void {
+                event(new ForceLogout($userId));
+            })->onQueue('broadcasts')->delay(now()->addSeconds((int) config('oppam.auth.force_logout_delay_seconds')))->afterCommit();
 
             return $fresh->session_epoch;
         });
 
         $user->refresh();
 
-        // Same session id, new epoch: the session is saved before the deferred signal goes out, so
-        // this browser's tabs reload with their existing cookie and stay in. (A new id would need
-        // the new cookie to reach the browser first — `php artisan serve` delivers it only after
-        // the deferred work, so this very tab was signed out; found by Dusk.)
         $this->session->put(SignInMember::EPOCH_SESSION_KEY, $epoch);
+        $this->session->migrate(true);
 
         $guard = $this->auth->guard('web');
         if ($guard instanceof SessionGuard && $request->cookies->has($guard->getRecallerName())) {

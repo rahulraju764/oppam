@@ -10,8 +10,10 @@ use App\Models\User;
 use App\Notifications\Auth\PasswordResetLink;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Forgot password — the email-link option (PRD §8.2 method 3; owner decisions 2026-11-08). The
@@ -34,12 +36,10 @@ final class SendPasswordResetLink
             'reset-link:ip:'.$ip => (int) config('oppam.auth.reset_links_per_ip_per_hour'),
             'reset-link:email:'.hash('sha256', $email) => (int) config('oppam.auth.reset_links_per_hour'),
         ] as $key => $max) {
-            if ($this->limiter->tooManyAttempts($key, $max)) {
+            if ($this->limiter->hit($key, 3600) > $max) {   // counted first
                 throw LoginFailed::lockedOut($this->limiter->availableIn($key));
             }
         }
-        $this->limiter->hit('reset-link:ip:'.$ip, 3600);
-        $this->limiter->hit('reset-link:email:'.hash('sha256', $email), 3600);
 
         $member = User::query()->where('email', $email)->whereNotNull('email_verified_at')
             ->where('role', UserRole::Member->value)->first();
@@ -54,7 +54,15 @@ final class SendPasswordResetLink
             ['token', 'created_at'],
         );
 
-        $minutes = (int) config('oppam.auth.reset_link_minutes');
-        Notification::route('mail', $email)->notify(new PasswordResetLink(route('password.reset.email', ['token' => $token]), $minutes));
+        // After the response, not queued: the token never reaches the queue store; failures are
+        // logged without the address or the link.
+        $notification = new PasswordResetLink(route('password.reset.email', ['token' => $token]), (int) config('oppam.auth.reset_link_minutes'));
+        defer(static function () use ($email, $notification): void {
+            try {
+                Notification::route('mail', $email)->notifyNow($notification);
+            } catch (Throwable) {
+                Log::warning('Password reset email failed');
+            }
+        });
     }
 }

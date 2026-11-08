@@ -320,14 +320,21 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     button-click confirm page `/settings/email/verify/{token}`), **ChangePassword** (current password, 5 tries / 15 min), recent sign-ins (`RecentDevices` from login_events,
     UserAgentLabel, masked IP) + Sign out all other devices. Forgot password gained **Email me a link** (SendPasswordResetLink → `password_reset_tokens` sha256, 60 min →
     `/reset-password/{token}` ResetPasswordByEmail). New mandatory `account_security` notice (AccountSecurityChanged). `SessionRotation` shared by logout-others /
-    phone / password: epoch + remember token, SAME session id, live ForceLogout after the response (log out other devices now sends it too); the email-link reset
-    rotates exactly like the SMS reset. Committed by the owner as ec537bd (2026-11-08, pushed) BEFORE the full suite / reviewer / rule-5 review; then aligned to
-    the approved plan (uncommitted): Account tab first, refusals with one generic message, email limit in A15, removed two extras (a mail to a removed address,
-    a live signal on the email reset), SignInMember back to a comment-only change, tests split into the plan's file names.
-    Found by Dusk, not by feature tests: a changed number signed the member out on their OWN device — the new session id reached the browser after the live reload
-    (`php artisan serve` sends the response only after deferred work) → session id kept, signal deferred; the Dusk test now proves the reload stays signed in.
-    New tests: ChangePhoneTest 16, EmailChangeTest 15, ChangePasswordTest 4, PasswordResetByEmailTest 8, MemberSessionTest +1 (ForceLogout), UserAgentLabelTest 9,
-    AccountSettingsTest 10; Dusk Mobile/AccountSettingsTest 3.
+    phone / password: epoch + remember token, NEW session id for this device, live ForceLogout through the `broadcasts` queue 3 s after commit (log out other
+    devices now sends it too); the email-link reset rotates exactly like the SMS reset. Reset / verification emails are sent right after the response, never queued
+    (their links carry the token). Commits: the owner committed + pushed ec537bd (WIP) and 1748dfc (plan alignment: Account tab first, refusals with one generic
+    message, email limit in A15, two extras removed, SignInMember comment-only, tests split into the plan's file names) BEFORE the full suite, the reviewer and the
+    rule-5 review; the review fixes below are uncommitted.
+    Found by Dusk, not by feature tests: a changed number signed the member out on their OWN device — the live reload beat the response that carried the new
+    session cookie (`php artisan serve` sends it only after deferred work). A first fix kept the session id; the reviewer rejected it (a stolen cookie would survive
+    "sign out other devices" / a password change; remembered devices still got a new id) → new id kept, signal delayed through the queue; Dusk now proves the
+    page reloads and comes back signed in.
+    Reviewer round 1 NOT READY: 1 Blocker (reset / verify tokens inside QUEUED notifications → readable in jobs / failed_jobs / Redis — the OTP / invite rule),
+    1 Major (the session-id trade-off above), Minors: stale comments; limits checked before counting; ban not re-checked at confirm; unique-index race → 500;
+    unindexed password_reset_tokens.token; old address's reset link kept on change / removal; device list limit before grouping + compressed IPv6; audit rows
+    outside the transaction; security-matrix gaps. All fixed (index migration 2026_11_08_110000), tests added for each.
+    New tests: ChangePhoneTest 18, EmailChangeTest 23, ChangePasswordTest 6, PasswordResetByEmailTest 11, MemberSessionTest +3 (ForceLogout, new session id with /
+    without "stay logged in"), UserAgentLabelTest 10, AccountSettingsTest 10; Dusk Mobile/AccountSettingsTest 3.
   - [ ] P8.2c Hide / delete with reasons (30-day recovery, anonymise job), download my data, M16 story submission + partner confirmation (submitter hidden, not deleted)
 - [ ] P8.3 Notifications, campaigns & journeys (A14)
 - [ ] P8.4 Settings & configuration (A15)

@@ -226,3 +226,50 @@ it('M01: the new-device alert goes out once the address is verified', function (
 
     Notification::assertSentTo($member, NewDeviceSignIn::class);
 });
+
+it('P8.2b review: the verification link is never queued — the token can\'t sit in jobs / failed_jobs / Redis', function (): void {
+    Illuminate\Support\Facades\Queue::fake();
+    $member = ecMember();
+
+    app(RequestEmailChange::class)->handle($member, 'asha@example.com');
+
+    expect(new VerifyEmailAddress('https://x', 24))->not->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
+    Illuminate\Support\Facades\Queue::assertNotPushed(Illuminate\Notifications\SendQueuedNotifications::class,
+        fn ($job): bool => $job->notification instanceof VerifyEmailAddress);
+    Notification::assertSentOnDemandTimes(VerifyEmailAddress::class, 1);
+});
+
+it('an address banned after the link was sent is refused when the link is opened', function (): void {
+    $member = ecMember();
+    app(RequestEmailChange::class)->handle($member, 'asha@example.com');
+    $token = ecMailedToken('asha@example.com');
+    app(BanList::class)->add(BannedIdentifierType::Email, 'asha@example.com', null, null, null);
+
+    expect(fn () => app(ConfirmEmailChange::class)->handle($token, null))->toThrow(AccountChangeRefused::class);
+    expect($member->refresh()->email)->toBeNull();
+});
+
+it('changing or removing the address ends the old address\'s password-reset link', function (string $how): void {
+    $member = ecMember('old@example.com', verified: true);
+    Illuminate\Support\Facades\DB::table('password_reset_tokens')->insert(['email' => 'old@example.com', 'token' => hash('sha256', 'x'), 'created_at' => now()]);
+
+    if ($how === 'change') {
+        app(RequestEmailChange::class)->handle($member, 'new@example.com');
+        app(ConfirmEmailChange::class)->handle(ecMailedToken('new@example.com'), null);
+    } else {
+        app(RemoveEmail::class)->handle($member);
+    }
+
+    expect(Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', 'old@example.com')->exists())->toBeFalse();
+})->with(['change', 'remove']);
+
+it('a suspended account or a bureau login can\'t add or remove an email here (404)', function (string $case, string $action): void {
+    $member = ecMember('mine@example.com', verified: true);
+    $member->forceFill($case === 'suspended' ? ['status' => UserStatus::Suspended] : ['role' => App\Enums\UserRole::Broker])->save();
+
+    expect(fn () => $action === 'request'
+        ? app(RequestEmailChange::class)->handle($member->refresh(), 'new@example.com')
+        : app(RemoveEmail::class)->handle($member->refresh()))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+    expect($member->refresh()->email)->toBe('mine@example.com');
+})->with(['suspended', 'broker'])->with(['request', 'remove']);

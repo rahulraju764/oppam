@@ -82,3 +82,12 @@ it('change password is refused in an admin support session', function (): void {
     expect(fn () => app(ChangePassword::class)->handle($member, TEST_MEMBER_PASSWORD, 'NewPass2026', requestWithSession()))
         ->toThrow(ImpersonationRestricted::class);
 });
+
+it('a suspended account or a bureau login can\'t change the password here (404)', function (string $case): void {
+    $member = cpwMember();
+    $member->forceFill($case === 'suspended' ? ['status' => App\Enums\UserStatus::Suspended] : ['role' => App\Enums\UserRole::Broker])->save();
+
+    expect(fn () => app(ChangePassword::class)->handle($member->refresh(), TEST_MEMBER_PASSWORD, 'NewPass2026', requestWithSession()))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+    expect(Hash::check(TEST_MEMBER_PASSWORD, $member->refresh()->password))->toBeTrue();
+})->with(['suspended', 'broker']);

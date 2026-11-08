@@ -12,9 +12,10 @@ use Illuminate\Foundation\Events\Dispatchable;
 /**
  * Sign this member's open tabs out NOW (PRD §9.4 `.session.revoked`). The session has already been
  * revoked in the database (session epoch / impersonation row) — this only tells the browser to
- * leave, so the next request is signed out by the session middleware. Always sent through
- * LiveSignal::afterCommit(): after the revoking transaction commits, and best-effort (a broadcast
- * failure is reported, never fails the suspension / session end).
+ * leave, so the next request is signed out by the session middleware. Always sent after the
+ * revoking transaction commits, best-effort (a broadcast failure never fails the suspension /
+ * session end): LiveSignal::afterCommit() for admin actions, and SessionRotation's short-delayed
+ * `broadcasts` job when the member's own tab must first receive its new session cookie (M14).
  *
  * scope ALL           — every tab of the member (suspend, delete, admin password reset).
  * scope IMPERSONATION — only a tab running an admin support session (ended from the admin panel);

@@ -140,6 +140,7 @@ return [
         'referral_cookie_days' => 30,
         // P8.2b Account tab (M14) — security policy, so config, not A15 (decisions 2026-09-29):
         'change_phone_window_minutes' => 10,     // the old number's code stays good for the new-number step this long
+        'force_logout_delay_seconds' => 3,       // live sign-out after a rotation: this tab must hold its new session cookie first
         'password_change_attempts' => 5,         // wrong current passwords per member …
         'password_change_lockout_minutes' => 15, // … then wait
         'email_verify_hours' => 24,              // a verification link's life

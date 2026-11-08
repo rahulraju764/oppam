@@ -60,12 +60,14 @@ it('M14 at 375 px: change the mobile number with a code to the old and to the ne
             ->waitFor('@phone-new-code', 10);
         $new = duskLatestOtp(PhoneNumber::fromE164(DUSK_NEW_PHONE)->masked());
         expect($new)->not->toBeNull();
+        $browser->script('window.__beforeChange = 1;');
         duskAccountCentre($browser, '[dusk=phone-new-code]')->type('@phone-new-code', (string) $new)->click('@phone-new-confirm');
 
-        // The live `.session.revoked` reloads this tab too; it must come back signed in, showing the
-        // new number (the bug Dusk found: a new session id reached the browser too late → signed out).
+        // The live `.session.revoked` (sent a few seconds after the response) reloads this tab too; it
+        // must come back signed in with its NEW session id, showing the new number.
         $masked = PhoneNumber::fromE164(DUSK_NEW_PHONE)->masked();
-        $browser->waitForText($masked, 15)->pause(2500)                 // the reload lands in this window
+        $browser->waitForText($masked, 15)
+            ->waitUsing(20, 200, fn (): bool => $browser->script('return window.__beforeChange === undefined;')[0] === true)   // the page reloaded
             ->waitFor('@phone-start', 15)->assertPathIs('/settings')->assertSee($masked);   // lazy tab loaded again, signed in
         expect($member->refresh()->phone)->toBe(DUSK_NEW_PHONE);
         assertNoHorizontalScroll($browser);

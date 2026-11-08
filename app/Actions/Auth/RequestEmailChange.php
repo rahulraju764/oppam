@@ -18,9 +18,11 @@ use App\Services\Admin\Impersonation;
 use App\Support\Facades\Settings;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Throwable;
 
 /**
  * Add, change or verify the account email (PRD M14 Account; owner decisions 2026-11-08). A
@@ -57,10 +59,9 @@ final class RequestEmailChange
         }
 
         $key = 'email-change:'.$member->id;
-        if ($this->limiter->tooManyAttempts($key, Settings::int(SettingKey::MembersEmailChangesPerDay))) {
+        if ($this->limiter->hit($key, 86_400) > Settings::int(SettingKey::MembersEmailChangesPerDay)) {   // counted first
             throw AccountChangeRefused::tooManyEmails();
         }
-        $this->limiter->hit($key, 86_400);
 
         if (! $this->isFree($member, $email)) {
             throw AccountChangeRefused::emailUnavailable();
@@ -82,7 +83,16 @@ final class RequestEmailChange
             ])->save();
         });
 
-        Notification::route('mail', $email)->notify(new VerifyEmailAddress(route('member.email.verify', ['token' => $token]), $hours));
+        // After the response, not queued: the token never reaches the queue store; failures are
+        // logged without the address or the link.
+        $verify = new VerifyEmailAddress(route('member.email.verify', ['token' => $token]), $hours);
+        defer(static function () use ($email, $verify): void {
+            try {
+                Notification::route('mail', $email)->notifyNow($verify);
+            } catch (Throwable) {
+                Log::warning('Email verification mail failed');
+            }
+        });
 
         if ($member->canReceiveAccountMail() && $member->email !== $email) {
             Notification::route('mail', (string) $member->email)->notify(new EmailChangeRequested);
