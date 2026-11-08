@@ -1,5 +1,6 @@
-{{-- /forgot-password (template forgot-password.php, PRD §8.2 method 3): the reset now goes by SMS
-     code to the registered mobile; step 2 looks the same whether or not the number is registered. --}}
+{{-- /forgot-password (template forgot-password.php, PRD §8.2 method 3): an SMS code to the registered
+     mobile, or (P8.2b) a link to the account's verified email. Each answer looks the same whether
+     or not the number / address is registered (R-M01-4). --}}
 <div>
     <h1 class="visually-hidden">{{ __('Reset your password') }}</h1>
 
@@ -21,12 +22,32 @@
                         <div class="login-form">
                             <div class="login-head">
                                 <h2>{{ __('Forgot password?') }}</h2>
-                                <p>{{ $codeSent
-                                    ? __('If :phone is registered, we have sent a 6-digit code to it.', ['phone' => $maskedPhone ?? ''])
-                                    : __('Enter your registered mobile number.') }}</p>
+                                <p>{{ match (true) {
+                                    $byEmail && $emailSent => __('If that is the confirmed email address of an Oppam account, a reset link is on its way. It works once, for :minutes minutes.', ['minutes' => $resetMinutes]),
+                                    $byEmail => __('Enter the email address you confirmed on your account.'),
+                                    $codeSent => __('If :phone is registered, we have sent a 6-digit code to it.', ['phone' => $maskedPhone ?? '']),
+                                    default => __('Enter your registered mobile number.'),
+                                } }}</p>
                             </div>
 
-                            @if (! $codeSent)
+                            @if ($byEmail)
+                                @unless ($emailSent)
+                                    <form wire:submit="sendEmailLink" novalidate wire:key="forgot-email">
+                                        <div class="login-field">
+                                            <label for="resetEmail" class="login-label">{{ __('Email address') }}</label>
+                                            <input type="email" id="resetEmail" name="email" wire:model="email" maxlength="255" autocomplete="email" required dusk="reset-email"
+                                                   class="form-control login-input @error('email') is-invalid @enderror" placeholder="{{ __('Your confirmed email address') }}"
+                                                   @error('email') aria-invalid="true" aria-describedby="resetEmail-error" @enderror>
+                                            @error('email')<p class="invalid-feedback d-block" id="resetEmail-error" role="alert">{{ $message }}</p>@enderror
+                                        </div>
+                                        <button type="submit" class="btn login-btn" wire:loading.attr="disabled" wire:target="sendEmailLink" dusk="reset-email-send">
+                                            <span class="ui-spinner" wire:loading wire:target="sendEmailLink" aria-hidden="true"></span>
+                                            {{ __('Email me a link') }}
+                                        </button>
+                                    </form>
+                                @endunless
+                                <button type="button" class="btn login-btn-alt" wire:click="usePhone">{{ __('Use my mobile number instead') }}</button>
+                            @elseif (! $codeSent)
                                 <form wire:submit="sendCode" novalidate wire:key="forgot-phone">
                                     <div class="login-field">
                                         <label for="resetMobile" class="login-label">{{ __('Mobile number') }}</label>
@@ -52,6 +73,7 @@
                                         {{ __('Send code') }}
                                     </button>
                                 </form>
+                                <button type="button" class="btn login-btn-alt" wire:click="useEmail" dusk="reset-by-email">{{ __('Email me a reset link instead') }}</button>
                             @else
                                 <form wire:submit="resetPassword" novalidate wire:key="forgot-reset">
                                     @include('livewire.member.auth.partials.otp-code-field', ['resendAction' => 'sendCode'])

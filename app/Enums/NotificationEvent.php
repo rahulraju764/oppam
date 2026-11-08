@@ -32,6 +32,8 @@ enum NotificationEvent: string
     case PlanExpiring = 'plan_expiring';
     case PlanExpired = 'plan_expired';
     case AccountStatus = 'account_status';
+    /** Mobile / email / password changed, a reset link used (M14, P8.2b): in-app + email, never off. */
+    case AccountSecurity = 'account_security';
     case AdminAnnouncement = 'admin_announcement';
     case SafetyWarning = 'safety_warning';
     /** A bureau Owner earned commission (§11A B.10, P7.2): in-app only. */
@@ -90,7 +92,7 @@ enum NotificationEvent: string
     {
         return in_array($this, [
             self::ProfileApproved, self::ProfileRejected, self::VerificationApproved, self::VerificationRejected,
-            self::PaymentSuccess, self::RefundIssued, self::PlanExpired, self::AccountStatus, self::SafetyWarning,
+            self::PaymentSuccess, self::RefundIssued, self::PlanExpired, self::AccountStatus, self::AccountSecurity, self::SafetyWarning,
         ], true);
     }
 
@@ -157,6 +159,7 @@ enum NotificationEvent: string
             self::PlanExpiring => __('My plan is about to end'),
             self::PlanExpired => __('My plan has ended'),
             self::AccountStatus => __('Account notices'),
+            self::AccountSecurity => __('Changes to my mobile, email or password'),
             self::AdminAnnouncement => __('Offers and announcements from Oppam'),
             self::SafetyWarning => __('Safety warnings'),
             self::CommissionEarned => __('Commission earned'),

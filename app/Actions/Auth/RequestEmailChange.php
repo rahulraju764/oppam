@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Actions\Auth;
+
+use App\Domain\Safety\BanList;
+use App\Enums\BannedIdentifierType;
+use App\Enums\UserRole;
+use App\Exceptions\Admin\ImpersonationRestricted;
+use App\Exceptions\Auth\AccountChangeRefused;
+use App\Models\EmailChangeRequest;
+use App\Models\User;
+use App\Notifications\Auth\EmailChangeRequested;
+use App\Notifications\Auth\VerifyEmailAddress;
+use App\Services\Admin\Impersonation;
+use Illuminate\Cache\RateLimiter;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+/**
+ * Add, change or verify the account email (PRD M14 Account; owner decisions 2026-11-08). A
+ * single-use link goes to the address asked for; the account's email changes only when it is
+ * opened (ConfirmEmailChange), so the current address stays in use until then — and, when it is
+ * verified, is told a change was asked for. An address held by another account or on the ban
+ * list gets the same answer but no mail (nothing reveals who is registered; R-M01-1, R-M01-4).
+ * Earlier open links stop working. At most `oppam.auth.email_changes_per_day` requests a day.
+ * Members only; never in an admin support session.
+ */
+final class RequestEmailChange
+{
+    public function __construct(
+        private readonly Impersonation $impersonation,
+        private readonly BanList $bans,
+        private readonly RateLimiter $limiter,
+    ) {}
+
+    /**
+     * @throws AccountChangeRefused
+     * @throws ImpersonationRestricted
+     */
+    public function handle(User $member, string $email): void
+    {
+        $this->impersonation->assertAllowed();
+        if (! $member->isActive() || $member->role !== UserRole::Member) {
+            throw new NotFoundHttpException;
+        }
+
+        $email = Str::lower(trim($email));
+        if ($email === $member->email && $member->email_verified_at !== null) {
+            throw AccountChangeRefused::sameEmail();
+        }
+
+        $key = 'email-change:'.$member->id;
+        if ($this->limiter->tooManyAttempts($key, (int) config('oppam.auth.email_changes_per_day'))) {
+            throw AccountChangeRefused::tooManyEmails();
+        }
+        $this->limiter->hit($key, 86_400);
+
+        $token = Str::random(64);
+        $hours = (int) config('oppam.auth.email_verify_hours');
+
+        $sent = DB::transaction(function () use ($member, $email, $token, $hours): bool {
+            EmailChangeRequest::query()->where('user_id', $member->id)->whereNull('consumed_at')
+                ->where('expires_at', '>', now())->update(['expires_at' => now()]);
+
+            if (! $this->isFree($member, $email)) {
+                return false;
+            }
+
+            $row = new EmailChangeRequest;
+            $row->forceFill([
+                'user_id' => $member->id,
+                'email' => $email,
+                'token_hash' => hash('sha256', $token),
+                'expires_at' => now()->addHours($hours),
+            ])->save();
+
+            return true;
+        });
+
+        if ($sent) {
+            Notification::route('mail', $email)->notify(new VerifyEmailAddress(route('member.email.verify', ['token' => $token]), $hours));
+        }
+
+        if ($member->canReceiveAccountMail() && $member->email !== $email) {
+            Notification::route('mail', (string) $member->email)->notify(new EmailChangeRequested);
+        }
+    }
+
+    /** Free = no other account (even a deleted one) holds it, and it isn't banned. */
+    private function isFree(User $member, string $email): bool
+    {
+        return ! User::withTrashed()->where('email', $email)->whereKeyNot($member->id)->exists()
+            && ! $this->bans->isBanned(BannedIdentifierType::Email, $email);
+    }
+}

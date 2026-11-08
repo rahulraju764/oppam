@@ -138,6 +138,15 @@ return [
         'device_cookie' => 'oppam_device',       // random id, recognises a returning device (new-device alert)
         'referral_cookie' => 'oppam_ref',        // ?ref=BRK1042, 30-day first touch (R-M13-9; used from P7.2)
         'referral_cookie_days' => 30,
+        // P8.2b Account tab (M14) — security policy, so config, not A15 (decisions 2026-09-29):
+        'change_phone_window_minutes' => 10,     // the old number's code stays good for the new-number step this long
+        'password_change_attempts' => 5,         // wrong current passwords per member …
+        'password_change_lockout_minutes' => 15, // … then wait
+        'email_changes_per_day' => 5,            // verification links a member may ask for
+        'email_verify_hours' => 24,              // a verification link's life
+        'reset_link_minutes' => 60,              // a password-reset email link's life
+        'reset_links_per_hour' => 3,             // reset emails per address (and 20 per IP)
+        'reset_links_per_ip_per_hour' => 20,
     ],
 
 ];

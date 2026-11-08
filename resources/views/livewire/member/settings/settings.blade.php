@@ -30,6 +30,9 @@
 
             <div id="settings-panel" wire:loading.remove wire:target="show">
                 @switch ($tab)
+                    @case('account')
+                        <livewire:member.settings.account-settings lazy wire:key="settings-account" />
+                        @break
                     @case('notifications')
                         <livewire:member.settings.notification-settings lazy wire:key="settings-notifications" />
                         @break

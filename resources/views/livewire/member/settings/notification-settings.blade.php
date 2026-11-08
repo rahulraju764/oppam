@@ -8,7 +8,8 @@
         <div class="ui-card mb-4">
             <h2 class="safety-list__title">{{ __('What we tell you about') }}</h2>
             @unless ($emailReady)
-                <p class="form-text">{{ __('Email: we only write to a verified email address. Your email choices apply once you add and verify one.') }}</p>
+                <p class="form-text">{{ __('Email: we only write to a verified email address. Your email choices apply once you add and verify one —') }}
+                    <a href="{{ route('member.settings', ['tab' => 'account']) }}" wire:navigate>{{ __('verify my email') }}</a></p>
             @endunless
             @unless ($smsReady)
                 <p class="form-text">{{ __('SMS: we only text a verified mobile number.') }}</p>

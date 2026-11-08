@@ -15,6 +15,7 @@ use App\Livewire\Member\Auth\ClaimProfile;
 use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
+use App\Livewire\Member\Auth\ResetPasswordEmail;
 use App\Livewire\Member\Auth\VerifyOtp;
 use App\Livewire\Member\Billing\Checkout;
 use App\Livewire\Member\Billing\CheckoutSuccess;
@@ -35,6 +36,7 @@ use App\Livewire\Member\Profile\MyProfile;
 use App\Livewire\Member\Profile\Show;
 use App\Livewire\Member\Search\Search;
 use App\Livewire\Member\Settings\Settings as MemberSettings;
+use App\Livewire\Member\Settings\VerifyEmail;
 use App\Livewire\Member\Support\Help;
 use App\Livewire\Member\Support\TicketThread;
 use App\Livewire\Member\Verification\Upload as VerificationUpload;
@@ -92,7 +94,14 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/verify-otp', VerifyOtp::class)->name('register.verify');
     Route::get('/login', Login::class)->name('login');
     Route::get('/forgot-password', ForgotPassword::class)->name('password.forgot');
+    // P8.2b: the email-link reset (PRD §8.2 method 3); the token is checked when the form is sent.
+    Route::get('/reset-password/{token}', ResetPasswordEmail::class)
+        ->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:30,1')->name('password.reset.email');
 });
+
+// M14 (P8.2b): an email confirmation link — signed in or not, the link is the proof; a click confirms.
+Route::get('/settings/email/verify/{token}', VerifyEmail::class)
+    ->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:30,1')->name('member.email.verify');
 
 // The first Phase 2 pass used /all-profiles; PRD §6.2 says /profiles (decisions 2026-10-04).
 Route::permanentRedirect('/all-profiles', '/profiles');

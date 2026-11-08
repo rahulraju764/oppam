@@ -6,7 +6,7 @@ committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 
 **Current phase:** 8 — Content, settings & communication (Phase 7: every session built and reviewer READY 2026-11-01; P7.2, P7.8a–c, P7.9 stay unticked
 until the owner's rule-5 review and browser try).
-**Next session:** P8.2a owner browser try + commit; then P8.2b (Account tab — rule 5). Remaining order (decisions 2026-11-07): P8.2b → P8.2c → P8.3a → P8.3b → P8.4. P8.1b committed e9cd4e4 (2026-11-07).
+**Next session:** P8.2b owner rule-5 review + browser try → commit (NOT committed); P8.2a browser try (committed eb268a4). Then P8.2c → P8.3a → P8.3b → P8.4, one sitting at a time (owner 2026-11-08).
 Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner review of the P5.x, P6.2 and P7.x auth / payment changes (rule 5)
 
 ## Before starting (outside tasks — start early)
@@ -312,7 +312,17 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     Blocked & ignored moved in as a lazy tab (flash message read by the page). New tests: PrivacySettingsTest 28, NotificationPreferencesTest, SettingsScreensTest; Dusk tests/Browser/Mobile/SettingsTest.php.
     Updated (not weakened): the tests that used `incognito` to mean "hidden from search" now use hide_from_search; incognito tests now use a Diamond member; tests that used
     /settings/blocked as a sample page use /settings.
-  - [ ] P8.2b Account tab: change mobile (OTP to old + new), email add + verify (switches on the deferred emails), password, sessions list (rule 5)
+  - [ ] P8.2b Account tab: change mobile (OTP to old + new), email add + verify (switches on the deferred emails), password, sessions list (rule 5) — 2026-11-08: built,
+    %%RESULT%%
+    /settings → Account (lazy): **ChangePhone** (CHANGE_PHONE code to the old number, then the new; taken / client_phone / banned numbers get the same screen and no
+    code; swap under the user lock + SessionRotation), **RequestEmailChange / ConfirmEmailChange / RemoveEmail** (`email_change_requests`, sha256 token, 24 h, single use,
+    button-click confirm page `/settings/email/verify/{token}`), **ChangePassword** (current password, 5 tries / 15 min), recent sign-ins (`RecentDevices` from login_events,
+    UserAgentLabel, masked IP) + Sign out all other devices. Forgot password gained **Email me a link** (SendPasswordResetLink → `password_reset_tokens` sha256, 60 min →
+    `/reset-password/{token}` ResetPasswordByEmail). New mandatory `account_security` notice (AccountSecurityChanged). `SessionRotation` shared by logout-others /
+    phone / password: epoch + remember token, SAME session id, live ForceLogout after the response (log out other devices now sends it too).
+    Found by Dusk, not by feature tests: a changed number signed the member out on their OWN device — the new session id reached the browser after the live reload
+    (`php artisan serve` sends the response only after deferred work) → session id kept, signal deferred; the Dusk test now proves the reload stays signed in.
+    New tests: ChangePhoneTest 15, EmailChangeTest 15, PasswordChangeAndEmailResetTest 13, UserAgentLabelTest 9, AccountSettingsTest 10; Dusk Mobile/AccountSettingsTest 3.
   - [ ] P8.2c Hide / delete with reasons (30-day recovery, anonymise job), download my data, M16 story submission + partner confirmation (submitter hidden, not deleted)
 - [ ] P8.3 Notifications, campaigns & journeys (A14)
 - [ ] P8.4 Settings & configuration (A15)
@@ -342,7 +352,7 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
 - P5.1 → P5.3 (A06): stuck orders (`failure_reason` amount_mismatch, logs `billing.amount_mismatch` / `billing.extra_payment` /
   `billing.coupon_over_limit`), raw webhook viewer (`payment_webhook_events`, payer details redacted), refunds, coupon admin,
   monthly GST CSV, reconciliation job; P7.8: the `OrderPaid` listener (broker commission).
-- P5.1 → P8.2b (M14): the invoice email (no email before verification, 2026-10-06); today the invoice is downloaded from
+- P5.1 → P8.2b (M14): ~~the invoice email~~ — goes to a verified address since P8.2b (EmailChangeTest proves it); the invoice is still downloaded from
   `/billing/success/{order}`.
 - P5.1 → P9.3 / P9.4: real Razorpay test-mode keys not yet exercised end to end (fake gateway only); time the live unlock
   with OPcache (1.4–3.0 s locally without it, through `queue:listen`); a member with no profile on SimulateTestPayment untested
@@ -460,7 +470,7 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
   deletes rows by `data->actor_code`.
 - P3.2 → P6.2 (block): on a new block, delete both members' notification rows that name the other (`data->actor_code`) —
   today a "<name> viewed your profile" row written before the block keeps the name.
-- P3.2 → P8.2b (M14): email verification (until then NO notification email goes out — owner decision 2026-10-06), the
+- P3.2 → P8.2b (M14): ~~email verification~~ (done in P8.2b: a verified address gets the notification emails), the
   notification preferences screen (done in P8.2a: mails link to /settings?tab=notifications); → P9.3: an open /notifications
   list in another tab reacting to `.notifications.read` (only the bell count syncs today).
 - P3.2 → P8.3: email digests (likes daily, views weekly, messages after 10 min offline); "daily roll-up" of profile-view

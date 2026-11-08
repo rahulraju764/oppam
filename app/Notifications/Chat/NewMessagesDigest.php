@@ -14,8 +14,8 @@ use Illuminate\Notifications\Messages\MailMessage;
  * The offline chat digest (PRD M07 send flow, M08 `new_message`: "offline digest (10 min)"): one
  * email for everything waiting, sent by SendChatDigests. EMAIL ONLY — the in-app side of a new
  * message is the chat badge and the toast, never a bell row — and only where the router allows
- * email for `new_message` (the member's preference; a VERIFIED address — so nobody until email
- * verification ships in P8.2, owner decision 2026-10-16). Names and counts only: message text never
+ * email for `new_message` (the member's preference; a VERIFIED address — owner decision 2026-10-16;
+ * members verify one in /settings → Account since P8.2b). Names and counts only: message text never
  * leaves the site.
  */
 final class NewMessagesDigest extends MemberNotification

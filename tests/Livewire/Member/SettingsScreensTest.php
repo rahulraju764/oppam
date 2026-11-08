@@ -31,11 +31,11 @@ beforeEach(function (): void {
 
 // ---- The page ------------------------------------------------------------------------------------
 
-it('/settings: guests go to sign in; a member sees the page with its three tabs', function (): void {
+it('/settings: guests go to sign in; a member sees the page with its four tabs', function (): void {
     $this->get(memberUrl('/settings'))->assertRedirect(memberUrl('/login'));
 
     $this->actingAs(groom(), 'web')->get(memberUrl('/settings'))->assertOk()
-        ->assertSee('Settings')->assertSee('Privacy')->assertSee('Notifications')->assertSee('Blocked &amp; ignored', false);
+        ->assertSee('Settings')->assertSee('Privacy')->assertSee('Account')->assertSee('Notifications')->assertSee('Blocked &amp; ignored', false);
 });
 
 it('/settings/blocked still works: it opens the Blocked & ignored tab', function (): void {
@@ -48,7 +48,8 @@ it('tabs: switching changes ?tab=, an unknown tab falls back to Privacy', functi
     Livewire::test(Settings::class)->assertSet('tab', 'privacy')
         ->call('show', 'notifications')->assertSet('tab', 'notifications')
         ->call('show', 'blocked')->assertSet('tab', 'blocked')
-        ->call('show', 'account')->assertSet('tab', 'privacy')            // not built yet (P8.2b): no tab
+        ->call('show', 'account')->assertSet('tab', 'account')            // P8.2b
+        ->call('show', 'close')->assertSet('tab', 'privacy')              // not built yet (P8.2c): no tab
         ->call('show', '<script>')->assertSet('tab', 'privacy');
 
     Livewire::withQueryParams(['tab' => 'evil'])->test(Settings::class)->assertSet('tab', 'privacy');

@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
  *   "log out other devices" can end this session later (EnsureMemberSessionIsValid).
  * - Records a login_events row keyed by a random device cookie, and emails a new-device alert
  *   when the device has never signed in to this account before — only to a VERIFIED email
- *   (email verification arrives with M14; a stranger's address must not get security mail).
+ *   (verified in /settings → Account since P8.2b; a stranger's address must not get security mail).
  * - Bureau logins (P7.1): stamps `broker_staff.last_login_at`, and a code proven on this device
  *   (OTP sign-in, registration / application) makes it a trusted device — Owners and Managers
  *   signing in with a password elsewhere must pass the device OTP (§8.1, EnsureBrokerDeviceTrusted).
@@ -73,7 +73,7 @@ final class SignInMember
             'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
         ])->save();
 
-        if (! $knownDevice && ! $firstSignIn && $user->email !== null && $user->email_verified_at !== null) {
+        if (! $knownDevice && ! $firstSignIn && $user->canReceiveAccountMail()) {
             $user->notify(new NewDeviceSignIn($event));
         }
 

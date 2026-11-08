@@ -6,6 +6,7 @@ namespace App\Livewire\Member\Auth;
 
 use App\Actions\Auth\RequestMemberOtp;
 use App\Actions\Auth\ResetPassword;
+use App\Actions\Auth\SendPasswordResetLink;
 use App\Data\Content\SeoData;
 use App\Enums\OtpPurpose;
 use App\Exceptions\Auth\LoginFailed;
@@ -21,8 +22,9 @@ use Livewire\Component;
 
 /**
  * /forgot-password (template forgot-password.php, PRD §8.2 method 3): mobile → code → new
- * password. Step 2 is shown whether or not the number is registered (R-M01-4). The email-link
- * option arrives with email verification (M14); an unverified address can't receive resets.
+ * password. Step 2 is shown whether or not the number is registered (R-M01-4). Or "email me a
+ * link" (P8.2b, owner 2026-11-08): SendPasswordResetLink mails only a VERIFIED account address,
+ * and the screen says the same thing whatever was typed.
  */
 final class ForgotPassword extends Component
 {
@@ -40,6 +42,12 @@ final class ForgotPassword extends Component
 
     public int $resendIn = 0;
 
+    public bool $byEmail = false;
+
+    public string $email = '';
+
+    public bool $emailSent = false;
+
     public function sendCode(RequestMemberOtp $request): void
     {
         $this->validatePhone();
@@ -56,6 +64,34 @@ final class ForgotPassword extends Component
         $this->codeSent = true;
         $this->resendIn = (int) config('oppam.auth.otp_resend_seconds');
         $this->dispatch('otp-resent');
+    }
+
+    public function useEmail(): void
+    {
+        $this->reset('codeSent', 'code', 'password', 'password_confirmation', 'emailSent');
+        $this->resetErrorBag();
+        $this->byEmail = true;
+    }
+
+    public function usePhone(): void
+    {
+        $this->reset('byEmail', 'email', 'emailSent');
+        $this->resetErrorBag();
+    }
+
+    public function sendEmailLink(SendPasswordResetLink $send): void
+    {
+        $this->validate(['email' => ['required', 'string', 'email:rfc', 'max:255']]);
+
+        try {
+            $send->handle($this->email, (string) request()->ip());
+        } catch (LoginFailed $throttled) {
+            $this->addError('email', $throttled->getMessage());
+
+            return;
+        }
+
+        $this->emailSent = true;
     }
 
     public function changeNumber(): void
@@ -94,6 +130,7 @@ final class ForgotPassword extends Component
         return view('livewire.member.auth.forgot-password', [
             'countryOptions' => PhoneNumber::countryOptions(),
             'maskedPhone' => $this->codeSent ? PhoneNumber::tryFromParts($this->countryCode, $this->mobile)?->masked() : null,
+            'resetMinutes' => (int) config('oppam.auth.reset_link_minutes'),
         ])->layout('layouts::public', ['seo' => SeoData::private('Forgot password | Oppam Matrimony')]);
     }
 

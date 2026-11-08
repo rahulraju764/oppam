@@ -13,7 +13,8 @@ use Illuminate\Notifications\Messages\MailMessage;
 /**
  * A payment went through and the plan is active (M08 `payment_success`, mandatory — F04 "payment_success
  * notification + invoice email"). In-app + live, SMS on its DLT template, and email under the M08
- * rules (only to a verified address — decisions 2026-10-06, so not yet). The invoice is downloaded
+ * rules (only to a verified address — decisions 2026-10-06; members verify one in /settings → Account
+ * since P8.2b). The invoice is downloaded
  * from the success page; the email links there rather than attaching the PDF.
  */
 final class PaymentSucceeded extends MemberNotification
