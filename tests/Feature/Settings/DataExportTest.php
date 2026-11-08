@@ -74,7 +74,7 @@ it('R-M14 export: a zip on the private disk with data.json + photos, READY for 2
         ->and($data['account']['mobile'])->toBe($bride->phone)
         ->and($data['profile']['code'])->toBe($bride->profile->code)
         ->and($data['profile']['favourites'][0])->toMatchArray(['profile' => $groom->profile->code, 'note' => 'Met his family'])
-        ->and($data['profile']['likes_received'][0]['profile'])->toBe($groom->profile->code)
+        ->and($data['profile']['likes_received'])->toMatchArray(['count' => 1])   // Free plan: count only (rule 5)
         ->and($data['profile']['interests_sent'][0]['profile'])->toBe($groom->profile->code)
         // no internal ids, no secrets
         ->and($json)->not->toContain((string) $bride->id)->not->toContain((string) $bride->profile->id)
