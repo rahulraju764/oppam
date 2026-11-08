@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Domain\Auth\ClosedAccountLookup;
 use App\Enums\OtpPurpose;
 use App\Exceptions\Auth\OtpThrottled;
 use App\Models\User;
@@ -19,7 +20,10 @@ use InvalidArgumentException;
  */
 final class RequestMemberOtp
 {
-    public function __construct(private readonly SendOtp $sendOtp) {}
+    public function __construct(
+        private readonly SendOtp $sendOtp,
+        private readonly ClosedAccountLookup $closedAccounts,
+    ) {}
 
     /** @throws OtpThrottled */
     public function handle(PhoneNumber $phone, OtpPurpose $purpose, string $ip): void
@@ -29,6 +33,11 @@ final class RequestMemberOtp
         }
 
         $user = User::query()->where('phone', $phone->e164())->whereNotNull('phone_verified_at')->first();
+
+        // M14 (P8.2c): a member who closed their account signs in with a code to restore it.
+        if ($user === null && $purpose === OtpPurpose::Login) {
+            $user = $this->closedAccounts->forPhone($phone);
+        }
 
         $this->sendOtp->handle($phone, $purpose, $ip, $user);
     }

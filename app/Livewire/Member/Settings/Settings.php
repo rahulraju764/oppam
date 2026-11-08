@@ -12,7 +12,6 @@ use Livewire\Component;
 /**
  * /settings (PRD M14): the member's settings in tabs, switched without a reload (`?tab=`). Each tab
  * is its own lazy component that loads and saves only the member's own data through its Action.
- * Account arrived with P8.2b; Hide / delete (P8.2c) is added when it is built — no empty tabs.
  */
 final class Settings extends Component
 {
@@ -22,6 +21,7 @@ final class Settings extends Component
         'privacy' => 'Privacy',
         'notifications' => 'Notifications',
         'blocked' => 'Blocked & ignored',
+        'manage' => 'Hide / delete',
     ];
 
     #[Url(except: 'privacy')]

@@ -30,6 +30,9 @@ final class Connections
 
     public const CONNECTED = 'connected';
 
+    /** Display only (result cards, M04): no interest yet, and the member's contact filter keeps the viewer out (ContactFilter). */
+    public const FILTERED = 'filtered';
+
     /** @var array<string, array<string, true>> profile id => connected profile ids */
     private array $connected = [];
 

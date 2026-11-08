@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Domain\Auth\ClosedAccountLookup;
 use App\Enums\LoginMethod;
 use App\Enums\OtpPurpose;
+use App\Exceptions\Auth\AccountClosed;
 use App\Exceptions\Auth\LoginFailed;
 use App\Exceptions\Auth\OtpInvalid;
 use App\Models\User;
@@ -24,11 +26,13 @@ final class LoginWithOtp
         private readonly RateLimiter $limiter,
         private readonly VerifyOtp $verifyOtp,
         private readonly SignInMember $signIn,
+        private readonly ClosedAccountLookup $closedAccounts,
     ) {}
 
     /**
      * @throws OtpInvalid
      * @throws LoginFailed
+     * @throws AccountClosed the right code for an account the member closed (restore step)
      */
     public function handle(PhoneNumber $phone, string $code, bool $remember, Request $request): User
     {
@@ -40,8 +44,14 @@ final class LoginWithOtp
 
         $this->verifyOtp->handle($phone, OtpPurpose::Login, $code);
 
-        $user = User::query()->where('phone', $phone->e164())->whereNotNull('phone_verified_at')->first()
-            ?? throw OtpInvalid::wrongOrExpired();
+        $user = User::query()->where('phone', $phone->e164())->whereNotNull('phone_verified_at')->first();
+
+        if ($user === null) {
+            // M14 (P8.2c): the code proved the number — an account its owner closed may be restored.
+            $closed = $this->closedAccounts->forPhone($phone);
+
+            throw $closed !== null ? new AccountClosed($closed) : OtpInvalid::wrongOrExpired();
+        }
 
         if (! $user->isActive()) {
             throw LoginFailed::accountBlocked();

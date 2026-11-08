@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Member\ChatImageController;
 use App\Http\Controllers\Member\CreditNoteDownloadController;
+use App\Http\Controllers\Member\DownloadDataExportController;
 use App\Http\Controllers\Member\HoroscopeController;
 use App\Http\Controllers\Member\ImpersonationController;
 use App\Http\Controllers\Member\InvoiceDownloadController;
@@ -16,6 +17,7 @@ use App\Livewire\Member\Auth\ForgotPassword;
 use App\Livewire\Member\Auth\Login;
 use App\Livewire\Member\Auth\Register;
 use App\Livewire\Member\Auth\ResetPasswordEmail;
+use App\Livewire\Member\Auth\RestoreAccount;
 use App\Livewire\Member\Auth\VerifyOtp;
 use App\Livewire\Member\Billing\Checkout;
 use App\Livewire\Member\Billing\CheckoutSuccess;
@@ -94,6 +96,8 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/verify-otp', VerifyOtp::class)->name('register.verify');
     Route::get('/login', Login::class)->name('login');
     Route::get('/forgot-password', ForgotPassword::class)->name('password.forgot');
+    // P8.2c (M14): after the right password / code for an account the member closed, "restore it?".
+    Route::get('/account/restore', RestoreAccount::class)->name('member.account.restore');
     // P8.2b: the email-link reset (PRD §8.2 method 3); the token is checked when the form is sent.
     Route::get('/reset-password/{token}', ResetPasswordEmail::class)
         ->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:30,1')->name('password.reset.email');
@@ -154,9 +158,11 @@ Route::middleware(['auth', 'verified.phone', 'legal.accepted'])->group(function 
         Route::get('/billing/credit-notes/{number}', CreditNoteDownloadController::class)
             ->where('number', 'CN-[0-9]{4}-[0-9]{6}')->middleware('throttle:30,1')->name('member.billing.credit-note');
 
-        // Settings (M14): privacy, notifications, blocked & ignored — tabs in one page (?tab=).
+        // Settings (M14): privacy, notifications, blocked & ignored, hide/delete — tabs in one page (?tab=).
         Route::get('/settings', MemberSettings::class)->name('member.settings');
         Route::redirect('/settings/blocked', '/settings?tab=blocked')->name('member.settings.blocked');
+        Route::get('/settings/data-export/{code}', DownloadDataExportController::class)
+            ->where('code', 'DEX[A-Z0-9]{10}')->middleware('throttle:30,1')->name('member.settings.data-export.download');
 
         // Safety & support (M09, A10): in-app help and own requests only.
         Route::get('/help', Help::class)->name('member.help');

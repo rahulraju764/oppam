@@ -31,11 +31,11 @@ beforeEach(function (): void {
 
 // ---- The page ------------------------------------------------------------------------------------
 
-it('/settings: guests go to sign in; a member sees the page with its four tabs', function (): void {
+it('/settings: guests go to sign in; a member sees the page with its tabs', function (): void {
     $this->get(memberUrl('/settings'))->assertRedirect(memberUrl('/login'));
 
     $this->actingAs(groom(), 'web')->get(memberUrl('/settings'))->assertOk()
-        ->assertSee('Settings')->assertSee('Privacy')->assertSee('Account')->assertSee('Notifications')->assertSee('Blocked &amp; ignored', false);
+        ->assertSee('Settings')->assertSee('Privacy')->assertSee('Account')->assertSee('Notifications')->assertSee('Blocked &amp; ignored', false)->assertSee('Hide / delete');
 });
 
 it('/settings/blocked still works: it opens the Blocked & ignored tab', function (): void {

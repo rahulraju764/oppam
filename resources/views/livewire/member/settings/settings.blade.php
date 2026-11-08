@@ -39,6 +39,9 @@
                     @case('blocked')
                         <livewire:member.settings.blocked-profiles lazy wire:key="settings-blocked" />
                         @break
+                    @case('manage')
+                        <livewire:member.settings.manage-profile-settings lazy wire:key="settings-manage" />
+                        @break
                     @default
                         <livewire:member.settings.privacy-settings lazy wire:key="settings-privacy" />
                 @endswitch

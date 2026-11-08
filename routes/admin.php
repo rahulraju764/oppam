@@ -44,6 +44,12 @@ use App\Livewire\Admin\Chat\FlagReview;
 use App\Livewire\Admin\Chat\Overview as ChatOverview;
 use App\Livewire\Admin\Chat\Rules as ChatRules;
 use App\Livewire\Admin\Chat\Signals as ChatSignals;
+use App\Livewire\Admin\Comms\Announcements as CommsAnnouncements;
+use App\Livewire\Admin\Comms\CampaignBuilder as CommsCampaignBuilder;
+use App\Livewire\Admin\Comms\Campaigns as CommsCampaigns;
+use App\Livewire\Admin\Comms\DeliveryLog as CommsDeliveryLog;
+use App\Livewire\Admin\Comms\Journeys as CommsJourneys;
+use App\Livewire\Admin\Comms\Templates as CommsTemplates;
 use App\Livewire\Admin\Contact\Inbox as ContactInbox;
 use App\Livewire\Admin\Content\ContentIndex;
 use App\Livewire\Admin\Dashboard;
@@ -60,6 +66,11 @@ use App\Livewire\Admin\Roles\Editor as RolesEditor;
 use App\Livewire\Admin\Safety\CaseQueue;
 use App\Livewire\Admin\Safety\CaseReview;
 use App\Livewire\Admin\Sessions\Index as SessionsIndex;
+use App\Livewire\Admin\Settings\BusinessRules as SettingsBusinessRules;
+use App\Livewire\Admin\Settings\EntitlementsMatrix as SettingsEntitlementsMatrix;
+use App\Livewire\Admin\Settings\FeatureFlags as SettingsFeatureFlags;
+use App\Livewire\Admin\Settings\Integrations as SettingsIntegrations;
+use App\Livewire\Admin\Settings\SiteSettings as SettingsSiteSettings;
 use App\Livewire\Admin\Staff\Index as StaffIndex;
 use App\Livewire\Admin\Support\CannedResponses;
 use App\Livewire\Admin\Support\TicketQueue;
@@ -224,6 +235,25 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/{grant}', BreakGlassViewer::class)->where('grant', '[0-9A-Za-z]{26}')->name('break-glass.read');
         Route::get('/{grant}/media/{message}', BreakGlassImageController::class)
             ->where(['grant' => '[0-9A-Za-z]{26}', 'message' => '[0-9A-Za-z]{26}'])->name('break-glass.image');
+    });
+
+    // Communications & Campaigns (A14, P8.3).
+    Route::prefix('comms')->name('comms.')->group(function (): void {
+        Route::get('/templates', CommsTemplates::class)->middleware('can:templates.edit')->name('templates');
+        Route::get('/announcements', CommsAnnouncements::class)->middleware('can:campaigns.view')->name('announcements');
+        Route::get('/campaigns', CommsCampaigns::class)->middleware('can:campaigns.view')->name('campaigns.index');
+        Route::get('/campaigns/create', CommsCampaignBuilder::class)->middleware('can:campaigns.send')->name('campaigns.builder');
+        Route::get('/journeys', CommsJourneys::class)->middleware('can:campaigns.view')->name('journeys');
+        Route::get('/delivery-log', CommsDeliveryLog::class)->middleware('can:campaigns.view')->name('delivery-log');
+    });
+
+    // Settings & Configuration (A15, P8.4).
+    Route::middleware('can:settings.view')->prefix('settings')->name('settings.')->group(function (): void {
+        Route::get('/site', SettingsSiteSettings::class)->name('site');
+        Route::get('/rules', SettingsBusinessRules::class)->name('rules');
+        Route::get('/features', SettingsFeatureFlags::class)->name('features');
+        Route::get('/entitlements', SettingsEntitlementsMatrix::class)->name('entitlements');
+        Route::get('/integrations', SettingsIntegrations::class)->name('integrations');
     });
 });
 

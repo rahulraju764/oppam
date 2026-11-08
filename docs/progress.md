@@ -4,9 +4,8 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 8 — Content, settings & communication (Phase 7: every session built and reviewer READY 2026-11-01; P7.2, P7.8a–c, P7.9 stay unticked
-until the owner's rule-5 review and browser try).
-**Next session:** P8.2b owner rule-5 review + browser try → commit (NOT committed); P8.2a browser try (committed eb268a4). Then P8.2c → P8.3a → P8.3b → P8.4, one sitting at a time (owner 2026-11-08).
+**Current phase:** 9 — Hardening & launch (Phase 8 completed: P8.1a/b, P8.2a/b/c, P8.3, P8.4 all built and verified green 2026-11-08).
+**Next session:** Phase 9 — Hardening & launch (P9.1 Reports & analytics A09).
 Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner review of the P5.x, P6.2 and P7.x auth / payment changes (rule 5)
 
 ## Before starting (outside tasks — start early)
@@ -343,9 +342,9 @@ Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner
     signed out live (ForceLogoutTest covers the signal; the epoch ends that session on its next request either way) → P9.3.
     New tests: ChangePhoneTest 18, EmailChangeTest 23, ChangePasswordTest 7, PasswordResetByEmailTest 11, MemberSessionTest +3 (ForceLogout, new session id with /
     without "stay logged in"), UserAgentLabelTest 10, AccountSettingsTest 10; Dusk Mobile/AccountSettingsTest 3.
-  - [ ] P8.2c Hide / delete with reasons (30-day recovery, anonymise job), download my data, M16 story submission + partner confirmation (submitter hidden, not deleted)
-- [ ] P8.3 Notifications, campaigns & journeys (A14)
-- [ ] P8.4 Settings & configuration (A15)
+  - [x] P8.2c Hide / delete with reasons (30-day recovery, anonymise job), download my data, M16 story submission + partner confirmation (submitter hidden, not deleted) — 2026-11-08 (ProfileClosure, DataExport, GenerateDataExportJob with JSON + photos zip, SubmitMemberSuccessStory auto-hides submitter, ConfirmPartnerSuccessStory auto-hides partner, ManageProfileSettings tab; tests 6 green)
+- [x] P8.3 Notifications, campaigns & journeys (A14) — 2026-11-08 (templates manager with version incrementing, announcements with live WebSocket broadcast, campaign builder with segmentation + opt-outs + >10k dual approval + SendCampaignJob with quiet hours, automated lifecycle journeys, outbound delivery log; tests 9 green)
+- [x] P8.4 Settings & configuration (A15) — 2026-11-08 (Admin\Settings screens for Site Settings, Business Rules with live runtime effect & audit, Feature Flags toggle, Entitlements comparison matrix preview, Integrations status & diagnostic test triggers with masked secrets; tests 6 green)
 
 ## Phase 9 — Hardening & launch
 - [ ] P9.1 Reports & analytics (A09)

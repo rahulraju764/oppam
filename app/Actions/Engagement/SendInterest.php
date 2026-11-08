@@ -10,7 +10,7 @@ use App\Domain\Engagement\EngagementRestrictions;
 use App\Domain\Engagement\InterestMessages;
 use App\Domain\Engagement\InterestSignals;
 use App\Domain\Matching\DailyBatch;
-use App\Domain\Matching\PreferenceMatcher;
+use App\Domain\Profile\ContactFilter;
 use App\Domain\Profile\ProfileVisibility;
 use App\Enums\Entitlement;
 use App\Enums\InterestStatus;
@@ -62,7 +62,7 @@ final class SendInterest
 
     public function __construct(
         private readonly ProfileVisibility $visibility,
-        private readonly PreferenceMatcher $matcher,
+        private readonly ContactFilter $contactFilter,
         private readonly EntitlementService $entitlements,
         private readonly InterestMessages $messages,
         private readonly Connections $connections,
@@ -131,7 +131,7 @@ final class SendInterest
             return new InterestResult(Connections::CONNECTED, changed: true, connected: true);
         }
 
-        if (($target->privacySetting->contact_filter_enabled ?? false) && ! $this->matcher->meetsAll($own, $target->partnerPreference)) {
+        if ($this->contactFilter->excludes($own, $target)) {
             throw EngagementRefused::contactFilter();
         }
 

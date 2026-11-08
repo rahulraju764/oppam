@@ -60,6 +60,13 @@ return [
         ['admin.content.communities', 'Community pages', 'fa-users', 'content.view'],
         ['admin.contact.index', 'Contact inbox', 'fa-envelope-o', 'support.view'],
     ],
+    'Communication' => [
+        ['admin.comms.campaigns.index', 'Campaigns', 'fa-paper-plane-o', 'campaigns.view'],
+        ['admin.comms.announcements', 'Announcements', 'fa-bullhorn', 'campaigns.view'],
+        ['admin.comms.templates', 'Templates', 'fa-file-code-o', 'templates.edit'],
+        ['admin.comms.journeys', 'Automated journeys', 'fa-road', 'campaigns.view'],
+        ['admin.comms.delivery-log', 'Delivery log', 'fa-envelope-open-o', 'campaigns.view'],
+    ],
     'Billing' => [
         ['admin.billing.orders', 'Orders', 'fa-file-text-o', 'billing.view'],
         ['admin.billing.stuck', 'Stuck orders', 'fa-exclamation-triangle', 'billing.view'],
@@ -78,6 +85,11 @@ return [
         ['pulse', 'Pulse', 'fa-heartbeat', 'system.pulse'],
     ],
     'Settings' => [
+        ['admin.settings.site', 'Site settings', 'fa-globe', 'settings.view'],
+        ['admin.settings.rules', 'Business rules', 'fa-sliders', 'settings.view'],
+        ['admin.settings.features', 'Feature flags', 'fa-toggle-on', 'settings.view'],
+        ['admin.settings.entitlements', 'Entitlements matrix', 'fa-th-list', 'settings.view'],
+        ['admin.settings.integrations', 'Integrations', 'fa-plug', 'settings.view'],
         ['admin.staff.index', 'Admin users', 'fa-user-secret', 'staff.view'],
         ['admin.roles.edit', 'Roles & permissions', 'fa-key', 'roles.view'],
         ['admin.sessions.index', 'Sessions', 'fa-desktop', null],

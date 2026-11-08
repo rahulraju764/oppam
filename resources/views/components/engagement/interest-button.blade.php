@@ -10,13 +10,16 @@
     the live `.interest.changed` from the other member — so both sides update without a reload
     (M06 acceptance). It is display only: every rule is enforced by the Actions.
 
-    code   the profile code        state  Connections::NONE | SENT | RECEIVED | CONNECTED
+      filtered   "Send Interest" switched off — their contact filter keeps you out (M04, R-M06-3)
+
+    code   the profile code        state  Connections::NONE | SENT | RECEIVED | CONNECTED | FILTERED
 --}}
 @props(['code', 'state' => 'none'])
 
 @php
     // Explicit allow-list: never trust a state string into the markup.
-    $state = in_array($state, ['none', 'sent', 'received', 'connected'], true) ? $state : 'none';
+    $state = in_array($state, ['none', 'sent', 'received', 'connected', 'filtered'], true) ? $state : 'none';
+    $filteredHint = 'interest-filtered-'.$code;
     $chatUrl = \Illuminate\Support\Facades\Route::has('member.messages') ? route('member.messages', ['with' => $code]) : null;
 @endphp
 
@@ -27,6 +30,13 @@
     <button type="button" class="send-int interest-btn" x-show="state === 'none'" x-on:click="compose()" @if ($state !== 'none') x-cloak @endif>
         <i class="fa fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}
     </button>
+
+    {{-- M04 / R-M06-3: listed, but this member's contact filter keeps the viewer out (the server refuses too). --}}
+    <button type="button" class="send-int interest-btn" x-show="state === 'filtered'" disabled aria-describedby="{{ $filteredHint }}"
+            title="{{ __('This member accepts interests only from profiles matching their preferences') }}" @if ($state !== 'filtered') x-cloak @endif>
+        <i class="fa fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}
+    </button>
+    <span class="visually-hidden" id="{{ $filteredHint }}" x-show="state === 'filtered'" @if ($state !== 'filtered') x-cloak @endif>{{ __('This member accepts interests only from profiles matching their preferences') }}</span>
 
     <span class="chip chip--warning interest-chip" x-show="state === 'sent'" @if ($state !== 'sent') x-cloak @endif>
         <i class="fa fa-check" aria-hidden="true"></i> {{ __('Interest sent') }}

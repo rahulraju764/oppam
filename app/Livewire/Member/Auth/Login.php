@@ -8,11 +8,14 @@ use App\Actions\Auth\LoginWithOtp;
 use App\Actions\Auth\LoginWithPassword;
 use App\Actions\Auth\RequestMemberOtp;
 use App\Data\Content\SeoData;
+use App\Enums\LoginMethod;
 use App\Enums\OtpPurpose;
+use App\Exceptions\Auth\AccountClosed;
 use App\Exceptions\Auth\LoginFailed;
 use App\Exceptions\Auth\OtpInvalid;
 use App\Exceptions\Auth\OtpThrottled;
 use App\Rules\ValidMobileNumber;
+use App\Support\Auth\PendingAccountRestore;
 use App\Support\Navigation\MemberLanding;
 use App\ValueObjects\PhoneNumber;
 use Illuminate\Contracts\View\View;
@@ -60,7 +63,7 @@ final class Login extends Component
         $this->resetErrorBag();
     }
 
-    public function loginWithPassword(LoginWithPassword $login, MemberLanding $landing): mixed
+    public function loginWithPassword(LoginWithPassword $login, MemberLanding $landing, PendingAccountRestore $pending): mixed
     {
         $this->validate([
             'loginId' => ['required', 'string', 'max:255'],
@@ -69,6 +72,8 @@ final class Login extends Component
 
         try {
             $user = $login->handle($this->loginId, $this->password, $this->remember, request());
+        } catch (AccountClosed $closed) {
+            return $this->offerRestore($closed, LoginMethod::Password, $pending);
         } catch (LoginFailed $failure) {
             $this->reset('password');
             $this->addError('loginId', $failure->getMessage());
@@ -97,7 +102,7 @@ final class Login extends Component
         $this->dispatch('otp-resent');
     }
 
-    public function loginWithOtp(LoginWithOtp $login, MemberLanding $landing): mixed
+    public function loginWithOtp(LoginWithOtp $login, MemberLanding $landing, PendingAccountRestore $pending): mixed
     {
         $this->validatePhone();
         $this->validate(['code' => ['required', 'string', 'regex:/^\d{6}$/']], [
@@ -107,6 +112,8 @@ final class Login extends Component
 
         try {
             $user = $login->handle(PhoneNumber::fromParts($this->countryCode, $this->mobile), $this->code, $this->remember, request());
+        } catch (AccountClosed $closed) {
+            return $this->offerRestore($closed, LoginMethod::Otp, $pending);
         } catch (OtpInvalid|LoginFailed $failure) {
             $this->reset('code');
             $this->addError('code', $failure->getMessage());
@@ -115,6 +122,15 @@ final class Login extends Component
         }
 
         return $this->redirect(session()->pull('url.intended', $landing->url($user)), navigate: false);
+    }
+
+    /** M14 (P8.2c): the member proved a closed account is theirs — offer to restore it. */
+    private function offerRestore(AccountClosed $closed, LoginMethod $method, PendingAccountRestore $pending): mixed
+    {
+        $pending->remember($closed->user, $method, $this->remember);
+        $this->reset('password', 'code');
+
+        return $this->redirectRoute('member.account.restore', navigate: false);
     }
 
     public function render(): View

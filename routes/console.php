@@ -19,6 +19,7 @@ use App\Jobs\Engagement\ExpireInterests;
 use App\Jobs\Matching\GenerateDailyMatches;
 use App\Jobs\Members\PurgeDeletedMembers;
 use App\Jobs\Notifications\PruneOldNotifications;
+use App\Jobs\Profile\ExpireDataExports;
 use App\Jobs\Search\SendSavedSearchAlerts;
 use App\Jobs\Support\PruneContactSubmissions;
 use App\Jobs\Verification\PurgeExpiredVerificationDocuments;
@@ -33,6 +34,8 @@ Artisan::command('inspire', function (): void {
 // A03 two-stage deletion: anonymise members deleted longer ago than members.purge_after_days.
 // 21:30 UTC = 03:00 IST, the quietest hour.
 Schedule::job(new PurgeDeletedMembers)->dailyAt('21:30')->onOneServer()->withoutOverlapping();
+// M14 (P8.2c): "download my data" zips are deleted 24 h after they are ready.
+Schedule::job(new ExpireDataExports)->hourly()->onOneServer()->withoutOverlapping();
 
 // F06: Daily matches generated at 05:00 IST for all active members (PRD §12 F06).
 Schedule::job(new GenerateDailyMatches)->timezone('Asia/Kolkata')->dailyAt('05:00')->onOneServer()->withoutOverlapping();

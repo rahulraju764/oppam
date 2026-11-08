@@ -205,6 +205,49 @@ it('R-M06-3 / R-M14 contact filter: switched on, a member outside the partner pr
         ->and(Interest::query()->count())->toBe(0);
 });
 
+it('R-M14 horoscope: "on request" refuses until the member approves that viewer\'s request (P8.2c gap)', function (): void {
+    $bride = bride();
+    $groom = groom();
+
+    psSave($bride, ['horoscopeVisibility' => HoroscopeVisibility::OnRequest]);
+    expect(app(HoroscopeAccess::class)->canView($bride->profile->refresh(), $groom))->toBeFalse();
+
+    // The request + approval themselves are proved in AccessRequestsTest (they need an uploaded file).
+    App\Models\AccessRequest::query()->forceCreate([
+        'requester_profile_id' => $groom->profile->id, 'owner_profile_id' => $bride->profile->id,
+        'type' => App\Enums\AccessRequestType::Horoscope, 'status' => App\Enums\AccessRequestStatus::Approved, 'responded_at' => now(),
+    ]);
+    app(App\Domain\Engagement\Connections::class)->forget();
+
+    expect(app(HoroscopeAccess::class)->canView($bride->profile->refresh(), $groom))->toBeTrue()
+        ->and(app(HoroscopeAccess::class)->canView($bride->profile, groom('+919800000088')))->toBeFalse();   // only that viewer
+});
+
+it('R-M14 / M04 contact filter in search: the member is still listed, with "Send Interest" switched off (P8.2c)', function (): void {
+    $groom = groom();
+    $bride = bride();
+    $preference = PartnerPreference::query()->where('profile_id', $bride->profile->id)->first() ?? new PartnerPreference;
+    $preference->forceFill(['profile_id' => $bride->profile->id, 'age_min' => 60, 'age_max' => 70])->save();
+    $card = function () use ($groom, $bride): ?App\Data\Profile\ProfileCardData {
+        $profiles = app(ProfileSearch::class)->query($groom->profile, SearchCriteria::fromInput([]))->with('privacySetting')->get();
+
+        return collect(app(App\Domain\Profile\ProfileCards::class)->forViewers($profiles, $groom->refresh()))
+            ->firstWhere('code', $bride->profile->code);
+    };
+    expect($card()?->interest)->toBe(App\Domain\Engagement\Connections::NONE);
+
+    psSave($bride, ['contactFilter' => true]);
+
+    expect($card()?->interest)->toBe(App\Domain\Engagement\Connections::FILTERED);   // listed, button off
+    $this->actingAs($groom, 'web');
+    $html = Illuminate\Support\Facades\Blade::render('<x-engagement.interest-button code="'.$bride->profile->code.'" state="filtered" />');
+    expect($html)->toContain('disabled')->toContain('accepts interests only from profiles matching their preferences');
+
+    // A member who does match her preferences still gets the normal button.
+    $preference->forceFill(['age_min' => 18, 'age_max' => 99])->save();
+    expect($card()?->interest)->toBe(App\Domain\Engagement\Connections::NONE);
+});
+
 // ---- The Action's own rules -----------------------------------------------------------------------
 
 it('creates the row with every choice when the member has none yet (the defaults go in before the lock)', function (): void {

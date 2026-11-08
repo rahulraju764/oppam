@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions\Auth;
 
+use App\Domain\Auth\ClosedAccountLookup;
 use App\Enums\LoginMethod;
+use App\Exceptions\Auth\AccountClosed;
 use App\Exceptions\Auth\LoginFailed;
 use App\Models\User;
 use App\Queries\Auth\FindUserByLoginId;
@@ -30,9 +32,13 @@ final class LoginWithPassword
         private readonly RateLimiter $limiter,
         private readonly FindUserByLoginId $identifiers,
         private readonly SignInMember $signIn,
+        private readonly ClosedAccountLookup $closedAccounts,
     ) {}
 
-    /** @throws LoginFailed */
+    /**
+     * @throws LoginFailed
+     * @throws AccountClosed the right password for an account the member closed (restore step)
+     */
     public function handle(string $identifier, #[SensitiveParameter] string $password, bool $remember, Request $request): User
     {
         $idKey = 'login:id:'.$this->identifiers->throttleKey($identifier);
@@ -50,7 +56,17 @@ final class LoginWithPassword
         }
 
         $user = $this->identifiers->handle($identifier);
-        $matches = Hash::check($password, $user !== null ? $user->password : (self::$dummyHash ??= Hash::make(Str::random(40))));
+        // M14 (P8.2c): an account the member closed themselves is checked like any other — one
+        // Hash::check either way — and only the right password reveals that it can be restored.
+        $closed = $user === null ? $this->closedAccounts->forLoginId($identifier) : null;
+        $candidate = $user ?? $closed;
+        $matches = Hash::check($password, $candidate !== null ? $candidate->password : (self::$dummyHash ??= Hash::make(Str::random(40))));
+
+        if ($closed !== null && $matches) {
+            $this->limiter->clear($idKey);
+
+            throw new AccountClosed($closed);
+        }
 
         if ($user === null || ! $matches || ! $user->hasVerifiedPhone()) {
             throw LoginFailed::invalidCredentials();

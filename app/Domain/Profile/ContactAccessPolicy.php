@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Profile;
 
 use App\Domain\Engagement\Connections;
-use App\Domain\Matching\PreferenceMatcher;
 use App\Enums\ContactAccess;
 use App\Enums\Entitlement;
 use App\Enums\PhoneVisibility;
@@ -25,7 +24,7 @@ final class ContactAccessPolicy
 {
     public function __construct(
         private readonly EntitlementService $entitlements,
-        private readonly PreferenceMatcher $matcher,
+        private readonly ContactFilter $contactFilter,
         private readonly Connections $connections,
     ) {}
 
@@ -43,7 +42,7 @@ final class ContactAccessPolicy
             return $visibilityBlock;
         }
 
-        if (($privacy->contact_filter_enabled ?? false) && ! $this->matcher->meetsAll($viewer, $target->partnerPreference)) {
+        if ($this->contactFilter->excludes($viewer, $target)) {
             return ContactAccess::FilteredOut;
         }
 

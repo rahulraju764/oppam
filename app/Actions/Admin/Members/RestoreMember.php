@@ -11,6 +11,7 @@ use App\Enums\SettingKey;
 use App\Enums\UserStatus;
 use App\Exceptions\Admin\MemberStateConflict;
 use App\Models\AdminUser;
+use App\Models\ProfileClosure;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Support\Facades\Settings;
@@ -75,6 +76,10 @@ final class RestoreMember
 
                 $profile->save();
             }
+
+            // P8.2c: a member-closed account restored by support is no longer "closed" — a later
+            // admin delete can never be self-restored through the member's old closure.
+            ProfileClosure::query()->where('user_id', $member->id)->whereNull('restored_at')->update(['restored_at' => now()]);
 
             $this->audit->record('members.restored', $member, ['status' => UserStatus::Deleted->value],
                 ['status' => $member->status->value, 'profile_status' => $profile?->status->value],

@@ -7,18 +7,22 @@ namespace App\Actions\Admin\Members;
 use App\Actions\Profile\EraseProfileData;
 use App\Enums\SettingKey;
 use App\Enums\UserRole;
+use App\Jobs\Profile\GenerateDataExportJob;
 use App\Models\ContactSubmission;
+use App\Models\DataExport;
 use App\Models\LegalAcceptance;
 use App\Models\LoginEvent;
 use App\Models\NotificationPreference;
 use App\Models\OtpChallenge;
 use App\Models\Profile;
+use App\Models\ProfileClosure;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Support\Facades\Settings;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -56,6 +60,9 @@ final class PurgeDeletedMember
         if ($profile !== null) {
             $this->eraser->files($profile);
         }
+        // P8.2c: any "download my data" zip still on the private disk.
+        DataExport::query()->where('user_id', $member->id)->whereNotNull('file_path')->pluck('file_path')
+            ->each(fn (string $path): bool => Storage::disk(GenerateDataExportJob::disk())->delete($path));
 
         return DB::transaction(function () use ($member, $profile): bool {
             $member = User::withTrashed()->whereKey($member->id)->lockForUpdate()->firstOrFail();
@@ -83,6 +90,9 @@ final class PurgeDeletedMember
             // browser. Which legal version the account agreed to stays (it names no one).
             ContactSubmission::query()->where('user_id', $member->id)->delete();
             LegalAcceptance::query()->where('user_id', $member->id)->update(['ip_address' => null, 'user_agent' => null]);
+            // P8.2c (M14): the member's own words on why they closed; the reason itself stays.
+            ProfileClosure::query()->where('user_id', $member->id)->update(['feedback' => null]);
+            DataExport::query()->where('user_id', $member->id)->delete();
 
             $member->forceFill([
                 // Unique, never a real number, frees the real one for a new registration.

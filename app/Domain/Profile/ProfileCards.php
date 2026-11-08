@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Queries\Engagement\EngagementLists;
 use App\Services\Masters\Masters;
 use App\ValueObjects\HeightCm;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 /**
  * A profile as a list card for one viewer (x-profile.member-card / .tile / .row): masked name,
@@ -31,6 +32,7 @@ final class ProfileCards
         private readonly EngagementLists $engagement,
         private readonly FavoritePrivacy $favoritePrivacy,
         private readonly Connections $connections,
+        private readonly ContactFilter $contactFilter,
     ) {}
 
     public function forViewer(Profile $profile, ?User $viewer): ProfileCardData
@@ -74,6 +76,19 @@ final class ProfileCards
             : null;
         // R-M06-6: an admin support session never learns whom the member bookmarked — no star at all.
         $showFavorites = $state !== null && ! $this->favoritePrivacy->hiddenInThisSession();
+        // M04 / R-M06-3: a member whose contact filter keeps the viewer out is still listed, with
+        // "Send Interest" switched off (ContactFilter — the rule SendInterest enforces). Only the
+        // profiles with the filter on need their preferences (one query for the page).
+        $filtered = [];
+        if ($interests !== null) {
+            $withFilter = new EloquentCollection($profiles->filter(fn (Profile $p): bool => $p->privacySetting?->contact_filter_enabled === true)->values()->all());
+            $withFilter->loadMissing('partnerPreference');
+            foreach ($withFilter as $target) {
+                if (($interests[(string) $target->id] ?? Connections::NONE) === Connections::NONE && $this->contactFilter->excludes($own, $target)) {
+                    $filtered[(string) $target->id] = true;
+                }
+            }
+        }
 
         return $profiles->map(fn (Profile $profile): ProfileCardData => new ProfileCardData(
             code: $profile->code,
@@ -88,7 +103,9 @@ final class ProfileCards
             isVerified: $profile->is_verified === true,
             liked: $state !== null ? isset($state['liked'][(string) $profile->id]) : null,
             favorited: $showFavorites ? isset($state['favorited'][(string) $profile->id]) : null,
-            interest: $interests !== null ? ($interests[(string) $profile->id] ?? Connections::NONE) : null,
+            interest: $interests !== null
+                ? (isset($filtered[(string) $profile->id]) ? Connections::FILTERED : ($interests[(string) $profile->id] ?? Connections::NONE))
+                : null,
         ))->values()->all();
     }
 
