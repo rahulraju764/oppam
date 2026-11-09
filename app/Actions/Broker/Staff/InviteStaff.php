@@ -22,6 +22,7 @@ use App\Models\BrokerStaff;
 use App\Models\BrokerStaffInvitation;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Comms\DeliveryRecorder;
 use App\Support\Facades\Feature;
 use App\ValueObjects\PhoneNumber;
 use Closure;
@@ -199,11 +200,16 @@ final class InviteStaff
         $bureau = $broker->displayName();
         $link = self::link($token);
 
-        defer(static function () use ($sms, $phone, $bureau, $link): void {
+        $deliveries = app(DeliveryRecorder::class);
+
+        defer(static function () use ($sms, $deliveries, $phone, $bureau, $link): void {
             try {
-                $sms->sendNotification($phone, 'staff_invite', [$bureau, $link]);
+                $requestId = $sms->sendNotification($phone, 'staff_invite', [$bureau, $link]);
+                // A14 delivery log: masked number only — the invite link (a token) is never stored.
+                $deliveries->directSms(null, $phone, 'staff_invite', $requestId);
             } catch (SmsDeliveryFailed $e) {
                 Log::warning('Staff invitation SMS failed', ['phone' => $phone->masked(), 'reason' => $e->reason]);
+                $deliveries->directSms(null, $phone, 'staff_invite', null, $e);
             }
         });
     }

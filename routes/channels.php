@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Broadcasting\AdminDashboardChannel;
 use App\Broadcasting\AdminQueuesChannel;
+use App\Broadcasting\AnnouncementsChannel;
 use App\Broadcasting\BrokerChannel;
 use App\Broadcasting\BrokerOwnerChannel;
 use App\Broadcasting\ChatChannel;
@@ -35,6 +36,9 @@ Broadcast::channel('presence-chat.{conversation}', PresenceChatChannel::class, [
 
 // Site-wide online roster (green dots): codes only; see OnlinePresenceChannel for who may join.
 Broadcast::channel('presence.online', OnlinePresenceChannel::class, ['guards' => ['web']]);
+
+// A14 announcements (P8.3a): any active member account; the payload is a code, the banner re-reads.
+Broadcast::channel('announcements', AnnouncementsChannel::class, ['guards' => ['web']]);
 
 // Live moderation / verification queue counts for admins (PRD §9.3, A04). Admin guard only;
 // AdminQueuesChannel re-checks status, 2FA and permission against the database.

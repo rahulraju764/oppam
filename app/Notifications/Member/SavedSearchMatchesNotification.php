@@ -43,6 +43,18 @@ final class SavedSearchMatchesNotification extends MemberNotification
         );
     }
 
+    /** P8.3a: an A14 email template may reword the alert, never drop its own one-click unsubscribe. */
+    protected function decorateTemplatedMail(MailMessage $mail, object $notifiable): MailMessage
+    {
+        $unsubscribeUrl = route('saved-searches.unsubscribe', ['token' => $this->savedSearch->alert_token]);
+
+        return $mail->line(__('To stop these alerts, [turn them off here](:url).', ['url' => $unsubscribeUrl]))
+            ->withSymfonyMessage(function (Email $message) use ($unsubscribeUrl): void {
+                $message->getHeaders()->addTextHeader('List-Unsubscribe', '<'.$unsubscribeUrl.'>');
+                $message->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+            });
+    }
+
     public function toMail(object $notifiable): MailMessage
     {
         $unsubscribeUrl = route('saved-searches.unsubscribe', ['token' => $this->savedSearch->alert_token]);

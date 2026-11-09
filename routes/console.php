@@ -13,6 +13,8 @@ use App\Jobs\Broker\SendFollowUpReminders;
 use App\Jobs\Broker\SendPayoutRunReminder;
 use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
+use App\Jobs\Comms\PruneOutboundMessages;
+use App\Jobs\Comms\PublishDueAnnouncements;
 use App\Jobs\Content\PublishScheduledContent;
 use App\Jobs\Engagement\DetectEngagementSignals;
 use App\Jobs\Engagement\ExpireInterests;
@@ -34,6 +36,9 @@ Artisan::command('inspire', function (): void {
 // A03 two-stage deletion: anonymise members deleted longer ago than members.purge_after_days.
 // 21:30 UTC = 03:00 IST, the quietest hour.
 Schedule::job(new PurgeDeletedMembers)->dailyAt('21:30')->onOneServer()->withoutOverlapping();
+// A14 (P8.3a): the delivery log keeps 180 days; scheduled announcements go live on the minute.
+Schedule::job(new PruneOutboundMessages)->dailyAt('21:35')->onOneServer()->withoutOverlapping();
+Schedule::job(new PublishDueAnnouncements)->everyMinute()->onOneServer()->withoutOverlapping();
 // M14 (P8.2c): "download my data" zips are deleted 24 h after they are ready.
 Schedule::job(new ExpireDataExports)->hourly()->onOneServer()->withoutOverlapping();
 

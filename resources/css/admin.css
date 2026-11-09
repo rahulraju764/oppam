@@ -502,3 +502,7 @@ tr[draggable="true"] { cursor: grab; }
 .legal-diff__line { padding: var(--space-1) var(--space-2); border-left: 3px solid transparent; overflow-wrap: anywhere; }
 .legal-diff__line.is-added { background: var(--bg-teal); border-left-color: var(--color-secondary-dark); }
 .legal-diff__line.is-removed { background: var(--bg-rose); border-left-color: var(--color-primary); text-decoration: line-through; }
+
+/* A14 template preview (P8.3a): what members see, with sample values */
+.tpl-preview { overflow-wrap: anywhere; font-size: var(--text-sm); }
+.tpl-preview p:last-child { margin-bottom: 0; }

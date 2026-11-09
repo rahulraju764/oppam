@@ -247,7 +247,8 @@ it('SMS goes through the gateway with the event as template key; a failure is re
     $this->travelTo(CarbonImmutable::parse('2026-10-05 12:00', 'Asia/Kolkata'));
 
     app(SmsChannel::class)->send($member, new ProfileApproved($member->profile->code));
-    expect($sms->notices)->toBe([['to' => $member->phone, 'key' => 'profile_approved', 'variables' => [$member->profile->code]]]);
+    // P8.3a: the fake also records the DLT id passed (none: no A14 template) and the request id it returned.
+    expect($sms->notices)->toBe([['to' => $member->phone, 'key' => 'profile_approved', 'variables' => [$member->profile->code], 'template_id' => null, 'request_id' => 'fake-1']]);
 
     Exceptions::fake();
     $sms->failing = true;

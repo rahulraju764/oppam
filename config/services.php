@@ -30,6 +30,11 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    // A14 delivery log (P8.3a): the key Mailgun signs its webhooks with (bounce reports).
+    'mailgun' => [
+        'webhook_signing_key' => env('MAILGUN_WEBHOOK_SIGNING_KEY'),
+    ],
+
     // SMS / OTP (PRD §4). SMS_DRIVER in config/oppam.php picks the gateway.
     // Cloudflare Turnstile, the contact form's human check (P8.1b). Test keys always pass:
     // site 1x00000000000000000000AA, secret 1x0000000000000000000000000000000AA.

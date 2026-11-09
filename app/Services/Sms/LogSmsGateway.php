@@ -23,9 +23,11 @@ final class LogSmsGateway implements SmsGateway
     }
 
     /** @param  list<string>  $variables */
-    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables): void
+    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables, ?string $templateId = null): string
     {
-        $this->log->channel('sms')->info("[NOTICE {$templateKey}] for {$to->masked()}");
+        $this->log->channel('sms')->info("[NOTICE {$templateKey}".($templateId !== null ? " DLT {$templateId}" : '')."] for {$to->masked()}");
+
+        return 'log-'.bin2hex(random_bytes(8));
     }
 
     public function sendAccountExistsNotice(PhoneNumber $to): void

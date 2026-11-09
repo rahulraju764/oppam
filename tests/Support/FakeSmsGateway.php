@@ -26,17 +26,20 @@ final class FakeSmsGateway implements SmsGateway
         $this->sent[] = ['to' => $to->e164(), 'code' => $code, 'purpose' => $purpose];
     }
 
-    /** @var list<array{to: string, key: string, variables: list<string>}> notification SMS (M08) */
+    /** @var list<array{to: string, key: string, variables: list<string>, template_id: ?string, request_id: string}> notification SMS (M08) */
     public array $notices = [];
 
     /** @param  list<string>  $variables */
-    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables): void
+    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables, ?string $templateId = null): ?string
     {
         if ($this->failing) {
             throw SmsDeliveryFailed::because('fake gateway set to fail');
         }
 
-        $this->notices[] = ['to' => $to->e164(), 'key' => $templateKey, 'variables' => $variables];
+        $requestId = 'fake-'.(count($this->notices) + 1);
+        $this->notices[] = ['to' => $to->e164(), 'key' => $templateKey, 'variables' => $variables, 'template_id' => $templateId, 'request_id' => $requestId];
+
+        return $requestId;
     }
 
     /** @var list<string> E.164 numbers that got the "you already have an account" SMS */

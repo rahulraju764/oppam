@@ -11,6 +11,7 @@ use App\Contracts\CreditNoteRenderer;
 use App\Contracts\DocumentVault;
 use App\Contracts\HtmlSanitizer;
 use App\Contracts\InvoiceRenderer;
+use App\Contracts\MailBounceVerifier;
 use App\Contracts\PaymentGateway;
 use App\Contracts\PayoutStatementRenderer;
 use App\Contracts\PresenceCounter;
@@ -49,6 +50,7 @@ use App\Models\Masters\Religion;
 use App\Models\Masters\Star;
 use App\Models\Masters\State;
 use App\Models\User;
+use App\Notifications\Support\TemplatedMailChannel;
 use App\Observers\MasterDataObserver;
 use App\Observers\NewMemberTickObserver;
 use App\Queries\Admin\WorkQueues;
@@ -62,8 +64,11 @@ use App\Services\Broker\DompdfPayoutStatementRenderer;
 use App\Services\Captcha\DisabledCaptcha;
 use App\Services\Captcha\TurnstileVerifier;
 use App\Services\Chat\RuleBasedContentSafety;
+use App\Services\Comms\DeliveryRecorder;
 use App\Services\Content\PurifierHtmlSanitizer;
 use App\Services\Entitlements\EntitlementService;
+use App\Services\Mail\MailgunBounceVerifier;
+use App\Services\Mail\SesSnsVerifier;
 use App\Services\Payments\FakePaymentGateway;
 use App\Services\Payments\RazorpayGateway;
 use App\Services\Realtime\BroadcastPresenceCounter;
@@ -79,6 +84,7 @@ use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Notifications\Channels\MailChannel;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -190,6 +196,18 @@ final class AppServiceProvider extends ServiceProvider
                 'log' => $this->app->make(LogSmsGateway::class),
                 default => throw new RuntimeException("Unknown SMS_DRIVER [{$driver}]."),
             };
+        });
+
+        // A14 (P8.3a): member emails use the template manager's live copy when there is one, and every
+        // email / SMS is written to the delivery log (one recorder per request: it carries the resend link).
+        $this->app->bind(MailChannel::class, TemplatedMailChannel::class);
+        $this->app->scoped(DeliveryRecorder::class);
+
+        // A14 delivery log (P8.3a): the Mailgun webhook is the first bounce driver; SES/SNS is refused
+        // until the mail provider is chosen (it fails closed).
+        $this->app->singleton(MailBounceVerifier::class, fn (): MailBounceVerifier => match ((string) config('oppam.comms.bounce_driver')) {
+            'mailgun' => new MailgunBounceVerifier((string) config('services.mailgun.webhook_signing_key')),
+            default => new SesSnsVerifier,
         });
     }
 

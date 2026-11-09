@@ -65,9 +65,10 @@ final class CampaignBuilder extends Component
         if ($value) {
             $template = CommunicationTemplate::query()->find($value);
             if ($template) {
-                $this->channel = $template->channel;
-                $this->subject = (string) $template->subject;
-                $this->message = $template->body;
+                $live = $template->currentVersion();
+                $this->channel = $template->channel->value;
+                $this->subject = (string) $live?->subject;
+                $this->message = (string) $live?->body;
             }
         }
     }

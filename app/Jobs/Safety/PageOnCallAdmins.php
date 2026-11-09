@@ -10,6 +10,7 @@ use App\Enums\SettingKey;
 use App\Exceptions\Sms\SmsDeliveryFailed;
 use App\Models\AdminUser;
 use App\Notifications\Admin\UrgentCasePaged;
+use App\Services\Comms\DeliveryRecorder;
 use App\Support\Facades\Settings;
 use App\ValueObjects\PhoneNumber;
 use Illuminate\Bus\Queueable;
@@ -42,9 +43,11 @@ final class PageOnCallAdmins implements ShouldQueue
 
         foreach ($this->oncallPhones() as $phone) {
             try {
-                $sms->sendNotification($phone, 'safety_p0_case', [$this->caseCode]);
+                $requestId = $sms->sendNotification($phone, 'safety_p0_case', [$this->caseCode]);
+                app(DeliveryRecorder::class)->directSms(null, $phone, 'safety_p0_case', $requestId);
             } catch (SmsDeliveryFailed $e) {
                 Log::warning('P0 page SMS failed', ['phone' => $phone->masked(), 'reason' => $e->reason]);
+                app(DeliveryRecorder::class)->directSms(null, $phone, 'safety_p0_case', null, $e);
             }
         }
     }

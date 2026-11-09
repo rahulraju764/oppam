@@ -65,9 +65,9 @@ final class Msg91Gateway implements SmsGateway
      *
      * @param  list<string>  $variables
      */
-    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables): void
+    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables, ?string $templateId = null): ?string
     {
-        $templateId = $this->noticeTemplates[$templateKey] ?? '';
+        $templateId = $templateId ?? ($this->noticeTemplates[$templateKey] ?? '');
         if ($this->authKey === '' || $templateId === '') {
             throw SmsDeliveryFailed::because("No MSG91 DLT template registered for [{$templateKey}].");
         }
@@ -90,6 +90,11 @@ final class Msg91Gateway implements SmsGateway
         if ($response->failed() || $response->json('type') !== 'success') {
             throw SmsDeliveryFailed::because('MSG91 refused the request (HTTP '.$response->status().').');
         }
+
+        // MSG91 answers {"type":"success","message":"<request id>"}; delivery reports carry that id.
+        $requestId = $response->json('request_id') ?? $response->json('message');
+
+        return is_string($requestId) && $requestId !== '' ? mb_substr($requestId, 0, 100) : null;
     }
 
     /** Flow API with the DLT "account exists" template; the number travels in the JSON body. */

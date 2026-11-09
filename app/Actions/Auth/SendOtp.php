@@ -12,6 +12,7 @@ use App\Exceptions\Auth\OtpThrottled;
 use App\Exceptions\Sms\SmsDeliveryFailed;
 use App\Models\OtpChallenge;
 use App\Models\User;
+use App\Services\Comms\DeliveryRecorder;
 use App\Support\Facades\Settings;
 use App\ValueObjects\PhoneNumber;
 use Illuminate\Cache\RateLimiter;
@@ -42,6 +43,7 @@ final class SendOtp
     public function __construct(
         private readonly RateLimiter $limiter,
         private readonly SmsGateway $sms,
+        private readonly DeliveryRecorder $deliveries,
     ) {}
 
     /** @throws OtpThrottled */
@@ -78,13 +80,17 @@ final class SendOtp
         });
 
         $sms = $this->sms;
+        $deliveries = $this->deliveries;
 
-        defer(static function () use ($sms, $phone, $code, $purpose): void {
+        defer(static function () use ($sms, $deliveries, $recipient, $phone, $code, $purpose): void {
             try {
                 $sms->sendOtp($phone, $code, $purpose);
+                // A14 delivery log (P8.3a): masked number and purpose only — never the code.
+                $deliveries->directSms($recipient, $phone, 'otp_'.strtolower($purpose->value), null);
             } catch (SmsDeliveryFailed $e) {
                 // $reason is fixed text by contract: no code, no full number.
                 Log::warning('OTP SMS failed', ['phone' => $phone->masked(), 'purpose' => $purpose->value, 'reason' => $e->reason]);
+                $deliveries->directSms($recipient, $phone, 'otp_'.strtolower($purpose->value), null, $e);
             }
         });
     }

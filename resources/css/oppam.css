@@ -800,6 +800,18 @@ body.search-sheet-open .mobile-footer { display: none; }
     font-size: var(--text-2xl);
 }
 
+/* ---- A14 announcement banner (P8.3a): under the header on member pages, phones first ---- */
+.announcement-bar { background: var(--color-secondary-dark); color: var(--color-default); }
+.announcement-bar__inner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding-block: var(--space-2); }
+.announcement-bar__icon { flex: none; }
+.announcement-bar__text { flex: 1 1 12rem; margin: 0; font-size: var(--text-sm); overflow-wrap: anywhere; }
+.announcement-bar__text strong { margin-right: var(--space-2); }
+.announcement-bar__action { flex: none; display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--space-3);
+  border-radius: var(--radius-pill); background: var(--color-default); color: var(--color-secondary-dark); font-weight: var(--fw-semibold); text-decoration: none; }
+.announcement-bar__action:focus-visible, .announcement-bar__close:focus-visible { outline: 2px solid var(--color-default); outline-offset: 2px; }
+.announcement-bar__close { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px;
+  border: 0; background: transparent; color: var(--color-default); }
+
 /* ---- /settings Hide / delete (M16, P8.2c): a shared story keeps its line breaks, escaped as text ---- */
 .story-body-text { white-space: pre-line; overflow-wrap: anywhere; }
 

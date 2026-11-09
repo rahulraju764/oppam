@@ -149,4 +149,18 @@ return [
         'reset_links_per_ip_per_hour' => 20,
     ],
 
+    // A14 communications (P8.3a).
+    'comms' => [
+        // Test SMS go only to these numbers (E.164, comma-separated) — a test-send must never text a
+        // stranger; with none set, SMS templates are previewed only.
+        'test_phones' => array_values(array_filter(array_map('trim', explode(',', (string) env('COMMS_TEST_PHONES', ''))))),
+        'test_sends_per_hour' => 10,             // per admin
+        'outbound_retention_days' => 180,        // delivery log rows (same as in-app notifications, R-M08-4)
+        // Delivery reports: MSG91 doesn't sign them, so its webhook URL carries this shared secret.
+        'msg91_dlr_secret' => env('MSG91_DLR_SECRET'),
+        // Mail bounces: 'mailgun' (HMAC-signed) now; 'ses' (SNS) when the mail provider is chosen.
+        'bounce_driver' => env('MAIL_BOUNCE_DRIVER', 'mailgun'),
+        'bounce_max_age_seconds' => 900,         // a signed bounce older than this is refused (replay)
+    ],
+
 ];

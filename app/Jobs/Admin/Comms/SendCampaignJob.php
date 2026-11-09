@@ -9,7 +9,9 @@ use App\Models\Campaign;
 use App\Models\OutboundMessage;
 use App\Models\User;
 use App\Queries\Admin\Comms\SegmentQuery;
+use App\Services\Comms\DeliveryRecorder;
 use App\Support\Facades\Settings;
+use App\ValueObjects\PhoneNumber;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -69,23 +71,24 @@ final class SendCampaignJob implements ShouldQueue
 
                 foreach ($users as $user) {
                     /** @var User $user */
+                    // P8.3a kept this first-pass placeholder working with the new delivery-log columns
+                    // (masked recipient, no message text). It still sends nothing — P8.3b replaces it.
                     $recipient = match ($campaign->channel) {
-                        'email' => (string) $user->email,
-                        'sms' => (string) $user->phone,
-                        default => (string) $user->id,
+                        'email' => DeliveryRecorder::maskEmail((string) $user->email),
+                        'sms' => PhoneNumber::tryParse((string) $user->phone)?->masked() ?? '—',
+                        default => '—',
                     };
 
-                    OutboundMessage::query()->create([
+                    (new OutboundMessage)->forceFill([
                         'user_id' => $user->id,
                         'channel' => $campaign->channel,
-                        'recipient' => $recipient,
+                        'recipient_masked' => $recipient,
                         'event' => 'campaign',
                         'subject' => $campaign->subject ?? $campaign->name,
-                        'content' => $campaign->message,
                         'status' => OutboundMessage::STATUS_DELIVERED,
                         'campaign_id' => $campaign->id,
                         'sent_at' => now(),
-                    ]);
+                    ])->save();
 
                     $campaign->increment('sent_count');
                     $campaign->increment('delivered_count');

@@ -34,9 +34,13 @@ interface SmsGateway
      * the DLT template registered for $templateKey (the notification event, e.g. "profile_approved")
      * and its variables in template order. Never logs message content beyond the masked number.
      *
+     * $templateId, when given, is the DLT template id set in the A14 template manager (P8.3a); it
+     * wins over the configured one. Returns the provider's request id (for the delivery log and
+     * its delivery reports), or null when the provider gives none.
+     *
      * @param  list<string>  $variables
      *
      * @throws SmsDeliveryFailed when no DLT template is registered for the key, or the provider refuses
      */
-    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables): void;
+    public function sendNotification(PhoneNumber $to, string $templateKey, array $variables, ?string $templateId = null): ?string;
 }

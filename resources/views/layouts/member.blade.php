@@ -30,6 +30,9 @@
         <i class="fa fa-refresh fa-spin" aria-hidden="true"></i> {{ __('Reconnecting… live updates will resume shortly.') }}
     </div>
     <x-ui.toast-stack />
+    @if ($member && auth('web')->user() instanceof \App\Models\User)
+        <livewire:shared.announcement-banner :key="'announcement-banner'" />
+    @endif
     @if ($member && \Illuminate\Support\Facades\Route::has('member.likes'))
         <x-engagement.dialogs />
         @if (auth('web')->user() instanceof \App\Models\User)

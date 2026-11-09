@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\Admin\Comms\ApproveCampaign;
 use App\Actions\Admin\Comms\BuildCampaign;
-use App\Actions\Admin\Comms\CreateAnnouncement;
-use App\Actions\Admin\Comms\ResendFailedMessage;
-use App\Actions\Admin\Comms\SaveTemplate;
 use App\Actions\Admin\Comms\SendCampaign;
-use App\Actions\Admin\Comms\SendTestTemplate;
-use App\Events\Account\AdminAnnouncementBroadcast;
 use App\Jobs\Admin\Comms\SendCampaignJob;
 use App\Models\Campaign;
 use App\Models\NotificationPreference;
@@ -17,64 +12,16 @@ use App\Models\OutboundMessage;
 use App\Models\Profile;
 use App\Models\User;
 use App\Queries\Admin\Comms\SegmentQuery;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+
+/*
+| A14 campaigns — first-pass draft tests, kept for P8.3b (which rebuilds campaigns and journeys and
+| owns the "a campaign to a test segment respects opt-outs" Done-when). The template, announcement
+| and resend tests moved to TemplateManagerTest / AnnouncementsTest / DeliveryLogTest (P8.3a).
+*/
 
 beforeEach(function (): void {
     seedAdminRoles();
-});
-
-it('P8.3: creates, updates, version-increments templates and test-sends to admin', function (): void {
-    $admin = adminWithRole('super_admin');
-    $action = app(SaveTemplate::class);
-
-    $template = $action->handle($admin, [
-        'key' => 'diwali_discount',
-        'name' => 'Diwali 20% Discount Offer',
-        'channel' => 'email',
-        'subject' => 'Happy Diwali from Oppam!',
-        'body' => 'Hello {name}, enjoy 20% off on Gold subscription!',
-        'variables' => ['name' => 'Rahul'],
-    ]);
-
-    expect($template->key)->toBe('diwali_discount')
-        ->and($template->version)->toBe(1);
-
-    // Update
-    $updated = $action->handle($admin, [
-        'key' => 'diwali_discount',
-        'name' => 'Diwali 25% Discount Offer',
-        'channel' => 'email',
-        'subject' => 'Happy Diwali 2026 from Oppam!',
-        'body' => 'Hello {name}, enjoy 25% off on Gold subscription!',
-    ], $template);
-
-    expect($updated->version)->toBe(2);
-
-    // Test send
-    $testSend = app(SendTestTemplate::class);
-    $outbound = $testSend->handle($admin, $updated);
-
-    expect($outbound->status)->toBe(OutboundMessage::STATUS_SENT)
-        ->and($outbound->recipient)->toBe($admin->email)
-        ->and($outbound->content)->toContain('enjoy 25% off');
-});
-
-it('P8.3: creates an announcement and broadcasts live via WebSocket', function (): void {
-    Event::fake([AdminAnnouncementBroadcast::class]);
-    $admin = adminWithRole('super_admin');
-
-    $createAction = app(CreateAnnouncement::class);
-    $announcement = $createAction->handle($admin, [
-        'title' => 'Server Maintenance Tonight',
-        'body' => 'We will perform routine maintenance at 03:00 IST.',
-        'broadcast_now' => true,
-    ]);
-
-    expect($announcement->title)->toBe('Server Maintenance Tonight')
-        ->and($announcement->broadcast_at)->not->toBeNull();
-
-    Event::assertDispatched(AdminAnnouncementBroadcast::class, fn ($e) => $e->announcement->id === $announcement->id);
 });
 
 it('P8.3: campaign builder respects member opt-outs when targeting segment', function (): void {
@@ -164,22 +111,4 @@ it('P8.3: large campaigns (>10,000) require second admin approval', function ():
 
     expect($approvedCampaign->status)->toBe(Campaign::STATUS_APPROVED)
         ->and($approvedCampaign->approved_by)->toBe($admin2->id);
-});
-
-it('P8.3: resends failed outbound messages', function (): void {
-    $admin = adminWithRole('super_admin');
-    $failedMessage = OutboundMessage::query()->create([
-        'channel' => 'email',
-        'recipient' => 'test@example.com',
-        'subject' => 'Notification',
-        'status' => OutboundMessage::STATUS_FAILED,
-        'error_message' => 'Connection timeout',
-        'sent_at' => now()->subHour(),
-    ]);
-
-    $resendAction = app(ResendFailedMessage::class);
-    $resent = $resendAction->handle($admin, $failedMessage);
-
-    expect($resent->status)->toBe(OutboundMessage::STATUS_SENT)
-        ->and($resent->error_message)->toBeNull();
 });

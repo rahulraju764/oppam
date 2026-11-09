@@ -1,156 +1,175 @@
+{{--
+    A14 template manager (P8.3a): notification copy per event × channel, and campaign texts. The
+    editor (drawer) saves a new version, shows a live preview with sample values, the version
+    history (compare / revert) and test-send.
+--}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-page-head">
         <div>
-            <h1 class="h3 mb-1">{{ __('Message Templates') }}</h1>
-            <p class="text-muted mb-0">{{ __('Manage Email, SMS DLT, and In-App notification copy (PRD §11 A14).') }}</p>
+            <h1>{{ __('Message templates') }}</h1>
+            <p>{{ __('Change what members receive by email, SMS and in the app. Every save is a new version you can compare and bring back.') }}</p>
         </div>
-        <button type="button" class="btn btn-primary" wire:click="openCreateModal" dusk="create-template-btn">
-            <i class="fa fa-plus me-1" aria-hidden="true"></i> {{ __('New Template') }}
-        </button>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-body py-2">
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm {{ $channelFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary' }}" wire:click="$set('channelFilter', 'all')">
-                    {{ __('All Channels') }}
-                </button>
-                <button type="button" class="btn btn-sm {{ $channelFilter === 'email' ? 'btn-primary' : 'btn-outline-secondary' }}" wire:click="$set('channelFilter', 'email')">
-                    {{ __('Email') }}
-                </button>
-                <button type="button" class="btn btn-sm {{ $channelFilter === 'sms' ? 'btn-primary' : 'btn-outline-secondary' }}" wire:click="$set('channelFilter', 'sms')">
-                    {{ __('SMS (DLT)') }}
-                </button>
-                <button type="button" class="btn btn-sm {{ $channelFilter === 'in_app' ? 'btn-primary' : 'btn-outline-secondary' }}" wire:click="$set('channelFilter', 'in_app')">
-                    {{ __('In-App') }}
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>{{ __('Key') }}</th>
-                        <th>{{ __('Name') }}</th>
-                        <th>{{ __('Channel') }}</th>
-                        <th>{{ __('Subject / DLT ID') }}</th>
-                        <th>{{ __('Version') }}</th>
-                        <th>{{ __('Actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($templates as $t)
-                        <tr>
-                            <td><code>{{ $t->key }}</code></td>
-                            <td><strong>{{ $t->name }}</strong></td>
-                            <td>
-                                <span class="badge bg-secondary text-uppercase">{{ $t->channel }}</span>
-                            </td>
-                            <td>
-                                @if ($t->channel === 'email')
-                                    <small>{{ $t->subject }}</small>
-                                @elseif ($t->channel === 'sms')
-                                    <code>{{ $t->dlt_template_id ?? '—' }}</code>
-                                @else
-                                    <span class="text-muted">—</span>
-                                @endif
-                            </td>
-                            <td><span class="badge bg-light text-dark">v{{ $t->version }}</span></td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-outline-secondary" wire:click="edit('{{ $t->id }}')">
-                                        {{ __('Edit') }}
-                                    </button>
-                                    <button type="button" class="btn btn-outline-primary" wire:click="testSend('{{ $t->id }}')" title="{{ __('Test send to self') }}">
-                                        {{ __('Test Send') }}
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">
-                                {{ __('No templates found.') }}
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if ($templates->hasPages())
-            <div class="card-footer">
-                {{ $templates->links() }}
-            </div>
+        @if ($tab === 'campaigns')
+            <x-ui.button type="button" icon="fa-plus" wire:click="newCampaign" dusk="template-new-campaign">{{ __('New campaign text') }}</x-ui.button>
         @endif
     </div>
 
-    {{-- MODAL --}}
-    @if ($showModal)
-        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);" aria-modal="true" role="dialog">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">{{ $editingId ? __('Edit Template') : __('New Template') }}</h5>
-                        <button type="button" class="btn-close" wire:click="$set('showModal', false)"></button>
-                    </div>
-                    <form wire:submit="save">
-                        <div class="modal-body">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">{{ __('Template Key') }}</label>
-                                    <input type="text" class="form-control" wire:model="key" placeholder="e.g. welcome_email" {{ $editingId ? 'readonly' : '' }} required>
-                                    @error('key')<div class="text-danger small">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">{{ __('Name') }}</label>
-                                    <input type="text" class="form-control" wire:model="name" placeholder="Friendly title" required>
-                                    @error('name')<div class="text-danger small">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">{{ __('Channel') }}</label>
-                                    <select class="form-select" wire:model.live="channel" required>
-                                        <option value="email">{{ __('Email') }}</option>
-                                        <option value="sms">{{ __('SMS') }}</option>
-                                        <option value="in_app">{{ __('In-App Notification') }}</option>
-                                    </select>
-                                </div>
-                                @if ($channel === 'email')
-                                    <div class="col-md-6">
-                                        <label class="form-label">{{ __('Email Subject') }}</label>
-                                        <input type="text" class="form-control" wire:model="subject" placeholder="Email subject line">
-                                        @error('subject')<div class="text-danger small">{{ $message }}</div>@enderror
-                                    </div>
-                                @endif
-                                @if ($channel === 'sms')
-                                    <div class="col-md-6">
-                                        <label class="form-label">{{ __('DLT Template ID') }}</label>
-                                        <input type="text" class="form-control" wire:model="dltTemplateId" placeholder="Registered DLT template ID">
-                                        @error('dltTemplateId')<div class="text-danger small">{{ $message }}</div>@enderror
-                                    </div>
-                                @endif
-                                <div class="col-12">
-                                    <label class="form-label">{{ __('Body Content (Markdown or Text)') }}</label>
-                                    <textarea class="form-control" rows="6" wire:model="body" placeholder="Use {name}, {code} for variables..." required></textarea>
-                                    @error('body')<div class="text-danger small">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">{{ __('Variables (JSON sample, optional)') }}</label>
-                                    <textarea class="form-control font-monospace" rows="2" wire:model="variables" placeholder='{"name": "Ananya", "code": "OPM1001"}'></textarea>
-                                    @error('variables')<div class="text-danger small">{{ $message }}</div>@enderror
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" wire:click="$set('showModal', false)">{{ __('Cancel') }}</button>
-                            <button type="submit" class="btn btn-primary">{{ __('Save Template') }}</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endif
-</div>
+    <div class="ui-card mb-4">
+        <nav class="admin-tabs" aria-label="{{ __('Template types') }}">
+            @foreach (['notifications' => __('Notification copy'), 'campaigns' => __('Campaign texts')] as $value => $label)
+                <button type="button" @class(['admin-tab', 'active' => $tab === $value]) wire:click="$set('tab', '{{ $value }}')"
+                        @if ($tab === $value) aria-current="page" @endif>{{ $label }}</button>
+            @endforeach
+        </nav>
+    </div>
 
+    <div wire:loading.class="is-loading" wire:target="tab">
+        @if ($tab === 'notifications')
+            <x-admin.table :headers="[__('Notification'), __('Email'), __('SMS'), __('In-app')]" :caption="__('Notification copy')">
+                @foreach ($this->eventRows as $row)
+                    <tr wire:key="tpl-{{ $row['event']->value }}">
+                        <th scope="row">{{ $row['event']->label() }}</th>
+                        @foreach (\App\Enums\CommsChannel::cases() as $chan)
+                            @php($cell = collect($row['channels'])->firstWhere('channel', $chan))
+                            <td>
+                                @if ($cell === null)
+                                    <span class="text-muted-brand" aria-label="{{ __('Not sent on this channel') }}">—</span>
+                                @else
+                                    <x-ui.button size="sm" variant="ghost" type="button"
+                                                 wire:click="editEvent('{{ $row['event']->value }}', '{{ $chan->value }}')"
+                                                 wire:loading.attr="disabled" wire:target="editEvent">
+                                        @if ($cell['template'])
+                                            {{ __('Custom · v:v', ['v' => $cell['template']->current_version]) }}
+                                        @else
+                                            {{ __('Standard') }}
+                                        @endif
+                                    </x-ui.button>
+                                @endif
+                            </td>
+                        @endforeach
+                    </tr>
+                @endforeach
+            </x-admin.table>
+        @else
+            <x-admin.table :headers="[__('Name'), __('Key'), __('Channel'), __('Version'), '']" :caption="__('Campaign texts')" :empty="$campaigns->isEmpty()">
+                <x-slot:emptyState>
+                    <x-ui.empty-state icon="fa-file-text-o" :title="__('No campaign texts yet')" :message="__('Save a text here to reuse it in campaigns.')" />
+                </x-slot:emptyState>
+                @foreach ($campaigns as $row)
+                    <tr wire:key="camp-{{ $row->key }}">
+                        <td>{{ $row->name }}</td>
+                        <td><code>{{ $row->key }}</code></td>
+                        <td>{{ $row->channel->label() }}</td>
+                        <td>v{{ $row->current_version }}</td>
+                        <td class="text-end">
+                            <x-ui.button size="sm" type="button" wire:click="editCampaign('{{ $row->key }}')" wire:loading.attr="disabled" wire:target="editCampaign">{{ __('Edit') }}</x-ui.button>
+                        </td>
+                    </tr>
+                @endforeach
+            </x-admin.table>
+        @endif
+    </div>
+
+    <x-admin.drawer name="template-editor" :title="$template?->name ?? ($editing === '' ? __('New campaign text') : __('Template'))">
+        @if ($editing !== null && $channel !== null)
+            <form wire:submit="save" novalidate id="templateForm">
+                @if ($editing === '' || str_starts_with((string) $editing, 'campaign.'))
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <x-ui.input :label="__('Name')" name="campaignName" id="tplName" wire:model="campaignName" required maxlength="100" />
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <x-ui.input :label="__('Key')" name="campaignKey" id="tplKey" wire:model="campaignKey" required maxlength="60"
+                                        :hint="__('Lower-case letters, numbers, underscores.')" :disabled="$editing !== ''" />
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <x-ui.select :label="__('Channel')" name="campaignChannel" id="tplChannel" wire:model.live="campaignChannel"
+                                         :options="$channelOptions" :selected="$campaignChannel" :disabled="$editing !== ''" />
+                        </div>
+                    </div>
+                @else
+                    <p class="small text-muted-brand mb-3">
+                        {{ __('Channel: :channel.', ['channel' => $channel->label()]) }}
+                        {{ $template ? __('Live: version :v.', ['v' => $template->current_version]) : __('Members get Oppam’s standard copy until you save one.') }}
+                    </p>
+                @endif
+
+                @if ($channel === \App\Enums\CommsChannel::Email)
+                    <x-ui.input :label="__('Subject')" name="subject" id="tplSubject" wire:model.live.debounce.400ms="subject" required maxlength="200" />
+                @endif
+                @if ($channel === \App\Enums\CommsChannel::Sms)
+                    <x-ui.input :label="__('DLT template id')" name="dltTemplateId" id="tplDlt" wire:model="dltTemplateId" required maxlength="50"
+                                :hint="__('The id approved on the DLT portal. The text below must match the registered template.')" />
+                @endif
+                <x-ui.textarea :label="match ($channel) {
+                        \App\Enums\CommsChannel::Email => __('Message (Markdown)'),
+                        \App\Enums\CommsChannel::Sms => __('SMS text (as registered)'),
+                        default => __('First line = title, then the text'),
+                    }" name="body" id="tplBody" wire:model.live.debounce.400ms="body" rows="8" required />
+
+                <details class="mb-3">
+                    <summary>{{ __('Placeholders you can use') }}</summary>
+                    <ul class="small mb-0">
+                        @foreach ($placeholders as $name => $meaning)
+                            <li><code>{{ '{'.$name.'}' }}</code> — {{ $meaning }}</li>
+                        @endforeach
+                    </ul>
+                </details>
+
+                @if ($preview)
+                    <h3 class="h6">{{ __('Preview (sample values)') }}</h3>
+                    <div class="ui-card tpl-preview mb-3" aria-live="polite">
+                        @if ($channel === \App\Enums\CommsChannel::Email && $subject !== '')
+                            <p><strong>{{ \App\Domain\Comms\TemplateCopy::sample($subject) }}</strong></p>
+                        @endif
+                        {{ $preview }}
+                    </div>
+                @endif
+
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <x-ui.button loading="save" dusk="template-save">{{ __('Save as new version') }}</x-ui.button>
+                    @if ($template)
+                        @if ($channel !== \App\Enums\CommsChannel::InApp)
+                            <x-ui.button type="button" variant="outline" wire:click="testSend" loading="testSend"
+                                         :disabled="$channel === \App\Enums\CommsChannel::Sms && $testPhones === 0">
+                                {{ $channel === \App\Enums\CommsChannel::Email ? __('Send a test to me') : __('Send a test SMS') }}
+                            </x-ui.button>
+                        @endif
+                    @endif
+                </div>
+                @if ($channel === \App\Enums\CommsChannel::Sms && $testPhones === 0)
+                    <p class="small text-muted-brand">{{ __('No test numbers are set (COMMS_TEST_PHONES), so SMS can only be previewed.') }}</p>
+                @endif
+            </form>
+
+            @if ($versions->isNotEmpty())
+                <h3 class="h6">{{ __('Versions') }}</h3>
+                <ul class="list-unstyled tpl-versions">
+                    @foreach ($versions as $v)
+                        <li class="d-flex flex-wrap align-items-center gap-2 py-1" wire:key="v-{{ $v->version }}">
+                            <strong>v{{ $v->version }}</strong>
+                            <span class="small text-muted-brand">{{ $v->created_at->timezone('Asia/Kolkata')->format('d M Y, g:i a') }} · {{ $v->author?->name ?? '—' }}</span>
+                            @if ($template && $v->version === $template->current_version)
+                                <x-ui.badge variant="success">{{ __('Live') }}</x-ui.badge>
+                            @else
+                                <x-ui.button size="sm" variant="ghost" type="button" wire:click="compare({{ $v->version }})">{{ $comparing === $v->version ? __('Hide changes') : __('Compare with the editor') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="ghost" type="button" wire:click="revert({{ $v->version }})" wire:confirm="{{ __('Make version :v live again?', ['v' => $v->version]) }}" loading="revert">{{ __('Bring back') }}</x-ui.button>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+                @if ($diff !== null)
+                    <ol class="legal-diff" aria-label="{{ __('Changes from version :v to the editor', ['v' => $comparing]) }}">
+                        @foreach ($diff as $line)
+                            <li @class(['legal-diff__line', 'is-added' => $line->type === 'added', 'is-removed' => $line->type === 'removed'])>
+                                <span class="visually-hidden">{{ match ($line->type) { 'added' => __('Added:'), 'removed' => __('Removed:'), default => __('Unchanged:') } }}</span>
+                                <span aria-hidden="true">{{ match ($line->type) { 'added' => '+', 'removed' => '−', default => ' ' } }}</span>
+                                {{ $line->text }}
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            @endif
+        @endif
+    </x-admin.drawer>
+</div>
