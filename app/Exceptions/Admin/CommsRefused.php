@@ -43,4 +43,29 @@ final class CommsRefused extends RuntimeException
     {
         return new self(__('This announcement has already ended.'));
     }
+
+    public static function campaignNotDraft(): self
+    {
+        return new self(__('Only a draft campaign can be changed or submitted.'));
+    }
+
+    public static function campaignEmptyAudience(): self
+    {
+        return new self(__('No member matches this segment on this channel, so there is nobody to send it to.'));
+    }
+
+    public static function campaignNotAwaitingApproval(): self
+    {
+        return new self(__('This campaign isn’t waiting for approval.'));
+    }
+
+    public static function campaignOwnApproval(): self
+    {
+        return new self(__('A different admin must approve a campaign this large — not the one who created or submitted it.'));
+    }
+
+    public static function campaignClosed(): self
+    {
+        return new self(__('This campaign has already finished or been cancelled.'));
+    }
 }

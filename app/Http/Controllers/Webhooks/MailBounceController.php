@@ -25,6 +25,6 @@ final class MailBounceController extends Controller
             return response()->json(['status' => 'rejected'], 403);
         }
 
-        return response()->json(['status' => 'ok', 'updated' => $apply->bounces($bounces)]);
+        return response()->json(['status' => 'ok', 'updated' => $apply->mailEvents($bounces)]);
     }
 }

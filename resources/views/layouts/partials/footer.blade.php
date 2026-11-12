@@ -13,7 +13,7 @@
             <div class="col-lg-4 col-md-6">
                 <div class="footer-widget footer-brand">
                     <a href="{{ $nav->homeUrl() }}" class="footer-logo" wire:navigate>
-                        <img src="{{ asset('images/logo/oppam-logo.webp') }}" alt="{{ config('oppam.site.name') }}" width="600" height="301" loading="lazy" decoding="async">
+                        <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" alt="{{ config('oppam.site.name') }}" width="600" height="301" loading="lazy" decoding="async">
                     </a>
 
                     <p class="footer-desc">

@@ -32,9 +32,17 @@ final class EngagementRefused extends RuntimeException
 
     public const PAUSED = 'paused';
 
+    public const FEATURE_DISABLED = 'feature_disabled';
+
     private function __construct(public readonly string $reason, string $message)
     {
         parent::__construct($message);
+    }
+
+    /** A15 `likes.enabled` is off. */
+    public static function likesDisabled(): self
+    {
+        return new self(self::FEATURE_DISABLED, __('Likes are switched off for now.'));
     }
 
     /** Only an approved (ACTIVE) profile can like or bookmark others. */

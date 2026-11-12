@@ -8,6 +8,7 @@ use App\Enums\CommsChannel;
 use App\Enums\OutboundStatus;
 use App\Models\OutboundMessage;
 use App\Models\User;
+use App\Notifications\Comms\CampaignMessage;
 use App\Notifications\Support\MemberNotification;
 use App\ValueObjects\PhoneNumber;
 use Illuminate\Notifications\AnonymousNotifiable;
@@ -34,7 +35,9 @@ final class DeliveryRecorder
             // plain notification, so a later resend of this row starts clean.
             $resentFromId = $member?->resentFromId;
             $payload = null;
-            if ($member !== null && $notifiable instanceof User) {
+            // A campaign message is never resent from the log (decisions 2026-11-08 P8.3b row): no copy is kept.
+            $campaign = $notification instanceof CampaignMessage ? $notification->campaign : null;
+            if ($member !== null && $campaign === null && $notifiable instanceof User) {
                 $copy = clone $member;
                 $copy->onlyChannel = null;
                 $copy->resentFromId = null;
@@ -54,6 +57,8 @@ final class DeliveryRecorder
                 'failed_at' => $failure !== null ? now() : null,
                 'payload' => $payload,
                 'resent_from_id' => $resentFromId,
+                'campaign_id' => $campaign?->id,
+                'subject' => $campaign !== null ? mb_substr($campaign->code.' · '.$campaign->name, 0, 255) : null,
                 'sent_at' => now(),
             ])->save();
 

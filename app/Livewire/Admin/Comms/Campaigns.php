@@ -4,99 +4,73 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Comms;
 
-use App\Actions\Admin\Comms\ApproveCampaign;
-use App\Actions\Admin\Comms\CancelCampaign;
-use App\Actions\Admin\Comms\SendCampaign;
+use App\Enums\CampaignStatus;
+use App\Enums\CommsChannel;
 use App\Models\AdminUser;
 use App\Models\Campaign;
+use App\Queries\Admin\Comms\CampaignStats;
 use Illuminate\Contracts\View\View;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Layout;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 /**
- * Lists and manages outbound marketing/engagement campaigns (PRD §11 A14).
+ * A14 campaigns list (P8.3b1, `campaigns.view`): every campaign with its status and headline
+ * numbers (CampaignStats, one grouped query per page). Rows open the campaign page by code.
+ * Filters are allow-listed enums in the URL.
+ *
+ * @property-read LengthAwarePaginator<int, Campaign> $campaigns
  */
-#[Layout('layouts::admin', ['title' => 'Campaigns'])]
 final class Campaigns extends Component
 {
     use WithPagination;
 
-    public string $channelFilter = 'all';
+    #[Url(as: 'status')]
+    public string $status = '';
 
-    public string $statusFilter = 'all';
+    #[Url(as: 'channel')]
+    public string $channel = '';
 
     public function mount(): void
     {
         $this->authorize('campaigns.view');
     }
 
-    public function approve(string $id, ApproveCampaign $action): void
+    public function updated(string $property): void
     {
-        $admin = $this->admin();
-        /** @var Campaign $campaign */
-        $campaign = Campaign::query()->findOrFail($id);
-
-        try {
-            $action->handle($admin, $campaign);
-            $this->dispatch('toast', type: 'success', message: __('Campaign approved.'));
-        } catch (ValidationException $e) {
-            $this->dispatch('toast', type: 'danger', message: $e->getMessage());
+        if (in_array($property, ['status', 'channel'], true)) {
+            $this->resetPage();
         }
     }
 
-    public function send(string $id, SendCampaign $action): void
+    /** @return LengthAwarePaginator<int, Campaign> */
+    #[Computed]
+    public function campaigns(): LengthAwarePaginator
     {
-        $admin = $this->admin();
-        /** @var Campaign $campaign */
-        $campaign = Campaign::query()->findOrFail($id);
-
-        try {
-            $action->handle($admin, $campaign);
-            $this->dispatch('toast', type: 'success', message: __('Campaign sending started.'));
-        } catch (ValidationException $e) {
-            $this->dispatch('toast', type: 'danger', message: $e->getMessage());
-        }
+        return Campaign::query()
+            ->with('creator:id,name')
+            ->when(CampaignStatus::tryFrom($this->status), fn ($q, CampaignStatus $s) => $q->where('status', $s->value))
+            ->when(CommsChannel::tryFrom($this->channel), fn ($q, CommsChannel $c) => $q->where('channel', $c->value))
+            ->latest()
+            ->paginate(15);
     }
 
-    public function cancel(string $id, CancelCampaign $action): void
+    public function render(CampaignStats $stats): View
     {
-        $admin = $this->admin();
-        /** @var Campaign $campaign */
-        $campaign = Campaign::query()->findOrFail($id);
-
-        try {
-            $action->handle($admin, $campaign);
-            $this->dispatch('toast', type: 'info', message: __('Campaign cancelled.'));
-        } catch (ValidationException $e) {
-            $this->dispatch('toast', type: 'danger', message: $e->getMessage());
-        }
-    }
-
-    public function render(): View
-    {
-        $query = Campaign::query()->with(['creator', 'approver'])->latest();
-
-        if ($this->channelFilter !== 'all') {
-            $query->where('channel', $this->channelFilter);
-        }
-
-        if ($this->statusFilter !== 'all') {
-            $query->where('status', $this->statusFilter);
-        }
+        /** @var AdminUser $admin */
+        $admin = Auth::guard('admin')->user();
 
         return view('livewire.admin.comms.campaigns', [
-            'campaigns' => $query->paginate(15),
-        ]);
-    }
-
-    private function admin(): AdminUser
-    {
-        /** @var AdminUser $user */
-        $user = Auth::guard('admin')->user();
-
-        return $user;
+            'stats' => $stats->for($this->campaigns->items()),
+            'statuses' => CampaignStatus::options(),
+            'channels' => CommsChannel::options(),
+            'canSend' => $admin->can('campaigns.send'),
+            'awaitingApproval' => $admin->can('campaigns.approve')
+                ? Campaign::query()->where('status', CampaignStatus::PendingApproval->value)->count() : 0,
+            'timezone' => (string) config('oppam.display_timezone'),
+        ])->layout('layouts::admin', ['title' => __('Campaigns')]);
     }
 }

@@ -47,6 +47,7 @@ use App\Livewire\Admin\Chat\Signals as ChatSignals;
 use App\Livewire\Admin\Comms\Announcements as CommsAnnouncements;
 use App\Livewire\Admin\Comms\CampaignBuilder as CommsCampaignBuilder;
 use App\Livewire\Admin\Comms\Campaigns as CommsCampaigns;
+use App\Livewire\Admin\Comms\CampaignShow as CommsCampaignShow;
 use App\Livewire\Admin\Comms\DeliveryLog as CommsDeliveryLog;
 use App\Livewire\Admin\Comms\Journeys as CommsJourneys;
 use App\Livewire\Admin\Comms\Templates as CommsTemplates;
@@ -243,6 +244,8 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/announcements', CommsAnnouncements::class)->middleware('can:campaigns.view')->name('announcements');
         Route::get('/campaigns', CommsCampaigns::class)->middleware('can:campaigns.view')->name('campaigns.index');
         Route::get('/campaigns/create', CommsCampaignBuilder::class)->middleware('can:campaigns.send')->name('campaigns.builder');
+        Route::get('/campaigns/{campaign}', CommsCampaignShow::class)->middleware('can:campaigns.view')->where('campaign', 'CMP[A-Z0-9]{8}')->name('campaigns.show');
+        Route::get('/campaigns/{campaign}/edit', CommsCampaignBuilder::class)->middleware('can:campaigns.send')->where('campaign', 'CMP[A-Z0-9]{8}')->name('campaigns.edit');
         Route::get('/journeys', CommsJourneys::class)->middleware('can:campaigns.view')->name('journeys');
         Route::get('/delivery-log', CommsDeliveryLog::class)->middleware('can:campaigns.view')->name('delivery-log');
     });

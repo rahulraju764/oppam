@@ -10,6 +10,7 @@ use App\Domain\Engagement\LikeSpamGuard;
 use App\Domain\Matching\DailyBatch;
 use App\Domain\Profile\ProfileVisibility;
 use App\Enums\Entitlement;
+use App\Enums\Flag;
 use App\Enums\NotificationEvent;
 use App\Enums\ProfileStatus;
 use App\Events\Engagement\LikeChanged;
@@ -25,6 +26,7 @@ use App\Notifications\Engagement\ProfileLikedNotification;
 use App\Notifications\Support\OncePerDay;
 use App\Services\Admin\Impersonation;
 use App\Services\Entitlements\EntitlementService;
+use App\Support\Facades\Feature;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -65,6 +67,11 @@ final class ToggleLike
     {
         // Contacts another member on the member's behalf and spends their daily likes.
         $this->impersonation->assertAllowed();
+
+        // A15 `likes.enabled` (P8.4): off → no like (and no unlike) is recorded.
+        if (! Feature::active(Flag::LikesEnabled)) {
+            throw EngagementRefused::likesDisabled();
+        }
 
         $own = $member->profile;
         if ($own === null || $own->id === $target->id) {

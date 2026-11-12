@@ -1,133 +1,62 @@
+{{--
+    A14 campaigns (P8.3b1): every campaign, its status and headline numbers. A row opens its page.
+--}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-page-head">
         <div>
-            <h1 class="h3 mb-1">{{ __('Campaigns') }}</h1>
-            <p class="text-muted mb-0">{{ __('Outbound communications across Email, SMS, and In-App with segmentation (PRD §11 A14).') }}</p>
+            <h1>{{ __('Campaigns') }}</h1>
+            <p>{{ __('One message on one channel to a segment of members. Members who switched off offers on that channel are never included.') }}</p>
         </div>
-        <a href="{{ route('admin.comms.campaigns.builder') }}" class="btn btn-primary" dusk="new-campaign-btn">
-            <i class="fa fa-plus me-1" aria-hidden="true"></i> {{ __('New Campaign') }}
-        </a>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-body py-2">
-            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
-                <div class="d-flex gap-2">
-                    <select class="form-select form-select-sm w-auto" wire:model.live="channelFilter">
-                        <option value="all">{{ __('All Channels') }}</option>
-                        <option value="email">{{ __('Email') }}</option>
-                        <option value="sms">{{ __('SMS') }}</option>
-                        <option value="in_app">{{ __('In-App') }}</option>
-                    </select>
-                    <select class="form-select form-select-sm w-auto" wire:model.live="statusFilter">
-                        <option value="all">{{ __('All Statuses') }}</option>
-                        <option value="DRAFT">{{ __('Draft') }}</option>
-                        <option value="PENDING_APPROVAL">{{ __('Pending Approval') }}</option>
-                        <option value="APPROVED">{{ __('Approved') }}</option>
-                        <option value="SCHEDULED">{{ __('Scheduled') }}</option>
-                        <option value="SENDING">{{ __('Sending') }}</option>
-                        <option value="COMPLETED">{{ __('Completed') }}</option>
-                        <option value="CANCELLED">{{ __('Cancelled') }}</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>{{ __('Campaign') }}</th>
-                        <th>{{ __('Channel') }}</th>
-                        <th>{{ __('Status') }}</th>
-                        <th>{{ __('Audience') }}</th>
-                        <th>{{ __('Progress') }}</th>
-                        <th>{{ __('Creator / Approver') }}</th>
-                        <th>{{ __('Actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($campaigns as $c)
-                        <tr>
-                            <td>
-                                <strong>{{ $c->name }}</strong>
-                                @if ($c->subject)
-                                    <div class="small text-muted text-truncate" style="max-width: 250px;">{{ $c->subject }}</div>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary text-uppercase">{{ $c->channel }}</span>
-                            </td>
-                            <td>
-                                @php
-                                    $badgeClass = match ($c->status) {
-                                        'COMPLETED' => 'bg-success',
-                                        'SENDING' => 'bg-primary',
-                                        'APPROVED' => 'bg-info text-dark',
-                                        'PENDING_APPROVAL' => 'bg-warning text-dark',
-                                        'CANCELLED' => 'bg-dark',
-                                        default => 'bg-secondary',
-                                    };
-                                @endphp
-                                <span class="badge {{ $badgeClass }}">{{ $c->status }}</span>
-                            </td>
-                            <td>
-                                <strong>{{ number_format($c->recipient_count) }}</strong>
-                            </td>
-                            <td>
-                                <div class="small">
-                                    <span>{{ __('Sent') }}: {{ number_format($c->sent_count) }}</span> /
-                                    <span class="text-success">{{ __('Delivered') }}: {{ number_format($c->delivered_count) }}</span>
-                                    @if ($c->failed_count > 0)
-                                        / <span class="text-danger">{{ __('Failed') }}: {{ number_format($c->failed_count) }}</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td>
-                                <small>
-                                    {{ $c->creator->name }}
-                                    @if ($c->approver)
-                                        <br><span class="text-muted">{{ __('Approved by :name', ['name' => $c->approver->name]) }}</span>
-                                    @endif
-                                </small>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    @if ($c->status === 'PENDING_APPROVAL')
-                                        <button type="button" class="btn btn-warning" wire:click="approve('{{ $c->id }}')">
-                                            {{ __('Approve') }}
-                                        </button>
-                                    @endif
-                                    @if ($c->status === 'APPROVED' || $c->status === 'SCHEDULED')
-                                        <button type="button" class="btn btn-success" wire:click="send('{{ $c->id }}')">
-                                            {{ __('Send Now') }}
-                                        </button>
-                                    @endif
-                                    @if (in_array($c->status, ['PENDING_APPROVAL', 'APPROVED', 'SCHEDULED', 'SENDING'], true))
-                                        <button type="button" class="btn btn-outline-danger" wire:click="cancel('{{ $c->id }}')">
-                                            {{ __('Cancel') }}
-                                        </button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
-                                {{ __('No campaigns found.') }}
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if ($campaigns->hasPages())
-            <div class="card-footer">
-                {{ $campaigns->links() }}
-            </div>
+        @if ($canSend)
+            <x-ui.button :href="route('admin.comms.campaigns.builder')" icon="fa-plus" wire:navigate dusk="campaign-new">{{ __('New campaign') }}</x-ui.button>
         @endif
     </div>
-</div>
 
+    @if ($awaitingApproval > 0)
+        <x-ui.alert type="warning" class="mb-3">
+            {{ trans_choice(':count campaign is waiting for approval.|:count campaigns are waiting for approval.', $awaitingApproval) }}
+            <x-ui.button type="button" variant="link" size="sm" wire:click="$set('status', 'PENDING_APPROVAL')">{{ __('Show them') }}</x-ui.button>
+        </x-ui.alert>
+    @endif
+
+    <div class="ui-card mb-3">
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <x-ui.select :label="__('Status')" name="campaignStatus" id="campaign-status" wire:model.live="status" :options="$statuses" :placeholder="__('All')" :selected="$status" />
+            </div>
+            <div class="col-12 col-md-4">
+                <x-ui.select :label="__('Channel')" name="campaignChannel" id="campaign-channel" wire:model.live="channel" :options="$channels" :placeholder="__('All')" :selected="$channel" />
+            </div>
+        </div>
+    </div>
+
+    <div wire:loading.class="is-loading" wire:target="status, channel, gotoPage, nextPage, previousPage">
+        <x-admin.table :headers="[__('Campaign'), __('Channel'), __('Audience'), __('Sent'), __('Opened'), __('Clicked'), __('Status'), __('Created (IST)')]"
+                       :caption="__('Campaigns')" :empty="$this->campaigns->isEmpty()">
+            <x-slot:emptyState>
+                <x-ui.empty-state icon="fa-paper-plane-o"
+                                  :title="$status !== '' || $channel !== '' ? __('No campaigns match these filters') : __('No campaigns yet')"
+                                  :message="$canSend ? __('Create one to reach a segment of members by email, SMS or in the bell.') : __('Campaigns your team sends appear here.')" />
+            </x-slot:emptyState>
+
+            @foreach ($this->campaigns as $row)
+                @php($s = $stats[$row->id])
+                <tr wire:key="cmp-{{ $row->code }}">
+                    <td>
+                        <a href="{{ route('admin.comms.campaigns.show', $row->code) }}" wire:navigate><strong>{{ $row->name }}</strong></a>
+                        <div class="small text-muted-brand">{{ $row->code }} · {{ $row->creator?->name }}</div>
+                    </td>
+                    <td>{{ $row->channel->label() }}</td>
+                    <td>{{ $s->audience > 0 ? number_format($s->audience) : '—' }}</td>
+                    <td>{{ number_format($s->sent) }}</td>
+                    <td>{{ $row->channel === \App\Enums\CommsChannel::Email ? number_format($s->opened) : '—' }}</td>
+                    <td>{{ $row->action_url ? number_format($s->clicked) : '—' }}</td>
+                    <td><x-ui.badge :variant="$row->status->badgeVariant()">{{ $row->status->label() }}</x-ui.badge></td>
+                    <td class="small">{{ $row->created_at->timezone($timezone)->format('d M Y, g:i a') }}</td>
+                </tr>
+            @endforeach
+        </x-admin.table>
+
+        {{ $this->campaigns->links() }}
+    </div>
+</div>

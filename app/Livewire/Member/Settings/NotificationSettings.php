@@ -103,7 +103,7 @@ final class NotificationSettings extends Component
             $this->matrix[$event->value] = [
                 'in_app' => $row !== null ? $row->in_app : $event->defaultInApp(),
                 'email' => $event->defaultEmail() && ($row !== null ? $row->email : true),
-                'sms' => $event->defaultSms() && ($row !== null ? $row->sms : true),
+                'sms' => $event->usesChannel('sms') && ($row !== null ? $row->sms : $event->defaultSms()),   // opt-in SMS (offers) starts off
             ];
         }
     }

@@ -85,7 +85,7 @@ final class UpdateNotificationPreferences
             }
             $row = $rows->get($event->value);
             foreach (['in_app' => $choice->inApp, 'email' => $choice->email, 'sms' => $choice->sms] as $channel => $on) {
-                $now = $event->usesChannel($channel) && ($row !== null ? (bool) $row->{$channel} : true);
+                $now = $event->usesChannel($channel) && ($row !== null ? (bool) $row->{$channel} : $event->defaultFor($channel));
                 if ($on && $event->usesChannel($channel) && ! $now) {
                     return true;
                 }

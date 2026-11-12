@@ -10,7 +10,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 
 /**
  * Cached feature-flag lookups (PRD A15): Feature::active(Flag::LikesEnabled). A flag without a
- * row is OFF. Toggled only by the ToggleFeatureFlag Action, which calls flush().
+ * row uses its default (Flag::defaultOn). Toggled only by the ToggleFeatureFlag Action, which calls flush().
  */
 final class FeatureFlags
 {
@@ -27,7 +27,7 @@ final class FeatureFlags
 
     public function active(Flag $flag): bool
     {
-        return $this->states()[$flag->value] ?? false;
+        return $this->states()[$flag->value] ?? $flag->defaultOn();
     }
 
     public function flush(): void

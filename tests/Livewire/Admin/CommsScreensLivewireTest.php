@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 use App\Enums\CommsChannel;
 use App\Livewire\Admin\Comms\Announcements;
-use App\Livewire\Admin\Comms\CampaignBuilder;
-use App\Livewire\Admin\Comms\Campaigns;
 use App\Livewire\Admin\Comms\DeliveryLog;
-use App\Livewire\Admin\Comms\Journeys;
 use App\Livewire\Admin\Comms\Templates;
 use App\Models\Announcement;
-use App\Models\AutomatedJourney;
 use App\Models\CommunicationTemplate;
 use App\Models\OutboundMessage;
 use Illuminate\Support\Facades\Cache;
@@ -130,19 +126,4 @@ it('P8.3a delivery log: filters by channel / status, empty state, masked recipie
         ->assertDontSee('Send again')   // the failed row holds no notification
         ->set('channel', 'sms')->assertDontSee('a•••@example.com')
         ->set('channel', '')->set('status', 'DELIVERED')->assertSee('No messages match these filters.');
-});
-
-it('P8.3b (first pass, kept): campaigns, builder and journeys screens mount', function (): void {
-    Livewire::withoutLazyLoading()->test(Campaigns::class)->assertOk()->assertSee('Campaigns');
-
-    Livewire::withoutLazyLoading()->test(CampaignBuilder::class)->assertOk()->assertSee('Campaign Builder')
-        ->set('name', 'Test Segment Campaign')->set('channel', 'email')->set('subject', 'Hello grooms')->set('message', 'Special groom offers')
-        ->assertSee('Estimated Audience');
-
-    $component = Livewire::withoutLazyLoading()->test(Journeys::class)->assertOk()
-        ->assertSee('Automated Lifecycle Journeys')->assertSee('Incomplete Registration Wizard');
-    $journey = AutomatedJourney::query()->where('key', 'wizard_incomplete')->first();
-    expect($journey)->not->toBeNull();
-    $component->call('toggleActive', $journey->id);
-    expect($journey->fresh()->is_active)->toBeFalse();
 });

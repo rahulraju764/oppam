@@ -7,6 +7,7 @@ namespace App\Actions\Profile\Photos;
 use App\Actions\Profile\Photos\Concerns\ManagesOwnPhotos;
 use App\Domain\Media\PerceptualHash;
 use App\Domain\Moderation\ModerationFlags;
+use App\Domain\Profile\PhotoLimits;
 use App\Enums\ModerationItemType;
 use App\Enums\ModerationStatus;
 use App\Enums\PhotoStatus;
@@ -85,7 +86,7 @@ final class UploadProfilePhoto
         }
 
         try {
-            $media = DB::transaction(fn (): Media => $this->store($profile, $clean['path'], $caption, (int) $config['max_photos']));
+            $media = DB::transaction(fn (): Media => $this->store($profile, $clean['path'], $caption, PhotoLimits::maxPhotos()));
         } finally {
             @unlink($clean['path']);
         }
@@ -101,7 +102,7 @@ final class UploadProfilePhoto
 
         Validator::make(['photo' => $file, 'caption' => $caption], [
             'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp',
-                'max:'.(int) $config['photo_max_kb'], "dimensions:min_width={$minPx},min_height={$minPx}"],
+                'max:'.PhotoLimits::maxKilobytes(), "dimensions:min_width={$minPx},min_height={$minPx}"],
             'caption' => ['nullable', 'string', 'max:100'],
         ], [], ['photo' => __('photo'), 'caption' => __('caption')])->validate();
     }

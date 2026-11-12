@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Services\Mail;
 
 use App\Contracts\MailBounceVerifier;
-use App\Data\Comms\BounceReport;
+use App\Data\Comms\MailEventReport;
+use App\Enums\MailEventKind;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Mailgun "failed" / "permanent_fail" webhooks (A14, P8.3a). Mailgun signs every event:
+ * Mailgun "failed" (bounce, P8.3a), "delivered" and "opened" (campaign stats, P8.3b1) webhooks —
+ * point all three at /webhooks/mail/bounce. Mailgun signs every event:
  * HMAC-SHA256(timestamp . token) with the webhook signing key. Refused when the key isn't set,
  * the signature doesn't match, the timestamp is older than `oppam.comms.bounce_max_age_seconds`,
  * or the token was seen before (replay guard: webhook_replay_tokens).
@@ -44,12 +46,18 @@ final class MailgunBounceVerifier implements MailBounceVerifier
         }
 
         $event = $request->input('event-data');
-        if (! is_array($event) || ! in_array($event['event'] ?? null, ['failed'], true)) {
+        $kind = is_array($event) ? match ($event['event'] ?? null) {
+            'failed' => MailEventKind::Bounced,
+            'delivered' => MailEventKind::Delivered,
+            'opened' => MailEventKind::Opened,   // P8.3b1: opens only from the provider's signed events
+            default => null,
+        } : null;
+        if ($kind === null) {
             return [];
         }
 
         $messageId = (string) ($event['message']['headers']['message-id'] ?? '');
 
-        return $messageId === '' ? [] : [new BounceReport(trim($messageId, '<>'), ($event['severity'] ?? '') === 'permanent')];
+        return $messageId === '' ? [] : [new MailEventReport(trim($messageId, '<>'), $kind, ($event['severity'] ?? '') === 'permanent')];
     }
 }

@@ -4,17 +4,30 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Data\Content\SeoData;
+
 /**
  * Every admin-editable setting (PRD A15 "Site settings" + "Business rules"), with its type,
  * default and validation — registered in ONE place (laravel-patterns.md "Config & settings").
  * Read with settings(SettingKey::InterestExpiryDays); edit only through the UpdateSetting Action
  * (validated + audited). Plan limits are NOT here — they live in plan_features (A06), including
- * the Free "one reply per conversation" allowance. The brand name is config (oppam.site.name):
- * renaming the brand also changes logos and assets, so it is a deployment change, not a setting.
+ * the Free "one reply per conversation" allowance. Since P8.4 (owner 2026-11-12) the site name,
+ * logo, social links and SEO defaults are settings too (config / env are their defaults); the
+ * A15 screens are generated from label() / section() / unit() — no list of keys in a component.
  */
 enum SettingKey: string
 {
     // ---- Site (A15 "Site settings") ----
+    case SiteName = 'site.name';
+    /** Public-disk path of an uploaded logo (UploadSiteLogo); empty = the bundled logo. */
+    case SiteLogoPath = 'site.logo_path';
+    case SocialFacebook = 'social.facebook';
+    case SocialTwitter = 'social.twitter';
+    case SocialInstagram = 'social.instagram';
+    case SocialLinkedin = 'social.linkedin';
+    case SocialYoutube = 'social.youtube';
+    case SeoDefaultTitle = 'seo.default_title';
+    case SeoDefaultDescription = 'seo.default_description';
     case SiteSupportEmail = 'site.support_email';
     case SiteInfoEmail = 'site.info_email';
     case SitePhoneDisplay = 'site.phone_display';
@@ -35,6 +48,10 @@ enum SettingKey: string
     case MembersEmailChangesPerDay = 'members.email_changes_per_day';
     case NotificationsQuietFrom = 'notifications.quiet_from';
     case NotificationsQuietUntil = 'notifications.quiet_until';
+    case CampaignsApprovalThreshold = 'campaigns.approval_threshold';
+    case CampaignsMaxPerMinute = 'campaigns.max_per_minute';
+    case JourneysLedgerRetentionDays = 'journeys.ledger_retention_days';
+    case SettingsIntegrationChecksPerHour = 'settings.integration_checks_per_hour';
     case InterestExpiryDays = 'interest.expiry_days';
     case InterestResendCooldownDays = 'interest.resend_cooldown_days';
     case ChatUnsendWindowMinutes = 'chat.unsend_window_minutes';
@@ -140,6 +157,8 @@ enum SettingKey: string
     {
         return match ($this) {
             self::SeoIndexable => SettingType::Boolean,
+            self::SiteName, self::SiteLogoPath, self::SocialFacebook, self::SocialTwitter, self::SocialInstagram,
+            self::SocialLinkedin, self::SocialYoutube, self::SeoDefaultTitle, self::SeoDefaultDescription,
             self::SiteSupportEmail, self::SiteInfoEmail, self::SitePhoneDisplay, self::SitePhoneDial,
             self::SiteAddress, self::SiteHours, self::SiteMaintenanceMessage,
             self::BillingSellerName, self::BillingSellerGstin, self::BillingSellerAddress,
@@ -152,6 +171,16 @@ enum SettingKey: string
     public function default(): int|bool|string
     {
         return match ($this) {
+            // Until an admin sets them (P8.4, owner 2026-11-12): the deployment's config / env values.
+            self::SiteName => (string) config('oppam.site.name'),
+            self::SiteLogoPath => '',
+            self::SocialFacebook => (string) config('oppam.site.social.facebook'),
+            self::SocialTwitter => (string) config('oppam.site.social.twitter'),
+            self::SocialInstagram => (string) config('oppam.site.social.instagram'),
+            self::SocialLinkedin => (string) config('oppam.site.social.linkedin'),
+            self::SocialYoutube => (string) config('oppam.site.social.youtube'),
+            self::SeoDefaultTitle => SeoData::DEFAULT_TITLE,
+            self::SeoDefaultDescription => SeoData::DEFAULT_DESCRIPTION,
             self::SiteSupportEmail => 'support@oppam.in',
             self::SiteInfoEmail => 'info@oppam.in',
             self::SitePhoneDisplay => '0895 - 3881 - 2873',
@@ -168,6 +197,10 @@ enum SettingKey: string
             self::MembersEmailChangesPerDay => 5,        // M14 Account: email confirmation links a member may ask for per day
             self::NotificationsQuietFrom => 22,          // M08: no SMS from this IST hour … (one window for everyone, owner 2026-11-06 / 11-07)
             self::NotificationsQuietUntil => 7,          // … until this IST hour
+            self::CampaignsApprovalThreshold => 10_000,  // A14: a campaign to more members than this needs a second admin
+            self::CampaignsMaxPerMinute => 1_000,        // A14: the highest throttle a campaign may set (messages per minute)
+            self::JourneysLedgerRetentionDays => 400,    // A14 journeys (P8.3b2): the "already sent" ledger is kept this long
+            self::SettingsIntegrationChecksPerHour => 10, // A15 (P8.4): integration Test buttons per admin per hour (each is a real provider call)
             self::InterestExpiryDays => 30,
             self::InterestResendCooldownDays => 90,
             self::ChatUnsendWindowMinutes => 60,
@@ -192,7 +225,7 @@ enum SettingKey: string
             self::SignalsNewAccountThreadsPerDay => 15, // … writing in this many conversations in 24 h = signal
             self::DailyMatchCount => 10,
             self::PhotosMaxAdditional => 9,
-            self::PhotosMaxUploadMb => 8,
+            self::PhotosMaxUploadMb => 10,          // = the 10 MB the uploads used before this was wired (P8.4)
             self::LikesSpamMaxPer10Minutes => 50,   // R-M06-2: more than this in 10 minutes = like spam
             self::LikesSpamBlockMinutes => 60,      // R-M06-2: the soft block that follows
             self::FavoritesMaxPerMinute => 60,      // A13 "mass favourites via automation": add / remove per member
@@ -275,6 +308,12 @@ enum SettingKey: string
     public function rules(): array
     {
         return match ($this) {
+            self::SiteName => ['required', 'string', 'max:60'],
+            self::SiteLogoPath => ['nullable', 'string', 'max:255', 'regex:/^(site\/logo-[A-Za-z0-9]+\.(png|webp))?$/'],
+            self::SocialFacebook, self::SocialTwitter, self::SocialInstagram, self::SocialLinkedin,
+            self::SocialYoutube => ['nullable', 'string', 'max:255', 'url:https'],
+            self::SeoDefaultTitle => ['required', 'string', 'max:70'],
+            self::SeoDefaultDescription => ['required', 'string', 'max:170'],
             self::SiteSupportEmail, self::SiteInfoEmail => ['required', 'email', 'max:255'],
             self::SitePhoneDisplay => ['required', 'string', 'max:40'],
             self::SitePhoneDial => ['required', 'string', 'regex:/^\+?[0-9]{6,15}$/'],
@@ -292,6 +331,11 @@ enum SettingKey: string
             self::MembersSettingsChangesPerHour => ['required', 'integer', 'min:5', 'max:200'],
             self::MembersEmailChangesPerDay => ['required', 'integer', 'min:1', 'max:20'],
             self::NotificationsQuietFrom, self::NotificationsQuietUntil => ['required', 'integer', 'min:0', 'max:23'],
+            self::CampaignsApprovalThreshold => ['required', 'integer', 'min:100', 'max:1000000'],
+            self::CampaignsMaxPerMinute => ['required', 'integer', 'min:10', 'max:10000'],
+            // Longer than the longest journey offset (365), so a step is never repeated after its row is pruned.
+            self::JourneysLedgerRetentionDays => ['required', 'integer', 'min:370', 'max:1825'],
+            self::SettingsIntegrationChecksPerHour => ['required', 'integer', 'min:1', 'max:100'],
             self::InterestExpiryDays => ['required', 'integer', 'min:1', 'max:365'],
             self::InterestResendCooldownDays => ['required', 'integer', 'min:0', 'max:365'],
             self::ChatUnsendWindowMinutes => ['required', 'integer', 'min:0', 'max:1440'],
@@ -383,5 +427,196 @@ enum SettingKey: string
     public function group(): string
     {
         return explode('.', $this->value)[0];
+    }
+
+    /** The A15 form control for this key: 'checkbox' | 'number' | 'url' | 'textarea' | 'text'. */
+    public function inputKind(): string
+    {
+        return match (true) {
+            $this->type() === SettingType::Boolean => 'checkbox',
+            $this->type() === SettingType::Integer => 'number',
+            $this->group() === 'social' => 'url',
+            in_array($this, [self::SiteAddress, self::BillingSellerAddress, self::SeoDefaultDescription, self::SiteMaintenanceMessage], true) => 'textarea',
+            default => 'text',
+        };
+    }
+
+    /** Edited on A15 "Site settings" (P8.4); everything else is a business rule. */
+    public function isSite(): bool
+    {
+        return in_array($this->group(), ['site', 'seo', 'social', 'content'], true);
+    }
+
+    /** The A15 business-rules section this key is listed under. */
+    public function section(): string
+    {
+        return match ($this->group()) {
+            'site', 'seo', 'social', 'content' => __('Site'),
+            'profile', 'members', 'photos' => __('Members & profiles'),
+            'notifications', 'campaigns', 'journeys' => __('Notifications & campaigns'),
+            'interest', 'interests', 'likes', 'favorites', 'search', 'profile_views', 'matching' => __('Engagement & matching'),
+            'chat' => __('Chat'),
+            'signals', 'moderation', 'system', 'settings' => __('Moderation & monitoring'),
+            'broker' => __('Brokers & bureaus'),
+            'otp' => __('Sign-in (OTP)'),
+            'billing' => __('Billing & invoices'),
+            'verification' => __('ID verification'),
+            default => __('Safety & support'),
+        };
+    }
+
+    /** What the number counts, from the key's own name (days, minutes, %, …); '' for text and plain counts. */
+    public function unit(): string
+    {
+        if ($this->type() !== SettingType::Integer) {
+            return '';
+        }
+
+        return match (true) {
+            str_ends_with($this->value, '_days') => __('days'),
+            str_ends_with($this->value, '_hours') => __('hours'),
+            str_ends_with($this->value, '_minutes') => __('minutes'),
+            str_ends_with($this->value, '_pct') => '%',
+            str_ends_with($this->value, '_mb') => 'MB',
+            str_ends_with($this->value, '_paise') => __('paise (₹1 = 100)'),
+            str_ends_with($this->value, '_bps') => __('basis points (1% = 100)'),
+            str_contains($this->value, 'per_minute') => __('per minute'),
+            str_contains($this->value, 'per_hour') => __('per hour'),
+            str_contains($this->value, 'per_day') => __('per day'),
+            in_array($this, [self::NotificationsQuietFrom, self::NotificationsQuietUntil], true) => __('hour (0–23, IST)'),
+            in_array($this, [self::MinAgeFemale, self::MinAgeMale], true) => __('years'),
+            default => '',
+        };
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::SiteName => __('Site name'),
+            self::SiteLogoPath => __('Logo'),
+            self::SocialFacebook => __('Facebook page'),
+            self::SocialTwitter => __('X (Twitter) profile'),
+            self::SocialInstagram => __('Instagram profile'),
+            self::SocialLinkedin => __('LinkedIn page'),
+            self::SocialYoutube => __('YouTube channel'),
+            self::SeoDefaultTitle => __('Default page title'),
+            self::SeoDefaultDescription => __('Default page description'),
+            self::SiteSupportEmail => __('Support email'),
+            self::SiteInfoEmail => __('Information email'),
+            self::SitePhoneDisplay => __('Phone (as shown)'),
+            self::SitePhoneDial => __('Phone (to dial)'),
+            self::SiteAddress => __('Office address'),
+            self::SiteHours => __('Office hours'),
+            self::SiteMaintenanceMessage => __('Maintenance message'),
+            self::SeoIndexable => __('Let search engines index the site'),
+            self::ContentHomeMembersMin => __('Featured members needed before the home band shows'),
+            self::ContentHomeToggleMaxPerHour => __('Featured on/off changes a member may make'),
+            self::MinAgeFemale => __('Minimum age — bride'),
+            self::MinAgeMale => __('Minimum age — groom'),
+            self::ProfileAutoHideInactiveDays => __('Hide profiles inactive for'),
+            self::MembersPurgeAfterDays => __('Deleted accounts restorable for'),
+            self::MembersSettingsChangesPerHour => __('Settings saves a member may make'),
+            self::MembersEmailChangesPerDay => __('Email confirmation links a member may ask for'),
+            self::NotificationsQuietFrom => __('SMS quiet hours start'),
+            self::NotificationsQuietUntil => __('SMS quiet hours end'),
+            self::CampaignsApprovalThreshold => __('Campaign size needing a second admin'),
+            self::CampaignsMaxPerMinute => __('Highest campaign sending speed'),
+            self::JourneysLedgerRetentionDays => __('Keep the journey "already sent" record for'),
+            self::SettingsIntegrationChecksPerHour => __('Integration tests an admin may run'),
+            self::InterestExpiryDays => __('Interest expires after'),
+            self::InterestResendCooldownDays => __('Wait before re-sending an interest'),
+            self::ChatUnsendWindowMinutes => __('A message can be unsent for'),
+            self::ChatMaxPerMinute => __('Chat messages a member may send'),
+            self::ChatMaxLength => __('Longest chat message (characters)'),
+            self::ChatImageMaxMb => __('Largest chat photo'),
+            self::ChatRetentionDays => __('Delete threads idle for'),
+            self::ChatDigestDelayMinutes => __('Email unread messages after'),
+            self::ChatSafetyFirstMessages => __('Messages with contact details masked'),
+            self::ChatSpamRepeatThreads => __('Same text in this many threads = spam'),
+            self::ChatSpamRepeatWindowMinutes => __('… within'),
+            self::ChatSpamRepeatMinLength => __('Shortest text counted as a repeat (characters)'),
+            self::ChatAutoFreezeReports => __('Chat reports that freeze a sender'),
+            self::ChatAutoFreezeWindowDays => __('… within'),
+            self::ChatReportsMaxPerHour => __('Chat reports a member may make'),
+            self::ChatBreakGlassMinutes => __('Break-glass read lasts'),
+            self::ChatOneSidedThreshold => __('Unanswered messages in a row = harassment signal'),
+            self::SignalsInterestSpamMinSent => __('Interest spam: at least this many sent'),
+            self::SignalsInterestSpamWindowDays => __('Interest spam: within'),
+            self::SignalsInterestSpamMaxAcceptPct => __('Interest spam: at most this share accepted'),
+            self::SignalsNewAccountDays => __('New account: younger than'),
+            self::SignalsNewAccountThreadsPerDay => __('New account: conversations a day = signal'),
+            self::DailyMatchCount => __('Daily matches per member'),
+            self::PhotosMaxAdditional => __('Photos besides the main one'),
+            self::PhotosMaxUploadMb => __('Largest profile photo'),
+            self::LikesSpamMaxPer10Minutes => __('Likes in 10 minutes before a pause'),
+            self::LikesSpamBlockMinutes => __('Like pause lasts'),
+            self::FavoritesMaxPerMinute => __('Favourite changes a member may make'),
+            self::InterestsMaxPerMinute => __('Interests a member may send'),
+            self::SearchMaxPerMinute => __('Searches a member may run'),
+            self::ProfileViewsMaxPerMinute => __('Profile views counted'),
+            self::ModerationSlaHours => __('Moderation item overdue after'),
+            self::SystemQueueBacklogAlert => __('Queue backlog alert at (jobs waiting)'),
+            self::BrokerStaffSeatsDefault => __('Staff seats for a new bureau'),
+            self::BrokerImportRowsPerFile => __('Rows per import file'),
+            self::BrokerImportRowsPerDay => __('Import rows a bureau may add'),
+            self::BrokerImportRowsPerDayNew => __('Import rows a new bureau may add'),
+            self::BrokerImportAutoPauseRejectionPct => __('Pause imports when this share is rejected'),
+            self::BrokerImportAutoPauseMinDecided => __('… once this many are decided'),
+            self::BrokerImportFileRetentionDays => __('Keep import files for'),
+            self::BrokerPayoutMinimumPaise => __('Smallest payout'),
+            self::BrokerPayoutSecondApproverPaise => __('Payout line needing a second approver'),
+            self::BrokerPayoutTdsBps => __('TDS on payouts'),
+            self::BrokerPayoutReminderDay => __('Payout reminder from day of month'),
+            self::BrokerDisputeUpheldLimit => __('Upheld consent disputes that pause a bureau'),
+            self::BrokerDisputeWindowDays => __('… within'),
+            self::BrokerExportAnomalyPerHour => __('Exports by one login an hour = anomaly'),
+            self::BrokerExportRepeatWindowMinutes => __('Same profile exported again within'),
+            self::BrokerSignalSharedSignups => __('Fraud: referrals from one device / IP'),
+            self::BrokerSignalSpikeMultiplier => __('Fraud: referral spike (× the average)'),
+            self::BrokerSignalSpikeMinimum => __('Fraud: spike needs at least this many referrals'),
+            self::BrokerSignalIncompletePct => __('Fraud: referrals never live'),
+            self::BrokerSignalRefundCount => __('Fraud: quick refunds by referred members'),
+            self::BrokerSignalRejectionPct => __('Quality: profiles rejected'),
+            self::BrokerSignalStaffDevices => __('Security: devices of one staff login in 7 days'),
+            self::BrokerSignalImportSharedPrefix => __('Fraud: imported mobiles sharing a prefix'),
+            self::OtpTtlMinutes => __('OTP valid for'),
+            self::OtpMaxAttempts => __('Wrong OTP tries allowed'),
+            self::OtpMaxSendsPer15Minutes => __('OTPs to one number in 15 minutes'),
+            self::OtpMaxSendsPerPhonePerDay => __('OTPs to one number'),
+            self::OtpMaxSendsPerIpPerDay => __('OTPs from one IP address'),
+            self::BillingGstRateBps => __('GST rate'),
+            self::BillingOrderTtlMinutes => __('Unpaid checkout expires after'),
+            self::BillingCheckoutsMaxPerHour => __('Checkouts a member may start'),
+            self::BillingCouponAttemptsPerHour => __('Coupon codes a member may try'),
+            self::BillingRefundNotSentWaitMinutes => __('Close an unanswered refund after'),
+            self::BillingSellerName => __('Invoice: seller name'),
+            self::BillingSellerGstin => __('Invoice: seller GSTIN'),
+            self::BillingSellerAddress => __('Invoice: seller address'),
+            self::BillingSellerStateCode => __('Invoice: seller state code'),
+            self::BillingSacCode => __('Invoice: SAC code'),
+            self::VerificationAgingWarnHours => __('ID queue amber after'),
+            self::VerificationAgingBreachHours => __('ID queue red after'),
+            self::VerificationPurgeAfterDays => __('Delete ID documents after the decision'),
+            self::VerificationMaxSubmissionsPerDay => __('ID submissions a member may make'),
+            self::VerificationRapidResubmitCount => __('Rapid resubmission: this many tries'),
+            self::VerificationRapidResubmitDays => __('… within'),
+            self::SafetyP0SlaHours => __('P0 safety reports answered within'),
+            self::SafetyP1SlaHours => __('P1 safety reports answered within'),
+            self::SafetyP2SlaHours => __('P2 safety reports answered within'),
+            self::SafetyEscalateReporters => __('Reporters that escalate to P0'),
+            self::SafetyEscalateWindowDays => __('… within'),
+            self::SafetyReportsMaxPerHour => __('Profile reports a member may make'),
+            self::SafetyBlocksMaxPerHour => __('Blocks and ignores a member may make'),
+            self::SafetyEvidenceContextMessages => __('Messages shown around a reported one'),
+            self::SafetyPhashBanDistance => __('Photo similarity to a banned photo (bits)'),
+            self::SafetyOncallPhones => __('On-call mobiles for P0 alerts'),
+            self::SupportSlaSafetyHours => __('Support: safety tickets answered within'),
+            self::SupportSlaPaymentsHours => __('Support: payment tickets answered within'),
+            self::SupportSlaDefaultHours => __('Support: other tickets answered within'),
+            self::SupportTicketsMaxPerHour => __('Support tickets one person may open'),
+            self::ContactMaxPerHour => __('Contact-form messages one person may send'),
+            self::ContactSpamRetentionDays => __('Delete contact spam after'),
+            self::ContactRetentionDays => __('Delete contact messages after'),
+        };
     }
 }

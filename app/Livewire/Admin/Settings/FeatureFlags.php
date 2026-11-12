@@ -10,26 +10,24 @@ use App\Models\AdminUser;
 use App\Support\Facades\Feature;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Feature flags management (PRD §11 A15).
- * Allows toggling platform capabilities on/off with audit trail.
+ * A15 feature flags (P8.4): every flag with what it does and its state. A switch opens a reason
+ * dialog; the server decides the new state (the opposite of the current one) — the browser only
+ * names the flag. Flags for features not built yet (push, boost) are shown, never togglable.
  */
-#[Layout('layouts::admin', ['title' => 'Feature Flags'])]
+#[Layout('layouts::admin', ['title' => 'Feature flags'])]
 final class FeatureFlags extends Component
 {
-    public bool $showConfirmModal = false;
+    #[Locked]
+    public ?string $pending = null;
 
     #[Locked]
-    public ?string $selectedFlag = null;
-
-    public string $selectedFlagLabel = '';
-
-    public bool $targetState = false;
+    public bool $pendingState = false;
 
     public string $reason = '';
 
@@ -38,77 +36,52 @@ final class FeatureFlags extends Component
         $this->authorize('settings.view');
     }
 
-    public function promptToggle(string $flagValue, bool $target): void
-    {
-        $flag = Flag::tryFrom($flagValue);
-        if ($flag === null) {
-            return;
-        }
-
-        $this->selectedFlag = $flag->value;
-        $this->selectedFlagLabel = $flag->name;
-        $this->targetState = $target;
-        $this->reason = '';
-        $this->resetErrorBag();
-        $this->showConfirmModal = true;
-    }
-
-    public function cancelToggle(): void
-    {
-        $this->showConfirmModal = false;
-        $this->reset('selectedFlag', 'selectedFlagLabel', 'targetState', 'reason');
-        $this->resetErrorBag();
-    }
-
-    public function confirmToggle(ToggleFeatureFlag $action): void
+    public function promptToggle(string $flag): void
     {
         $this->authorize('settings.edit');
+        $found = $this->flag($flag);
 
-        if ($this->selectedFlag === null) {
-            return;
-        }
+        $this->resetValidation();
+        $this->pending = $found->value;
+        $this->pendingState = ! Feature::active($found);
+        $this->reason = '';
+        $this->dispatch('open-modal', name: 'flag-toggle');
+    }
 
-        $flag = Flag::from($this->selectedFlag);
+    public function confirmToggle(ToggleFeatureFlag $toggle): void
+    {
+        $found = $this->flag((string) $this->pending);
+        $toggle->handle($this->admin(), $found, $this->pendingState, $this->reason);
 
-        $this->validate([
-            'reason' => ['required', 'string', 'min:3', 'max:500'],
-        ]);
-
-        try {
-            $action->handle($this->admin(), $flag, $this->targetState, $this->reason);
-        } catch (ValidationException $e) {
-            $this->setErrorBag($e->validator->errors());
-
-            return;
-        }
-
-        $stateLabel = $this->targetState ? __('enabled') : __('disabled');
-        $this->showConfirmModal = false;
-        session()->flash('status', __("Feature ':flag' has been :state.", ['flag' => $flag->value, 'state' => $stateLabel]));
+        $this->pending = null;
+        $this->dispatch('close-modal', name: 'flag-toggle');
+        $this->dispatch('toast', type: 'success', message: $this->pendingState
+            ? __(':flag switched on.', ['flag' => $found->label()])
+            : __(':flag switched off.', ['flag' => $found->label()]));
     }
 
     public function render(): View
     {
-        $flags = array_map(function (Flag $flag) {
-            return [
-                'enum' => $flag,
-                'key' => $flag->value,
-                'name' => $flag->name,
-                'description' => $flag->description(),
-                'isActive' => Feature::active($flag),
-            ];
-        }, Flag::cases());
-
         return view('livewire.admin.settings.feature-flags', [
-            'flags' => $flags,
+            'flags' => Flag::cases(),
+            'canEdit' => Gate::forUser($this->admin())->allows('settings.edit'),
+            'pendingFlag' => Flag::tryFrom((string) $this->pending),
         ]);
+    }
+
+    private function flag(string $value): Flag
+    {
+        $flag = Flag::tryFrom($value);
+        abort_if($flag === null || ! $flag->isBuilt(), 404);
+
+        return $flag;
     }
 
     private function admin(): AdminUser
     {
-        /** @var AdminUser $user */
-        $user = Auth::guard('admin')->user();
+        /** @var AdminUser $admin */
+        $admin = Auth::guard('admin')->user();
 
-        return $user;
+        return $admin;
     }
 }

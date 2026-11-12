@@ -6,9 +6,10 @@ namespace App\Enums;
 
 /**
  * Feature flags (PRD A15 + §11A B.23 / B.24). Read with Feature::active(Flag::LikesEnabled).
- * Every flag defaults to OFF: a feature is switched on only once its session has shipped and its
- * tests pass (CLAUDE.md "Don't enable a feature in production before its tests pass and its flag
- * is set"). Toggled only through the ToggleFeatureFlag Action (audited).
+ * A flag nobody has toggled uses its default: OFF for anything new or not yet released, ON for
+ * the features that shipped and run today (likes, chat images, live updates) — so wiring their
+ * switch never turns them off by itself (owner 2026-11-12). Toggled only through the
+ * ToggleFeatureFlag Action (audited). push / boost are not built (v1.5): shown, never togglable.
  */
 enum Flag: string
 {
@@ -24,20 +25,49 @@ enum Flag: string
     case PushEnabled = 'push.enabled';
     case BoostEnabled = 'boost.enabled';
 
+    /** The state of a flag no admin has toggled (no row, or the seeded row). */
+    public function defaultOn(): bool
+    {
+        return in_array($this, [self::RealtimeEnabled, self::LikesEnabled, self::ChatImages], true);
+    }
+
+    /** False = the feature behind it doesn't exist yet: the switch would do nothing, so it can't be toggled. */
+    public function isBuilt(): bool
+    {
+        return ! in_array($this, [self::PushEnabled, self::BoostEnabled], true);
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::RealtimeEnabled => __('Live updates'),
+            self::RealtimePollingFallback => __('Polling fallback'),
+            self::ChatImages => __('Photos in chat'),
+            self::LikesEnabled => __('Likes'),
+            self::BrokerSelfApply => __('Broker applications'),
+            self::BrokerStaff => __('Bureau staff accounts'),
+            self::BrokerBulkImport => __('Bureau bulk import'),
+            self::BrokerClientInterestSending => __('Bureau interests for clients'),
+            self::PaymentsRazorpayLive => __('Live payments'),
+            self::PushEnabled => __('Push notifications'),
+            self::BoostEnabled => __('Profile boost'),
+        };
+    }
+
     public function description(): string
     {
         return match ($this) {
-            self::RealtimeEnabled => 'Live updates over WebSockets (Reverb / Pusher).',
-            self::RealtimePollingFallback => 'Poll for updates when WebSockets are unavailable.',
-            self::ChatImages => 'Allow image messages in chat.',
-            self::LikesEnabled => 'Members can like profiles.',
-            self::BrokerSelfApply => 'Brokers can apply publicly (admin KYC approval still required).',
-            self::BrokerStaff => 'Bureaus can add staff accounts.',
-            self::BrokerBulkImport => 'Bureaus can bulk-import profiles from Excel/CSV.',
-            self::BrokerClientInterestSending => 'Bureaus can send interests for managed profiles.',
-            self::PaymentsRazorpayLive => 'Use live Razorpay keys (test keys when off).',
-            self::PushEnabled => 'Browser push notifications (v1.5).',
-            self::BoostEnabled => 'Profile boost add-on (v1.5).',
+            self::RealtimeEnabled => __('Live updates over WebSockets (Reverb / Pusher). Off: no socket is opened; members see changes on the next page load.'),
+            self::RealtimePollingFallback => __('Poll for updates when WebSockets are unavailable.'),
+            self::ChatImages => __('Paid members can send photos in chat.'),
+            self::LikesEnabled => __('Members can like profiles. Off: the like button is hidden and likes are refused.'),
+            self::BrokerSelfApply => __('Brokers can apply publicly (admin KYC approval still required).'),
+            self::BrokerStaff => __('Bureaus can add staff accounts.'),
+            self::BrokerBulkImport => __('Bureaus can bulk-import profiles from Excel / CSV.'),
+            self::BrokerClientInterestSending => __('Bureaus can send interests for managed profiles.'),
+            self::PaymentsRazorpayLive => __('Use live Razorpay keys (test keys when off).'),
+            self::PushEnabled => __('Browser push notifications — not built yet (v1.5).'),
+            self::BoostEnabled => __('Profile boost add-on — not built yet (v1.5).'),
         };
     }
 }

@@ -5,120 +5,111 @@ declare(strict_types=1);
 namespace App\Livewire\Admin\Comms;
 
 use App\Actions\Admin\Comms\SaveJourney;
+use App\Enums\CommsChannel;
+use App\Enums\JourneyKey;
+use App\Enums\JourneySendStatus;
 use App\Models\AdminUser;
 use App\Models\AutomatedJourney;
-use App\Models\CommunicationTemplate;
+use App\Models\JourneySend;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Configures lifecycle automated journey rules (PRD §11 A14).
+ * A14 automated journeys (P8.3b2): each journey's on / off, day offsets and channel, with what it
+ * did in the last 30 days, plus the built-in plan-expiry reminders (P5.2), read-only. Viewing needs
+ * `campaigns.view`; changing needs `campaigns.send` (SaveJourney) and a reason. Nothing is written
+ * on a page load.
  */
-#[Layout('layouts::admin', ['title' => 'Automated Journeys'])]
+#[Layout('layouts::admin', ['title' => 'Automated journeys'])]
 final class Journeys extends Component
 {
-    public bool $showModal = false;
+    public const STATS_DAYS = 30;
 
+    /** The journey being edited (a JourneyKey value), set server-side by edit(). */
     #[Locked]
-    public ?string $editingId = null;
+    public ?string $editing = null;
 
-    public string $editingName = '';
+    public bool $isActive = false;
 
-    public bool $isActive = true;
+    /** @var array<array-key, mixed> up to three day offsets, as the browser sent them (validated by SaveJourney) */
+    public array $offsets = [];
 
-    public int $triggerDays = 3;
+    public string $channel = '';
 
-    public string $channel = 'email';
-
-    public ?string $templateId = null;
+    public string $reason = '';
 
     public function mount(): void
     {
         $this->authorize('campaigns.view');
-        $this->seedDefaultsIfMissing();
     }
 
-    public function edit(string $id): void
+    public function edit(string $key): void
     {
-        /** @var AutomatedJourney $journey */
-        $journey = AutomatedJourney::query()->findOrFail($id);
+        $this->authorize('campaigns.send');
+        $journeyKey = JourneyKey::tryFrom($key);
+        abort_if($journeyKey === null, 404);
+        $journey = AutomatedJourney::query()->where('key', $journeyKey->value)->firstOrFail();
 
-        $this->editingId = $journey->id;
-        $this->editingName = $journey->name;
+        $this->resetValidation();
+        $this->editing = $journeyKey->value;
         $this->isActive = $journey->is_active;
-        $this->triggerDays = $journey->trigger_days;
-        $this->channel = $journey->channel;
-        $this->templateId = $journey->template_id;
-        $this->showModal = true;
-    }
-
-    public function toggleActive(string $id, SaveJourney $action): void
-    {
-        $admin = $this->admin();
-        /** @var AutomatedJourney $journey */
-        $journey = AutomatedJourney::query()->findOrFail($id);
-
-        $action->handle($admin, $journey, ['is_active' => ! $journey->is_active]);
-        $this->dispatch('toast', type: 'info', message: __('Journey status updated.'));
+        $this->offsets = array_pad($journey->offsets, SaveJourney::MAX_OFFSETS, '');
+        $this->channel = $journey->channel->value;
+        $this->reason = '';
+        $this->dispatch('open-modal', name: 'journey-edit');
     }
 
     public function save(SaveJourney $action): void
     {
-        $this->validate([
-            'triggerDays' => ['required', 'integer', 'min:1', 'max:365'],
-            'channel' => ['required', 'in:email,sms,in_app'],
-            'templateId' => ['nullable', 'exists:communication_templates,id'],
-        ]);
+        $key = JourneyKey::tryFrom((string) $this->editing);
+        abort_if($key === null, 404);
 
-        $admin = $this->admin();
-        /** @var AutomatedJourney $journey */
-        $journey = AutomatedJourney::query()->findOrFail($this->editingId);
+        // Empty boxes are dropped; anything else (even a tampered null / array) goes to SaveJourney's validator.
+        $offsets = array_values(array_filter($this->offsets, fn (mixed $d): bool => $d !== '' && $d !== null));
+        $action->handle($this->admin(), $key, $this->isActive, $offsets, $this->channel, $this->reason);
 
-        $action->handle($admin, $journey, [
-            'is_active' => $this->isActive,
-            'trigger_days' => $this->triggerDays,
-            'channel' => $this->channel,
-            'template_id' => $this->templateId,
-        ]);
-
-        $this->showModal = false;
-        $this->dispatch('toast', type: 'success', message: __('Journey rule updated.'));
+        $this->editing = null;
+        $this->reason = '';
+        $this->dispatch('close-modal', name: 'journey-edit');
+        $this->dispatch('toast', type: 'success', message: __('Journey saved. The next daily run uses it.'));
     }
 
     public function render(): View
     {
+        $journeys = AutomatedJourney::query()->get()->keyBy(fn (AutomatedJourney $j): string => $j->key->value);
+
+        $stats = JourneySend::query()
+            ->where('created_at', '>=', now()->subDays(self::STATS_DAYS))
+            ->selectRaw('journey_key, status, COUNT(*) as n')
+            ->groupBy('journey_key', 'status')
+            ->toBase()->get()
+            ->groupBy('journey_key')
+            ->map(fn ($rows) => $rows->mapWithKeys(fn ($r) => [(string) $r->status => (int) $r->n]));
+
+        $editingKey = JourneyKey::tryFrom((string) $this->editing);
+
         return view('livewire.admin.comms.journeys', [
-            'journeys' => AutomatedJourney::query()->with('template')->get(),
-            'templates' => CommunicationTemplate::query()->where('channel', $this->channel)->get(),
+            'keys' => JourneyKey::byPriority(),
+            'journeys' => $journeys,
+            'stats' => $stats,
+            'sent' => JourneySendStatus::Sent->value,
+            'canEdit' => Gate::forUser($this->admin())->allows('campaigns.send'),
+            'editingKey' => $editingKey,
+            'channelOptions' => $editingKey === null ? [] : collect(CommsChannel::cases())
+                ->filter(fn (CommsChannel $c): bool => $editingKey->event()->usesChannel($c->value))
+                ->mapWithKeys(fn (CommsChannel $c): array => [$c->value => $c->label()])->all(),
         ]);
-    }
-
-    private function seedDefaultsIfMissing(): void
-    {
-        $defaults = [
-            'wizard_incomplete' => ['Incomplete Registration Wizard', 'Reminds members who left the registration wizard steps', 3, 'email'],
-            'pending_interest' => ['Unanswered Interest Reminder', 'Reminds recipients of pending interests after N days', 3, 'in_app'],
-            'plan_expiry' => ['Subscription Expiry Reminder', 'Notifies members before their paid plan ends', 7, 'email'],
-            'win_back' => ['Win-back Expired Members', 'Sends special reactivation offer to lapsed subscribers', 30, 'email'],
-            'inactive_matches' => ['Inactive Member Matches', 'Suggests fresh daily matches to members inactive for N days', 14, 'email'],
-        ];
-
-        foreach ($defaults as $key => [$name, $desc, $days, $chan]) {
-            AutomatedJourney::query()->firstOrCreate(
-                ['key' => $key],
-                ['name' => $name, 'description' => $desc, 'trigger_days' => $days, 'channel' => $chan, 'is_active' => true]
-            );
-        }
     }
 
     private function admin(): AdminUser
     {
-        /** @var AdminUser $user */
-        $user = Auth::guard('admin')->user();
+        /** @var AdminUser $admin */
+        $admin = Auth::guard('admin')->user();
 
-        return $user;
+        return $admin;
     }
 }

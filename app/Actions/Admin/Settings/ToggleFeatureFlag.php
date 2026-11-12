@@ -26,10 +26,12 @@ final class ToggleFeatureFlag
         Gate::forUser($actor)->authorize('settings.edit');
 
         Validator::make(['reason' => $reason], ['reason' => ['required', 'string', 'max:500']])->validate();
+        // A switch for a feature that isn't built yet would do nothing (push, boost: v1.5).
+        abort_unless($flag->isBuilt(), 422, __('This feature is not built yet.'));
 
         DB::transaction(function () use ($actor, $flag, $enabled, $reason): void {
             $row = FeatureFlag::query()->lockForUpdate()->find($flag->value);
-            $before = (bool) $row?->is_enabled;
+            $before = $row !== null ? (bool) $row->is_enabled : $flag->defaultOn();
             $row ??= (new FeatureFlag)->forceFill(['key' => $flag->value]);
             $row->forceFill(['is_enabled' => $enabled, 'updated_by_id' => $actor->id])->save();
 

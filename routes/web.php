@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Member\CampaignLinkController;
 use App\Http\Controllers\Member\ChatImageController;
 use App\Http\Controllers\Member\CreditNoteDownloadController;
 use App\Http\Controllers\Member\DownloadDataExportController;
@@ -189,6 +190,14 @@ Route::middleware('throttle:30,1')->group(function (): void {
         ->where('token', '[A-Za-z0-9]{48}')->name('saved-searches.unsubscribe');
     Route::post('/saved-searches/unsubscribe/{token}', [UnsubscribeSavedSearchController::class, 'store'])
         ->where('token', '[A-Za-z0-9]{48}');
+});
+
+// A14 campaign links (P8.3b1): signed per recipient, no sign-in. Click → counted, then the button's
+// page; unsubscribe GET confirms, POST (also the RFC 8058 one-click target, CSRF-exempt) turns offer emails off.
+Route::middleware(['signed', 'throttle:60,1'])->prefix('c/{campaign}')->where(['campaign' => 'CMP[A-Z0-9]{8}', 'recipient' => '[0-9]+'])->group(function (): void {
+    Route::get('/click/{recipient}', [CampaignLinkController::class, 'click'])->name('campaigns.click');
+    Route::get('/unsubscribe/{recipient}', [CampaignLinkController::class, 'showUnsubscribe'])->name('campaigns.unsubscribe');
+    Route::post('/unsubscribe/{recipient}', [CampaignLinkController::class, 'unsubscribe']);
 });
 
 // SEO (M12, P8.1b): robots and sitemap follow A15 `seo.indexable`.

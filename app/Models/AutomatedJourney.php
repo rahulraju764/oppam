@@ -4,25 +4,25 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\CommsChannel;
+use App\Enums\JourneyKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Automated customer journey rule (A14).
+ * One A14 automated journey's configuration (P8.3b2): on / off, the day offsets it sends on and its
+ * one channel. Rows are seeded by the migration; admins change them through SaveJourney only.
  *
  * @property string $id
- * @property string $key
+ * @property JourneyKey $key
  * @property string $name
  * @property string|null $description
  * @property bool $is_active
- * @property int $trigger_days
- * @property string $channel
- * @property string|null $template_id
+ * @property list<int> $offsets
+ * @property CommsChannel $channel
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read CommunicationTemplate|null $template
  */
 final class AutomatedJourney extends Model
 {
@@ -30,22 +30,18 @@ final class AutomatedJourney extends Model
 
     protected $table = 'automated_journeys';
 
-    protected $guarded = [];
+    protected $guarded = ['*'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
         return [
+            'key' => JourneyKey::class,
+            'channel' => CommsChannel::class,
             'is_active' => 'boolean',
-            'trigger_days' => 'integer',
+            'offsets' => 'array',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
-    }
-
-    /** @return BelongsTo<CommunicationTemplate, $this> */
-    public function template(): BelongsTo
-    {
-        return $this->belongsTo(CommunicationTemplate::class, 'template_id');
     }
 }

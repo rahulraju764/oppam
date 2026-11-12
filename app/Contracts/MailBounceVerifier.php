@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
-use App\Data\Comms\BounceReport;
+use App\Data\Comms\MailEventReport;
 use Illuminate\Http\Request;
 
 /**
@@ -14,6 +14,6 @@ use Illuminate\Http\Request;
  */
 interface MailBounceVerifier
 {
-    /** @return list<BounceReport>|null */
+    /** @return list<MailEventReport>|null */
     public function verify(Request $request): ?array;
 }

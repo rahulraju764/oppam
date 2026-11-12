@@ -88,9 +88,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // "Last seen" / "last active" for members (PRD §9.6), debounced to one write per 5 minutes.
         $middleware->web(append: [RecordMemberActivity::class]);
 
+        // A15 site name (P8.4): config('oppam.site.name') follows the admin's setting on every page.
+        $middleware->web(prepend: [App\Http\Middleware\ApplySiteIdentity::class]);
+
         // RFC 8058 one-click unsubscribe: mail clients POST without a CSRF token; the route's
         // 48-character random token is the credential and the POST only turns alerts off (M04).
-        $middleware->validateCsrfTokens(except: ['saved-searches/unsubscribe/*']);
+        $middleware->validateCsrfTokens(except: ['saved-searches/unsubscribe/*', 'c/*/unsubscribe/*']);
 
         $middleware->alias([
             'content.preview' => App\Http\Middleware\EnableContentPreview::class,

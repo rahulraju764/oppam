@@ -7,6 +7,7 @@ namespace App\Livewire\Broker\ManagedProfiles;
 use App\Domain\Broker\BureauGate;
 use App\Domain\Broker\ManagedProfileScope;
 use App\Domain\Media\PhotoUrls;
+use App\Domain\Profile\PhotoLimits;
 use App\Enums\BureauPermission;
 use App\Livewire\Concerns\ManagesProfilePhotos;
 use App\Models\Profile;
@@ -41,7 +42,7 @@ final class Photos extends Component
 
         return view('livewire.member.profile.photo-manager', [
             'photos' => $urls->forManagingBureau($profile),
-            'maxPhotos' => (int) config('oppam.media.max_photos'),
+            'maxPhotos' => PhotoLimits::maxPhotos(),
             'hasHoroscope' => $profile->hasMedia(Profile::HOROSCOPE),
             'horoscopeLink' => null,
         ]);

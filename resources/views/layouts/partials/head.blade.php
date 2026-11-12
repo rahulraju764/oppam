@@ -10,8 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-<title>{{ $seo->title }}</title>
-<meta name="description" content="{{ $seo->description }}">
+<title>{{ $seo->pageTitle() }}</title>
+<meta name="description" content="{{ $seo->pageDescription() }}">
 <meta name="keywords" content="{{ $seo->keywords }}">
 <link rel="canonical" href="{{ $canonical }}">
 

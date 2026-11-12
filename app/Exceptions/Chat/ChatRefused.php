@@ -19,6 +19,8 @@ final class ChatRefused extends HttpException
 
     public const IMAGE_PLAN = 'image_plan';
 
+    public const IMAGES_OFF = 'images_off';
+
     public const CANNOT_UNSEND = 'cannot_unsend';
 
     public const ICEBREAKER = 'icebreaker';
@@ -38,6 +40,12 @@ final class ChatRefused extends HttpException
             ChatSendState::WaitForReply, ChatSendState::Upgrade => 403,
             default => 409,
         }, (string) $state->message());
+    }
+
+    /** A15 `chat.images` is off (P8.4): no photo messages for anyone. */
+    public static function imagesDisabled(): self
+    {
+        return new self(self::IMAGES_OFF, 403, __('Sending photos in chat is switched off for now.'));
     }
 
     /** M07: image messages are for paid plans; a Free member's free reply is text only. */

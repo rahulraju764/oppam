@@ -46,17 +46,22 @@ enum NotificationEvent: string
     case ManagedProfileClaimed = 'managed_profile_claimed';
     /** A payout to the bureau was sent (§11A B.15 PayoutPaid, P7.8): in-app + email, to the Owner. */
     case PayoutPaid = 'payout_paid';
+    /** A14 journeys (P8.3b2): reminders the member can switch off; SMS only when they switch it on. */
+    case JourneyInterestReminder = 'journey_interest_reminder';
+    case JourneyWizardReminder = 'journey_wizard_reminder';
+    case JourneyNewMatches = 'journey_new_matches';
+    case JourneyWinBack = 'journey_win_back';
 
     /** The /notifications filter this event belongs to. */
     public function group(): NotificationGroup
     {
         return match ($this) {
             self::InterestReceived, self::InterestAccepted, self::InterestDeclined,
-            self::PhotoRequest, self::HoroscopeRequest => NotificationGroup::Interests,
+            self::PhotoRequest, self::HoroscopeRequest, self::JourneyInterestReminder => NotificationGroup::Interests,
             self::ProfileLiked, self::MutualLike => NotificationGroup::Likes,
             self::NewMessage => NotificationGroup::Messages,
             self::ProfileViewed => NotificationGroup::Views,
-            self::DailyMatchesReady, self::SavedSearchAlert => NotificationGroup::Matches,
+            self::DailyMatchesReady, self::SavedSearchAlert, self::JourneyNewMatches => NotificationGroup::Matches,
             default => NotificationGroup::System,
         };
     }
@@ -101,8 +106,22 @@ enum NotificationEvent: string
         return $this->group()->icon();
     }
 
-    /** Does this event ever go out on this channel ('in_app' | 'email' | 'sms')? A member may switch it off, never add it. */
+    /**
+     * Does this event ever go out on this channel ('in_app' | 'email' | 'sms')? A member may switch it
+     * off, never add a channel the event doesn't use — except an opt-in channel (smsIsOptIn).
+     */
     public function usesChannel(string $channel): bool
+    {
+        return match ($channel) {
+            'in_app' => $this->defaultInApp(),
+            'email' => $this->defaultEmail(),
+            'sms' => $this->defaultSms() || $this->smsIsOptIn(),
+            default => false,
+        };
+    }
+
+    /** The channel's setting for a member who never changed it (no preference row). */
+    public function defaultFor(string $channel): bool
     {
         return match ($channel) {
             'in_app' => $this->defaultInApp(),
@@ -110,6 +129,19 @@ enum NotificationEvent: string
             'sms' => $this->defaultSms(),
             default => false,
         };
+    }
+
+    /**
+     * Promotional SMS (A14 campaigns, P8.3b1): offered in /settings but OFF until the member switches
+     * it on — TRAI expects consent for promotional texts (Claude's default 2026-11-09, owner to confirm).
+     * The A14 journey reminders (P8.3b2) are treated the same way (Claude's default 2026-11-12).
+     */
+    public function smsIsOptIn(): bool
+    {
+        return in_array($this, [
+            self::AdminAnnouncement,
+            self::JourneyInterestReminder, self::JourneyWizardReminder, self::JourneyNewMatches, self::JourneyWinBack,
+        ], true);
     }
 
     /** Sent to members (shown in the /settings matrix); the rest go to bureau logins only. */
@@ -167,6 +199,10 @@ enum NotificationEvent: string
             self::FollowUpDue => __('Follow-ups due'),
             self::ManagedProfileClaimed => __('Client claimed their profile'),
             self::PayoutPaid => __('Payout sent'),
+            self::JourneyInterestReminder => __('Reminders about interests waiting for my reply'),
+            self::JourneyWizardReminder => __('Reminders to finish my profile'),
+            self::JourneyNewMatches => __('New matches while I’m away'),
+            self::JourneyWinBack => __('Offers to come back after my plan ends'),
         };
     }
 }

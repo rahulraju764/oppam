@@ -15,7 +15,7 @@
             <nav class="navbar navbar-expand-lg {{ $member ? 'navbar-member' : 'navbar-public' }}" aria-label="{{ __('Main') }}">
 
                 <a class="navbar-brand nav-logo" href="{{ $nav->homeUrl() }}" wire:navigate>
-                    <img src="{{ asset('images/logo/oppam-logo.webp') }}" class="img-fluid" alt="{{ config('oppam.site.name') }}" width="600" height="301" fetchpriority="high" decoding="async">
+                    <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" class="img-fluid" alt="{{ config('oppam.site.name') }}" width="600" height="301" fetchpriority="high" decoding="async">
                 </a>
 
                 @if ($member)
@@ -34,7 +34,7 @@
                 <div class="navbar-collapse" id="navbarSupportedContent" data-dialog-label="{{ __('Menu') }}">
 
                     <div class="nav-drawer-head d-lg-none">
-                        <img src="{{ asset('images/logo/oppam-logo.webp') }}" class="nav-drawer-logo" alt="{{ config('oppam.site.name') }}" width="600" height="301" fetchpriority="high" decoding="async">
+                        <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" class="nav-drawer-logo" alt="{{ config('oppam.site.name') }}" width="600" height="301" fetchpriority="high" decoding="async">
                         <button type="button" class="nav-drawer-close" aria-label="{{ __('Close menu') }}">
                             <i class="fa fa-times" aria-hidden="true"></i>
                         </button>

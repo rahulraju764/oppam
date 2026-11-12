@@ -9,8 +9,8 @@ use App\Services\Settings\SettingsRepository;
 
 /**
  * The contact details shown in the footer and on /contact — ONE source for both (P0.3 decision).
- * Editable values come from A15 settings; the map and social links are deployment config
- * (they are URLs to third-party services, set per environment).
+ * Editable values come from A15 settings (social links too since P8.4; env values are their
+ * defaults); the map links stay deployment config.
  */
 final readonly class SiteContactData
 {
@@ -34,8 +34,14 @@ final readonly class SiteContactData
     {
         $settings = app(SettingsRepository::class);
 
-        /** @var array<string, string|null> $social */
-        $social = config('oppam.site.social', []);
+        // A15 social links (P8.4): each setting defaults to the deployment's env value.
+        $social = [
+            'facebook' => $settings->string(SettingKey::SocialFacebook),
+            'twitter' => $settings->string(SettingKey::SocialTwitter),
+            'instagram' => $settings->string(SettingKey::SocialInstagram),
+            'linkedin' => $settings->string(SettingKey::SocialLinkedin),
+            'youtube' => $settings->string(SettingKey::SocialYoutube),
+        ];
 
         return new self(
             emails: array_values(array_filter([$settings->string(SettingKey::SiteSupportEmail), $settings->string(SettingKey::SiteInfoEmail)])),

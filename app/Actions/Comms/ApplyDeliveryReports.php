@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Comms;
 
-use App\Data\Comms\BounceReport;
+use App\Data\Comms\MailEventReport;
 use App\Enums\CommsChannel;
+use App\Enums\MailEventKind;
 use App\Enums\OutboundStatus;
 use App\Models\OutboundMessage;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Provider reports → the A14 delivery log (P8.3a), called by the webhook controllers after the
@@ -50,25 +52,42 @@ final class ApplyDeliveryReports
     }
 
     /**
-     * @param  list<BounceReport>  $bounces
+     * Mail-provider events. Bounced: anything → BOUNCED. Delivered: SENT → DELIVERED only. Opened:
+     * stamps opened_at once (the status is unchanged; an open after a bounce report is ignored).
+     *
+     * @param  list<MailEventReport>  $events
      * @return int rows changed
      */
-    public function bounces(array $bounces): int
+    public function mailEvents(array $events): int
     {
         $changed = 0;
-        foreach ($bounces as $bounce) {
-            $changed += OutboundMessage::query()
+        foreach ($events as $event) {
+            $rows = OutboundMessage::query()
                 ->where('channel', CommsChannel::Email->value)
-                ->where('provider_id', mb_substr($bounce->providerMessageId, 0, 100))
-                ->where('status', '!=', OutboundStatus::Bounced->value)
-                ->update([
-                    'status' => OutboundStatus::Bounced->value,
-                    'bounced_at' => now(),
-                    'error_message' => $bounce->permanent ? 'Hard bounce' : 'Soft bounce',
-                    'updated_at' => now(),
-                ]);
+                ->where('provider_id', mb_substr($event->providerMessageId, 0, 100));
+
+            $changed += match ($event->kind) {
+                MailEventKind::Bounced => $this->bounce($rows, $event),
+                MailEventKind::Delivered => $rows->where('status', OutboundStatus::Sent->value)
+                    ->update(['status' => OutboundStatus::Delivered->value, 'delivered_at' => now(), 'updated_at' => now()]),
+                MailEventKind::Opened => $rows->whereNull('opened_at')->where('status', '!=', OutboundStatus::Bounced->value)
+                    ->update(['opened_at' => now(), 'updated_at' => now()]),
+            };
         }
 
         return $changed;
+    }
+
+    /** @param Builder<OutboundMessage> $rows */
+    private function bounce(Builder $rows, MailEventReport $bounce): int
+    {
+        return $rows
+            ->where('status', '!=', OutboundStatus::Bounced->value)
+            ->update([
+                'status' => OutboundStatus::Bounced->value,
+                'bounced_at' => now(),
+                'error_message' => $bounce->permanent ? 'Hard bounce' : 'Soft bounce',
+                'updated_at' => now(),
+            ]);
     }
 }

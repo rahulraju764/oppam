@@ -1,150 +1,83 @@
+{{--
+    A15 site settings (P8.4): every site key from the SettingKey enum, one Save with a reason; the
+    logo has its own upload dialog. Links to the admin users and roles screens (A01).
+--}}
 <div>
-    <div class="admin-page-head d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-page-head">
         <div>
-            <h1 class="h3 mb-1">{{ __('Site Settings') }}</h1>
-            <p class="text-muted mb-0">{{ __('Contact details, SEO indexing, and maintenance mode configuration (PRD §11 A15).') }}</p>
+            <h1>{{ __('Site settings') }}</h1>
+            <p>{{ __('Name, logo, social links, search-engine defaults, contact details and the maintenance message. Changes apply at once and are audited.') }}</p>
         </div>
     </div>
 
-    @if (session('status'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('status') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+            <form class="ui-card" x-on:submit.prevent="$dispatch('open-modal', { name: 'site-save' })" novalidate>
+                <div class="row g-3">
+                    @foreach ($keys as $key)
+                        @php($field = \App\Livewire\Admin\Settings\SiteSettings::field($key))
+                        @php($kind = $key->inputKind())
+                        <div class="col-12 {{ in_array($kind, ['text', 'url', 'number'], true) ? 'col-md-6' : '' }}" wire:key="site-{{ $field }}">
+                            @if ($kind === 'checkbox')
+                                <x-ui.checkbox name="site_{{ $field }}" id="site-{{ $field }}" wire:model="form.{{ $field }}" :error="'form.'.$field" :disabled="! $canEdit">
+                                    {{ $key->label() }}
+                                </x-ui.checkbox>
+                            @elseif ($kind === 'textarea')
+                                <x-ui.textarea :label="$key->label()" name="site_{{ $field }}" id="site-{{ $field }}" wire:model="form.{{ $field }}" :error="'form.'.$field" rows="3" :disabled="! $canEdit" />
+                            @else
+                                <x-ui.input :type="$kind" :label="$key->label().($key->unit() !== '' ? ' ('.$key->unit().')' : '')" name="site_{{ $field }}" id="site-{{ $field }}"
+                                            wire:model="form.{{ $field }}" :error="'form.'.$field" :disabled="! $canEdit"
+                                            :hint="$kind === 'url' ? __('https:// address; leave empty to hide the icon.') : null" />
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                @if ($canEdit)
+                    <div class="mt-3">
+                        <x-ui.button type="submit" dusk="site-save">{{ __('Save changes') }}</x-ui.button>
+                    </div>
+                @endif
+            </form>
         </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="ui-card mb-3">
+                <h2 class="h6">{{ __('Logo') }}</h2>
+                <img src="{{ $logoUrl }}" alt="{{ __('Current logo') }}" class="img-fluid mb-2" height="80" loading="lazy">
+                <p class="small text-muted-brand">{{ $hasCustomLogo ? __('An uploaded logo is in use.') : __('The bundled logo is in use.') }}</p>
+                @if ($canEdit)
+                    <x-ui.button type="button" variant="secondary" size="sm" x-on:click="$dispatch('open-modal', { name: 'logo-upload' })" dusk="logo-open">
+                        {{ __('Change logo') }}
+                    </x-ui.button>
+                @endif
+            </div>
+            <div class="ui-card">
+                <h2 class="h6">{{ __('Admin users & roles') }}</h2>
+                <ul class="list-unstyled small mb-0">
+                    @can('staff.view')<li><a href="{{ route('admin.staff.index') }}" wire:navigate>{{ __('Admin users') }}</a></li>@endcan
+                    @can('roles.view')<li><a href="{{ route('admin.roles.edit') }}" wire:navigate>{{ __('Roles & permissions') }}</a></li>@endcan
+                    <li><a href="{{ route('admin.settings.entitlements') }}" wire:navigate>{{ __('Plans & entitlements') }}</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    @if ($canEdit)
+        <x-admin.confirm-modal name="site-save" :title="__('Save site settings')" action="save" :confirm-label="__('Save')" :danger="false">
+            <p class="mb-0">{{ __('Only the fields you changed are saved. Your reason is recorded with each change.') }}</p>
+            @if ($errors->hasAny(array_map(fn ($k) => 'form.'.\App\Livewire\Admin\Settings\SiteSettings::field($k), $keys)))
+                <x-ui.alert type="danger" class="mt-2">{{ __('Some fields need fixing — close this and check the form.') }}</x-ui.alert>
+            @endif
+        </x-admin.confirm-modal>
+
+        <x-admin.confirm-modal name="logo-upload" :title="__('Change logo')" action="uploadLogo" reason-model="logoReason" :confirm-label="__('Upload logo')" :danger="false">
+            <label class="mat-label" for="logo-file">{{ __('PNG or WebP, up to :kb KB, 100–2000 px', ['kb' => \App\Actions\Admin\Settings\UploadSiteLogo::MAX_KB]) }}</label>
+            <input type="file" id="logo-file" name="logo" class="form-control" accept="image/png,image/webp" wire:model="logo">
+            <div wire:loading wire:target="logo" class="small text-muted-brand">{{ __('Uploading…') }}</div>
+            @error('logo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+            @if ($hasCustomLogo)
+                <x-ui.button type="button" variant="link" size="sm" wire:click="removeLogo" loading="removeLogo" class="mt-2">{{ __('Use the bundled logo instead') }}</x-ui.button>
+            @endif
+        </x-admin.confirm-modal>
     @endif
-
-    <form wire:submit="save">
-        <div class="row g-4">
-            <!-- Brand & Deployment Details -->
-            <div class="col-lg-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <h5 class="card-title mb-1">{{ __('Brand & Identity') }}</h5>
-                                <p class="text-muted small mb-0">{{ __('Brand name, logo assets, and social links are defined in deployment config.') }}</p>
-                            </div>
-                            <span class="badge bg-light text-dark fs-6 px-3 py-2 border">{{ $brandName }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contact Information -->
-            <div class="col-lg-6">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-transparent py-3">
-                        <h5 class="card-title mb-0">{{ __('Contact Details') }}</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">{{ __('Support Email') }}</label>
-                            <input type="email" class="form-control @error('supportEmail') is-invalid @enderror" wire:model="supportEmail">
-                            @error('supportEmail') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">{{ __('Info / General Email') }}</label>
-                            <input type="email" class="form-control @error('infoEmail') is-invalid @enderror" wire:model="infoEmail">
-                            @error('infoEmail') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">{{ __('Phone (Display Format)') }}</label>
-                            <input type="text" class="form-control @error('phoneDisplay') is-invalid @enderror" wire:model="phoneDisplay" placeholder="0895 - 3881 - 2873">
-                            @error('phoneDisplay') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">{{ __('Phone (Dial Format)') }}</label>
-                            <input type="text" class="form-control @error('phoneDial') is-invalid @enderror" wire:model="phoneDial" placeholder="089538812873">
-                            @error('phoneDial') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">{{ __('Office Address') }}</label>
-                            <textarea class="form-control @error('address') is-invalid @enderror" rows="3" wire:model="address"></textarea>
-                            @error('address') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-0">
-                            <label class="form-label small fw-bold">{{ __('Working Hours') }}</label>
-                            <input type="text" class="form-control @error('hours') is-invalid @enderror" wire:model="hours">
-                            @error('hours') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SEO, Maintenance & Content Controls -->
-            <div class="col-lg-6">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-transparent py-3">
-                        <h5 class="card-title mb-0">{{ __('SEO & Discovery') }}</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" role="switch" id="seoIndexable" wire:model="seoIndexable">
-                            <label class="form-check-label fw-bold" for="seoIndexable">
-                                {{ __('Search Engine Indexable (robots.txt & sitemap.xml)') }}
-                            </label>
-                            <div class="form-text text-muted">
-                                {{ __('When disabled, search engines are instructed not to index any page (Disallow: /).') }}
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label class="form-label small fw-bold">{{ __('Min Home Featured Members') }}</label>
-                                <input type="number" min="1" max="6" class="form-control @error('homeMembersMin') is-invalid @enderror" wire:model="homeMembersMin">
-                                @error('homeMembersMin') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-bold">{{ __('Home Toggle Max / Hour') }}</label>
-                                <input type="number" min="1" max="100" class="form-control @error('homeToggleMaxPerHour') is-invalid @enderror" wire:model="homeToggleMaxPerHour">
-                                @error('homeToggleMaxPerHour') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-transparent py-3">
-                        <h5 class="card-title mb-0">{{ __('Maintenance Mode') }}</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-0">
-                            <label class="form-label small fw-bold">{{ __('Maintenance Notice Message') }}</label>
-                            <textarea class="form-control @error('maintenanceMessage') is-invalid @enderror" rows="3" wire:model="maintenanceMessage" placeholder="{{ __('Leave blank for default system message...') }}"></textarea>
-                            <div class="form-text text-muted">
-                                {{ __('Displays to visitors when the application is placed into maintenance mode.') }}
-                            </div>
-                            @error('maintenanceMessage') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Audit Reason & Save Action -->
-            <div class="col-lg-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="row align-items-center g-3">
-                            <div class="col-md-8">
-                                <label class="form-label small fw-bold mb-1">{{ __('Audit Reason (Required)') }}</label>
-                                <input type="text" class="form-control @error('reason') is-invalid @enderror" wire:model="reason" placeholder="{{ __('State why you are updating site settings...') }}" required>
-                                @error('reason') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
-                            <div class="col-md-4 text-md-end pt-md-3">
-                                <button type="submit" class="btn btn-primary px-4" dusk="save-site-settings-btn">
-                                    <i class="fa fa-save me-1" aria-hidden="true"></i> {{ __('Save Site Settings') }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </form>
 </div>
-

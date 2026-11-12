@@ -6,6 +6,7 @@ namespace App\Livewire\Member\Profile;
 
 use App\Domain\Media\HoroscopeAccess;
 use App\Domain\Media\PhotoUrls;
+use App\Domain\Profile\PhotoLimits;
 use App\Enums\UserRole;
 use App\Livewire\Concerns\ManagesProfilePhotos;
 use App\Models\Profile;
@@ -32,7 +33,7 @@ final class PhotoManager extends Component
 
         return view('livewire.member.profile.photo-manager', [
             'photos' => $urls->forViewer($profile, $user),
-            'maxPhotos' => (int) config('oppam.media.max_photos'),
+            'maxPhotos' => PhotoLimits::maxPhotos(),
             'hasHoroscope' => $profile->hasMedia(Profile::HOROSCOPE),
             'horoscopeLink' => $horoscope->link($profile, $user),
         ]);

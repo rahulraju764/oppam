@@ -35,7 +35,7 @@ final class SettingsSeeder extends Seeder
 
         foreach (Flag::cases() as $flag) {
             if (! FeatureFlag::query()->whereKey($flag->value)->exists()) {
-                (new FeatureFlag)->forceFill(['key' => $flag->value, 'is_enabled' => false])->save();
+                (new FeatureFlag)->forceFill(['key' => $flag->value, 'is_enabled' => $flag->defaultOn()])->save();
             }
         }
 

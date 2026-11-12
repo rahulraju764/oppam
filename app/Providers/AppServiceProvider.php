@@ -74,6 +74,7 @@ use App\Services\Payments\RazorpayGateway;
 use App\Services\Realtime\BroadcastPresenceCounter;
 use App\Services\Settings\FeatureFlags;
 use App\Services\Settings\SettingsRepository;
+use App\Services\Settings\SiteIdentity;
 use App\Services\Sms\LogSmsGateway;
 use App\Services\Sms\Msg91Gateway;
 use App\Services\Verification\EncryptedDocumentVault;
@@ -88,6 +89,7 @@ use Illuminate\Notifications\Channels\MailChannel;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Dusk\DuskServiceProvider;
@@ -235,6 +237,10 @@ final class AppServiceProvider extends ServiceProvider
         User::observe(NewMemberTickObserver::class);
 
         $this->bootAdminSecurity();
+
+        // A15 site name (P8.4): every page, email and PDF reads config('oppam.site.name') — set from the
+        // setting before each queued job (workers live long); web requests: ApplySiteIdentity middleware.
+        Queue::before(fn () => $this->app->make(SiteIdentity::class)->applyName());
 
         // "Stay logged in" lasts 30 days for members (PRD §8.1), not Laravel's 400-day default.
         Auth::resolved(function (AuthFactory $auth): void {

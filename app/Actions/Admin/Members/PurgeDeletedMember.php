@@ -9,8 +9,10 @@ use App\Enums\SettingKey;
 use App\Enums\UserRole;
 use App\Jobs\Profile\GenerateDataExportJob;
 use App\Models\AnnouncementDismissal;
+use App\Models\CampaignRecipient;
 use App\Models\ContactSubmission;
 use App\Models\DataExport;
+use App\Models\JourneySend;
 use App\Models\LegalAcceptance;
 use App\Models\LoginEvent;
 use App\Models\NotificationPreference;
@@ -98,6 +100,10 @@ final class PurgeDeletedMember
             // P8.3a: the member's rows in the A14 delivery log (masked recipient, but still theirs).
             OutboundMessage::query()->where('user_id', $member->id)->delete();
             AnnouncementDismissal::query()->where('user_id', $member->id)->delete();
+            // P8.3b1: their place in campaign audiences (with clicks / unsubscribes).
+            CampaignRecipient::query()->where('user_id', $member->id)->delete();
+            // P8.3b2: the journey reminders they were sent.
+            JourneySend::query()->where('user_id', $member->id)->delete();
 
             $member->forceFill([
                 // Unique, never a real number, frees the real one for a new registration.

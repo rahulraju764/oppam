@@ -246,7 +246,7 @@ final class Thread extends Component
             'support' => $support,
             'state' => $state,
             'freeLeft' => $state->canSend() && $access->sendsFree($me) ? $access->freeRepliesLeft($me, $other, $thread) : null,
-            'canSendPhotos' => $state->canSend() && ! $access->sendsFree($me),
+            'canSendPhotos' => $state->canSend() && ! $access->sendsFree($me) && \App\Support\Facades\Feature::active(\App\Enums\Flag::ChatImages),   // A15 chat.images
             'icebreakers' => $state->canSend() && ! $icebreakers->hasWritten($me, $thread->id) ? $icebreakers->options() : [],
             'upgradable' => in_array($state, [ChatSendState::Upgrade, ChatSendState::WaitForReply], true),
             'maxLength' => Settings::int(SettingKey::ChatMaxLength),

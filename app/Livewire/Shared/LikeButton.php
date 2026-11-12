@@ -87,7 +87,10 @@ final class LikeButton extends Component
 
     public function render(): View
     {
-        return view('livewire.shared.like-button');
+        // A15 likes.enabled off (P8.4): no button (ToggleLike refuses anyway). Livewire needs one root element.
+        return \App\Support\Facades\Feature::active(\App\Enums\Flag::LikesEnabled)
+            ? view('livewire.shared.like-button')
+            : view('livewire.shared.feature-off');
     }
 
     private function currentlyLiked(): bool

@@ -1,113 +1,102 @@
+{{--
+    A14 automated journeys (P8.3b2): on / off, day offsets, one channel per journey, and what each
+    did in the last 30 days. The copy is the journey event's A14 template. Plan-expiry reminders are
+    built in (P5.2) and shown read-only.
+--}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-page-head">
         <div>
-            <h1 class="h3 mb-1">{{ __('Automated Lifecycle Journeys') }}</h1>
-            <p class="text-muted mb-0">{{ __('Configurable rule-based triggers across member lifecycle stages (PRD §11 A14).') }}</p>
+            <h1>{{ __('Automated journeys') }}</h1>
+            <p>{{ __('Reminders sent once a day at 10:30 IST. A member gets at most one journey message a day, only on channels they haven’t switched off, and never an SMS at night.') }}</p>
         </div>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>{{ __('Journey') }}</th>
-                        <th>{{ __('Trigger Timing') }}</th>
-                        <th>{{ __('Channel') }}</th>
-                        <th>{{ __('Template') }}</th>
-                        <th>{{ __('Status') }}</th>
-                        <th>{{ __('Actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($journeys as $j)
-                        <tr>
-                            <td>
-                                <strong>{{ $j->name }}</strong>
-                                <div class="text-muted small">{{ $j->description }}</div>
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark">
-                                    {{ trans_choice('{1} :count day after|[2,*] :count days after', $j->trigger_days, ['count' => $j->trigger_days]) }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary text-uppercase">{{ $j->channel }}</span>
-                            </td>
-                            <td>
-                                @if ($j->template)
-                                    <small>{{ $j->template->name }}</small>
-                                @else
-                                    <span class="text-muted small">{{ __('Default System Copy') }}</span>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="journey-{{ $j->id }}"
-                                           {{ $j->is_active ? 'checked' : '' }} wire:click="toggleActive('{{ $j->id }}')">
-                                    <label class="form-check-label small" for="journey-{{ $j->id }}">
-                                        {{ $j->is_active ? __('Active') : __('Paused') }}
-                                    </label>
-                                </div>
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" wire:click="edit('{{ $j->id }}')">
-                                    {{ __('Configure') }}
-                                </button>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+    <div wire:loading.class="is-loading" wire:target="edit, save">
+        <x-admin.table :headers="[__('Journey'), __('Sends on'), __('Channel'), __('Last :n days', ['n' => \App\Livewire\Admin\Comms\Journeys::STATS_DAYS]), __('Status'), '']"
+                       :caption="__('Automated journeys')" :empty="$journeys->isEmpty()">
+            <x-slot:emptyState>
+                <x-ui.empty-state icon="fa-road" :title="__('No journeys set up')" :message="__('Run the database migrations to add the four journeys.')" />
+            </x-slot:emptyState>
+
+            @foreach ($keys as $key)
+                @php($j = $journeys->get($key->value))
+                @continue($j === null)
+                @php($s = $stats->get($key->value, collect()))
+                <tr wire:key="journey-{{ $key->value }}">
+                    <td>
+                        <strong>{{ $key->label() }}</strong>
+                        <div class="small text-muted-brand">{{ $key->description() }}</div>
+                    </td>
+                    <td>
+                        {{ implode(', ', $j->offsets) }}
+                        <div class="small text-muted-brand">{{ $key->offsetMeaning() }}</div>
+                    </td>
+                    <td>{{ $j->channel->label() }}</td>
+                    <td class="small">
+                        {{ __('Sent :n', ['n' => number_format($s->get($sent, 0))]) }}<br>
+                        {{ __('Skipped :n', ['n' => number_format($s->except($sent)->sum())]) }}
+                    </td>
+                    <td><x-ui.badge :variant="$j->is_active ? 'success' : 'muted'">{{ $j->is_active ? __('On') : __('Off') }}</x-ui.badge></td>
+                    <td class="text-end">
+                        @if ($canEdit)
+                            <x-ui.button type="button" variant="secondary" size="sm" wire:click="edit('{{ $key->value }}')" loading="edit" dusk="journey-edit-{{ $key->value }}">
+                                {{ __('Change') }}
+                            </x-ui.button>
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+
+            <tr>
+                <td>
+                    <strong>{{ __('Plan expiry reminders') }}</strong>
+                    <div class="small text-muted-brand">{{ __('Built in: 7 days and 1 day before a paid plan ends, 10:00 IST.') }}</div>
+                </td>
+                <td>7, 1 <div class="small text-muted-brand">{{ __('days before the plan ends') }}</div></td>
+                <td>{{ __('Member’s preferences') }}</td>
+                <td class="small">—</td>
+                <td><x-ui.badge variant="default">{{ __('Built in') }}</x-ui.badge></td>
+                <td class="text-end">
+                    @can('templates.edit')
+                        <a href="{{ route('admin.comms.templates') }}" wire:navigate class="small">{{ __('Edit its copy') }}</a>
+                    @endcan
+                </td>
+            </tr>
+        </x-admin.table>
     </div>
 
-    {{-- CONFIGURE MODAL --}}
-    @if ($showModal)
-        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);" aria-modal="true" role="dialog">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">{{ __('Configure Journey: :name', ['name' => $editingName]) }}</h5>
-                        <button type="button" class="btn-close" wire:click="$set('showModal', false)"></button>
+    <p class="small text-muted-brand mt-2">{{ __('The words of each journey message are edited in Templates, under the journey’s notification.') }}</p>
+
+    @if ($canEdit)
+        <x-admin.confirm-modal name="journey-edit" :title="$editingKey ? __('Change: :name', ['name' => $editingKey->label()]) : __('Change journey')"
+                               action="save" :confirm-label="__('Save journey')" :danger="false">
+            @if ($editingKey)
+                <x-ui.checkbox name="journeyActive" id="journey-active" wire:model="isActive">{{ __('Send this journey') }}</x-ui.checkbox>
+
+                <fieldset class="mt-3">
+                    <legend class="mat-label">{{ __('Send on day (:meaning)', ['meaning' => $editingKey->offsetMeaning()]) }}</legend>
+                    <div class="row g-2">
+                        @foreach (range(0, \App\Actions\Admin\Comms\SaveJourney::MAX_OFFSETS - 1) as $i)
+                            <div class="col-4">
+                                <x-ui.input type="number" :label="__('Day :n', ['n' => $i + 1])" name="journeyOffset{{ $i }}" id="journey-offset-{{ $i }}"
+                                            wire:model="offsets.{{ $i }}" min="1" max="365" inputmode="numeric" />
+                            </div>
+                        @endforeach
                     </div>
-                    <form wire:submit="save">
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label class="form-label">{{ __('Trigger Delay (Days)') }}</label>
-                                <input type="number" class="form-control" wire:model="triggerDays" min="1" max="365" required>
-                                @error('triggerDays')<div class="text-danger small">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">{{ __('Channel') }}</label>
-                                <select class="form-select" wire:model.live="channel" required>
-                                    <option value="email">{{ __('Email') }}</option>
-                                    <option value="sms">{{ __('SMS') }}</option>
-                                    <option value="in_app">{{ __('In-App Notification') }}</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">{{ __('Custom Template (optional)') }}</label>
-                                <select class="form-select" wire:model="templateId">
-                                    <option value="">{{ __('Use Default System Template') }}</option>
-                                    @foreach ($templates as $t)
-                                        <option value="{{ $t->id }}">{{ $t->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="journeyActiveSwitch" wire:model="isActive">
-                                <label class="form-check-label" for="journeyActiveSwitch">{{ __('Enable automated journey') }}</label>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" wire:click="$set('showModal', false)">{{ __('Cancel') }}</button>
-                            <button type="submit" class="btn btn-primary">{{ __('Save Journey Rule') }}</button>
-                        </div>
-                    </form>
+                    @error('offsets')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    @foreach ($errors->get('offsets.*') as $messages)
+                        <div class="invalid-feedback d-block">{{ $messages[0] }}</div>
+                    @endforeach
+                </fieldset>
+
+                <div class="mt-3">
+                    <x-ui.select :label="__('Channel')" name="journeyChannel" id="journey-channel" wire:model="channel"
+                                 :options="$channelOptions" :selected="$channel" required />
+                    @if ($channel === 'sms')
+                        <p class="small text-muted-brand mt-1">{{ __('Only members who switched SMS on for this reminder get it, and only outside quiet hours. Needs a DLT template in Templates.') }}</p>
+                    @endif
                 </div>
-            </div>
-        </div>
+            @endif
+        </x-admin.confirm-modal>
     @endif
 </div>
-

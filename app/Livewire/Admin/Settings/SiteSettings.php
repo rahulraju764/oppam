@@ -4,107 +4,130 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Settings;
 
-use App\Actions\Admin\Settings\UpdateSetting;
+use App\Actions\Admin\Settings\UpdateSettings;
+use App\Actions\Admin\Settings\UploadSiteLogo;
 use App\Enums\SettingKey;
+use App\Enums\SettingType;
 use App\Models\AdminUser;
+use App\Services\Settings\SiteIdentity;
 use App\Support\Facades\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 
 /**
- * Site settings configuration screen (PRD §11 A15).
- * Allows admins holding settings.edit to update contact info, SEO, and maintenance mode.
+ * A15 site settings (P8.4): site name, logo, social links, SEO defaults, the indexable switch,
+ * contact details, maintenance message and the home-page band — every `isSite()` key of the
+ * SettingKey enum (the logo through UploadSiteLogo). One Save = one transaction with one reason;
+ * only fields that changed are written and audited (UpdateSettings). settings.view to look,
+ * settings.edit to change.
  */
-#[Layout('layouts::admin', ['title' => 'Site Settings'])]
+#[Layout('layouts::admin', ['title' => 'Site settings'])]
 final class SiteSettings extends Component
 {
-    public string $supportEmail = '';
+    use WithFileUploads;
 
-    public string $infoEmail = '';
-
-    public string $phoneDisplay = '';
-
-    public string $phoneDial = '';
-
-    public string $address = '';
-
-    public string $hours = '';
-
-    public string $maintenanceMessage = '';
-
-    public bool $seoIndexable = false;
-
-    public int $homeMembersMin = 4;
-
-    public int $homeToggleMaxPerHour = 5;
+    /** @var array<string, mixed> SettingKey value (dots → "__") => form value */
+    public array $form = [];
 
     public string $reason = '';
+
+    public ?TemporaryUploadedFile $logo = null;
+
+    public string $logoReason = '';
 
     public function mount(): void
     {
         $this->authorize('settings.view');
-
-        $this->supportEmail = Settings::string(SettingKey::SiteSupportEmail);
-        $this->infoEmail = Settings::string(SettingKey::SiteInfoEmail);
-        $this->phoneDisplay = Settings::string(SettingKey::SitePhoneDisplay);
-        $this->phoneDial = Settings::string(SettingKey::SitePhoneDial);
-        $this->address = Settings::string(SettingKey::SiteAddress);
-        $this->hours = Settings::string(SettingKey::SiteHours);
-        $this->maintenanceMessage = Settings::string(SettingKey::SiteMaintenanceMessage);
-        $this->seoIndexable = Settings::bool(SettingKey::SeoIndexable);
-        $this->homeMembersMin = Settings::int(SettingKey::ContentHomeMembersMin);
-        $this->homeToggleMaxPerHour = Settings::int(SettingKey::ContentHomeToggleMaxPerHour);
+        foreach (self::keys() as $key) {
+            $this->form[self::field($key)] = $key->type() === SettingType::Boolean ? (bool) Settings::get($key) : (string) Settings::get($key);
+        }
     }
 
-    public function save(UpdateSetting $action): void
+    /** A temporary upload is refused before it lands for an admin who can't change settings. */
+    public function updatingLogo(): void
     {
         $this->authorize('settings.edit');
-
-        $this->validate([
-            'supportEmail' => SettingKey::SiteSupportEmail->rules(),
-            'infoEmail' => SettingKey::SiteInfoEmail->rules(),
-            'phoneDisplay' => SettingKey::SitePhoneDisplay->rules(),
-            'phoneDial' => SettingKey::SitePhoneDial->rules(),
-            'address' => SettingKey::SiteAddress->rules(),
-            'hours' => SettingKey::SiteHours->rules(),
-            'maintenanceMessage' => SettingKey::SiteMaintenanceMessage->rules(),
-            'seoIndexable' => SettingKey::SeoIndexable->rules(),
-            'homeMembersMin' => SettingKey::ContentHomeMembersMin->rules(),
-            'homeToggleMaxPerHour' => SettingKey::ContentHomeToggleMaxPerHour->rules(),
-            'reason' => ['required', 'string', 'min:3', 'max:500'],
-        ]);
-
-        $admin = $this->admin();
-
-        $action->handle($admin, SettingKey::SiteSupportEmail, $this->supportEmail, $this->reason);
-        $action->handle($admin, SettingKey::SiteInfoEmail, $this->infoEmail, $this->reason);
-        $action->handle($admin, SettingKey::SitePhoneDisplay, $this->phoneDisplay, $this->reason);
-        $action->handle($admin, SettingKey::SitePhoneDial, $this->phoneDial, $this->reason);
-        $action->handle($admin, SettingKey::SiteAddress, $this->address, $this->reason);
-        $action->handle($admin, SettingKey::SiteHours, $this->hours, $this->reason);
-        $action->handle($admin, SettingKey::SiteMaintenanceMessage, $this->maintenanceMessage, $this->reason);
-        $action->handle($admin, SettingKey::SeoIndexable, $this->seoIndexable, $this->reason);
-        $action->handle($admin, SettingKey::ContentHomeMembersMin, $this->homeMembersMin, $this->reason);
-        $action->handle($admin, SettingKey::ContentHomeToggleMaxPerHour, $this->homeToggleMaxPerHour, $this->reason);
-
-        $this->reset('reason');
-        session()->flash('status', __('Site settings updated successfully.'));
     }
 
-    public function render(): View
+    public function save(UpdateSettings $update): void
+    {
+        $values = [];
+        foreach (self::keys() as $key) {
+            $values[$key->value] = $this->form[self::field($key)] ?? null;
+        }
+
+        try {
+            $changed = $update->handle($this->admin(), $values, $this->reason);
+        } catch (ValidationException $e) {
+            $errors = [];
+            foreach ($e->errors() as $field => $messages) {
+                $errors[$field === 'reason' ? 'reason' : 'form.'.str_replace('.', '__', $field)] = $messages;
+            }
+            $this->setErrorBag($errors);
+
+            return;
+        }
+
+        $this->reason = '';
+        $this->dispatch('close-modal', name: 'site-save');
+        $this->dispatch('toast', type: 'success', message: $changed === []
+            ? __('Nothing changed.')
+            : trans_choice(':count setting saved.|:count settings saved.', count($changed)));
+    }
+
+    public function uploadLogo(UploadSiteLogo $upload): void
+    {
+        $file = $this->logo instanceof TemporaryUploadedFile ? $this->logo
+            : throw ValidationException::withMessages(['logo' => __('Please choose a PNG or WebP file.')]);
+        $upload->handle($this->admin(), $file, $this->logoReason);
+
+        $this->reset('logo', 'logoReason');
+        $this->dispatch('close-modal', name: 'logo-upload');
+        $this->dispatch('toast', type: 'success', message: __('Logo updated.'));
+    }
+
+    public function removeLogo(UploadSiteLogo $upload): void
+    {
+        $upload->remove($this->admin(), $this->logoReason);
+
+        $this->reset('logoReason');
+        $this->dispatch('close-modal', name: 'logo-upload');
+        $this->dispatch('toast', type: 'success', message: __('The bundled logo is back.'));
+    }
+
+    public function render(SiteIdentity $identity): View
     {
         return view('livewire.admin.settings.site-settings', [
-            'brandName' => config('oppam.site.name', 'Oppam Matrimony'),
+            'keys' => self::keys(),
+            'canEdit' => Gate::forUser($this->admin())->allows('settings.edit'),
+            'logoUrl' => $identity->logoUrl(),
+            'hasCustomLogo' => Settings::string(SettingKey::SiteLogoPath) !== '',
         ]);
+    }
+
+    /** @return list<SettingKey> the site keys edited in the form (the logo has its own dialog) */
+    public static function keys(): array
+    {
+        return array_values(array_filter(SettingKey::cases(), fn (SettingKey $k): bool => $k->isSite() && $k !== SettingKey::SiteLogoPath));
+    }
+
+    /** Livewire reads dots in a property path as nesting: "site.name" is stored under "site__name". */
+    public static function field(SettingKey $key): string
+    {
+        return str_replace('.', '__', $key->value);
     }
 
     private function admin(): AdminUser
     {
-        /** @var AdminUser $user */
-        $user = Auth::guard('admin')->user();
+        /** @var AdminUser $admin */
+        $admin = Auth::guard('admin')->user();
 
-        return $user;
+        return $admin;
     }
 }

@@ -41,6 +41,11 @@ final readonly class RealtimeContextData
             return null;
         }
 
+        // A15 realtime.enabled off (P8.4): no socket at all; changes show on the next page load.
+        if (! Feature::active(Flag::RealtimeEnabled)) {
+            return null;
+        }
+
         if ($user->role === UserRole::Broker) {
             return new self((string) $user->id, false, false, Feature::active(Flag::RealtimePollingFallback));
         }

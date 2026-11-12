@@ -4,39 +4,62 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Comms;
 
-use App\Actions\Admin\Comms\BuildCampaign;
+use App\Actions\Admin\Comms\SaveCampaign;
+use App\Data\Comms\CampaignData;
+use App\Data\Comms\CampaignSegment;
+use App\Enums\CampaignStatus;
+use App\Enums\CommsChannel;
+use App\Enums\Gender;
+use App\Enums\PlanCode;
+use App\Exceptions\Admin\CommsRefused;
 use App\Models\AdminUser;
+use App\Models\Campaign;
 use App\Models\CommunicationTemplate;
-use App\Models\Masters\District;
-use App\Models\Masters\Religion;
 use App\Queries\Admin\Comms\SegmentQuery;
+use App\Services\Masters\Masters;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Layout;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Visual campaign segment builder and creator (PRD §11 A14).
+ * A14 campaign builder (P8.3b1, `campaigns.send`): segment filters with a live audience estimate
+ * (the same SegmentQuery that freezes it at submit), the channel and its copy (optionally started
+ * from an A14 campaign text), the button, the start time (IST) and the throttle. Saves a DRAFT
+ * (SaveCampaign) and opens the campaign page, where it is tested and sent. Only drafts can be edited.
  */
-#[Layout('layouts::admin', ['title' => 'Create Campaign'])]
 final class CampaignBuilder extends Component
 {
+    #[Locked]
+    public ?string $editing = null;
+
     public string $name = '';
 
     public string $channel = 'email';
-
-    public ?string $templateId = null;
 
     public string $subject = '';
 
     public string $message = '';
 
+    public string $actionUrl = '';
+
+    public string $actionText = '';
+
+    public string $dltTemplateId = '';
+
     public string $scheduledAt = '';
 
-    public int $throttlePerMinute = 60;
+    public int $throttlePerMinute = 300;
 
-    // Segment Filters
+    public ?string $templateId = null;
+
+    // Segment (null / '' = any)
+    public string $plan = '';
+
     public string $gender = '';
 
     public ?int $religionId = null;
@@ -45,129 +68,189 @@ final class CampaignBuilder extends Component
 
     public ?int $completenessMin = null;
 
-    public ?bool $isVerified = null;
-
-    public ?bool $isPremium = null;
-
-    public ?bool $hasPhoto = null;
-
-    public ?bool $isBroker = null;
-
     public ?int $activeWithinDays = null;
 
-    public function mount(): void
+    public ?int $inactiveForDays = null;
+
+    public string $registeredFrom = '';
+
+    public string $registeredTo = '';
+
+    /** '' any · 'yes' · 'no' */
+    public string $hasPhoto = '';
+
+    public string $verified = '';
+
+    public string $viaBureau = '';
+
+    public function mount(?string $campaign = null): void
     {
         $this->authorize('campaigns.send');
-    }
 
-    public function updatedTemplateId(?string $value): void
-    {
-        if ($value) {
-            $template = CommunicationTemplate::query()->find($value);
-            if ($template) {
-                $live = $template->currentVersion();
-                $this->channel = $template->channel->value;
-                $this->subject = (string) $live?->subject;
-                $this->message = (string) $live?->body;
-            }
+        if ($campaign === null) {
+            return;
         }
+
+        $row = Campaign::query()->where('code', $campaign)->where('status', CampaignStatus::Draft->value)->firstOrFail();
+        $segment = $row->segment;
+        $this->editing = $row->code;
+        $this->name = $row->name;
+        $this->channel = $row->channel->value;
+        $this->subject = (string) $row->subject;
+        $this->message = $row->message;
+        $this->actionUrl = (string) $row->action_url;
+        $this->actionText = (string) $row->action_text;
+        $this->dltTemplateId = (string) $row->dlt_template_id;
+        $this->scheduledAt = $row->scheduled_at?->timezone(self::tz())->format('Y-m-d\TH:i') ?? '';
+        $this->throttlePerMinute = $row->throttle_per_minute;
+        $this->templateId = $row->template_id;
+        $this->plan = (string) $segment->plan?->value;
+        $this->gender = (string) $segment->gender?->value;
+        $this->religionId = $segment->religionId;
+        $this->districtId = $segment->districtId;
+        $this->completenessMin = $segment->completenessMin;
+        $this->activeWithinDays = $segment->activeWithinDays;
+        $this->inactiveForDays = $segment->inactiveForDays;
+        $this->registeredFrom = (string) $segment->registeredFrom?->format('Y-m-d');
+        $this->registeredTo = (string) $segment->registeredTo?->format('Y-m-d');
+        $this->hasPhoto = self::triState($segment->hasPhoto);
+        $this->verified = self::triState($segment->verified);
+        $this->viaBureau = self::triState($segment->viaBureau);
     }
 
-    public function getEstimatedAudienceProperty(SegmentQuery $segmentQuery): int
+    /** Start from an A14 campaign text (same channel): copies its live version into the form. */
+    public function useTemplate(string $id): void
     {
-        return $segmentQuery->build($this->filters(), $this->channel)->count();
+        $this->authorize('campaigns.send');
+        $template = CommunicationTemplate::query()->whereKey($id)->where('event', 'campaign')
+            ->where('channel', $this->channelEnum()->value)->firstOrFail();
+        $live = $template->currentVersion();
+
+        $this->templateId = $template->id;
+        $this->subject = (string) $live?->subject;
+        $this->message = (string) $live?->body;
+        $this->dltTemplateId = (string) $live?->dlt_template_id;
     }
 
-    public function save(BuildCampaign $action): mixed
+    /** The members this segment reaches on this channel right now. */
+    #[Computed]
+    public function audience(): int
+    {
+        return app(SegmentQuery::class)->count($this->segment(), $this->channelEnum());
+    }
+
+    public function save(SaveCampaign $save): void
     {
         $this->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'channel' => ['required', 'in:email,sms,in_app'],
-            'message' => ['required', 'string'],
-            'subject' => ['nullable', 'string', 'max:200'],
-            'scheduledAt' => ['nullable', 'date'],
-            'throttlePerMinute' => ['required', 'integer', 'min:1', 'max:500'],
+            'channel' => ['required', Rule::enum(CommsChannel::class)],
+            'plan' => ['nullable', Rule::in(['', ...array_keys(PlanCode::options())])],
+            'gender' => ['nullable', Rule::in(['', ...array_keys(Gender::options())])],
+            'religionId' => ['nullable', 'integer', 'exists:master_religions,id'],
+            'districtId' => ['nullable', 'integer', 'exists:master_districts,id'],
+            'completenessMin' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'activeWithinDays' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'inactiveForDays' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'registeredFrom' => ['nullable', 'date_format:Y-m-d'],
+            'registeredTo' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:registeredFrom'],
+            'hasPhoto' => ['nullable', Rule::in(['', 'yes', 'no'])],
+            'verified' => ['nullable', Rule::in(['', 'yes', 'no'])],
+            'viaBureau' => ['nullable', Rule::in(['', 'yes', 'no'])],
+            'scheduledAt' => ['nullable', 'date_format:Y-m-d\TH:i'],
+            'throttlePerMinute' => ['required', 'integer'],
         ]);
 
-        $admin = $this->admin();
+        $existing = $this->editing !== null
+            ? Campaign::query()->where('code', $this->editing)->firstOrFail() : null;
 
         try {
-            $campaign = $action->handle($admin, [
-                'name' => $this->name,
-                'channel' => $this->channel,
-                'template_id' => $this->templateId,
-                'subject' => $this->subject,
-                'message' => $this->message,
-                'scheduled_at' => $this->scheduledAt ?: null,
-                'throttle_per_minute' => $this->throttlePerMinute,
-                'segment_filters' => $this->filters(),
-            ]);
+            $campaign = $save->handle($this->admin(), new CampaignData(
+                name: $this->name,
+                channel: $this->channelEnum(),
+                segment: $this->segment(),
+                subject: $this->subject,
+                message: $this->message,
+                actionUrl: $this->actionUrl,
+                actionText: $this->actionText,
+                dltTemplateId: $this->dltTemplateId,
+                scheduledAt: trim($this->scheduledAt) === '' ? null
+                    : CarbonImmutable::createFromFormat('Y-m-d\TH:i', $this->scheduledAt, self::tz())?->utc(),
+                throttlePerMinute: $this->throttlePerMinute,
+                templateId: $this->templateId,
+            ), $existing);
+        } catch (ValidationException $invalid) {
+            $this->setErrorBag($invalid->validator->errors());
 
-            return redirect()->route('admin.comms.campaigns.index')->with('toast', [
-                'type' => 'success',
-                'message' => __('Campaign created with :count recipients.', ['count' => $campaign->recipient_count]),
-            ]);
-        } catch (ValidationException $e) {
-            foreach ($e->errors() as $key => $msgs) {
-                foreach ($msgs as $m) {
-                    $this->addError($key, $m);
-                }
-            }
+            return;
+        } catch (CommsRefused $refused) {
+            $this->dispatch('toast', type: 'danger', title: $refused->getMessage());
 
-            return null;
+            return;
         }
+
+        session()->flash('campaign.toast', __('Saved as a draft. Send yourself a test, then send it.'));
+        $this->redirectRoute('admin.comms.campaigns.show', ['campaign' => $campaign->code], navigate: true);
     }
 
-    /** @return array<string, mixed> */
-    private function filters(): array
-    {
-        $filters = [];
-        if ($this->gender !== '') {
-            $filters['gender'] = $this->gender;
-        }
-        if ($this->religionId) {
-            $filters['religion_id'] = $this->religionId;
-        }
-        if ($this->districtId) {
-            $filters['district_id'] = $this->districtId;
-        }
-        if ($this->completenessMin !== null && $this->completenessMin > 0) {
-            $filters['completeness_min'] = $this->completenessMin;
-        }
-        if ($this->isVerified !== null) {
-            $filters['is_verified'] = $this->isVerified;
-        }
-        if ($this->isPremium !== null) {
-            $filters['is_premium'] = $this->isPremium;
-        }
-        if ($this->hasPhoto !== null) {
-            $filters['has_photo'] = $this->hasPhoto;
-        }
-        if ($this->isBroker !== null) {
-            $filters['is_broker'] = $this->isBroker;
-        }
-        if ($this->activeWithinDays !== null && $this->activeWithinDays > 0) {
-            $filters['active_within_days'] = $this->activeWithinDays;
-        }
-
-        return $filters;
-    }
-
-    public function render(SegmentQuery $segmentQuery): View
+    public function render(Masters $masters): View
     {
         return view('livewire.admin.comms.campaign-builder', [
-            'religions' => Religion::query()->ordered()->get(),
-            'districts' => District::query()->ordered()->get(),
-            'templates' => CommunicationTemplate::query()->where('channel', $this->channel)->get(),
-            'audienceCount' => $this->getEstimatedAudienceProperty($segmentQuery),
+            'channels' => CommsChannel::options(),
+            'plans' => PlanCode::options(),
+            'genders' => Gender::options(),
+            'religions' => Masters::forSelect($masters->religions()),
+            'districts' => Masters::forSelect($masters->allDistricts()),
+            'yesNo' => ['yes' => __('Yes'), 'no' => __('No')],
+            'templates' => CommunicationTemplate::query()->where('event', 'campaign')
+                ->where('channel', $this->channelEnum()->value)->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all(),
+            'channelEnum' => $this->channelEnum(),
+        ])->layout('layouts::admin', ['title' => $this->editing ? __('Edit campaign') : __('New campaign')]);
+    }
+
+    private function segment(): CampaignSegment
+    {
+        return CampaignSegment::fromArray([
+            'plan' => $this->plan,
+            'gender' => $this->gender,
+            'religion_id' => $this->religionId,
+            'district_id' => $this->districtId,
+            'completeness_min' => $this->completenessMin,
+            'active_within_days' => $this->activeWithinDays,
+            'inactive_for_days' => $this->inactiveForDays,
+            'registered_from' => $this->registeredFrom,
+            'registered_to' => $this->registeredTo,
+            'has_photo' => self::fromTriState($this->hasPhoto),
+            'verified' => self::fromTriState($this->verified),
+            'via_bureau' => self::fromTriState($this->viaBureau),
         ]);
+    }
+
+    private function channelEnum(): CommsChannel
+    {
+        return CommsChannel::tryFrom($this->channel) ?? CommsChannel::Email;
+    }
+
+    private static function triState(?bool $value): string
+    {
+        return $value === null ? '' : ($value ? 'yes' : 'no');
+    }
+
+    private static function fromTriState(string $value): ?bool
+    {
+        return match ($value) {
+            'yes' => true,
+            'no' => false,
+            default => null,
+        };
+    }
+
+    private static function tz(): string
+    {
+        return (string) config('oppam.display_timezone');
     }
 
     private function admin(): AdminUser
     {
-        /** @var AdminUser $user */
-        $user = Auth::guard('admin')->user();
-
-        return $user;
+        /** @var AdminUser */
+        return Auth::guard('admin')->user();
     }
 }

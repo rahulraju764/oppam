@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Data\Content;
 
+use App\Enums\SettingKey;
+use App\Support\Facades\Settings;
+use Throwable;
+
 /**
  * Everything a page's <head> needs (PRD §6.1, template head.php). A page sets what differs;
  * the rest falls back to site defaults. Robots is only honoured while the site is indexable
@@ -62,13 +66,36 @@ final readonly class SeoData
         return $this->indexable ? 'index, follow' : 'noindex, nofollow';
     }
 
+    /** The page's own title, or — for a page that set none — the A15 default title (P8.4). */
+    public function pageTitle(): string
+    {
+        return $this->title === self::DEFAULT_TITLE ? self::siteDefault(SettingKey::SeoDefaultTitle, $this->title) : $this->title;
+    }
+
+    /** The page's own description, or the A15 default description (P8.4). */
+    public function pageDescription(): string
+    {
+        return $this->description === self::DEFAULT_DESCRIPTION ? self::siteDefault(SettingKey::SeoDefaultDescription, $this->description) : $this->description;
+    }
+
     public function ogTitle(): string
     {
-        return $this->ogTitle ?? $this->title;
+        return $this->ogTitle ?? $this->pageTitle();
     }
 
     public function ogDescription(): string
     {
-        return $this->ogDescription ?? $this->description;
+        return $this->ogDescription ?? $this->pageDescription();
+    }
+
+    private static function siteDefault(SettingKey $key, string $fallback): string
+    {
+        try {
+            $value = trim(Settings::string($key));
+        } catch (Throwable) {
+            return $fallback;   // settings unreadable (e.g. the maintenance page with the database down)
+        }
+
+        return $value !== '' ? $value : $fallback;
     }
 }

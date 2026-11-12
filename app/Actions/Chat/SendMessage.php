@@ -11,6 +11,7 @@ use App\Domain\Chat\InboxSignals;
 use App\Domain\Engagement\EngagementRestrictions;
 use App\Domain\Engagement\EngagementSignals;
 use App\Enums\EngagementSignalType;
+use App\Enums\Flag;
 use App\Enums\MessageType;
 use App\Enums\SettingKey;
 use App\Events\Chat\MessageSent;
@@ -23,6 +24,7 @@ use App\Models\Profile;
 use App\Models\User;
 use App\Services\Admin\Impersonation;
 use App\Services\Media\ImageSanitizer;
+use App\Support\Facades\Feature;
 use App\Support\Facades\Settings;
 use App\Support\Realtime\LiveSignal;
 use Illuminate\Cache\RateLimiter;
@@ -110,6 +112,10 @@ final class SendMessage
     public function image(User $member, Profile $other, UploadedFile $file, string $clientId): Message
     {
         [$me, $thread] = $this->thread($member, $other);
+
+        if (! Feature::active(Flag::ChatImages)) {
+            throw ChatRefused::imagesDisabled();
+        }
 
         Validator::make(['photo' => $file, 'client_id' => $clientId], [
             'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp',

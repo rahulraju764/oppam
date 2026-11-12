@@ -8,6 +8,7 @@ use App\Contracts\SmsGateway;
 use App\Enums\OtpPurpose;
 use App\Exceptions\Sms\SmsDeliveryFailed;
 use App\ValueObjects\PhoneNumber;
+use Closure;
 
 /** Captures OTP SMS in memory (oppam-testing: fake external systems). */
 final class FakeSmsGateway implements SmsGateway
@@ -29,6 +30,9 @@ final class FakeSmsGateway implements SmsGateway
     /** @var list<array{to: string, key: string, variables: list<string>, template_id: ?string, request_id: string}> notification SMS (M08) */
     public array $notices = [];
 
+    /** Runs after each notification SMS is recorded (e.g. a test moving the clock mid-batch). */
+    public ?Closure $afterNotice = null;
+
     /** @param  list<string>  $variables */
     public function sendNotification(PhoneNumber $to, string $templateKey, array $variables, ?string $templateId = null): ?string
     {
@@ -38,6 +42,10 @@ final class FakeSmsGateway implements SmsGateway
 
         $requestId = 'fake-'.(count($this->notices) + 1);
         $this->notices[] = ['to' => $to->e164(), 'key' => $templateKey, 'variables' => $variables, 'template_id' => $templateId, 'request_id' => $requestId];
+
+        if ($this->afterNotice !== null) {
+            ($this->afterNotice)();
+        }
 
         return $requestId;
     }

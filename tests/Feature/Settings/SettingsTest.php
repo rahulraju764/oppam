@@ -130,31 +130,31 @@ it('audits the stored value as before, not a stale cached one', function (): voi
     expect(AuditLog::query()->where('action', 'settings.updated')->sole()->before)->toBe(['matching.daily_match_count' => 12]);
 });
 
-it('keeps every feature flag off until it is switched on', function (): void {
+it('keeps every flag off until it is switched on — except the shipped features it guards (P8.4, owner 2026-11-12)', function (): void {
     foreach (Flag::cases() as $flag) {
-        expect(Feature::active($flag))->toBeFalse();
+        expect(Feature::active($flag))->toBe(in_array($flag, [Flag::LikesEnabled, Flag::ChatImages, Flag::RealtimeEnabled], true), $flag->value);
     }
 });
 
 it('toggles a flag, flushes the cache and audits it (A15)', function (): void {
     $admin = adminWithRole('super_admin');
-    expect(Feature::active(Flag::LikesEnabled))->toBeFalse();   // cached off
+    expect(Feature::active(Flag::BrokerStaff))->toBeFalse();   // cached off
 
-    app(ToggleFeatureFlag::class)->handle($admin, Flag::LikesEnabled, true, 'P2.2 shipped');
+    app(ToggleFeatureFlag::class)->handle($admin, Flag::BrokerStaff, true, 'P7.5 shipped');
 
     app()->forgetScopedInstances();
-    expect(app(FeatureFlags::class)->active(Flag::LikesEnabled))->toBeTrue()
-        ->and(app(FeatureFlags::class)->active(Flag::ChatImages))->toBeFalse();
+    expect(app(FeatureFlags::class)->active(Flag::BrokerStaff))->toBeTrue()
+        ->and(app(FeatureFlags::class)->active(Flag::BrokerBulkImport))->toBeFalse();
 
     $log = AuditLog::query()->where('action', 'feature_flags.toggled')->sole();
-    expect($log->before)->toBe(['likes.enabled' => false])
-        ->and($log->after)->toBe(['likes.enabled' => true])
-        ->and($log->reason)->toBe('P2.2 shipped');
+    expect($log->before)->toBe(['broker.staff' => false])
+        ->and($log->after)->toBe(['broker.staff' => true])
+        ->and($log->reason)->toBe('P7.5 shipped');
 });
 
 it('seeds every setting except seo.indexable, and every flag, without overwriting an admin change', function (): void {
     Setting::factory()->keyed(SettingKey::InterestExpiryDays, 14)->create();
-    (new FeatureFlag)->forceFill(['key' => Flag::LikesEnabled->value, 'is_enabled' => true])->save();
+    (new FeatureFlag)->forceFill(['key' => Flag::BrokerStaff->value, 'is_enabled' => true])->save();   // an admin's change
 
     $this->seed(SettingsSeeder::class);
     $this->seed(SettingsSeeder::class);
@@ -164,8 +164,9 @@ it('seeds every setting except seo.indexable, and every flag, without overwritin
         ->and(FeatureFlag::query()->count())->toBe(count(Flag::cases()))
         ->and(freshSettings()->int(SettingKey::InterestExpiryDays))->toBe(14)
         ->and(freshSettings()->int(SettingKey::InterestResendCooldownDays))->toBe(90)
-        ->and(app(FeatureFlags::class)->active(Flag::LikesEnabled))->toBeTrue()
-        ->and(FeatureFlag::query()->where('is_enabled', true)->count())->toBe(1);
+        ->and(app(FeatureFlags::class)->active(Flag::BrokerStaff))->toBeTrue()
+        ->and(FeatureFlag::query()->where('is_enabled', true)->pluck('key')->sort()->values()->all())
+        ->toBe(['broker.staff', 'chat.images', 'likes.enabled', 'realtime.enabled']);   // the admin's + the shipped features (P8.4)
 });
 
 it('defines valid defaults for every setting key', function (SettingKey $key): void {

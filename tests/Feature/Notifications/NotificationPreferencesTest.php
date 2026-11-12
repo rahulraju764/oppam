@@ -210,3 +210,26 @@ it('a suspended account or a bureau login can\'t save member preferences (404)',
 
     expect(fn () => npSave($member->refresh(), []))->toThrow(NotFoundHttpException::class);
 })->with(['suspended', 'broker']);
+
+it('P8.3b1 decision (a): SMS offers are opt-in — off until the member switches them on, then on; other events unchanged', function (): void {
+    $member = npMember();
+
+    expect(npChannels($member, NotificationEvent::AdminAnnouncement))->toBe([InAppChannel::class, 'mail']);
+
+    npSave($member, [new NotificationChoiceData(NotificationEvent::AdminAnnouncement, true, true, true)]);
+    expect(NotificationPreference::query()->where('user_id', $member->id)->where('event', 'admin_announcement')->sole()->sms)->toBeTrue()
+        ->and(npChannels($member, NotificationEvent::AdminAnnouncement))->toContain(SmsChannel::class);
+
+    npSave($member, [new NotificationChoiceData(NotificationEvent::AdminAnnouncement, true, true, false)]);
+    expect(npChannels($member, NotificationEvent::AdminAnnouncement))->not->toContain(SmsChannel::class)
+        ->and(NotificationEvent::ProfileLiked->usesChannel('sms'))->toBeFalse();
+});
+
+it('P8.3b1 decision (a): the /settings matrix shows the SMS offers switch, off by default', function (): void {
+    $member = npMember();
+    $this->actingAs($member);
+
+    Livewire\Livewire::withoutLazyLoading()->test(App\Livewire\Member\Settings\NotificationSettings::class)
+        ->assertSet('matrix.admin_announcement.sms', false)
+        ->assertSet('matrix.admin_announcement.email', true);
+});

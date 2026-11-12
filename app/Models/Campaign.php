@@ -4,86 +4,100 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Data\Comms\CampaignSegment;
+use App\Enums\CampaignStatus;
+use App\Enums\CommsChannel;
 use Carbon\CarbonImmutable;
+use Database\Factories\CampaignFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Targeted message campaign across In-App, Email, or SMS (A14).
+ * An A14 campaign (P8.3b1): one message on one channel (in-app, email or SMS) to a segment of
+ * members. Addressed by `code` (CMP…) everywhere outside the database. Its audience is frozen in
+ * campaign_recipients when it is submitted; its numbers are counted from those rows and the
+ * delivery log (CampaignStats), never stored as counters.
  *
  * @property string $id
+ * @property string $code
  * @property string $name
- * @property string $channel email, sms, in_app
+ * @property CommsChannel $channel
  * @property array<string, mixed> $segment_filters
+ * @property-read CampaignSegment $segment
  * @property string|null $template_id
- * @property string|null $subject
- * @property string $message
- * @property string $status DRAFT, PENDING_APPROVAL, APPROVED, SCHEDULED, SENDING, COMPLETED, CANCELLED
+ * @property string|null $subject email subject / in-app title
+ * @property string $message email Markdown / in-app text / SMS registered text
+ * @property string|null $action_url
+ * @property string|null $action_text
+ * @property string|null $dlt_template_id
+ * @property CampaignStatus $status
  * @property CarbonImmutable|null $scheduled_at
  * @property int $throttle_per_minute
  * @property int $recipient_count
- * @property int $sent_count
- * @property int $delivered_count
- * @property int $failed_count
  * @property string $created_by
+ * @property string|null $submitted_by
+ * @property CarbonImmutable|null $submitted_at
  * @property string|null $approved_by
  * @property CarbonImmutable|null $approved_at
  * @property CarbonImmutable|null $cancelled_at
+ * @property string|null $cancelled_by
  * @property CarbonImmutable|null $started_at
+ * @property string|null $batch_token the one batch chain allowed to run (SendCampaignBatch)
+ * @property CarbonImmutable|null $next_batch_at
  * @property CarbonImmutable|null $completed_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read AdminUser $creator
+ * @property-read AdminUser|null $creator
  * @property-read AdminUser|null $approver
- * @property-read CommunicationTemplate|null $template
  */
 final class Campaign extends Model
 {
-    use HasUlids;
-
-    public const STATUS_DRAFT = 'DRAFT';
-
-    public const STATUS_PENDING_APPROVAL = 'PENDING_APPROVAL';
-
-    public const STATUS_APPROVED = 'APPROVED';
-
-    public const STATUS_SCHEDULED = 'SCHEDULED';
-
-    public const STATUS_SENDING = 'SENDING';
-
-    public const STATUS_COMPLETED = 'COMPLETED';
-
-    public const STATUS_CANCELLED = 'CANCELLED';
+    /** @use HasFactory<CampaignFactory> */
+    use HasFactory, HasUlids;
 
     protected $table = 'campaigns';
 
-    protected $guarded = [];
+    protected $guarded = ['*'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
         return [
+            'channel' => CommsChannel::class,
+            'status' => CampaignStatus::class,
             'segment_filters' => 'array',
             'throttle_per_minute' => 'integer',
             'recipient_count' => 'integer',
-            'sent_count' => 'integer',
-            'delivered_count' => 'integer',
-            'failed_count' => 'integer',
             'scheduled_at' => 'immutable_datetime',
+            'submitted_at' => 'immutable_datetime',
             'approved_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
             'started_at' => 'immutable_datetime',
+            'next_batch_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
     }
 
-    public function needsSecondApproval(): bool
+    public function getRouteKeyName(): string
     {
-        return $this->recipient_count > 10_000;
+        return 'code';
+    }
+
+    /** @return Attribute<CampaignSegment, never> */
+    protected function segment(): Attribute
+    {
+        return Attribute::get(fn (): CampaignSegment => CampaignSegment::fromArray($this->segment_filters));
+    }
+
+    public function isEditable(): bool
+    {
+        return $this->status === CampaignStatus::Draft;
     }
 
     /** @return BelongsTo<AdminUser, $this> */
@@ -98,10 +112,10 @@ final class Campaign extends Model
         return $this->belongsTo(AdminUser::class, 'approved_by');
     }
 
-    /** @return BelongsTo<CommunicationTemplate, $this> */
-    public function template(): BelongsTo
+    /** @return HasMany<CampaignRecipient, $this> */
+    public function recipients(): HasMany
     {
-        return $this->belongsTo(CommunicationTemplate::class, 'template_id');
+        return $this->hasMany(CampaignRecipient::class);
     }
 
     /** @return HasMany<OutboundMessage, $this> */

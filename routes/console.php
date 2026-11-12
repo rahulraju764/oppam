@@ -15,6 +15,8 @@ use App\Jobs\Chat\PruneChatHistory;
 use App\Jobs\Chat\SendChatDigests;
 use App\Jobs\Comms\PruneOutboundMessages;
 use App\Jobs\Comms\PublishDueAnnouncements;
+use App\Jobs\Comms\RunJourneys;
+use App\Jobs\Comms\StartDueCampaigns;
 use App\Jobs\Content\PublishScheduledContent;
 use App\Jobs\Engagement\DetectEngagementSignals;
 use App\Jobs\Engagement\ExpireInterests;
@@ -22,6 +24,7 @@ use App\Jobs\Matching\GenerateDailyMatches;
 use App\Jobs\Members\PurgeDeletedMembers;
 use App\Jobs\Notifications\PruneOldNotifications;
 use App\Jobs\Profile\ExpireDataExports;
+use App\Jobs\Profile\HideInactiveProfiles;
 use App\Jobs\Search\SendSavedSearchAlerts;
 use App\Jobs\Support\PruneContactSubmissions;
 use App\Jobs\Verification\PurgeExpiredVerificationDocuments;
@@ -39,6 +42,7 @@ Schedule::job(new PurgeDeletedMembers)->dailyAt('21:30')->onOneServer()->without
 // A14 (P8.3a): the delivery log keeps 180 days; scheduled announcements go live on the minute.
 Schedule::job(new PruneOutboundMessages)->dailyAt('21:35')->onOneServer()->withoutOverlapping();
 Schedule::job(new PublishDueAnnouncements)->everyMinute()->onOneServer()->withoutOverlapping();
+Schedule::job(new StartDueCampaigns)->everyMinute()->onOneServer()->withoutOverlapping();   // A14 scheduled + stalled campaigns (P8.3b1)
 // M14 (P8.2c): "download my data" zips are deleted 24 h after they are ready.
 Schedule::job(new ExpireDataExports)->hourly()->onOneServer()->withoutOverlapping();
 
@@ -74,9 +78,14 @@ Schedule::job(new ExpireUnpaidOrders)->hourlyAt(40)->onOneServer()->withoutOverl
 // M10 expiry (P5.2): ended plans → Free limits + flags + plan_expired; reminders 7 days / 1 day before, 10:00 IST.
 Schedule::job(new ExpireSubscriptions)->everyTenMinutes()->onOneServer()->withoutOverlapping();
 Schedule::job(new SendPlanExpiryReminders)->timezone('Asia/Kolkata')->dailyAt('10:00')->onOneServer()->withoutOverlapping();
+// A14 automated journeys (P8.3b2): after the plan-expiry reminders, 10:30 IST; one journey message a member a day.
+Schedule::job(new RunJourneys)->timezone('Asia/Kolkata')->dailyAt('10:30')->onOneServer()->withoutOverlapping();
 
 // A06 (P5.3): daily reconciliation against the gateway, 02:00 IST ("investigate" rows).
 Schedule::job(new ReconcilePayments)->timezone('Asia/Kolkata')->dailyAt('02:00')->onOneServer()->withoutOverlapping();
+
+// A15 (P8.4): members' own profiles inactive for profile.auto_hide_inactive_days are hidden (reversible), 03:20 IST.
+Schedule::job(new HideInactiveProfiles)->timezone('Asia/Kolkata')->dailyAt('03:20')->onOneServer()->withoutOverlapping();
 
 // M09 / A05 (P6.1): ID files deleted (and the deletion verified) 90 days after the decision, 03:30 IST.
 Schedule::job(new PurgeExpiredVerificationDocuments)->timezone('Asia/Kolkata')->dailyAt('03:30')->onOneServer()->withoutOverlapping();

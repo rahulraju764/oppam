@@ -1,181 +1,157 @@
+{{--
+    A14 campaign builder (P8.3b1): who (segment, live estimate), what (channel + copy), when and how
+    fast. Saves a draft; testing and sending happen on the campaign page.
+--}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-page-head">
         <div>
-            <h1 class="h3 mb-1">{{ __('Campaign Builder') }}</h1>
-            <p class="text-muted mb-0">{{ __('Design targeting criteria and compose message content (PRD §11 A14).') }}</p>
+            <h1>{{ $editing ? __('Edit campaign') : __('New campaign') }}</h1>
+            <p>{{ __('Saved as a draft. Nothing is sent until you press Send on the campaign page.') }}</p>
         </div>
-        <a href="{{ route('admin.comms.campaigns.index') }}" class="btn btn-outline-secondary">
-            {{ __('Back to Campaigns') }}
-        </a>
+        <x-ui.button :href="route('admin.comms.campaigns.index')" variant="ghost" icon="fa-arrow-left" wire:navigate>{{ __('All campaigns') }}</x-ui.button>
     </div>
 
-    <form wire:submit="save">
+    <form wire:submit="save" novalidate id="campaignForm" x-data>
         <div class="row g-4">
-            {{-- LEFT: COMPOSER --}}
-            <div class="col-lg-7">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-light">
-                        <h2 class="h6 mb-0">{{ __('1. Message Details') }}</h2>
+            <div class="col-12 col-xl-8">
+                <x-ui.card class="mb-3">
+                    <x-slot:header><h2 class="h5 mb-0">{{ __('1. Who gets it') }}</h2></x-slot:header>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <x-ui.select :label="__('Plan')" name="plan" id="cmpPlan" wire:model.live="plan" :options="$plans" :placeholder="__('Any plan')" :selected="$plan" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <x-ui.select :label="__('Gender')" name="gender" id="cmpGender" wire:model.live="gender" :options="$genders" :placeholder="__('Any')" :selected="$gender" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <x-ui.select :label="__('Religion')" name="religionId" id="cmpReligion" wire:model.live="religionId" :options="$religions" :placeholder="__('Any')" :selected="$religionId" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <x-ui.select :label="__('District')" name="districtId" id="cmpDistrict" wire:model.live="districtId" :options="$districts" :placeholder="__('Any')" :selected="$districtId" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <x-ui.input :label="__('Profile at least (%)')" name="completenessMin" id="cmpCompleteness" type="number" min="0" max="100" wire:model.live.debounce.400ms="completenessMin" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <x-ui.input :label="__('Active in the last (days)')" name="activeWithinDays" id="cmpActiveWithin" type="number" min="1" wire:model.live.debounce.400ms="activeWithinDays" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <x-ui.input :label="__('Inactive for at least (days)')" name="inactiveForDays" id="cmpInactiveFor" type="number" min="1" wire:model.live.debounce.400ms="inactiveForDays" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <x-ui.input :label="__('Registered from')" name="registeredFrom" id="cmpRegFrom" type="date" wire:model.live="registeredFrom" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <x-ui.input :label="__('Registered until')" name="registeredTo" id="cmpRegTo" type="date" wire:model.live="registeredTo" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <x-ui.select :label="__('Has an approved photo')" name="hasPhoto" id="cmpHasPhoto" wire:model.live="hasPhoto" :options="$yesNo" :placeholder="__('Either')" :selected="$hasPhoto" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <x-ui.select :label="__('ID verified')" name="verified" id="cmpVerified" wire:model.live="verified" :options="$yesNo" :placeholder="__('Either')" :selected="$verified" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <x-ui.select :label="__('Came through a bureau')" name="viaBureau" id="cmpViaBureau" wire:model.live="viaBureau" :options="$yesNo" :placeholder="__('Either')" :selected="$viaBureau"
+                                         :hint="__('Registered with a bureau code, or claimed a profile a bureau created.')" />
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">{{ __('Campaign Name') }}</label>
-                            <input type="text" class="form-control" wire:model="name" placeholder="e.g. Diwalii Match Boost 2026" required>
-                            @error('name')<div class="text-danger small">{{ $message }}</div>@enderror
+                </x-ui.card>
+
+                <x-ui.card class="mb-3">
+                    <x-slot:header><h2 class="h5 mb-0">{{ __('2. What it says') }}</h2></x-slot:header>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <x-ui.input :label="__('Campaign name (only admins see it)')" name="name" id="cmpName" wire:model="name" required maxlength="150" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <x-ui.select :label="__('Channel')" name="channel" id="cmpChannel" wire:model.live="channel" :options="$channels" :selected="$channel" required />
                         </div>
 
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">{{ __('Channel') }}</label>
-                                <select class="form-select" wire:model.live="channel" required>
-                                    <option value="email">{{ __('Email') }}</option>
-                                    <option value="sms">{{ __('SMS') }}</option>
-                                    <option value="in_app">{{ __('In-App Notification') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">{{ __('Load from Template (optional)') }}</label>
-                                <select class="form-select" wire:model.live="templateId">
-                                    <option value="">{{ __('Custom Message…') }}</option>
-                                    @foreach ($templates as $t)
-                                        <option value="{{ $t->id }}">{{ $t->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        @if ($channel === 'email')
-                            <div class="mb-3">
-                                <label class="form-label">{{ __('Subject Line') }}</label>
-                                <input type="text" class="form-control" wire:model="subject" placeholder="Email subject...">
-                                @error('subject')<div class="text-danger small">{{ $message }}</div>@enderror
+                        @if ($templates !== [])
+                            <div class="col-12">
+                                <label class="form-label" for="cmpTemplate">{{ __('Start from a campaign text') }}</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <select id="cmpTemplate" name="cmpTemplate" class="form-select w-auto" x-ref="tpl">
+                                        @foreach ($templates as $id => $label)
+                                            <option value="{{ $id }}" @selected($templateId === $id)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    <x-ui.button type="button" variant="outline" size="sm" x-on:click="$wire.useTemplate($refs.tpl.value)" loading="useTemplate">{{ __('Use this text') }}</x-ui.button>
+                                </div>
                             </div>
                         @endif
 
-                        <div class="mb-3">
-                            <label class="form-label">{{ __('Message Content') }}</label>
-                            <textarea class="form-control" rows="5" wire:model="message" placeholder="Type message text..." required></textarea>
-                            @error('message')<div class="text-danger small">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">{{ __('Schedule Time (optional, blank = immediate)') }}</label>
-                                <input type="datetime-local" class="form-control" wire:model="scheduledAt">
-                                @error('scheduledAt')<div class="text-danger small">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">{{ __('Throttle Rate (recipients per min)') }}</label>
-                                <input type="number" class="form-control" wire:model="throttlePerMinute" min="1" max="500">
-                                @error('throttlePerMinute')<div class="text-danger small">{{ $message }}</div>@enderror
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- RIGHT: SEGMENT FILTERS & AUDIENCE COUNTER --}}
-            <div class="col-lg-5">
-                <div class="card shadow-sm mb-4 border-primary">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h2 class="h6 mb-0">{{ __('Estimated Audience') }}</h2>
-                        <span class="badge bg-light text-primary fs-6" dusk="audience-badge">{{ number_format($audienceCount) }}</span>
-                    </div>
-                    <div class="card-body">
-                        @if ($audienceCount > 10000)
-                            <div class="alert alert-warning py-2 mb-0 small">
-                                <i class="fa fa-info-circle me-1" aria-hidden="true"></i>
-                                {{ __('Audience exceeds 10,000 members. This campaign will require approval by a second admin before sending.') }}
+                        @if ($channelEnum !== \App\Enums\CommsChannel::Sms)
+                            <div class="col-12">
+                                <x-ui.input :label="$channelEnum === \App\Enums\CommsChannel::Email ? __('Email subject') : __('Title')" name="subject" id="cmpSubject" wire:model.blur="subject" required
+                                            :maxlength="$channelEnum === \App\Enums\CommsChannel::Email ? 200 : 150" />
                             </div>
                         @else
-                            <p class="text-muted small mb-0">
-                                {{ __('Members who match all active segment filters and have not opted out of communications.') }}
-                            </p>
+                            <div class="col-12">
+                                <x-ui.input :label="__('DLT template id')" name="dltTemplateId" id="cmpDlt" wire:model.blur="dltTemplateId" required inputmode="numeric"
+                                            :hint="__('The approved promotional template. MSG91 sends the registered text; a different text here would be rejected.')" />
+                            </div>
+                        @endif
+
+                        <div class="col-12">
+                            <x-ui.textarea :label="match ($channelEnum) { \App\Enums\CommsChannel::Email => __('Email text (Markdown)'), \App\Enums\CommsChannel::Sms => __('Registered SMS text'), default => __('Message') }"
+                                           name="message" id="cmpMessage" wire:model.blur="message" rows="7" required
+                                           :hint="__('{first_name} is filled in for each member. Nothing else can be.')" />
+                        </div>
+
+                        @if ($channelEnum !== \App\Enums\CommsChannel::Sms)
+                            <div class="col-12 col-md-6">
+                                <x-ui.input :label="__('Button text')" name="actionText" id="cmpActionText" wire:model.blur="actionText" maxlength="50" :hint="__('Optional.')" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <x-ui.input :label="__('Button link')" name="actionUrl" id="cmpActionUrl" wire:model.blur="actionUrl" maxlength="255" :hint="__('A page like /plans, or an https:// address. Clicks are counted.')" />
+                            </div>
                         @endif
                     </div>
-                </div>
+                </x-ui.card>
 
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h2 class="h6 mb-0">{{ __('2. Target Segment Filters') }}</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('Gender') }}</label>
-                                <select class="form-select form-select-sm" wire:model.live="gender">
-                                    <option value="">{{ __('Any') }}</option>
-                                    <option value="MALE">{{ __('Groom (Male)') }}</option>
-                                    <option value="FEMALE">{{ __('Bride (Female)') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('Membership') }}</label>
-                                <select class="form-select form-select-sm" wire:model.live="isPremium">
-                                    <option value="">{{ __('All Plans') }}</option>
-                                    <option value="1">{{ __('Paid Members Only') }}</option>
-                                    <option value="0">{{ __('Free Members Only') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('Religion') }}</label>
-                                <select class="form-select form-select-sm" wire:model.live="religionId">
-                                    <option value="">{{ __('Any Religion') }}</option>
-                                    @foreach ($religions as $r)
-                                        <option value="{{ $r->id }}">{{ $r->label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('District') }}</label>
-                                <select class="form-select form-select-sm" wire:model.live="districtId">
-                                    <option value="">{{ __('Any District') }}</option>
-                                    @foreach ($districts as $d)
-                                        <option value="{{ $d->id }}">{{ $d->label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('ID Verified') }}</label>
-                                <select class="form-select form-select-sm" wire:model.live="isVerified">
-                                    <option value="">{{ __('Either') }}</option>
-                                    <option value="1">{{ __('Verified Only') }}</option>
-                                    <option value="0">{{ __('Unverified Only') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('Has Photo') }}</label>
-                                <select class="form-select form-select-sm" wire:model.live="hasPhoto">
-                                    <option value="">{{ __('Either') }}</option>
-                                    <option value="1">{{ __('With Photo Only') }}</option>
-                                    <option value="0">{{ __('Without Photo') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('Bureau Managed') }}</label>
-                                <select class="form-select form-select-sm" wire:model.live="isBroker">
-                                    <option value="">{{ __('Either') }}</option>
-                                    <option value="1">{{ __('Broker Managed') }}</option>
-                                    <option value="0">{{ __('Direct Signups') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small">{{ __('Min Completeness %') }}</label>
-                                <input type="number" class="form-control form-control-sm" wire:model.live="completenessMin" min="0" max="100" placeholder="e.g. 50">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small">{{ __('Active in Last N Days') }}</label>
-                                <input type="number" class="form-control form-control-sm" wire:model.live="activeWithinDays" min="1" placeholder="e.g. 14">
-                            </div>
+                <x-ui.card class="mb-3">
+                    <x-slot:header><h2 class="h5 mb-0">{{ __('3. When and how fast') }}</h2></x-slot:header>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <x-ui.input :label="__('Start (IST)')" name="scheduledAt" id="cmpScheduled" type="datetime-local" wire:model="scheduledAt" :hint="__('Empty = as soon as it is sent (and approved, if it needs it).')" />
                         </div>
-
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary" dusk="save-campaign-btn">
-                                <i class="fa fa-paper-plane me-1" aria-hidden="true"></i> {{ __('Save & Schedule Campaign') }}
-                            </button>
+                        <div class="col-12 col-md-6">
+                            <x-ui.input :label="__('Messages per minute')" name="throttlePerMinute" id="cmpThrottle" type="number" min="1" wire:model="throttlePerMinute" required />
                         </div>
                     </div>
-                </div>
+                    @if ($channelEnum === \App\Enums\CommsChannel::Sms)
+                        <p class="small text-muted-brand mt-3 mb-0">{{ __('SMS never goes out during quiet hours: a campaign waits and continues when they end.') }}</p>
+                    @endif
+                </x-ui.card>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <x-ui.card class="mod-decision">
+                    <x-slot:header><h2 class="h5 mb-0">{{ __('Audience now') }}</h2></x-slot:header>
+                    <p class="admin-stat__value mb-1" aria-live="polite" wire:loading.class="opacity-50">{{ number_format($this->audience) }}</p>
+                    <p class="small text-muted-brand">{{ __('Members matching these filters who can receive this channel and haven’t switched offers off. The list is fixed when you send it; anyone who opts out or leaves before their turn is skipped.') }}</p>
+
+                    <h3 class="h6 mt-3">{{ __('Preview') }}</h3>
+                    <div class="ui-card tpl-preview">
+                        @if ($channelEnum === \App\Enums\CommsChannel::Email)
+                            <p class="fw-semibold mb-2">{{ str_replace('{first_name}', 'Anjali', $subject) ?: __('(subject)') }}</p>
+                            @foreach (preg_split('/\R{2,}/', trim(str_replace('{first_name}', 'Anjali', $message))) ?: [] as $paragraph)
+                                @if (trim($paragraph) !== ''){{ \App\Domain\Comms\TemplateCopy::markdown(trim($paragraph)) }}@endif
+                            @endforeach
+                        @else
+                            @if ($channelEnum === \App\Enums\CommsChannel::InApp)<p class="fw-semibold mb-1">{{ str_replace('{first_name}', 'Anjali', $subject) ?: __('(title)') }}</p>@endif
+                            <p class="mb-0">{{ str_replace('{first_name}', 'Anjali', $message) ?: __('(message)') }}</p>
+                        @endif
+                        @if ($channelEnum !== \App\Enums\CommsChannel::Sms && $actionText !== '')
+                            <span class="chip mt-2">{{ $actionText }}</span>
+                        @endif
+                    </div>
+
+                    <x-slot:footer>
+                        <x-ui.button loading="save" class="w-100" dusk="campaign-save">{{ __('Save draft') }}</x-ui.button>
+                    </x-slot:footer>
+                </x-ui.card>
             </div>
         </div>
     </form>
