@@ -104,6 +104,8 @@ final class PurgeDeletedMember
             CampaignRecipient::query()->where('user_id', $member->id)->delete();
             // P8.3b2: the journey reminders they were sent.
             JourneySend::query()->where('user_id', $member->id)->delete();
+            // P9.1a: the days they were active (A09 reports keep only the daily totals).
+            DB::table('member_activity_days')->where('user_id', $member->id)->delete();
 
             $member->forceFill([
                 // Unique, never a real number, frees the real one for a new registration.

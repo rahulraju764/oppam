@@ -114,7 +114,7 @@ final class RegistrationForm extends Form
         return CreatedFor::tryFrom($this->createdFor)?->derivedGender() !== null;
     }
 
-    public function toData(?string $referralCookie = null): RegistrationData
+    public function toData(?string $referralCookie = null, ?string $sourceCookie = null): RegistrationData
     {
         $this->applyDerivedGender();
         $this->dob = $this->withDob ? $this->composeDob() : '';
@@ -134,6 +134,7 @@ final class RegistrationForm extends Form
             password: $this->password,
             referralCode: trim($this->referralCode) !== '' ? trim($this->referralCode) : null,
             referralCookie: $referralCookie,
+            sourceCookie: $sourceCookie,
         );
     }
 

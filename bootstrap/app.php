@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\CaptureReferralCode;
+use App\Http\Middleware\CaptureSignupSource;
 use App\Http\Middleware\ConfigureAdminSession;
 use App\Http\Middleware\EnsureAdminIpAllowed;
 use App\Http\Middleware\EnsureAdminIsActive;
@@ -79,7 +80,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Members/brokers: a suspended account or a session from before "log out other devices"
         // is signed out on its next request, pages and Livewire updates alike (M01, R-M01-5).
         // ?ref=BRK… sets the 30-day first-touch referral cookie (R-M13-9).
-        $middleware->web(append: [EnsureMemberSessionIsValid::class, CaptureReferralCode::class]);
+        $middleware->web(append: [EnsureMemberSessionIsValid::class, CaptureReferralCode::class, CaptureSignupSource::class]);
 
         // Admin impersonation (A01 / A03): a support session ends at its 30-minute limit, on the
         // next page or Livewire request.

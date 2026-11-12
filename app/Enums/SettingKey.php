@@ -52,6 +52,10 @@ enum SettingKey: string
     case CampaignsMaxPerMinute = 'campaigns.max_per_minute';
     case JourneysLedgerRetentionDays = 'journeys.ledger_retention_days';
     case SettingsIntegrationChecksPerHour = 'settings.integration_checks_per_hour';
+    case ReportsExportSyncMaxRows = 'reports.export_sync_max_rows';
+    case ReportsZeroInterestDays = 'reports.zero_interest_days';
+    case ReportsActivityRetentionDays = 'reports.activity_retention_days';
+    case ReportsSearchLogRetentionDays = 'reports.search_log_retention_days';
     case InterestExpiryDays = 'interest.expiry_days';
     case InterestResendCooldownDays = 'interest.resend_cooldown_days';
     case ChatUnsendWindowMinutes = 'chat.unsend_window_minutes';
@@ -201,6 +205,10 @@ enum SettingKey: string
             self::CampaignsMaxPerMinute => 1_000,        // A14: the highest throttle a campaign may set (messages per minute)
             self::JourneysLedgerRetentionDays => 400,    // A14 journeys (P8.3b2): the "already sent" ledger is kept this long
             self::SettingsIntegrationChecksPerHour => 10, // A15 (P8.4): integration Test buttons per admin per hour (each is a real provider call)
+            self::ReportsExportSyncMaxRows => 5_000,      // A09 (P9.1a): larger report exports are built in the background and emailed
+            self::ReportsZeroInterestDays => 30,          // A09 marketplace: live profiles with no interest received in this many days
+            self::ReportsActivityRetentionDays => 400,    // A09: member activity days kept (DAU / cohorts); the daily totals stay
+            self::ReportsSearchLogRetentionDays => 90,    // A09: the anonymous search log kept (daily totals stay)
             self::InterestExpiryDays => 30,
             self::InterestResendCooldownDays => 90,
             self::ChatUnsendWindowMinutes => 60,
@@ -336,6 +344,11 @@ enum SettingKey: string
             // Longer than the longest journey offset (365), so a step is never repeated after its row is pruned.
             self::JourneysLedgerRetentionDays => ['required', 'integer', 'min:370', 'max:1825'],
             self::SettingsIntegrationChecksPerHour => ['required', 'integer', 'min:1', 'max:100'],
+            self::ReportsExportSyncMaxRows => ['required', 'integer', 'min:100', 'max:50000'],
+            self::ReportsZeroInterestDays => ['required', 'integer', 'min:7', 'max:365'],
+            // Cohorts look back 8 weeks and MAU 30 days: never shorter than that.
+            self::ReportsActivityRetentionDays => ['required', 'integer', 'min:90', 'max:1825'],
+            self::ReportsSearchLogRetentionDays => ['required', 'integer', 'min:7', 'max:365'],
             self::InterestExpiryDays => ['required', 'integer', 'min:1', 'max:365'],
             self::InterestResendCooldownDays => ['required', 'integer', 'min:0', 'max:365'],
             self::ChatUnsendWindowMinutes => ['required', 'integer', 'min:0', 'max:1440'],
@@ -457,6 +470,7 @@ enum SettingKey: string
             'interest', 'interests', 'likes', 'favorites', 'search', 'profile_views', 'matching' => __('Engagement & matching'),
             'chat' => __('Chat'),
             'signals', 'moderation', 'system', 'settings' => __('Moderation & monitoring'),
+            'reports' => __('Reports'),
             'broker' => __('Brokers & bureaus'),
             'otp' => __('Sign-in (OTP)'),
             'billing' => __('Billing & invoices'),
@@ -523,6 +537,10 @@ enum SettingKey: string
             self::CampaignsMaxPerMinute => __('Highest campaign sending speed'),
             self::JourneysLedgerRetentionDays => __('Keep the journey "already sent" record for'),
             self::SettingsIntegrationChecksPerHour => __('Integration tests an admin may run'),
+            self::ReportsExportSyncMaxRows => __('Report export rows downloaded at once (more are emailed)'),
+            self::ReportsZeroInterestDays => __('"No interest" work queue: no interest received in'),
+            self::ReportsActivityRetentionDays => __('Keep member activity days for'),
+            self::ReportsSearchLogRetentionDays => __('Keep the anonymous search log for'),
             self::InterestExpiryDays => __('Interest expires after'),
             self::InterestResendCooldownDays => __('Wait before re-sending an interest'),
             self::ChatUnsendWindowMinutes => __('A message can be unsent for'),

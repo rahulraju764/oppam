@@ -42,6 +42,7 @@ function registrationData(array $overrides = []): RegistrationData
         password: $overrides['password'] ?? TEST_MEMBER_PASSWORD,
         referralCode: $overrides['referralCode'] ?? null,
         referralCookie: $overrides['referralCookie'] ?? null,
+        sourceCookie: $overrides['sourceCookie'] ?? null,
     );
 }
 

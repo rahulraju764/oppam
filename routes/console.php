@@ -25,6 +25,8 @@ use App\Jobs\Members\PurgeDeletedMembers;
 use App\Jobs\Notifications\PruneOldNotifications;
 use App\Jobs\Profile\ExpireDataExports;
 use App\Jobs\Profile\HideInactiveProfiles;
+use App\Jobs\Reports\ExpireAdminExports;
+use App\Jobs\Reports\PruneReportCapture;
 use App\Jobs\Search\SendSavedSearchAlerts;
 use App\Jobs\Support\PruneContactSubmissions;
 use App\Jobs\Verification\PurgeExpiredVerificationDocuments;
@@ -56,6 +58,10 @@ Schedule::job(new SendSavedSearchAlerts)->timezone('Asia/Kolkata')->dailyAt('08:
 // The overlap lock lapses after 10 minutes: a run that was killed must not stop the next hours.
 Schedule::command('metrics:snapshot')->hourlyAt(5)->onOneServer()->withoutOverlapping(10);
 Schedule::command('metrics:snapshot --yesterday')->timezone('Asia/Kolkata')->dailyAt('00:10')->onOneServer()->withoutOverlapping(10);
+// A09 reports (P9.1a): yesterday's report snapshot at 00:30 IST; capture retention at 04:30 IST; expired report files hourly.
+Schedule::command('reports:snapshot')->timezone('Asia/Kolkata')->dailyAt('00:30')->onOneServer()->withoutOverlapping(60);
+Schedule::job(new PruneReportCapture)->timezone('Asia/Kolkata')->dailyAt('04:30')->onOneServer()->withoutOverlapping();
+Schedule::job(new ExpireAdminExports)->hourlyAt(25)->onOneServer()->withoutOverlapping();
 
 // F02: pending interests past their 30 days become EXPIRED, every hour.
 Schedule::job(new ExpireInterests)->hourly()->onOneServer()->withoutOverlapping();

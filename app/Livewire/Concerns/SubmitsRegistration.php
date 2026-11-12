@@ -6,6 +6,7 @@ namespace App\Livewire\Concerns;
 
 use App\Actions\Auth\RegisterMember;
 use App\Exceptions\Auth\RegistrationFailed;
+use App\Http\Middleware\CaptureSignupSource;
 use App\Livewire\Forms\RegistrationForm;
 use App\Livewire\Member\Auth\VerifyOtp;
 
@@ -27,7 +28,8 @@ trait SubmitsRegistration
     public function register(RegisterMember $register): mixed
     {
         $cookie = request()->cookie((string) config('oppam.auth.referral_cookie'));
-        $data = $this->form->toData(is_string($cookie) ? $cookie : null);
+        $source = request()->cookie(CaptureSignupSource::COOKIE);   // A09 signup source (P9.1a)
+        $data = $this->form->toData(is_string($cookie) ? $cookie : null, is_string($source) ? $source : null);
 
         try {
             $result = $register->handle($data, (string) request()->ip());

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CreatedFor;
+use App\Enums\SignupSource;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
@@ -25,6 +26,8 @@ use Illuminate\Notifications\Notifiable;
  * @property string|null $email
  * @property UserRole $role
  * @property CreatedFor $created_for
+ * @property SignupSource $signup_source where the member came from (A09, stamped at registration)
+ * @property array<string, string>|null $signup_utm first-touch utm values (sanitised)
  * @property UserStatus $status
  * @property \Illuminate\Support\Carbon|null $phone_verified_at
  * @property \Illuminate\Support\Carbon|null $last_seen_at
@@ -65,6 +68,8 @@ final class User extends Authenticatable
         return [
             'role' => UserRole::class,
             'created_for' => CreatedFor::class,
+            'signup_source' => SignupSource::class,
+            'signup_utm' => 'array',
             'status' => UserStatus::class,
             'phone_verified_at' => 'datetime',
             'email_verified_at' => 'datetime',

@@ -8,6 +8,7 @@ use App\Actions\Broker\ResolveBrokerCode;
 use App\Contracts\SmsGateway;
 use App\Data\Auth\RegistrationData;
 use App\Data\Auth\RegistrationResult;
+use App\Domain\Reports\SignupAttribution;
 use App\Domain\Safety\BanList;
 use App\Enums\BannedIdentifierType;
 use App\Enums\OtpPurpose;
@@ -121,6 +122,14 @@ final class RegisterMember
 
             // §11A B.5: broker referral code — typed beats the `?ref=` cookie; never blocks (R-M13-1).
             $this->referrals->handle($profile, $data->referralCode, $data->referralCookie);
+
+            // A09 (P9.1a): where the member came from — a resolved bureau code, else a marketing link
+            // (first-touch utm cookie), else organic. Stamped once, here; never changed afterwards.
+            $utm = SignupAttribution::decode($data->sourceCookie);
+            $user->forceFill([
+                'signup_source' => SignupAttribution::source($profile->broker_id !== null, $utm),
+                'signup_utm' => $utm,
+            ])->save();
 
             return [$user, null];
         });

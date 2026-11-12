@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\Profile\ProfileSearch;
 use App\Support\Facades\Settings;
 use Illuminate\Cache\RateLimiter;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A member searches (M04): only a member who may browse at all (ProfileVisibility::canBrowse —
@@ -44,9 +45,36 @@ final class SearchProfiles
         }
         $this->limiter->hit($key, 60);
 
-        return new SearchResult(
+        $result = new SearchResult(
             $this->search->page($profile, $criteria, $cursor),
             $withCount ? $this->search->count($profile, $criteria) : null,
         );
+
+        if ($cursor === null && $result->total !== null) {
+            $this->log($criteria, $result->total);
+        }
+
+        return $result;
+    }
+
+    /**
+     * A09 search usage (P9.1a): a new search (not "load more") is logged ANONYMOUSLY — the filter
+     * keys it used, how many it found and the sort; never a filter's value, never who searched.
+     */
+    private function log(SearchCriteria $criteria, int $total): void
+    {
+        $input = $criteria->toInput();
+        $sort = is_string($input['sort'] ?? null) ? $input['sort'] : null;
+        unset($input['sort']);
+        $keys = array_keys($input);   // toInput() already leaves out filters not in use
+        sort($keys);
+
+        DB::table('search_logs')->insert([
+            'day' => now((string) config('oppam.display_timezone'))->toDateString(),
+            'filters' => json_encode($keys),
+            'result_count' => $total,
+            'sort' => $sort !== null ? substr($sort, 0, 20) : null,
+            'created_at' => now(),
+        ]);
     }
 }

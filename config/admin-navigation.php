@@ -79,6 +79,10 @@ return [
     'Master data' => [
         ['admin.masters.index', 'Master data', 'fa-list', 'masters.view'],
     ],
+    'Reports' => [
+        ['admin.reports.index', 'Reports', 'fa-bar-chart', 'reports.view'],
+        ['admin.reports.exports', 'My exports', 'fa-download', 'reports.export'],
+    ],
     'System' => [
         ['admin.audit.index', 'Audit log', 'fa-history', 'audit.view'],
         ['horizon.index', 'Queues (Horizon)', 'fa-tasks', 'system.horizon'],

@@ -29,5 +29,7 @@ final readonly class RegistrationData
         // §11A B.5: the code typed on /register, and the `?ref=` first-touch cookie (the typed one wins).
         public ?string $referralCode = null,
         public ?string $referralCookie = null,
+        // A09 (P9.1a): the first-touch `oppam_src` utm cookie, for the signup source.
+        public ?string $sourceCookie = null,
     ) {}
 }

@@ -13,6 +13,8 @@ use App\Http\Controllers\Admin\ImportSourceController;
 use App\Http\Controllers\Admin\MasterExportController;
 use App\Http\Controllers\Admin\MemberExportController;
 use App\Http\Controllers\Admin\PayoutStatementController;
+use App\Http\Controllers\Admin\ReportExportController;
+use App\Http\Controllers\Admin\ReportExportDownloadController;
 use App\Http\Controllers\Admin\VerificationDocumentController;
 use App\Http\Controllers\Public\RobotsController;
 use App\Livewire\Admin\Auth\AcceptInvitation;
@@ -63,6 +65,9 @@ use App\Livewire\Admin\Moderation\Escalations;
 use App\Livewire\Admin\Moderation\PhotoQueueGrid;
 use App\Livewire\Admin\Moderation\ProfileQueue;
 use App\Livewire\Admin\Moderation\ProfileReview;
+use App\Livewire\Admin\Reports\Catalogue as ReportsCatalogue;
+use App\Livewire\Admin\Reports\Exports as ReportsExports;
+use App\Livewire\Admin\Reports\ReportView as ReportsView;
 use App\Livewire\Admin\Roles\Editor as RolesEditor;
 use App\Livewire\Admin\Safety\CaseQueue;
 use App\Livewire\Admin\Safety\CaseReview;
@@ -248,6 +253,16 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         Route::get('/campaigns/{campaign}/edit', CommsCampaignBuilder::class)->middleware('can:campaigns.send')->where('campaign', 'CMP[A-Z0-9]{8}')->name('campaigns.edit');
         Route::get('/journeys', CommsJourneys::class)->middleware('can:campaigns.view')->name('journeys');
         Route::get('/delivery-log', CommsDeliveryLog::class)->middleware('can:campaigns.view')->name('delivery-log');
+    });
+
+    // Reports & analytics (A09, P9.1a). Viewing needs reports.view; exports re-check reports.export.
+    Route::middleware('can:reports.view')->prefix('reports')->name('reports.')->group(function (): void {
+        Route::get('/', ReportsCatalogue::class)->name('index');
+        Route::get('/exports', ReportsExports::class)->middleware('can:reports.export')->name('exports');
+        Route::get('/exports/{code}', ReportExportDownloadController::class)->where('code', 'REX[A-Z0-9]{9}')->middleware('throttle:30,1')->name('exports.download');
+        // A small export streamed now: a 5-minute signed link built by the report page (single-use token).
+        Route::get('/export', ReportExportController::class)->middleware(['signed', 'throttle:30,1'])->name('export');
+        Route::get('/{report}', ReportsView::class)->where('report', '[a-z]+')->name('show');
     });
 
     // Settings & Configuration (A15, P8.4).
