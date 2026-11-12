@@ -133,3 +133,14 @@ it('A15: photos.max_additional applies to the next upload — lowered to 1, a th
     expect(fn () => $upload('three.jpg'))->toThrow(Illuminate\Validation\ValidationException::class);
     expect(App\Models\Media::query()->count())->toBe(2);
 });
+
+it('A15: the Free reply allowance (a plan limit, A06) is listed with the business rules — read-only, with its value and a link to the plans', function (): void {
+    $this->seed(PlansSeeder::class);
+    $expected = app(App\Queries\Billing\PlanCatalog::class)->freeReplyAllowance();
+    expect($expected)->toBe(1);   // PRD §7.3 / A15: Free = 1 reply per conversation
+
+    Livewire::test(BusinessRules::class)
+        ->assertSee('Free plan replies per conversation')->assertSee('Plans & pricing (A06)')
+        ->assertSeeHtml('dusk="free-replies-link"')->assertDontSeeHtml('dusk="rule-edit-free')
+        ->set('q', 'otp')->assertDontSee('Free plan replies per conversation');
+});

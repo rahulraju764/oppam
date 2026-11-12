@@ -51,6 +51,16 @@ final class FeatureFlags extends Component
     public function confirmToggle(ToggleFeatureFlag $toggle): void
     {
         $found = $this->flag((string) $this->pending);
+
+        // Another admin switched it while this dialog was open: nothing to do (no audit row saying before == after).
+        if (Feature::active($found) === $this->pendingState) {
+            $this->pending = null;
+            $this->dispatch('close-modal', name: 'flag-toggle');
+            $this->dispatch('toast', type: 'info', message: __(':flag was already changed by someone else.', ['flag' => $found->label()]));
+
+            return;
+        }
+
         $toggle->handle($this->admin(), $found, $this->pendingState, $this->reason);
 
         $this->pending = null;

@@ -126,9 +126,31 @@ it('A15 data fix: the migration switches seeded-off rows of shipped features ON,
     (new FeatureFlag)->forceFill(['key' => 'likes.enabled', 'is_enabled' => false])->save();                                   // seeded
     (new FeatureFlag)->forceFill(['key' => 'chat.images', 'is_enabled' => false, 'updated_by_id' => adminWithRole()->id])->save(); // an admin's
     (new FeatureFlag)->forceFill(['key' => 'broker.staff', 'is_enabled' => false])->save();                                    // default off
+    (new FeatureFlag)->forceFill(['key' => 'realtime.enabled', 'is_enabled' => false])->save();                                // switched off by an admin since deleted:
+    AuditLog::query()->insert(['id' => (string) Str::ulid(), 'actor_type' => 'SYSTEM', 'action' => 'feature_flags.toggled', 'subject_label' => 'realtime.enabled', 'created_at' => now()]);   // only the audit row remembers
 
     (require database_path('migrations/2026_11_12_200000_wire_a15_settings_and_flags.php'))->up();
 
     expect(FeatureFlag::query()->pluck('is_enabled', 'key')->map(fn ($on) => (bool) $on)->all())
-        ->toEqualCanonicalizing(['likes.enabled' => true, 'chat.images' => false, 'broker.staff' => false]);
+        ->toEqualCanonicalizing(['likes.enabled' => true, 'chat.images' => false, 'broker.staff' => false, 'realtime.enabled' => false]);
+});
+
+it('A15 realtime.enabled off: bureau pages open no WebSocket either', function (): void {
+    $login = bureauLogin();
+    $this->actingAs($login);
+    expect(RealtimeContextData::current())->not->toBeNull();
+
+    flagOff(Flag::RealtimeEnabled);
+    expect(RealtimeContextData::current())->toBeNull();
+});
+
+it('A15 flags (review fix): a switch another admin already made while the dialog was open does nothing — no before == after audit row', function (): void {
+    $this->actingAs(adminWithRole('super_admin'), 'admin');
+    $page = Livewire::test(FeatureFlags::class)->call('promptToggle', 'broker.staff')->assertSet('pendingState', true);
+
+    app(ToggleFeatureFlag::class)->handle(adminWithRole(), Flag::BrokerStaff, true, 'Someone else');
+    app()->forgetScopedInstances();
+
+    $page->set('reason', 'Mine')->call('confirmToggle')->assertDispatched('toast', type: 'info');
+    expect(AuditLog::query()->where('action', 'feature_flags.toggled')->pluck('reason')->all())->toBe(['Someone else']);
 });

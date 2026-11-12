@@ -111,6 +111,20 @@ final class PlanCatalog
         return $plan !== null && $price !== null ? [$plan, $price] : null;
     }
 
+    /**
+     * The Free plan's chat reply allowance per conversation (A15 lists it as a business rule; it lives in
+     * `plan_features`, edited on A06). Null = no Free plan / feature row; 0 = switched off.
+     */
+    public function freeReplyAllowance(): ?int
+    {
+        $feature = PlanFeature::query()
+            ->whereHas('plan', fn ($q) => $q->where('code', PlanCode::Free->value))
+            ->where('entitlement', Entitlement::FreeRepliesPerConversation->value)
+            ->first();
+
+        return $feature === null ? null : ($feature->is_enabled ? (int) $feature->limit_value : 0);
+    }
+
     /** Free + every purchasable plan, one column each, one row per §7.3 entitlement. */
     public function comparison(): PlanComparisonData
     {

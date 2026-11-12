@@ -43,7 +43,7 @@ it('P8.3b1: builds a draft campaign and opens its page; the screens fit every wi
         $code = Campaign::query()->where('name', DUSK_CAMPAIGN_NAME)->value('code');
         expect($code)->toMatch('/^CMP[A-Z0-9]{8}$/');
 
-        assertFitsWidths($browser, adminDuskUrl('/'), [
+        assertFitsWidths($browser, adminDuskUrl('/favicon.ico'), [
             adminDuskUrl('/comms/campaigns'),
             adminDuskUrl('/comms/campaigns/create'),
             adminDuskUrl('/comms/campaigns/'.$code),

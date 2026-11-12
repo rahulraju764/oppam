@@ -11,6 +11,7 @@ use App\Models\AdminUser;
 use App\Support\Facades\Feature;
 use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /** Real-time (PRD §9): broadcast driver + the live-updates flag; the check asks the Reverb / Pusher server for its channels. */
@@ -49,7 +50,7 @@ final class BroadcastProbe implements IntegrationProbe
             }
             $broadcaster->getPusher()->getChannels();
         } catch (Throwable $e) {
-            report($e);
+            Log::warning('A15 integration check failed', ['integration' => $this->key(), 'exception' => $e::class]);   // never the message: it may hold request details
 
             return IntegrationStatusData::error(__('The :driver server could not be reached — is it running?', ['driver' => $driver]));
         }

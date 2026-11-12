@@ -8,6 +8,7 @@ use App\Actions\Admin\Settings\UpdateSettings;
 use App\Enums\SettingKey;
 use App\Enums\SettingType;
 use App\Models\AdminUser;
+use App\Queries\Billing\PlanCatalog;
 use App\Support\Facades\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -77,7 +78,7 @@ final class BusinessRules extends Component
         $this->dispatch('toast', type: 'success', message: __(':rule saved. It applies from now on.', ['rule' => $setting->label()]));
     }
 
-    public function render(): View
+    public function render(PlanCatalog $plans): View
     {
         $needle = mb_strtolower(trim($this->q));
         $sections = collect(SettingKey::cases())
@@ -90,6 +91,10 @@ final class BusinessRules extends Component
         return view('livewire.admin.settings.business-rules', [
             'sections' => $sections,
             'values' => collect(SettingKey::cases())->mapWithKeys(fn (SettingKey $k): array => [$k->value => Settings::get($k)])->all(),
+            // PRD A15 lists it as a business rule; it is a plan limit (plan_features, edited on A06) — shown, linked.
+            'freeReplies' => $plans->freeReplyAllowance(),
+            'freeRepliesSection' => SettingKey::ChatMaxLength->section(),   // listed with the chat rules
+            'showFreeReplies' => $needle === '' || str_contains(mb_strtolower(__('Free plan replies per conversation').' chat reply free'), $needle),
             'canEdit' => Gate::forUser($this->admin())->allows('settings.edit'),
             'editingKey' => $editingKey,
             'limits' => $editingKey === null ? null : self::limits($editingKey),

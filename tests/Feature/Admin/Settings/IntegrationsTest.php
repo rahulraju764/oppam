@@ -96,3 +96,38 @@ it('A15 integrations security: settings.view can look but not test (403); unknow
     $this->actingAs(adminWithRole('moderator'), 'admin');
     Livewire::test(Integrations::class)->assertForbidden();
 });
+
+it('A15 integrations (review fix, Major): the MSG91 key goes in a header, never the URL — and a failed call logs no request details', function (): void {
+    config(['oppam.sms.driver' => 'msg91']);
+    Illuminate\Support\Facades\Log::spy();
+    $sent = null;
+    Http::fake(function (Illuminate\Http\Client\Request $request) use (&$sent): never {
+        $sent = $request;
+        // What Guzzle does on a timeout: the message carries the full request URL.
+        throw new Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out for '.$request->url());
+    });
+
+    expect(app(RunIntegrationCheck::class)->handle($this->admin, 'msg91')->state)->toBe('error');
+
+    expect($sent)->not->toBeNull()
+        ->and($sent->hasHeader('authkey', 'msg91-secret-auth-key-123456'))->toBeTrue()
+        ->and($sent->url())->not->toContain('msg91-secret-auth-key-123456');
+    Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context = []): bool => ! str_contains($message.json_encode($context), 'msg91-secret'))->once();
+    expect(AuditLog::query()->where('action', 'settings.integration_checked')->sole()->after['message'])->not->toContain('msg91-secret');
+});
+
+it('A15 integrations: the MSG91 auth key is shown only as "Set" — never even partly', function (): void {
+    Livewire::test(Integrations::class)->assertDontSee('msg9••••3456')->assertDontSee('msg91-secret');
+});
+
+it('A15 integrations: the broadcast check — a driver that sends nothing live warns; an unreachable Reverb server is an error', function (): void {
+    config(['broadcasting.default' => 'log']);
+    expect(app(RunIntegrationCheck::class)->handle($this->admin, 'broadcast')->state)->toBe('warning');
+
+    config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.options.host' => '127.0.0.1', 'broadcasting.connections.reverb.options.port' => 1,
+        'broadcasting.connections.reverb.options.scheme' => 'http', 'broadcasting.connections.reverb.options.useTLS' => false]);
+    app()->forgetInstance(Illuminate\Contracts\Broadcasting\Factory::class);
+    app()->forgetInstance(Illuminate\Broadcasting\BroadcastManager::class);
+    expect(app(RunIntegrationCheck::class)->handle($this->admin, 'broadcast')->state)->toBe('error');
+});

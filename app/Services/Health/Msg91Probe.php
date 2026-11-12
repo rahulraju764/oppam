@@ -8,6 +8,7 @@ use App\Contracts\IntegrationProbe;
 use App\Data\Settings\IntegrationStatusData;
 use App\Models\AdminUser;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /** MSG91 SMS (M01 / M08): driver, sender id, approved DLT templates, and a read-only balance call. */
@@ -30,7 +31,7 @@ final class Msg91Probe implements IntegrationProbe
         return [
             __('Driver') => (string) config('oppam.sms.driver'),
             __('Sender id') => (string) config('services.msg91.sender_id'),
-            __('Auth key') => Probes::mask(config('services.msg91.auth_key')),
+            __('Auth key') => filled(config('services.msg91.auth_key')) ? __('Set') : __('Not set'),   // a secret: never even partly shown
             __('OTP template') => filled(config('services.msg91.otp_template_id')) ? __('Set') : __('Not set'),
             __('Notification templates') => (string) count((array) config('services.msg91.notice_templates', [])),
         ];
@@ -47,9 +48,12 @@ final class Msg91Probe implements IntegrationProbe
         }
 
         try {
-            $response = Http::timeout(8)->get(self::BALANCE_URL, ['authkey' => $key, 'type' => 4]);
+            // The key goes in a header (as Msg91Gateway sends it), never the URL: a failed request's
+            // message carries the full URL, and URLs end up in proxy and provider access logs.
+            $response = Http::timeout(8)->withHeaders(['authkey' => $key])->get(self::BALANCE_URL, ['type' => 4]);
         } catch (Throwable $e) {
-            report($e);
+            // Never report() the raw exception: its message may hold request details. The class is enough.
+            Log::warning('A15 integration check: MSG91 unreachable', ['exception' => $e::class]);
 
             return IntegrationStatusData::error(__('MSG91 could not be reached.'));
         }

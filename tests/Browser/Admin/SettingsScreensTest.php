@@ -39,7 +39,7 @@ it('P8.4: changes a business rule through the reason dialog; every settings scre
 
         expect(Setting::query()->find('matching.daily_match_count')?->value)->toBe(12);
 
-        assertFitsWidths($browser, adminDuskUrl('/'), [
+        assertFitsWidths($browser, adminDuskUrl('/favicon.ico'), [
             adminDuskUrl('/settings/site'),
             adminDuskUrl('/settings/rules'),
             adminDuskUrl('/settings/features'),

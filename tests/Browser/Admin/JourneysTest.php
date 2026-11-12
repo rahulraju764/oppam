@@ -41,6 +41,6 @@ it('P8.3b2: changes a journey\'s days through the reason dialog; the screen fits
         expect(AutomatedJourney::query()->where('key', 'win_back')->sole()->offsets)->toBe([45])
             ->and(AutomatedJourney::query()->where('key', 'win_back')->sole()->channel)->toBe(CommsChannel::Email);
 
-        assertFitsWidths($browser, adminDuskUrl('/'), [adminDuskUrl('/comms/journeys')]);
+        assertFitsWidths($browser, adminDuskUrl('/favicon.ico'), [adminDuskUrl('/comms/journeys')]);
     });
 });

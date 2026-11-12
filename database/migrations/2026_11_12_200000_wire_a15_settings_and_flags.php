@@ -21,7 +21,9 @@ return new class extends Migration
     public function up(): void
     {
         foreach (Flag::cases() as $flag) {
-            if ($flag->defaultOn()) {
+            // "Never toggled by an admin" = no updater AND no audit row (the updater FK is nulled if that admin is deleted).
+            $toggled = DB::table('audit_logs')->where('action', 'feature_flags.toggled')->where('subject_label', $flag->value)->exists();
+            if ($flag->defaultOn() && ! $toggled) {
                 DB::table('feature_flags')->where('key', $flag->value)->whereNull('updated_by_id')->update(['is_enabled' => true]);
             }
         }

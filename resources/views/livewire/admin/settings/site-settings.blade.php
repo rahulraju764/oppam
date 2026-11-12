@@ -71,7 +71,7 @@
         </x-admin.confirm-modal>
 
         <x-admin.confirm-modal name="logo-upload" :title="__('Change logo')" action="uploadLogo" reason-model="logoReason" :confirm-label="__('Upload logo')" :danger="false">
-            <label class="mat-label" for="logo-file">{{ __('PNG or WebP, up to :kb KB, 100–2000 px', ['kb' => \App\Actions\Admin\Settings\UploadSiteLogo::MAX_KB]) }}</label>
+            <label class="mat-label" for="logo-file">{{ __('PNG or WebP, up to :kb KB, 100–2000 px wide and at least 30 px tall', ['kb' => \App\Actions\Admin\Settings\UploadSiteLogo::MAX_KB]) }}</label>
             <input type="file" id="logo-file" name="logo" class="form-control" accept="image/png,image/webp" wire:model="logo">
             <div wire:loading wire:target="logo" class="small text-muted-brand">{{ __('Uploading…') }}</div>
             @error('logo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror

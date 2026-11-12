@@ -8,6 +8,7 @@ use App\Contracts\IntegrationProbe;
 use App\Data\Settings\IntegrationStatusData;
 use App\Models\AdminUser;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -49,7 +50,7 @@ final class TurnstileProbe implements IntegrationProbe
         try {
             $codes = (array) Http::asForm()->timeout(8)->post(self::VERIFY_URL, ['secret' => $secret, 'response' => 'integration-probe'])->json('error-codes', []);
         } catch (Throwable $e) {
-            report($e);
+            Log::warning('A15 integration check failed', ['integration' => $this->key(), 'exception' => $e::class]);   // never the message: it may hold request details
 
             return IntegrationStatusData::error(__('Cloudflare could not be reached.'));
         }

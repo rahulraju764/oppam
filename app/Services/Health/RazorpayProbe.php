@@ -8,6 +8,7 @@ use App\Contracts\IntegrationProbe;
 use App\Contracts\PaymentGateway;
 use App\Data\Settings\IntegrationStatusData;
 use App\Models\AdminUser;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /** Razorpay (M10): which gateway, test or live keys, and a read-only "list payments of the last minute" call. */
@@ -46,7 +47,7 @@ final class RazorpayProbe implements IntegrationProbe
         try {
             $this->gateway->paymentsBetween(now()->subMinute(), now());
         } catch (Throwable $e) {
-            report($e);
+            Log::warning('A15 integration check failed', ['integration' => $this->key(), 'exception' => $e::class]);   // never the message: it may hold request details
 
             return IntegrationStatusData::error(__('Razorpay refused the request — check the keys for the current mode.'));
         }

@@ -58,7 +58,7 @@ enum Flag: string
     {
         return match ($this) {
             self::RealtimeEnabled => __('Live updates over WebSockets (Reverb / Pusher). Off: no socket is opened; members see changes on the next page load.'),
-            self::RealtimePollingFallback => __('Poll for updates when WebSockets are unavailable.'),
+            self::RealtimePollingFallback => __('While live updates are on: poll for updates when the WebSocket can’t connect. With live updates off, pages don’t poll either.'),
             self::ChatImages => __('Paid members can send photos in chat.'),
             self::LikesEnabled => __('Members can like profiles. Off: the like button is hidden and likes are refused.'),
             self::BrokerSelfApply => __('Brokers can apply publicly (admin KYC approval still required).'),

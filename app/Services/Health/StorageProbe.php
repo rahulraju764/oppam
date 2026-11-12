@@ -7,6 +7,7 @@ namespace App\Services\Health;
 use App\Contracts\IntegrationProbe;
 use App\Data\Settings\IntegrationStatusData;
 use App\Models\AdminUser;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
@@ -43,7 +44,7 @@ final class StorageProbe implements IntegrationProbe
                 $ok = Storage::disk($disk)->get($path) === $content;
                 Storage::disk($disk)->delete($path);
             } catch (Throwable $e) {
-                report($e);
+                Log::warning('A15 integration check failed', ['integration' => $this->key(), 'exception' => $e::class]);   // never the message: it may hold request details
                 $ok = false;
             }
             if (! $ok) {

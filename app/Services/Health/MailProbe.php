@@ -7,6 +7,7 @@ namespace App\Services\Health;
 use App\Contracts\IntegrationProbe;
 use App\Data\Settings\IntegrationStatusData;
 use App\Models\AdminUser;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
@@ -37,7 +38,7 @@ final class MailProbe implements IntegrationProbe
             Mail::raw(__('This is a test from :site Admin → Settings → Integrations. No action is needed.', ['site' => config('oppam.site.name')]),
                 fn ($message) => $message->to($admin->email)->subject(__(':site — email test', ['site' => config('oppam.site.name')])));
         } catch (Throwable $e) {
-            report($e);
+            Log::warning('A15 integration check failed', ['integration' => $this->key(), 'exception' => $e::class]);   // never the message: it may hold request details
 
             return IntegrationStatusData::error(__('The mail provider refused the message. Check the mail settings.'));
         }

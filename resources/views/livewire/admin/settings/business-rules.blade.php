@@ -19,6 +19,20 @@
         @forelse ($sections as $section => $keys)
             <h2 class="h5 mt-4 mb-2">{{ $section }}</h2>
             <x-admin.table :headers="[__('Rule'), __('Value'), '']" :caption="$section">
+                @if ($section === $freeRepliesSection && $showFreeReplies)
+                    <tr wire:key="rule-free-replies">
+                        <td>
+                            <strong>{{ __('Free plan replies per conversation') }}</strong>
+                            <div class="small text-muted-brand">{{ __('A plan limit — set per plan in Plans & pricing (A06).') }}</div>
+                        </td>
+                        <td class="text-nowrap">{{ $freeReplies === null ? '—' : number_format($freeReplies) }}</td>
+                        <td class="text-end">
+                            @can('billing.view')
+                                <a href="{{ route('admin.billing.plans') }}" wire:navigate class="small" dusk="free-replies-link">{{ __('Open plans') }}</a>
+                            @endcan
+                        </td>
+                    </tr>
+                @endif
                 @foreach ($keys as $key)
                     @php($current = $values[$key->value])
                     <tr wire:key="rule-{{ $key->value }}">
