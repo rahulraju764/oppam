@@ -91,6 +91,7 @@ enum SettingKey: string
     case ProfileViewsMaxPerMinute = 'profile_views.max_per_minute';
     case ModerationSlaHours = 'moderation.sla_hours';
     case SystemQueueBacklogAlert = 'system.queue_backlog_alert';
+    case SystemAuditExportMaxRows = 'system.audit_export_max_rows';
     case BrokerStaffSeatsDefault = 'broker.staff_seats_default';
     case BrokerImportRowsPerFile = 'broker.import_rows_per_file';
     case BrokerImportRowsPerDay = 'broker.import_rows_per_day';
@@ -246,6 +247,7 @@ enum SettingKey: string
             self::ProfileViewsMaxPerMinute => 30,   // M03 / M15: recorded profile views per member (more still open, uncounted)
             self::ModerationSlaHours => 24,          // A02 alert strip: a moderation item waiting longer than this breaches the SLA
             self::SystemQueueBacklogAlert => 500,    // A02 alert strip: jobs waiting on one queue before it is called a backlog
+            self::SystemAuditExportMaxRows => 50_000,   // A12 (P9.2a): an audit export larger than this is refused — narrow the filters
             self::BrokerStaffSeatsDefault => 5,
             self::BrokerImportRowsPerFile => 500,
             self::BrokerImportRowsPerDay => 1000,
@@ -388,6 +390,7 @@ enum SettingKey: string
             self::ProfileViewsMaxPerMinute => ['required', 'integer', 'min:5', 'max:300'],
             self::ModerationSlaHours => ['required', 'integer', 'min:1', 'max:720'],
             self::SystemQueueBacklogAlert => ['required', 'integer', 'min:10', 'max:100000'],
+            self::SystemAuditExportMaxRows => ['required', 'integer', 'min:100', 'max:200000'],
             self::BrokerStaffSeatsDefault => ['required', 'integer', 'min:1', 'max:100'],
             self::BrokerImportRowsPerFile => ['required', 'integer', 'min:1', 'max:5000'],
             self::BrokerImportRowsPerDay, self::BrokerImportRowsPerDayNew => ['required', 'integer', 'min:1', 'max:20000'],
@@ -582,6 +585,7 @@ enum SettingKey: string
             self::ProfileViewsMaxPerMinute => __('Profile views counted'),
             self::ModerationSlaHours => __('Moderation item overdue after'),
             self::SystemQueueBacklogAlert => __('Queue backlog alert at (jobs waiting)'),
+            self::SystemAuditExportMaxRows => __('Audit log export: most rows in one file'),
             self::BrokerStaffSeatsDefault => __('Staff seats for a new bureau'),
             self::BrokerImportRowsPerFile => __('Rows per import file'),
             self::BrokerImportRowsPerDay => __('Import rows a bureau may add'),

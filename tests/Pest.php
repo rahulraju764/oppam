@@ -17,6 +17,9 @@ pest()->extend(TestCase::class)
     ->use(LazilyRefreshDatabase::class)
     ->in('Feature', 'Livewire', 'Broadcasting');
 
+// Committed-row tests (FULLTEXT search, P9.2a): truncation of their own tables instead of a transaction.
+pest()->extend(Tests\CommittedTestCase::class)->in('Committed');
+
 // Browser tests (php artisan dusk) — phone-width ones use device emulation.
 pest()->extend(Tests\MobileDuskTestCase::class)->in('Browser/Mobile');
 
@@ -33,6 +36,7 @@ require_once __DIR__.'/Support/referral.php';
 require_once __DIR__.'/Support/payout.php';
 require_once __DIR__.'/Support/import.php';
 require_once __DIR__.'/Support/campaign.php';
+require_once __DIR__.'/Support/audit.php';
 pest()->extend(Tests\DuskTestCase::class)->in('Browser/Admin', 'Browser/Member');
 require_once __DIR__.'/Support/dusk.php';
 require_once __DIR__.'/Support/dusk-member.php';

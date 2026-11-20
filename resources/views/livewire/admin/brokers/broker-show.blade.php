@@ -31,7 +31,7 @@
                 {{ match ($key) {
                     'overview' => __('Overview'), 'referrals' => __('Referrals'), 'profiles' => __('Managed profiles'), 'staff' => __('Staff'),
                     'imports' => __('Imports'), 'earnings' => __('Earnings'), 'payouts' => __('Payouts'), 'exports' => __('Exports'),
-                    'disputes' => __('Disputes'), default => __('Activity'),
+                    'disputes' => __('Disputes'), 'timeline' => __('Audit timeline'), default => __('Activity'),
                 } }}
             </button>
         @endforeach
@@ -191,6 +191,8 @@
         <livewire:admin.brokers.exports-audit :bureau="$code" :key="'tab-exports-'.$code" lazy />
     @elseif ($tab === 'disputes')
         <livewire:admin.brokers.disputes :bureau="$code" :key="'tab-disputes-'.$code" lazy />
+    @elseif ($tab === 'timeline')
+        <livewire:admin.audit.entity-timeline entity="broker" :code="$code" :key="'tab-timeline-'.$code" lazy />
     @else
         <livewire:admin.brokers.tabs.activity-tab :code="$code" :key="'tab-activity-'.$code" lazy />
     @endif

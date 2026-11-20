@@ -4,9 +4,9 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 9 — Hardening & launch (Phase 8 completed: P8.1a/b, P8.2a/b/c, P8.3, P8.4 all built and verified green 2026-11-08).
-**Next session:** Phase 9 — Hardening & launch (P9.1 Reports & analytics A09).
-Still open elsewhere: P6.1 re-review after its Blocker fix; Dusk for P6.1; owner review of the P5.x, P6.2 and P7.x auth / payment changes (rule 5)
+**Current phase:** 9 — Hardening & launch. Phase 8 is built and reviewer-READY (P8.1a/b, P8.2a/b/c, P8.3a/b1/b2, P8.4) but NOT closed: items wait on owner rule-5 review, a browser try, unrun Dusk tests (P8.3a, P8.3b1, P8.3b2, P8.4) and commits. P9.1a/b built, reviewer READY (round 2), not committed (rule 5: RegisterMember signup-source stamp).
+**Next session:** P9.2 — Audit viewer & system health (A12), started 2026-11-20.
+Still open elsewhere: P6.1 Blocker fix uncommitted + Dusk not run; rule-5 owner review of P7.2, P7.8a, P7.8c, P8.2b, P8.2c, P8.3a (SendOtp), P8.3b1 (Mailgun webhook), P9.1a (RegisterMember); owner to confirm Claude's defaults in decisions.md for P6.1, Phase 7 close-out, P8.2c, P8.3a/b1/b2, P8.4, P9.1a/b.
 
 ## Before starting (outside tasks — start early)
 - [ ] MSG91 account + DLT sender ID + OTP template approved

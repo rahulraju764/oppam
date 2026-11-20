@@ -110,6 +110,12 @@
         </div>
     </div>
 
+    {{-- A12 per-entity timeline (P9.2a): admin changes about this order, its payments, refunds and invoice. --}}
+    <section class="mt-4" aria-labelledby="order-audit-title">
+        <h2 class="h6" id="order-audit-title">{{ __('Audit timeline') }}</h2>
+        <livewire:admin.audit.entity-timeline entity="order" :code="$order->code" :key="'order-timeline-'.$order->code" lazy />
+    </section>
+
     @can('billing.refund')
         <x-admin.confirm-modal name="refund-request" :title="__('Request a refund')" action="requestRefund" :confirmLabel="__('Request refund')">
             <p>{{ __('Another admin must approve this before any money goes back.') }}</p>

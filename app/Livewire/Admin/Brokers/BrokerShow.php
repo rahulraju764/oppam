@@ -42,7 +42,7 @@ final class BrokerShow extends Component
         'overview' => 'brokers.view', 'referrals' => 'brokers.view', 'profiles' => 'brokers.view',
         'staff' => 'brokers.staff.view', 'imports' => 'brokers.imports.view', 'earnings' => 'brokers.view',
         'payouts' => 'brokers.view', 'exports' => 'brokers.exports.view', 'disputes' => 'brokers.view',
-        'activity' => 'brokers.view',
+        'activity' => 'brokers.view', 'timeline' => 'brokers.view',
     ];
 
     #[Locked]

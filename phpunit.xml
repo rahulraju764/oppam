@@ -17,6 +17,9 @@
         <testsuite name="Broadcasting">
             <directory>tests/Broadcasting</directory>
         </testsuite>
+        <testsuite name="Committed">
+            <directory>tests/Committed</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

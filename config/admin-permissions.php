@@ -30,7 +30,8 @@ return [
         'Reports' => ['reports.view', 'reports.export', 'reports.staff'],
         'Support' => ['support.view', 'support.respond'],
         'Master data' => ['masters.view', 'masters.edit'],
-        'System' => ['audit.view', 'system.health.view', 'system.horizon', 'system.pulse'],
+        // audit.export (P9.2a, owner 2026-11-20): CSV of the audit trail; no seeded role but super admin.
+        'System' => ['audit.view', 'audit.export', 'system.health.view', 'system.horizon', 'system.pulse'],
         'Settings' => ['settings.view', 'settings.edit'],
         'Staff & roles' => ['staff.view', 'staff.invite', 'staff.edit', 'staff.suspend', 'roles.view', 'roles.edit', 'sessions.revoke_any'],
     ],

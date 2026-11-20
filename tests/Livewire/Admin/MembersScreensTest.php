@@ -12,7 +12,6 @@ use App\Livewire\Admin\Members\Tabs\NotesTab;
 use App\Livewire\Admin\Members\Tabs\PhotosTab;
 use App\Livewire\Admin\Members\Tabs\ProfileTab;
 use App\Livewire\Admin\Members\Tabs\SubscriptionsTab;
-use App\Livewire\Admin\Members\Tabs\TimelineTab;
 use App\Models\AdminUser;
 use App\Models\MemberNote;
 use App\Models\Plan;
@@ -198,7 +197,7 @@ it('every tab renders for members.view, 404s an unknown code and is forbidden wi
 
     a03As('finance');
     Livewire::test($tab, ['code' => $member->profile->code])->assertForbidden();
-})->with([ProfileTab::class, PhotosTab::class, SubscriptionsTab::class, ActivityTab::class, NotesTab::class, TimelineTab::class]);
+})->with([ProfileTab::class, PhotosTab::class, SubscriptionsTab::class, ActivityTab::class, NotesTab::class]);   // the timeline tab (A12 EntityTimeline, P9.2a): tests/Livewire/Admin/AuditScreensTest.php
 
 it('the profile tab shows old → new before saving and puts errors on the fields', function (): void {
     $member = memberThroughStep(6);
@@ -236,7 +235,7 @@ it('the timeline tab lists the audit rows about this member only', function (): 
     app(App\Actions\Admin\Members\SuspendMember::class)->handle(adminWithRole(), $other, 'Not on this timeline.');
     a03As('moderator');
 
-    Livewire::test(TimelineTab::class, ['code' => $member->profile->code])
+    Livewire::test(App\Livewire\Admin\Audit\EntityTimeline::class, ['entity' => 'member', 'code' => $member->profile->code])
         ->assertSee('Visible on the timeline.')->assertDontSee('Not on this timeline.');
 });
 

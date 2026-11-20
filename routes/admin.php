@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\ContentType;
+use App\Http\Controllers\Admin\AuditExportController;
 use App\Http\Controllers\Admin\BreakGlassImageController;
 use App\Http\Controllers\Admin\BrokerKycDocumentController;
 use App\Http\Controllers\Admin\ChatFlagImageController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportExportDownloadController;
 use App\Http\Controllers\Admin\VerificationDocumentController;
 use App\Http\Controllers\Public\RobotsController;
+use App\Livewire\Admin\Audit\AuditLogIndex;
 use App\Livewire\Admin\Auth\AcceptInvitation;
 use App\Livewire\Admin\Auth\Login;
 use App\Livewire\Admin\Auth\TwoFactorChallenge;
@@ -263,6 +265,13 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         // A small export streamed now: a 5-minute signed link built by the report page (single-use token).
         Route::get('/export', ReportExportController::class)->middleware(['signed', 'throttle:30,1'])->name('export');
         Route::get('/{report}', ReportsView::class)->where('report', '[a-z]+')->name('show');
+    });
+
+    // Audit log (A12, P9.2a). Viewing needs audit.view; the CSV export re-checks audit.export.
+    Route::middleware('can:audit.view')->prefix('audit')->name('audit.')->group(function (): void {
+        Route::get('/', AuditLogIndex::class)->name('index');
+        // A 5-minute signed link built by the viewer (single-use token).
+        Route::get('/export', AuditExportController::class)->middleware(['signed', 'throttle:30,1'])->name('export');
     });
 
     // Settings & Configuration (A15, P8.4).

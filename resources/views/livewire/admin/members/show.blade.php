@@ -161,6 +161,6 @@
     @elseif ($tab === 'notes')
         <livewire:admin.members.tabs.notes-tab :code="$code" :key="'tab-notes-'.$code" lazy />
     @else
-        <livewire:admin.members.tabs.timeline-tab :code="$code" :key="'tab-timeline-'.$code" lazy />
+        <livewire:admin.audit.entity-timeline entity="member" :code="$code" :key="'tab-timeline-'.$code" lazy />
     @endif
 </div>
