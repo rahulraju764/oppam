@@ -11,6 +11,7 @@ use App\Domain\Reports\ReportRange;
 use App\Enums\Gender;
 use App\Enums\ReportMetric;
 use App\Enums\SignupSource;
+use App\Models\AdminUser;
 use App\Queries\Reports\LiveMetrics;
 use App\Queries\Reports\ReportSeries;
 use Generator;
@@ -31,7 +32,7 @@ final class GrowthReport implements ReportDefinition
         private readonly LiveMetrics $live,
     ) {}
 
-    public function build(ReportRange $range, bool $compare): ReportData
+    public function build(ReportRange $range, bool $compare, ?AdminUser $viewer = null): ReportData
     {
         $now = $this->series->totals($range, [ReportMetric::Signups, ReportMetric::ProfilesApproved]);
         $before = $compare ? $this->series->totals($range->previous(), [ReportMetric::Signups, ReportMetric::ProfilesApproved]) : null;
@@ -63,7 +64,7 @@ final class GrowthReport implements ReportDefinition
         ]);
     }
 
-    public function exportTables(ReportRange $range): iterable
+    public function exportTables(ReportRange $range, ?AdminUser $viewer = null): iterable
     {
         return $this->tables($range, $this->series->totals($range, [ReportMetric::Signups])['signups']);
     }

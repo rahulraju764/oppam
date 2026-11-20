@@ -56,6 +56,8 @@ enum SettingKey: string
     case ReportsZeroInterestDays = 'reports.zero_interest_days';
     case ReportsActivityRetentionDays = 'reports.activity_retention_days';
     case ReportsSearchLogRetentionDays = 'reports.search_log_retention_days';
+    case ReportsDigestEnabled = 'reports.digest_enabled';
+    case ReportsDigestDay = 'reports.digest_day';
     case InterestExpiryDays = 'interest.expiry_days';
     case InterestResendCooldownDays = 'interest.resend_cooldown_days';
     case ChatUnsendWindowMinutes = 'chat.unsend_window_minutes';
@@ -160,7 +162,7 @@ enum SettingKey: string
     public function type(): SettingType
     {
         return match ($this) {
-            self::SeoIndexable => SettingType::Boolean,
+            self::SeoIndexable, self::ReportsDigestEnabled => SettingType::Boolean,
             self::SiteName, self::SiteLogoPath, self::SocialFacebook, self::SocialTwitter, self::SocialInstagram,
             self::SocialLinkedin, self::SocialYoutube, self::SeoDefaultTitle, self::SeoDefaultDescription,
             self::SiteSupportEmail, self::SiteInfoEmail, self::SitePhoneDisplay, self::SitePhoneDial,
@@ -209,6 +211,8 @@ enum SettingKey: string
             self::ReportsZeroInterestDays => 30,          // A09 marketplace: live profiles with no interest received in this many days
             self::ReportsActivityRetentionDays => 400,    // A09: member activity days kept (DAU / cohorts); the daily totals stay
             self::ReportsSearchLogRetentionDays => 90,    // A09: the anonymous search log kept (daily totals stay)
+            self::ReportsDigestEnabled => true,           // A09 (P9.1b): the weekly KPI email to report viewers
+            self::ReportsDigestDay => 1,                  // … on this ISO weekday (1 = Monday … 7 = Sunday), 08:00 IST
             self::InterestExpiryDays => 30,
             self::InterestResendCooldownDays => 90,
             self::ChatUnsendWindowMinutes => 60,
@@ -349,6 +353,8 @@ enum SettingKey: string
             // Cohorts look back 8 weeks and MAU 30 days: never shorter than that.
             self::ReportsActivityRetentionDays => ['required', 'integer', 'min:90', 'max:1825'],
             self::ReportsSearchLogRetentionDays => ['required', 'integer', 'min:7', 'max:365'],
+            self::ReportsDigestEnabled => ['required', 'boolean'],
+            self::ReportsDigestDay => ['required', 'integer', 'min:1', 'max:7'],
             self::InterestExpiryDays => ['required', 'integer', 'min:1', 'max:365'],
             self::InterestResendCooldownDays => ['required', 'integer', 'min:0', 'max:365'],
             self::ChatUnsendWindowMinutes => ['required', 'integer', 'min:0', 'max:1440'],
@@ -541,6 +547,8 @@ enum SettingKey: string
             self::ReportsZeroInterestDays => __('"No interest" work queue: no interest received in'),
             self::ReportsActivityRetentionDays => __('Keep member activity days for'),
             self::ReportsSearchLogRetentionDays => __('Keep the anonymous search log for'),
+            self::ReportsDigestEnabled => __('Send the weekly KPI email'),
+            self::ReportsDigestDay => __('Weekly KPI email day (1 = Monday … 7 = Sunday)'),
             self::InterestExpiryDays => __('Interest expires after'),
             self::InterestResendCooldownDays => __('Wait before re-sending an interest'),
             self::ChatUnsendWindowMinutes => __('A message can be unsent for'),

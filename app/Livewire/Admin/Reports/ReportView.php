@@ -58,7 +58,7 @@ final class ReportView extends Component
     {
         $this->authorize('reports.view');
         $key = ReportKey::tryFrom($report);
-        abort_if($key === null || ! $key->isBuilt(), 404);
+        abort_if($key === null, 404);
         $this->report = $key->value;
     }
 
@@ -104,7 +104,7 @@ final class ReportView extends Component
     public function render(ReportRegistry $reports, LiveMetrics $live): View
     {
         $range = $this->range();
-        $data = $range === null ? null : $reports->for($this->key())->build($range, $this->compare);
+        $data = $range === null ? null : $reports->for($this->key())->build($range, $this->compare, $this->admin());
 
         return view('livewire.admin.reports.report-view', [
             'key' => $this->key(),

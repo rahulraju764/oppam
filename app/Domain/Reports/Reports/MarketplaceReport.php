@@ -12,6 +12,7 @@ use App\Domain\Reports\ReportRange;
 use App\Enums\Gender;
 use App\Enums\ReportMetric;
 use App\Enums\SettingKey;
+use App\Models\AdminUser;
 use App\Queries\Reports\LiveMetrics;
 use App\Queries\Reports\ReportSeries;
 use App\Support\Facades\Settings;
@@ -32,7 +33,7 @@ final class MarketplaceReport implements ReportDefinition
         private readonly LiveMetrics $live,
     ) {}
 
-    public function build(ReportRange $range, bool $compare): ReportData
+    public function build(ReportRange $range, bool $compare, ?AdminUser $viewer = null): ReportData
     {
         $levels = [ReportMetric::ActiveProfiles, ReportMetric::ActiveProfilesWithPhoto];
         $t = $this->series->totals($range, $levels);
@@ -67,7 +68,7 @@ final class MarketplaceReport implements ReportDefinition
         ]);
     }
 
-    public function exportTables(ReportRange $range): iterable
+    public function exportTables(ReportRange $range, ?AdminUser $viewer = null): iterable
     {
         yield from $this->tables($range);
 

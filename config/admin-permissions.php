@@ -26,7 +26,8 @@ return [
         'Brokers' => ['brokers.view', 'brokers.edit', 'brokers.kyc', 'brokers.payout', 'brokers.commission_bps', 'brokers.staff.view', 'brokers.staff.edit', 'brokers.imports.view', 'brokers.imports.manage', 'brokers.exports.view'],
         'Content' => ['content.edit', 'content.publish'],
         'Communication' => ['campaigns.view', 'campaigns.send', 'campaigns.approve', 'templates.edit', 'notifications.broadcast'],
-        'Reports' => ['reports.view', 'reports.export'],
+        // reports.staff (P9.1b, owner 2026-11-13): per-moderator quality rows (admin names); no seeded role but super admin.
+        'Reports' => ['reports.view', 'reports.export', 'reports.staff'],
         'Support' => ['support.view', 'support.respond'],
         'Master data' => ['masters.view', 'masters.edit'],
         'System' => ['audit.view', 'system.health.view', 'system.horizon', 'system.pulse'],

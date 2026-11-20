@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Actions\Reports\TakeReportSnapshot;
+use App\Enums\ReportMetric;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Throwable;
@@ -51,6 +52,12 @@ final class SnapshotReports extends Command
             $rows += $snapshot->handle($day);
         }
         $this->info(sprintf('Stored %d report rows for %s to %s.', $rows, $from->toDateString(), $to->toDateString()));
+
+        // The nightly run also settles the day whose churn just became final (P9.1b: 30 days on).
+        if ($this->option('day') === null && $this->option('from') === null && $this->option('to') === null) {
+            $settled = CarbonImmutable::now($tz)->startOfDay()->subDays(ReportMetric::CHURN_DAYS + 1);
+            $this->info(sprintf('Settled %s (%d rows).', $settled->toDateString(), $snapshot->handle($settled)));
+        }
 
         return self::SUCCESS;
     }

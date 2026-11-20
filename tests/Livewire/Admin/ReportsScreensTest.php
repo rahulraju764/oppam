@@ -37,10 +37,10 @@ function seedSnapshots(string $from, string $to, int $signups): void
     }
 }
 
-it('A09 catalogue: the five reports with their question; built ones open, the rest say coming soon', function (): void {
+it('A09 catalogue: the five reports with their question, each opens', function (): void {
     Livewire::test(Catalogue::class)->assertOk()
         ->assertSee('Growth')->assertSee('Engagement')->assertSee('Marketplace health')->assertSee('Revenue')->assertSee('Trust & operations')
-        ->assertSeeHtml('dusk="report-growth"')->assertDontSeeHtml('dusk="report-revenue"')->assertSee('Coming soon');
+        ->assertSeeHtml('dusk="report-growth"')->assertSeeHtml('dusk="report-revenue"')->assertSeeHtml('dusk="report-trust"');   // all five built (P9.1b)
 });
 
 it('A09 growth report: numbers from the snapshots for the preset, compare shows the change against the period before', function (): void {
@@ -78,6 +78,32 @@ it('A09 marketplace report: levels + the "no interest" work queue (live, paginat
         ->assertSee($lonely->profile->code)->assertSeeHtml(route('admin.members.show', $lonely->profile->code));
 });
 
+it('A09 revenue report (P9.1b): net, ARPU, churn "settles after 30 days" note, tables by plan / month / district / bureau', function (): void {
+    ReportSnapshot::query()->insert([
+        ['metric' => 'revenue_paid_paise', 'day' => '2026-11-15', 'dimension' => '', 'value' => 117_882, 'computed_at' => now()],
+        ['metric' => 'revenue_paid_paise', 'day' => '2026-11-15', 'dimension' => 'plan:GOLD', 'value' => 117_882, 'computed_at' => now()],
+        ['metric' => 'orders_paid', 'day' => '2026-11-15', 'dimension' => '', 'value' => 1, 'computed_at' => now()],
+    ]);
+
+    Livewire::test(ReportView::class, ['report' => 'revenue'])->set('preset', '7d')->assertOk()
+        ->assertSee('Net revenue')->assertSee('1,178.82')->assertSee('ARPU')->assertSee('Lifetime value')->assertSee('Churn')
+        ->assertSee('Revenue by plan')->assertSee('Revenue by month')->assertSee('Paid by the buyer\'s district')->assertSee('Revenue through bureaus');
+});
+
+it('A09 trust & ops report (P9.1b): SLA numbers, backlog; moderator names only with reports.staff', function (): void {
+    $anu = adminWithRole('moderator');
+    $anu->forceFill(['name' => 'Anu Moderator'])->save();
+    App\Models\ModerationItem::factory()->create(['status' => App\Enums\ModerationStatus::Approved, 'decided_by_admin_id' => $anu->id,
+        'submitted_at' => now()->subDays(3)->utc(), 'decided_at' => now()->subDays(3)->addHour()->utc()]);
+
+    Livewire::test(ReportView::class, ['report' => 'trust'])->set('preset', '7d')->assertOk()
+        ->assertSee('Moderation within SLA')->assertSee('Moderator quality')->assertSee('Anu Moderator')->assertDontSee($anu->email);
+
+    $this->actingAs(adminWithRole('finance'), 'admin');   // reports.view, no reports.staff
+    Livewire::test(ReportView::class, ['report' => 'trust'])->set('preset', '7d')->assertOk()
+        ->assertSee('Moderation team')->assertDontSee('Anu Moderator');
+});
+
 it('A09 custom range: validated on the server — reversed, future, over 400 days or garbage dates show an error, not a report', function (array $set, string $field): void {
     $page = Livewire::test(ReportView::class, ['report' => 'growth'])->set('preset', 'custom');
     foreach ($set as $k => $v) {
@@ -102,7 +128,6 @@ it('A09 security: reports.view required (403); unknown / not-built report 404; t
     Livewire::test(ReportView::class, ['report' => 'growth'])->assertForbidden();
 
     $this->actingAs(adminWithRole('super_admin'), 'admin');
-    Livewire::test(ReportView::class, ['report' => 'revenue'])->assertNotFound();
     Livewire::test(ReportView::class, ['report' => 'nope'])->assertNotFound();
     expect(fn () => Livewire::test(ReportView::class, ['report' => 'growth'])->set('report', 'marketplace'))
         ->toThrow(CannotUpdateLockedPropertyException::class);
@@ -123,19 +148,25 @@ it('A09 my exports: only the admin\'s own exports; empty state', function (): vo
     Livewire::test(Exports::class)->assertSee('REXMINE000001')->assertDontSee('REXOTHER00001');
 });
 
-it('A09 the report page runs a bounded number of queries (no N+1 as data grows)', function (): void {
+it('A09 the report page runs a bounded number of queries (no N+1 as data grows)', function (string $report): void {
     seedSnapshots('2026-10-21', '2026-11-19', 5);
     Profile::factory()->count(3)->active()->create();
+    App\Models\ModerationItem::factory()->count(3)->create(['status' => App\Enums\ModerationStatus::Approved, 'decided_by_admin_id' => adminWithRole('moderator')->id,
+        'submitted_at' => now()->subDays(5)->utc(), 'decided_at' => now()->subDays(5)->addHour()->utc()]);
 
     DB::enableQueryLog();
-    Livewire::test(ReportView::class, ['report' => 'engagement'])->assertOk();
+    Livewire::test(ReportView::class, ['report' => $report])->assertOk();
     $few = count(DB::getQueryLog());
     Cache::flush();
     seedSnapshots('2026-09-01', '2026-10-20', 9);
-    $page = Livewire::test(ReportView::class, ['report' => 'engagement']);
+    foreach (range(1, 4) as $i) {
+        App\Models\ModerationItem::factory()->create(['status' => App\Enums\ModerationStatus::Rejected, 'decided_by_admin_id' => adminWithRole('moderator')->id,
+            'submitted_at' => now()->subDays(40)->utc(), 'decided_at' => now()->subDays(40)->addHour()->utc()]);
+    }
+    $page = Livewire::test(ReportView::class, ['report' => $report]);
     DB::flushQueryLog();
 
     $page->set('preset', '90d')->assertOk();
 
     expect(count(DB::getQueryLog()))->toBeLessThanOrEqual($few * 2 + 5);
-});
+})->with(['engagement', 'revenue', 'trust']);

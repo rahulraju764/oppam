@@ -8,6 +8,8 @@ use App\Data\Reports\SnapshotRow;
 use App\Domain\Reports\Calculators\EngagementCalculator;
 use App\Domain\Reports\Calculators\GrowthCalculator;
 use App\Domain\Reports\Calculators\MarketplaceCalculator;
+use App\Domain\Reports\Calculators\RevenueCalculator;
+use App\Domain\Reports\Calculators\TrustOpsCalculator;
 use App\Domain\Reports\DayWindow;
 use App\Enums\ReportMetric;
 use App\Models\ReportSnapshot;
@@ -29,6 +31,8 @@ final class TakeReportSnapshot
         private readonly GrowthCalculator $growth,
         private readonly EngagementCalculator $engagement,
         private readonly MarketplaceCalculator $marketplace,
+        private readonly RevenueCalculator $revenue,
+        private readonly TrustOpsCalculator $trust,
     ) {}
 
     /** @return int rows stored */
@@ -41,7 +45,7 @@ final class TakeReportSnapshot
         $replaced = array_values(array_filter(ReportMetric::cases(), fn (ReportMetric $m): bool => $this->computes($m, $window, $withLevels)));
         $keep = array_map(fn (ReportMetric $m): string => $m->value, $replaced);
 
-        $rows = [...$this->growth->day($window), ...$this->engagement->day($window)];
+        $rows = [...$this->growth->day($window), ...$this->engagement->day($window), ...$this->revenue->day($window), ...$this->trust->day($window)];
         if ($withLevels) {
             array_push($rows, ...$this->marketplace->day($window));
         }
@@ -68,6 +72,14 @@ final class TakeReportSnapshot
     {
         if ($metric->kind() === 'stock') {
             return $withLevels;
+        }
+
+        // Not final yet (churn: "not renewed within 30 days") — leave the day without it.
+        if ($metric->settlesAfterDays() > 0) {
+            $settled = CarbonImmutable::now((string) config('oppam.display_timezone'))->startOfDay()->subDays($metric->settlesAfterDays() + 1);
+            if ($window->date > $settled->toDateString()) {
+                return false;
+            }
         }
 
         $table = $metric->captureTable();

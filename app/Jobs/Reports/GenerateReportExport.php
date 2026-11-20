@@ -57,7 +57,7 @@ final class GenerateReportExport implements ShouldQueue
             $key = ReportKey::from($export->report);
             $range = ReportRange::of($export->params['from'], $export->params['to']);
             $stream = $temp !== false ? $temp : throw new RuntimeException('No temporary file.');
-            $rows = $writer->write($reports->for($key)->exportTables($range), $export->format, $stream, $key->label().' — '.$range->label());
+            $rows = $writer->write($reports->for($key)->exportTables($range, $export->admin), $export->format, $stream, $key->label().' — '.$range->label());
             rewind($stream);
             $disk->writeStream($path, $stream);
         } catch (Throwable $e) {

@@ -130,7 +130,9 @@ final class ReportSeries
      */
     private function cached(string $kind, ReportRange $range, array $metrics, Closure $compute): array
     {
-        $key = 'reports:'.$kind.':'.implode(',', $metrics).':'.$range->from->toDateString().':'.$range->to->toDateString();
+        // The metric list is hashed: a report asking for many metrics would otherwise outgrow the
+        // database cache store's 255-character key column (CACHE_STORE=database locally).
+        $key = 'reports:'.$kind.':'.sha1(implode(',', $metrics)).':'.$range->from->toDateString().':'.$range->to->toDateString();
 
         return (array) Cache::remember($key, self::CACHE_SECONDS, $compute);
     }

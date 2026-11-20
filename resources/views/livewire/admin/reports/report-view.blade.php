@@ -64,15 +64,18 @@
                             <div class="admin-chart" wire:ignore x-data="adminChart(@js($chart))">
                                 <canvas x-ref="canvas" role="img" aria-labelledby="chart-{{ $chart['id'] }}-title"></canvas>
                             </div>
-                            <table class="visually-hidden">
-                                <caption>{{ $chart['title'] }}</caption>
-                                <thead><tr><th scope="col">{{ __('Label') }}</th>@foreach ($chart['datasets'] as $set)<th scope="col">{{ $set['label'] }}</th>@endforeach</tr></thead>
-                                <tbody>
-                                    @foreach ($chart['labels'] as $i => $label)
-                                        <tr><th scope="row">{{ $label }}</th>@foreach ($chart['datasets'] as $set)<td>{{ number_format((float) ($set['data'][$i] ?? 0)) }}</td>@endforeach</tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                            {{-- visually-hidden on a wrapper: a <table> ignores the 1 px width and overflowed 320 px screens --}}
+                            <div class="visually-hidden">
+                                <table>
+                                    <caption>{{ $chart['title'] }}</caption>
+                                    <thead><tr><th scope="col">{{ __('Label') }}</th>@foreach ($chart['datasets'] as $set)<th scope="col">{{ $set['label'] }}</th>@endforeach</tr></thead>
+                                    <tbody>
+                                        @foreach ($chart['labels'] as $i => $label)
+                                            <tr><th scope="row">{{ $label }}</th>@foreach ($chart['datasets'] as $set)<td>{{ number_format((float) ($set['data'][$i] ?? 0)) }}</td>@endforeach</tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </x-ui.card>
                     </div>
                 @endforeach

@@ -1,4 +1,4 @@
-{{-- A09 report catalogue (P9.1a). --}}
+{{-- A09 report catalogue (P9.1a / P9.1b): the five reports. --}}
 <div>
     <div class="admin-page-head">
         <div>
@@ -16,11 +16,7 @@
                 <div class="ui-card h-100">
                     <h2 class="h5"><i class="fa {{ $report->icon() }}" aria-hidden="true"></i> {{ $report->label() }}</h2>
                     <p class="text-muted-brand">{{ $report->question() }}</p>
-                    @if ($report->isBuilt())
-                        <x-ui.button :href="route('admin.reports.show', $report->value)" size="sm" wire:navigate dusk="report-{{ $report->value }}">{{ __('Open report') }}</x-ui.button>
-                    @else
-                        <x-ui.badge variant="muted">{{ __('Coming soon') }}</x-ui.badge>
-                    @endif
+                    <x-ui.button :href="route('admin.reports.show', $report->value)" size="sm" wire:navigate dusk="report-{{ $report->value }}">{{ __('Open report') }}</x-ui.button>
                 </div>
             </div>
         @endforeach

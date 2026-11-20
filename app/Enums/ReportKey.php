@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-/** The A09 report catalogue (P9.1a builds three; revenue and trust & ops come in P9.1b). */
+/** The A09 report catalogue (P9.1a: growth, engagement, marketplace; P9.1b: revenue, trust & ops). */
 enum ReportKey: string
 {
     case Growth = 'growth';
@@ -12,11 +12,6 @@ enum ReportKey: string
     case Marketplace = 'marketplace';
     case Revenue = 'revenue';
     case Trust = 'trust';
-
-    public function isBuilt(): bool
-    {
-        return in_array($this, [self::Growth, self::Engagement, self::Marketplace], true);
-    }
 
     public function label(): string
     {

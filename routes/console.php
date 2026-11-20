@@ -27,6 +27,7 @@ use App\Jobs\Profile\ExpireDataExports;
 use App\Jobs\Profile\HideInactiveProfiles;
 use App\Jobs\Reports\ExpireAdminExports;
 use App\Jobs\Reports\PruneReportCapture;
+use App\Jobs\Reports\SendKpiDigest;
 use App\Jobs\Search\SendSavedSearchAlerts;
 use App\Jobs\Support\PruneContactSubmissions;
 use App\Jobs\Verification\PurgeExpiredVerificationDocuments;
@@ -62,6 +63,8 @@ Schedule::command('metrics:snapshot --yesterday')->timezone('Asia/Kolkata')->dai
 Schedule::command('reports:snapshot')->timezone('Asia/Kolkata')->dailyAt('00:30')->onOneServer()->withoutOverlapping(60);
 Schedule::job(new PruneReportCapture)->timezone('Asia/Kolkata')->dailyAt('04:30')->onOneServer()->withoutOverlapping();
 Schedule::job(new ExpireAdminExports)->hourlyAt(25)->onOneServer()->withoutOverlapping();
+// A09 weekly KPI email (P9.1b): checked daily 08:00 IST, sent on the A15 reports.digest_day (default Monday).
+Schedule::job(new SendKpiDigest)->timezone('Asia/Kolkata')->dailyAt('08:00')->onOneServer()->withoutOverlapping();
 
 // F02: pending interests past their 30 days become EXPIRED, every hour.
 Schedule::job(new ExpireInterests)->hourly()->onOneServer()->withoutOverlapping();

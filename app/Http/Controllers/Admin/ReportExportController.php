@@ -52,12 +52,12 @@ final class ReportExportController extends Controller
         // Audited BEFORE the first byte goes out: a download the client aborts half-way is still on record.
         $export->streamed($admin, $key, $range, $format, $reports->for($key)->exportRows($range));
 
-        return response()->streamDownload(function () use ($writer, $reports, $key, $range, $format, $title): void {
+        return response()->streamDownload(function () use ($writer, $reports, $key, $range, $format, $title, $admin): void {
             $out = fopen('php://output', 'wb');
             if ($out === false) {
                 return;
             }
-            $writer->write($reports->for($key)->exportTables($range), $format, $out, $title);
+            $writer->write($reports->for($key)->exportTables($range, $admin), $format, $out, $title);
             fclose($out);
         }, $name, [
             'Content-Type' => $format->mime(),

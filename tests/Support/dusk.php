@@ -108,7 +108,7 @@ function assertFitsWidths(Browser $signedIn, string $landing, array $urls): void
                 $body = (string) $browser->script('return document.body.innerText;')[0];
                 expect((string) $driver->getCurrentURL())->toContain((string) parse_url($url, PHP_URL_PATH));   // still signed in: no redirect to sign-in
                 expect($body)->not->toContain('We couldn’t find that page')->not->toContain('doesn’t include this')->not->toContain('Server Error');
-                expect($browser->script('return window.innerWidth;')[0])->toBe($width);
+                expect($browser->script('return window.innerWidth;')[0])->toBe($width, "{$url} is wider than {$width} px (mobile emulation widened the viewport)");
                 expect($browser->script('return document.scrollingElement.scrollWidth <= document.documentElement.clientWidth;')[0])
                     ->toBeTrue("{$url} scrolls sideways at {$width} px");
             }

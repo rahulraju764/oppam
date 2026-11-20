@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Laravel\Dusk\Browser;
 
 /*
-| P9.1a — A09 report screens in a real browser (`composer dev` running): change the period and
+| P9.1a/b — A09 report screens in a real browser (`composer dev` running): change the period and
 | the chart is drawn again for the new range; every report and the catalogue fit 320 – 1440 px.
 | Read-only: nothing is written.
 */
@@ -35,6 +35,8 @@ it('P9.1a: changing the period redraws the report; the report screens fit every 
             adminDuskUrl('/reports/growth'),
             adminDuskUrl('/reports/engagement'),
             adminDuskUrl('/reports/marketplace'),
+            adminDuskUrl('/reports/revenue'),
+            adminDuskUrl('/reports/trust'),
             adminDuskUrl('/reports/exports'),
         ]);
     });
