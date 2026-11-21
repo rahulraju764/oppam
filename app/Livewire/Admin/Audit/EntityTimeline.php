@@ -6,16 +6,10 @@ namespace App\Livewire\Admin\Audit;
 
 use App\Domain\Audit\TimelineSubjects;
 use App\Enums\TimelineEntity;
-use App\Enums\UserRole;
 use App\Models\AdminUser;
 use App\Models\AuditLog;
-use App\Models\Broker;
-use App\Models\Order;
-use App\Models\Profile;
-use App\Models\User;
 use App\Queries\Audit\AuditLogQuery;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -26,7 +20,9 @@ use Livewire\WithPagination;
  * lazily on the member (A03), bureau (A07) and order (A06) detail pages: the audit rows about the
  * entity and the records it owns (TimelineSubjects), newest first. Needs the host page's
  * permission (TimelineEntity::permission); the entity is found by its code (#[Locked]), never a
- * ULID — an unknown code is a 404. Admins with `audit.view` get a link into the full viewer.
+ * ULID — an unknown code is a 404. Admins with `audit.view` get a link into the full viewer,
+ * filtered to this timeline (the viewer's `entity` filter). When an owned-record list hits
+ * TimelineSubjects::CAP the screen says older records are left out.
  */
 final class EntityTimeline extends Component
 {
@@ -58,16 +54,10 @@ final class EntityTimeline extends Component
     public function render(AuditLogQuery $audit): View
     {
         $this->authorize($this->kind()->permission());
-        $subjects = $this->subjects();
 
-        $entries = AuditLog::query()
-            ->where(function (Builder $query) use ($subjects): void {
-                foreach ($subjects as $type => $ids) {
-                    $query->orWhere(fn (Builder $q) => $q->where('subject_type', $type)->whereIn('subject_id', $ids));
-                }
-            })
-            ->orderByDesc('created_at')->orderByDesc('id')
-            ->paginate(25, pageName: 'timeline');
+        $query = AuditLog::query();
+        TimelineSubjects::scope($query, $this->subjects());
+        $entries = $query->orderByDesc('created_at')->orderByDesc('id')->paginate(25, pageName: 'timeline');
 
         $admin = auth('admin')->user();
 
@@ -75,6 +65,9 @@ final class EntityTimeline extends Component
             'entries' => $entries,
             'names' => $audit->actorNames($entries->items()),
             'viewerLink' => $admin instanceof AdminUser && Gate::forUser($admin)->allows('audit.view'),
+            'entityFilter' => $this->entity.':'.$this->code,
+            'capped' => TimelineSubjects::capped($this->subjects()),
+            'cap' => TimelineSubjects::CAP,
             'timezone' => (string) config('oppam.display_timezone'),
         ]);
     }
@@ -87,17 +80,6 @@ final class EntityTimeline extends Component
     /** @return array<string, list<string>> */
     private function subjects(): array
     {
-        $subjects = app(TimelineSubjects::class);
-
-        return $this->resolved ??= match ($this->kind()) {
-            TimelineEntity::Member => (function () use ($subjects): array {
-                $profile = Profile::withTrashed()->where('code', $this->code)->first() ?? abort(404);
-                $member = User::withTrashed()->whereKey($profile->user_id)->where('role', UserRole::Member->value)->first() ?? abort(404);
-
-                return $subjects->forMember($member, $profile);
-            })(),
-            TimelineEntity::Broker => $subjects->forBroker(Broker::query()->where('code', $this->code)->first() ?? abort(404)),
-            TimelineEntity::Order => $subjects->forOrder(Order::query()->where('code', $this->code)->first() ?? abort(404)),
-        };
+        return $this->resolved ??= app(TimelineSubjects::class)->resolve($this->kind(), $this->code) ?? abort(404);
     }
 }

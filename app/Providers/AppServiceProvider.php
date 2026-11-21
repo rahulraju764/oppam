@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\AuditPrivileges;
 use App\Contracts\BiodataPdfRenderer;
 use App\Contracts\CaptchaVerifier;
 use App\Contracts\ContentSafety;
@@ -57,6 +58,7 @@ use App\Queries\Admin\WorkQueues;
 use App\Queries\Content\AdRotation;
 use App\Queries\Content\PreviewContext;
 use App\Services\Admin\Impersonation;
+use App\Services\Audit\MysqlAuditPrivileges;
 use App\Services\Billing\DompdfCreditNoteRenderer;
 use App\Services\Billing\DompdfInvoiceRenderer;
 use App\Services\Broker\DompdfBiodataRenderer;
@@ -130,6 +132,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
 
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
+        $this->app->bind(AuditPrivileges::class, MysqlAuditPrivileges::class);   // A12 audit:grants
         $this->app->bind(HtmlSanitizer::class, PurifierHtmlSanitizer::class);         // A08 rich text
         $this->app->bind(ContentSafety::class, RuleBasedContentSafety::class);         // M07 send flow / A13
         $this->app->bind(InvoiceRenderer::class, DompdfInvoiceRenderer::class);        // M10 GST invoice PDF

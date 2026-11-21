@@ -48,21 +48,28 @@
                 <x-ui.input :label="__('To (IST)')" name="to" id="audit-to" type="date" wire:model.live="to" />
             </div>
         </div>
-        <div class="mt-2">
+        <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
+            @if ($entity !== '')
+                <x-ui.badge variant="muted" icon="fa-filter">{{ __('Timeline of :what', ['what' => strtoupper(\Illuminate\Support\Str::after($entity, ':'))]) }}</x-ui.badge>
+                <x-ui.button size="sm" variant="link" type="button" wire:click="$set('entity', '')">{{ __('Show all records') }}</x-ui.button>
+            @endif
             <x-ui.button size="sm" variant="ghost" type="button" wire:click="clearFilters" icon="fa-times">{{ __('Clear filters') }}</x-ui.button>
         </div>
     </div>
 
     @if ($unknown !== [])
         <x-ui.alert type="warning">
-            {{ __('Nothing matches :what — check it.', ['what' => collect($unknown)->map(fn (string $k): string => match ($k) { 'actor' => __('"Who"'), 'action' => __('the action'), default => __('the subject type') })->implode(', ')]) }}
+            {{ __('Nothing matches :what — check it.', ['what' => collect($unknown)->map(fn (string $k): string => match ($k) { 'actor' => __('"Who"'), 'action' => __('the action'), 'entity' => __('the timeline record'), default => __('the subject type') })->implode(', ')]) }}
         </x-ui.alert>
     @endif
+    @if ($timelineCapped)
+        <x-ui.alert type="info">{{ __('This record owns more than :cap items of one kind: only the latest :cap of them are included in this timeline (and its export).', ['cap' => $cap]) }}</x-ui.alert>
+    @endif
     @if ($ignoredTerms)
-        <x-ui.alert type="info">{{ __('Words shorter than 3 letters are left out of the search.') }}</x-ui.alert>
+        <x-ui.alert type="info">{{ __('Words shorter than 3 letters and common words such as "the", "with" or "for" are left out of the search.') }}</x-ui.alert>
     @endif
 
-    <div wire:loading.class="opacity-50" wire:target="actor,action,subjectType,subject,from,to,search,clearFilters,nextPage,previousPage,setPage">
+    <div wire:loading.class="opacity-50" wire:target="actor,action,subjectType,subject,from,to,search,entity,clearFilters,nextPage,previousPage,setPage">
         <x-admin.table :headers="[__('When (IST)'), __('Who'), __('Action'), __('Subject'), __('Reason'), '']" :caption="__('Audit log')" :empty="$rows->isEmpty()">
             <x-slot:emptyState>
                 <x-ui.empty-state icon="fa-history" :title="__('No entries')" :message="__('No audit entry matches these filters.')" />

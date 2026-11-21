@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Queries\Audit;
 
 use App\Data\Audit\AuditFilterData;
+use App\Domain\Audit\TimelineSubjects;
 use App\Enums\AuditActorType;
+use App\Enums\TimelineEntity;
 use App\Models\AdminUser;
 use App\Models\AuditLog;
 use App\Models\Profile;
@@ -36,28 +38,40 @@ final class AuditLogQuery
     private const MIN_TERM = 3;
 
     /**
-     * @return array{rows: CursorPaginator<int, AuditLog>, unknown: list<string>, ignoredTerms: bool}
+     * InnoDB's default FULLTEXT stopwords (INFORMATION_SCHEMA.INNODB_FT_DEFAULT_STOPWORD, the same on
+     * MariaDB 10.4 and MySQL 8) of MIN_TERM letters or more. They are never indexed, so a required
+     * "+the*" would match no row: they are left out of the search like short words.
+     */
+    private const STOPWORDS = ['about', 'are', 'com', 'for', 'from', 'how', 'that', 'the', 'this', 'und', 'was', 'what', 'when', 'where', 'who', 'will', 'with', 'www'];
+
+    public function __construct(private readonly TimelineSubjects $timelines) {}
+
+    /**
+     * @return array{rows: CursorPaginator<int, AuditLog>, unknown: list<string>, ignoredTerms: bool, capped: bool}
      */
     public function page(AuditFilterData $filters): array
     {
-        ['query' => $query, 'unknown' => $unknown, 'ignoredTerms' => $ignored] = $this->build($filters);
+        ['query' => $query, 'unknown' => $unknown, 'ignoredTerms' => $ignored, 'capped' => $capped] = $this->build($filters);
 
         return [
             'rows' => $query->orderByDesc('created_at')->orderByDesc('id')->cursorPaginate(self::PER_PAGE, cursorName: 'after'),
             'unknown' => $unknown,
             'ignoredTerms' => $ignored,
+            'capped' => $capped,
         ];
     }
 
     /**
-     * The filtered query, unordered (export + page).
+     * The filtered query, unordered (export + page). `capped`: the timeline filter left out older
+     * owned records (TimelineSubjects::CAP).
      *
-     * @return array{query: Builder<AuditLog>, unknown: list<string>, ignoredTerms: bool}
+     * @return array{query: Builder<AuditLog>, unknown: list<string>, ignoredTerms: bool, capped: bool}
      */
     public function build(AuditFilterData $filters): array
     {
         $query = AuditLog::query();
         $unknown = [];
+        $capped = false;
 
         if ($filters->actor !== '' && ! $this->filterActor($query, $filters->actor)) {
             $unknown[] = 'actor';
@@ -70,7 +84,8 @@ final class AuditLogQuery
             } elseif (str_contains($action, '.')) {
                 $query->where('action', $action);
             } else {
-                $query->where('action', 'like', $action.'.%');   // area prefix: uses (action, created_at)
+                // area prefix ("_" escaped: it is a LIKE wildcard); uses (action, created_at)
+                $query->where('action', 'like', str_replace('_', '\\_', $action).'.%');
             }
         }
 
@@ -82,6 +97,14 @@ final class AuditLogQuery
 
         if ($filters->subject !== '') {
             $query->where('subject_label', $filters->subject);
+        }
+
+        if ($filters->entity !== '') {
+            [$kind, $code] = array_pad(explode(':', $filters->entity, 2), 2, '');
+            $entity = TimelineEntity::tryFrom($kind);
+            $subjects = $entity !== null && $code !== '' ? $this->timelines->resolve($entity, $code) : null;
+            $subjects === null ? $unknown[] = 'entity' : TimelineSubjects::scope($query, $subjects);
+            $capped = $subjects !== null && TimelineSubjects::capped($subjects);
         }
 
         $tz = (string) config('oppam.display_timezone');
@@ -100,19 +123,23 @@ final class AuditLogQuery
 
         $query->when($unknown !== [], fn (Builder $q) => $q->whereRaw('1 = 0'));
 
-        return ['query' => $query, 'unknown' => $unknown, 'ignoredTerms' => $ignored];
+        return ['query' => $query, 'unknown' => $unknown, 'ignoredTerms' => $ignored, 'capped' => $capped];
     }
 
     /**
      * Free text → a boolean-mode FULLTEXT expression: each word a required prefix term. FTS operators
      * typed by the admin are stripped (they are words here, not syntax).
      *
-     * @return array{0: string, 1: bool} [expression ('' = no usable word), some words were too short]
+     * @return array{0: string, 1: bool} [expression ('' = no usable word), some words were left out (too short, or a stopword)]
      */
     public static function terms(string $search): array
     {
-        $words = preg_split('/[^\p{L}\p{N}_]+/u', mb_strtolower($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        $usable = array_values(array_unique(array_filter($words, fn (string $w): bool => mb_strlen($w) >= self::MIN_TERM)));
+        // \p{M}: Malayalam vowel signs and viramas are part of the word, not separators.
+        $words = preg_split('/[^\p{L}\p{M}\p{N}_]+/u', mb_strtolower($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $usable = array_values(array_unique(array_filter(
+            $words,
+            fn (string $w): bool => mb_strlen($w) >= self::MIN_TERM && ! in_array($w, self::STOPWORDS, true),
+        )));
 
         return [
             implode(' ', array_map(fn (string $w): string => '+'.$w.'*', array_slice($usable, 0, 8))),

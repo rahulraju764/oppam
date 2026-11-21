@@ -9,9 +9,23 @@
 --
 -- Re-run both lines after every `migrate --force` (new tables need their grant). Migrations run as
 -- a separate migration user with DDL rights (DB_USERNAME for `migrate` only, P9.5 deploy script).
--- Then check, connected as the application user:
+-- Then run both checks (the deploy smoke test does):
 --
---   php artisan audit:grants --check      # exit 1 if UPDATE / DELETE is possible or a trigger is missing
+--   php artisan audit:grants --check                                   # as the APPLICATION user:
+--       exit 1 if it can change or wipe audit_logs
+--   php artisan audit:grants --triggers --connection=<migration conn>  # as the MIGRATION / admin user:
+--       exit 1 if audit_logs_no_update or audit_logs_no_delete is missing
+--
+-- Two checks because MySQL / MariaDB list a table's triggers only to a user with the TRIGGER
+-- privilege, which the application user must not have: it can never see the triggers itself.
+-- (Verified on MariaDB 10.4, 2026-11-21: a user set up by this script passes --check and sees no
+-- triggers; the admin user passes --triggers; the app user's UPDATE on audit_logs is denied, 1142.)
+--
+-- "Change or wipe" means UPDATE, DELETE, DROP (TRUNCATE TABLE needs only DROP and fires no trigger),
+-- ALTER (ENGINE=BLACKHOLE discards rows), TRIGGER (drops the append-only triggers) or ALL, on *.*,
+-- on the database (also through a wildcard pattern such as `oppam%`.*) or on audit_logs. That is why
+-- DDL rights belong to the migration user only. Grants that reach the user through a MySQL 8 role
+-- are not listed by SHOW GRANTS FOR CURRENT_USER(): if you use roles, check them by hand.
 --
 -- The shape of the generated script (database `oppam`, user 'oppam_app'@'10.0.%'):
 

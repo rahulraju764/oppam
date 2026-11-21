@@ -13,7 +13,9 @@ namespace App\Data\Audit;
  *  - subjectType: a model name from AuditLogQuery::subjectTypes();
  *  - subject: the label stored with the row — usually a code (OPM12370, BRK1042, ORD100004);
  *  - from / to: IST dates (Y-m-d);
- *  - search: free text over action, actor, subject and reason (FULLTEXT).
+ *  - search: free text over action, actor, subject and reason (FULLTEXT);
+ *  - entity: "member:OPM12370" / "broker:BRK1042" / "order:ORD100004" — exactly the rows of that
+ *    entity's timeline (TimelineSubjects), the link from the member / bureau / order pages.
  */
 final readonly class AuditFilterData
 {
@@ -25,6 +27,7 @@ final readonly class AuditFilterData
         public string $from = '',
         public string $to = '',
         public string $search = '',
+        public string $entity = '',
     ) {}
 
     /** @param  array<string, mixed>  $values */
@@ -40,15 +43,17 @@ final readonly class AuditFilterData
             from: $text('from', 10),
             to: $text('to', 10),
             search: $text('search', 100),
+            entity: $text('entity', 40),
         );
     }
 
-    /** @return array{actor: string, action: string, subjectType: string, subject: string, from: string, to: string, search: string} */
+    /** @return array{actor: string, action: string, subjectType: string, subject: string, from: string, to: string, search: string, entity: string} */
     public function toArray(): array
     {
         return [
             'actor' => $this->actor, 'action' => $this->action, 'subjectType' => $this->subjectType,
             'subject' => $this->subject, 'from' => $this->from, 'to' => $this->to, 'search' => $this->search,
+            'entity' => $this->entity,
         ];
     }
 }

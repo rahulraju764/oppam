@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Audit;
 
+use App\Enums\TimelineEntity;
+use App\Enums\UserRole;
+use App\Models\AuditLog;
 use App\Models\Broker;
 use App\Models\BrokerConsentDispute;
 use App\Models\BrokerFraudSignal;
@@ -21,6 +24,7 @@ use App\Models\Refund;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\VerificationRequest;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -32,6 +36,67 @@ use Illuminate\Database\Eloquent\Model;
 final class TimelineSubjects
 {
     public const CAP = 200;
+
+    /**
+     * The subjects of the entity with this code (member: profile code, broker: bureau code, order:
+     * order code); null when no such entity exists (a member timeline is for Member accounts only).
+     *
+     * @return array<string, list<string>>|null
+     */
+    public function resolve(TimelineEntity $entity, string $code): ?array
+    {
+        $code = strtoupper(trim($code));
+
+        if ($entity === TimelineEntity::Broker) {
+            $broker = Broker::query()->where('code', $code)->first();
+
+            return $broker !== null ? $this->forBroker($broker) : null;
+        }
+
+        if ($entity === TimelineEntity::Order) {
+            $order = Order::query()->where('code', $code)->first();
+
+            return $order !== null ? $this->forOrder($order) : null;
+        }
+
+        $profile = Profile::withTrashed()->where('code', $code)->first();
+        $member = $profile === null ? null
+            : User::withTrashed()->whereKey($profile->user_id)->where('role', UserRole::Member->value)->first();
+
+        return $profile !== null && $member !== null ? $this->forMember($member, $profile) : null;
+    }
+
+    /**
+     * Limit an audit query to these subjects: one OR group per subject type, each on the
+     * (subject_type, subject_id, created_at) index.
+     *
+     * @param  Builder<AuditLog>  $query
+     * @param  array<string, list<string>>  $subjects
+     */
+    public static function scope(Builder $query, array $subjects): void
+    {
+        $query->where(function (Builder $outer) use ($subjects): void {
+            foreach ($subjects as $type => $ids) {
+                $outer->orWhere(fn (Builder $q) => $q->where('subject_type', $type)->whereIn('subject_id', $ids));
+            }
+        });
+    }
+
+    /**
+     * Did any owned-record list hit CAP? Then older records' rows are left out — the screens say so.
+     *
+     * @param  array<string, list<string>>  $subjects
+     */
+    public static function capped(array $subjects): bool
+    {
+        foreach ($subjects as $ids) {
+            if (count($ids) >= self::CAP) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /** @return array<string, list<string>> */
     public function forMember(User $member, Profile $profile): array

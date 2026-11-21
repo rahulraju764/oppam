@@ -5,10 +5,14 @@
 <div>
     @if ($viewerLink)
         <div class="d-flex justify-content-end mb-2">
-            <a href="{{ route('admin.audit.index', ['subject' => $code]) }}" wire:navigate class="small">
+            <a href="{{ route('admin.audit.index', ['entity' => $entityFilter]) }}" wire:navigate class="small">
                 <i class="fa fa-history" aria-hidden="true"></i> {{ __('Open in the audit log') }}
             </a>
         </div>
+    @endif
+
+    @if ($capped)
+        <x-ui.alert type="info">{{ __('This record owns more than :cap items of one kind: only the latest :cap of them are included here.', ['cap' => $cap]) }}</x-ui.alert>
     @endif
 
     <x-admin.table :headers="[__('When (IST)'), __('By'), __('What'), __('Subject'), __('Reason')]" :caption="__('Timeline')" :empty="$entries->isEmpty()">

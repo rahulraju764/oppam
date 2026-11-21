@@ -21,12 +21,16 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
  * Export the filtered A12 audit trail as CSV (P9.2a). Needs `audit.export` (a refusal is audited
  * and logged). At most `system.audit_export_max_rows` rows — a larger selection is refused with
  * "narrow the filters" (no background export: the trail is read straight from its indexes).
- * EXPORTS_PER_HOUR per admin. The export itself is audited, with the filters and the row count,
- * before the first byte is sent.
+ * EXPORTS_PER_HOUR exports per admin, and COUNTS_PER_HOUR size checks (refused "too many rows" /
+ * "nothing to export" attempts still run a COUNT over the trail, so they are throttled too). The
+ * export itself is audited, with the filters and the row count, before the first byte is sent.
  */
 final class ExportAuditLog
 {
     public const EXPORTS_PER_HOUR = 10;
+
+    /** Size checks (each one a COUNT over the filtered trail), refused or not. */
+    public const COUNTS_PER_HOUR = 30;
 
     public function __construct(
         private readonly AuditLogQuery $query,
@@ -59,6 +63,16 @@ final class ExportAuditLog
             throw ValidationException::withMessages(['export' => __('Fix the filters first: something in them matches nothing.')]);
         }
 
+        // Throttled admins are refused before the (possibly large) COUNT runs.
+        $bucket = 'audit-export:'.$admin->id;
+        $counts = 'audit-export-count:'.$admin->id;
+        foreach ([$bucket => self::EXPORTS_PER_HOUR, $counts => self::COUNTS_PER_HOUR] as $key => $limit) {
+            if ($this->limiter->tooManyAttempts($key, $limit)) {
+                throw new TooManyRequestsHttpException($this->limiter->availableIn($key), __('You have exported the audit log several times this hour. Please try again later.'));
+            }
+        }
+        $this->limiter->hit($counts, 3600);
+
         $rows = $built['query']->count();
         $max = Settings::int(SettingKey::SystemAuditExportMaxRows);
         if ($rows === 0) {
@@ -70,10 +84,6 @@ final class ExportAuditLog
             ])]);
         }
 
-        $bucket = 'audit-export:'.$admin->id;
-        if ($this->limiter->tooManyAttempts($bucket, self::EXPORTS_PER_HOUR)) {
-            throw new TooManyRequestsHttpException($this->limiter->availableIn($bucket), __('You have exported the audit log several times this hour. Please try again later.'));
-        }
         $this->limiter->hit($bucket, 3600);
 
         return $rows;

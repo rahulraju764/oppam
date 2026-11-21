@@ -387,7 +387,52 @@ Still open elsewhere: P6.1 Blocker fix uncommitted + Dusk not run; rule-5 owner 
     **Review round 1 (2026-11-13): NOT READY** — 1 Blocker: the report cache key held the full metric list (Trust: 11 metrics → 276 chars), over the database cache store's 255-char `cache.key` → `/reports/trust` 500 with `CACHE_STORE=database` (caught by Dusk; Pest runs on the array store) → key hashes the list (`sha1`), new `ReportCacheKeyTest` (all five reports on the database store + every key ≤ 255; red without the fix). 1 Major: no indexes for the new range scans → migration **2026_11_13_120000_add_report_range_indexes** (decided_at ×3, reports.created_at, subscriptions.ends_at, support_tickets created_at / first_responded_at / resolved_at; migrated, rolled back, re-migrated on the dev DB). Minor fixed: live days-to-first-payment median breaks same-second ties by id (RevenueTest case, red without the fix). Found by Dusk once the 500 was gone: `/reports/trust` 16 px too wide at 320 px — the chart's `<table class="visually-hidden">` ignores the 1 px width → `visually-hidden` on a wrapper div; `tests/Support/dusk.php` width assertion now names the URL. Decisions P9.1b (k).
     **Review round 2: READY TO COMMIT** (0 Blockers / 0 Majors; its runs: lint passed, analyse OK, Feature/Reports + ReportsScreensTest + Foundation 82, Support + Verification + Moderation + Safety + SafetySupportScreensTest 186 passed; round 1 on the staged code: Settings + Feature/Admin + Notifications + Safety + Moderation … 775, Livewire/Admin 311 passed; Dusk ReportsTest 1 passed, 170 assertions, 320 / 768 / 1024 / 1440 px on all 7 report URLs). Full-suite sweep not run. Not committed (owner asks); no rule-5 items in P9.1b.
     Minors open: LiveOps / LiveRevenue medians load the period's values into PHP (→ P9.3 / P9.4); the nightly run settles only the single day 31 days back — a missed run needs `reports:snapshot` for that day (runbook, P9.5); `TrustReport::exportRows` counts with a null viewer (staff exports' row count slightly low); a queued trust export downloads with moderator names for its 24 h after `reports.staff` is revoked (owner: accept or re-check); KpiDigest churn window is week ± 37 days (not Mon–Sun), net clamped at 0, docblock says lines link to reports; no end-to-end export-viewer test. **→ P9.3:** the same `<table class="visually-hidden">` pattern in admin/dashboard.blade.php:92 and admin/chat/overview.blade.php:24 may overflow 320 px.
-- [ ] P9.2 Audit viewer & system health (A12)
+- [ ] P9.2 Audit viewer & system health (A12) — split by the owner (decisions 2026-11-20 P9.2 row) into:
+  - [ ] P9.2a Audit viewer, per-entity timeline, DB grants — 2026-11-20: **built** on branch `claude/p9.2a` (plan approved 2026-11-20). Migration
+    2026_11_20_100000 (FULLTEXT `audit_logs_search_fulltext` on action / actor_label / subject_label / reason, MySQL / MariaDB; index
+    (subject_label, created_at); the append-only triggers untouched). `AuditLogQuery` (filters: who = admin email / member code / "system",
+    action or area prefix, subject type from the trail's own list, subject code, IST dates, free text = boolean-mode FULLTEXT prefix terms
+    with operators stripped and Malayalam kept, `entity` = exactly one timeline; unknown filters list nothing and are named; cursor pages;
+    actors shown by email / member code, never a ULID). `AuditDiff` (dotted keys, changed first, **redacted again** on display).
+    Screens: `/audit` AuditLogIndex (`audit.view`; filters in the URL; drawer with the diff, reason, IP, browser; read-only) + `<x-admin.diff>`;
+    `EntityTimeline` (`TimelineSubjects`: the entity + what it owns, capped 200 ids per type) mounted on the member page (replaces the
+    P1.7a `TimelineTab`), the bureau page (new "Audit timeline" tab) and the order page; host page's permission; code-only, `#[Locked]`;
+    "Open in the audit log" → the viewer filtered to that timeline (`audit.view`). Export: `ExportAuditLog` (new permission **`audit.export`**,
+    super admin only; refusal audited; at most A15 `system.audit_export_max_rows` 50,000 — else "narrow the filters"; 10 per hour) +
+    `AuditExportController` (signed 5-minute single-use link, CSV with BOM, SafeCell, values redacted again, `audit.exported` audited with
+    filters + rows). DB grants: `AuditGrants` + `php artisan audit:grants --user=… [--host=…]` (per-table grant script: the app user gets
+    SELECT / INSERT only on audit_logs and never a database-wide grant — MySQL can't carve a table out of one) and `audit:grants --check`
+    (as the app user: exit 1 when it can UPDATE / DELETE / DROP / ALTER / TRIGGER / ALL on audit_logs, also via `*.*`, the database or a
+    wildcard pattern) + `audit:grants --triggers [--connection=…]` (as the migration user: exit 1 when a trigger is missing);
+    `deploy/sql/audit_logs_grants.sql` explains it.
+    Tests: Unit/Audit AuditGrantsTest + AuditDiffTest + TimelineSubjectsTest (25), Feature/Audit AuditViewerTest (29) + AuditGrantsCommandTest (7), new suite
+    **tests/Committed** (`CommittedTestCase`: InnoDB FULLTEXT sees committed rows only — truncates audit_logs before and after each test)
+    Committed/Audit/AuditSearchTest (17), Livewire/Admin/AuditScreensTest (20); MembersScreensTest moved to EntityTimeline (its 404 /
+    forbidden cases are in AuditScreensTest — an update, not a weakening). Dusk tests/Browser/Admin/AuditLogTest **passed** (52 assertions:
+    filter, drawer, member timeline → viewer, 320 – 1440 px). Found on the way: the search split Malayalam words at vowel signs (`\p{M}`) — fixed.
+    **Review round 1 (2026-11-21): NOT READY** — all commands green (lint, analyse, audit tests 78, Committed 17, full suite 4209 passed /
+    1 skipped, Dusk AuditLogTest 1 passed), 1 Major: `--check` could never pass for a correctly granted app user — `SHOW TRIGGERS` lists a
+    table's triggers only to a user with TRIGGER, which the app user (rightly) lacks, so it always reported "Missing trigger", and a user
+    that could see them failed as a TRIGGER violation. Fixed: the trigger check is split out to `--triggers` (run as the migration user,
+    `--connection=`); SHOW GRANTS / SHOW TRIGGERS sit behind `App\Contracts\AuditPrivileges` (`MysqlAuditPrivileges`) so the
+    least-privilege case is tested (AuditGrantsCommandTest +5); confirmed by hand on local MariaDB 10.4 with a throwaway user made from the
+    generated script (`--check` exit 0, triggers invisible to it, `--triggers` as root exit 0, its UPDATE denied 1142; user dropped).
+    Minors fixed: refused export size checks (nothing to export / too many rows) are throttled too (`COUNTS_PER_HOUR` 30, checked before
+    the COUNT; test); the timeline and the viewer say "only the latest 200" when an owned-record list hits `TimelineSubjects::CAP` (tests);
+    `DB` import in AuditViewerTest; these counts. Reviewer's process note: the bulk of P9.2a (fa9b21a, 2052d31) was committed before
+    READY TO COMMIT.
+    **Review round 2 (2026-11-21): READY TO COMMIT** (0 Blockers / 0 Majors; its runs: lint passed, analyse OK, audit tests 88 passed,
+    Committed 17, full suite 4219 passed / 1 skipped, Dusk AuditLogTest 1 passed (52 assertions); it re-did the MariaDB hand check with its
+    own throwaway user — --check 0, --triggers as app user 1 / as root 0, UPDATE / DELETE / TRUNCATE denied 1142 — and dropped it).
+    Minors open: AuditScreensTest bounded-queries test is flaky (`random_int` phones can collide on unique users.phone, ~0.7%); `capped()`
+    fires at exactly 200 but the alert says "more than 200"; the size-check throttle reuses the "exported several times" message;
+    `--check --triggers` together runs only --check. Info: ImportPipelineTest B.9 120 s budget failed once (123.9 s) under load — owner's call.
+    **→ P9.3:** `AuditLogQuery::subjectTypes()` / `areas()` run DISTINCT over the whole trail every 10 minutes (loose index scan or a kept list).
+    **Hand-overs → P9.5:** run `audit:grants` (as a DB admin) after every `migrate --force`; in the deploy smoke test `audit:grants --check`
+    as the app user AND `audit:grants --triggers --connection=<migration connection>` (add that connection to config/database.php);
+    migrations as a separate migration user, the yearly 7-year archive (DB admin; owner 2026-11-20). **→ P9.2b:** scheduler / webhook capture,
+    SystemHealth, alerts, Razorpay webhook replay (rule 5).
+  - [ ] P9.2b System health & alerts — not started (plan in decisions 2026-11-20 P9.2 row).
 - [ ] P9.3 Font Awesome 6, accessibility & performance pass
 - [ ] P9.4 Security review & load test
 - [ ] P9.5 Deployment

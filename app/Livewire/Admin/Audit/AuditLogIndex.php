@@ -7,6 +7,7 @@ namespace App\Livewire\Admin\Audit;
 use App\Actions\Audit\ExportAuditLog;
 use App\Data\Audit\AuditFilterData;
 use App\Domain\Audit\AuditDiff;
+use App\Domain\Audit\TimelineSubjects;
 use App\Http\Controllers\Admin\AuditExportController;
 use App\Models\AdminUser;
 use App\Models\AuditLog;
@@ -35,7 +36,7 @@ final class AuditLogIndex extends Component
 {
     use WithPagination;
 
-    public const FILTERS = ['actor', 'action', 'subjectType', 'subject', 'from', 'to', 'search'];
+    public const FILTERS = ['actor', 'action', 'subjectType', 'subject', 'from', 'to', 'search', 'entity'];
 
     #[Url(except: '')]
     public string $actor = '';
@@ -57,6 +58,10 @@ final class AuditLogIndex extends Component
 
     #[Url(except: '')]
     public string $search = '';
+
+    /** "member:OPM12370" etc. — set by the timeline's "Open in the audit log" link. */
+    #[Url(except: '')]
+    public string $entity = '';
 
     /** The row open in the drawer ('' = none). Any row is readable with audit.view; the id is format-checked. */
     public string $entry = '';
@@ -122,6 +127,8 @@ final class AuditLogIndex extends Component
             'rows' => $result['rows'],
             'unknown' => $result['unknown'],
             'ignoredTerms' => $result['ignoredTerms'],
+            'timelineCapped' => $result['capped'],
+            'cap' => TimelineSubjects::CAP,
             'names' => $audit->actorNames([...$result['rows']->items(), ...($open !== null ? [$open] : [])]),
             'areas' => array_combine($audit->areas(), $audit->areas()),
             'subjectTypes' => array_combine($audit->subjectTypes(), $audit->subjectTypes()),
@@ -137,6 +144,7 @@ final class AuditLogIndex extends Component
         return AuditFilterData::fromArray([
             'actor' => $this->actor, 'action' => $this->action, 'subjectType' => $this->subjectType,
             'subject' => $this->subject, 'from' => $this->from, 'to' => $this->to, 'search' => $this->search,
+            'entity' => $this->entity,
         ]);
     }
 
