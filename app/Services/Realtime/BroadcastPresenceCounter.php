@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Realtime;
 
 use App\Contracts\PresenceCounter;
-use GuzzleHttp\Client;
 use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Contracts\Config\Repository as Config;
-use Pusher\Pusher;
 use Throwable;
 
 /**
@@ -29,13 +26,13 @@ final class BroadcastPresenceCounter implements PresenceCounter
 
     public const CACHE_SECONDS = 30;
 
-    public const TIMEOUT_SECONDS = 2.0;
+    public const TIMEOUT_SECONDS = PusherApiClient::TIMEOUT_SECONDS;
 
     /** Cached when the server couldn't be asked, so the next render doesn't wait again. */
     private const UNKNOWN = -1;
 
     public function __construct(
-        private readonly Config $config,
+        private readonly PusherApiClient $client,
         private readonly Cache $cache,
     ) {}
 
@@ -54,20 +51,11 @@ final class BroadcastPresenceCounter implements PresenceCounter
 
     private function ask(): ?int
     {
-        $connection = (array) $this->config->get('broadcasting.connections.'.$this->config->get('broadcasting.default'), []);
-
-        if (! in_array($connection['driver'] ?? null, ['reverb', 'pusher'], true) || blank($connection['key'] ?? null)) {
-            return null;
-        }
-
         try {
-            $pusher = new Pusher(
-                (string) $connection['key'],
-                (string) ($connection['secret'] ?? ''),
-                (string) ($connection['app_id'] ?? ''),
-                (array) ($connection['options'] ?? []),
-                new Client(['timeout' => self::TIMEOUT_SECONDS, 'connect_timeout' => self::TIMEOUT_SECONDS]),
-            );
+            $pusher = $this->client->make(self::TIMEOUT_SECONDS);
+            if ($pusher === null) {
+                return null;
+            }
 
             $info = $pusher->getChannelInfo(self::CHANNEL, ['info' => 'user_count']);
 

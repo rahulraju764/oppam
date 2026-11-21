@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Webhooks;
 
 use App\Actions\Comms\ApplyDeliveryReports;
 use App\Contracts\MailBounceVerifier;
+use App\Enums\WebhookOutcome;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,9 @@ final class MailBounceController extends Controller
         $bounces = $verifier->verify($request);
 
         if ($bounces === null) {
+            // A12 webhook receipts: a bad signature, a stale timestamp or a replayed token look the same here.
+            $request->attributes->set(WebhookOutcome::REQUEST_ATTRIBUTE, WebhookOutcome::RejectedSignature);
+
             return response()->json(['status' => 'rejected'], 403);
         }
 

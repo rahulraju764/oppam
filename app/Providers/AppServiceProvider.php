@@ -16,6 +16,7 @@ use App\Contracts\MailBounceVerifier;
 use App\Contracts\PaymentGateway;
 use App\Contracts\PayoutStatementRenderer;
 use App\Contracts\PresenceCounter;
+use App\Contracts\RealtimeServerStats;
 use App\Contracts\SmsGateway;
 use App\Domain\Billing\FinancialYear;
 use App\Domain\Billing\UsagePeriodResolver;
@@ -74,6 +75,7 @@ use App\Services\Mail\SesSnsVerifier;
 use App\Services\Payments\FakePaymentGateway;
 use App\Services\Payments\RazorpayGateway;
 use App\Services\Realtime\BroadcastPresenceCounter;
+use App\Services\Realtime\ReverbServerStats;
 use App\Services\Settings\FeatureFlags;
 use App\Services\Settings\SettingsRepository;
 use App\Services\Settings\SiteIdentity;
@@ -132,6 +134,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UsagePeriodResolver::class, fn (): UsagePeriodResolver => new UsagePeriodResolver(config('oppam.display_timezone')));
 
         $this->app->bind(PresenceCounter::class, BroadcastPresenceCounter::class);   // A02 "online now"
+        $this->app->bind(RealtimeServerStats::class, ReverbServerStats::class);       // A12 Reverb status
         $this->app->bind(AuditPrivileges::class, MysqlAuditPrivileges::class);   // A12 audit:grants
         $this->app->bind(HtmlSanitizer::class, PurifierHtmlSanitizer::class);         // A08 rich text
         $this->app->bind(ContentSafety::class, RuleBasedContentSafety::class);         // M07 send flow / A13

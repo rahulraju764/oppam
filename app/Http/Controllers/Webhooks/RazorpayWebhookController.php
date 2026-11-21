@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Webhooks;
 
 use App\Actions\Billing\HandlePaymentWebhook;
+use App\Enums\WebhookOutcome;
 use App\Exceptions\Billing\InvalidWebhook;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,9 @@ final class RazorpayWebhookController
                 (string) $request->header('X-Razorpay-Signature', ''),
                 $request->header('X-Razorpay-Event-Id'),
             );
-        } catch (InvalidWebhook) {
+        } catch (InvalidWebhook $e) {
+            $request->attributes->set(WebhookOutcome::REQUEST_ATTRIBUTE, $e->outcome());   // A12 webhook receipts
+
             return response()->json(['status' => 'rejected'], 400);
         }
 

@@ -229,6 +229,30 @@ return [
             ],
         ],
 
+        // A12 system health (P9.2b1): every request counted by status class and duration bucket
+        // (counts only — no URL, user or IP), read back by App\Queries\System\RequestHealth.
+        App\Services\System\Pulse\RequestOutcomes::class => [
+            'enabled' => env('PULSE_REQUEST_OUTCOMES_ENABLED', true),
+            'sample_rate' => env('PULSE_REQUEST_OUTCOMES_SAMPLE_RATE', 1),
+            'ignore' => [
+                '#^/up$#',                                  // load-balancer probe
+                '#^/'.env('PULSE_PATH', 'pulse').'#',      // Pulse dashboard...
+                '#^/'.env('HORIZON_PATH', 'horizon').'#',  // Horizon dashboard...
+            ],
+        ],
+
+        // A12 "Reverb status" (P9.2b1): connections and messages per second, recorded by the Reverb
+        // server process itself (it ingests into Pulse every reverb.pulse_ingest_interval seconds).
+        Laravel\Reverb\Pulse\Recorders\ReverbConnections::class => [
+            'enabled' => env('PULSE_REVERB_CONNECTIONS_ENABLED', true),
+            'sample_rate' => 1,
+        ],
+
+        Laravel\Reverb\Pulse\Recorders\ReverbMessages::class => [
+            'enabled' => env('PULSE_REVERB_MESSAGES_ENABLED', true),
+            'sample_rate' => 1,
+        ],
+
         Recorders\UserRequests::class => [
             'enabled' => env('PULSE_USER_REQUESTS_ENABLED', true),
             'sample_rate' => env('PULSE_USER_REQUESTS_SAMPLE_RATE', 1),

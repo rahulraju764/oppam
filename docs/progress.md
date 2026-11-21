@@ -432,7 +432,25 @@ Still open elsewhere: P6.1 Blocker fix uncommitted + Dusk not run; rule-5 owner 
     as the app user AND `audit:grants --triggers --connection=<migration connection>` (add that connection to config/database.php);
     migrations as a separate migration user, the yearly 7-year archive (DB admin; owner 2026-11-20). **→ P9.2b:** scheduler / webhook capture,
     SystemHealth, alerts, Razorpay webhook replay (rule 5).
-  - [ ] P9.2b System health & alerts — not started (plan in decisions 2026-11-20 P9.2 row).
+  - [ ] P9.2b System health & alerts — split by the owner (2026-11-21, decisions 2026-11-21 P9.2b row) into:
+    - [ ] P9.2b1 Capture, health readers, SystemHealth screen, Pulse — 2026-11-21: **built** (plan approved), on `claude/p9.2a`'s working
+      tree (P9.2a still uncommitted). Migrations 2026_11_21_090000_create_pulse_tables (Pulse's own, published) and
+      2026_11_21_100000_create_system_health_tables (`scheduled_task_runs`, `webhook_receipts`, `health_samples`, index
+      payment_webhook_events(processed_at, created_at)); migrated, rolled back, re-migrated on the dev DB. Capture: listener
+      RecordScheduledTaskRun (ScheduledTask Starting / Finished / Failed / Skipped, rescued), middleware RecordWebhookReceipt on the
+      webhook group + rejection tags in the Razorpay / MSG91 / mail-bounce controllers (`InvalidWebhook::outcome()`) — **rule 5
+      (webhooks): owner review**; SampleSystemHealth (every minute, in the scheduler: Reverb connections + broadcast-lag canary
+      MeasureBroadcastLag on `broadcasts`), PruneSystemHealth (03:35 IST). Readers (app/Queries/System): QueueHealth, SchedulerHealth
+      (ScheduleRegistry: key, last due in task tz, missed), WebhookHealth, DeliveryHealth, RequestHealth (Pulse recorder
+      `RequestOutcomes`), RealtimeHealth (ReverbServerStats behind `RealtimeServerStats`, ChannelTypes, detected restart, lag),
+      InfrastructureHealth (storage, DB); PusherApiClient shared with BroadcastPresenceCounter. Screen `/system/health` SystemHealth
+      (`system.health.view`, lazy, `wire:poll.60s`, nav "System health"). A15 setting `system.missed_schedule_grace_minutes` (10).
+      Tests: Unit/System/HealthRulesTest (38), Feature/System/CaptureTest (14) + HealthReadersTest (19), Livewire/Admin/SystemHealthScreenTest (9);
+      Dusk tests/Browser/Admin/SystemHealthTest written, **not run**. Runs: lint passed, analyse OK; those 80 passed; Billing 234,
+      Webhooks 11, Feature/Admin 400, Foundation 15, Settings 209, Feature/Broadcasting 69, Livewire DashboardTest 16 passed.
+      **Full sweep stopped** by Claude Code for low system memory after Unit 185 + Committed 17 — to re-run. Reviewer not run yet.
+    - [ ] P9.2b2 Alerts (thresholds, system_alerts, CheckSystemHealth, emails, A02 strip, failed-jobs > 10), payment_webhook_events
+      failure columns, HandlePaymentWebhook split, Razorpay replay (`system.webhooks.replay`) — not started; **rule 5**.
 - [ ] P9.3 Font Awesome 6, accessibility & performance pass
 - [ ] P9.4 Security review & load test
 - [ ] P9.5 Deployment

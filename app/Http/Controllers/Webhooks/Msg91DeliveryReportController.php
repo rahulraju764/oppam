@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Webhooks;
 
 use App\Actions\Comms\ApplyDeliveryReports;
+use App\Enums\WebhookOutcome;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,8 @@ final class Msg91DeliveryReportController extends Controller
         $given = (string) ($request->header('X-Webhook-Secret') ?? $request->query('secret', ''));
 
         if ($secret === '' || ! hash_equals($secret, $given)) {
+            $request->attributes->set(WebhookOutcome::REQUEST_ATTRIBUTE, WebhookOutcome::RejectedSignature);   // A12 webhook receipts
+
             return response()->json(['status' => 'rejected'], 403);
         }
 

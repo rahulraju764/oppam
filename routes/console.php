@@ -30,6 +30,8 @@ use App\Jobs\Reports\PruneReportCapture;
 use App\Jobs\Reports\SendKpiDigest;
 use App\Jobs\Search\SendSavedSearchAlerts;
 use App\Jobs\Support\PruneContactSubmissions;
+use App\Jobs\System\PruneSystemHealth;
+use App\Jobs\System\SampleSystemHealth;
 use App\Jobs\Verification\PurgeExpiredVerificationDocuments;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -76,6 +78,11 @@ Schedule::job(new DetectEngagementSignals)->hourlyAt(20)->onOneServer()->without
 Schedule::job(new PruneOldNotifications)->dailyAt('21:45')->onOneServer()->withoutOverlapping();
 // Contact inbox (P8.1b): spam after contact.spam_retention_days, everything after contact.retention_days.
 Schedule::job(new PruneContactSubmissions)->dailyAt('21:55')->onOneServer()->withoutOverlapping();
+
+// A12 system health (P9.2b1): Reverb connections + a broadcast-lag canary every minute (runs inside the
+// scheduler, not queued); scheduler runs / webhook receipts kept 30 days, samples 7 days (22:05 UTC = 03:35 IST).
+Schedule::job(new SampleSystemHealth)->everyMinute()->onOneServer()->withoutOverlapping(5);
+Schedule::job(new PruneSystemHealth)->dailyAt('22:05')->onOneServer()->withoutOverlapping();
 
 // Chat (M07, P4.2): the offline message digest every 5 minutes; retention (R-M07-6) nightly.
 Schedule::job(new SendChatDigests)->everyFiveMinutes()->onOneServer()->withoutOverlapping();

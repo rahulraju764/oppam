@@ -83,6 +83,7 @@ use App\Livewire\Admin\Staff\Index as StaffIndex;
 use App\Livewire\Admin\Support\CannedResponses;
 use App\Livewire\Admin\Support\TicketQueue;
 use App\Livewire\Admin\Support\TicketShow;
+use App\Livewire\Admin\System\SystemHealth;
 use App\Livewire\Admin\Verification\Queue as VerificationQueue;
 use App\Livewire\Admin\Verification\Review as VerificationReview;
 use Illuminate\Broadcasting\BroadcastController;
@@ -273,6 +274,9 @@ Route::middleware(['auth:admin', 'admin.session', 'admin.active', '2fa.confirmed
         // A 5-minute signed link built by the viewer (single-use token).
         Route::get('/export', AuditExportController::class)->middleware(['signed', 'throttle:30,1'])->name('export');
     });
+
+    // System health (A12, P9.2b1): queues, scheduler, webhooks, delivery, requests, Reverb, storage, DB.
+    Route::get('/system/health', SystemHealth::class)->middleware('can:system.health.view')->name('system.health');
 
     // Settings & Configuration (A15, P8.4).
     Route::middleware('can:settings.view')->prefix('settings')->name('settings.')->group(function (): void {

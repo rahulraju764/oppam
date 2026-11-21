@@ -85,6 +85,7 @@ return [
     ],
     'System' => [
         ['admin.audit.index', 'Audit log', 'fa-history', 'audit.view'],
+        ['admin.system.health', 'System health', 'fa-stethoscope', 'system.health.view'],
         ['horizon.index', 'Queues (Horizon)', 'fa-tasks', 'system.horizon'],
         ['pulse', 'Pulse', 'fa-heartbeat', 'system.pulse'],
     ],
