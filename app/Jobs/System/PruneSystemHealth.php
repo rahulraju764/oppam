@@ -6,6 +6,7 @@ namespace App\Jobs\System;
 
 use App\Models\HealthSample;
 use App\Models\ScheduledTaskRun;
+use App\Models\SystemAlert;
 use App\Models\WebhookReceipt;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,6 +29,9 @@ final class PruneSystemHealth implements ShouldQueue
 
     public const SAMPLES_DAYS = 7;
 
+    /** Resolved A12 alerts (P9.2b2) are kept this long; an open alert is never pruned. */
+    public const ALERTS_DAYS = 90;
+
     private const BATCH = 1000;
 
     public function handle(): void
@@ -35,6 +39,7 @@ final class PruneSystemHealth implements ShouldQueue
         $this->prune(ScheduledTaskRun::query()->where('started_at', '<', now()->subDays(self::RUNS_DAYS)));
         $this->prune(WebhookReceipt::query()->where('received_at', '<', now()->subDays(self::RECEIPTS_DAYS)));
         $this->prune(HealthSample::query()->where('sampled_at', '<', now()->subDays(self::SAMPLES_DAYS)));
+        $this->prune(SystemAlert::query()->whereNotNull('resolved_at')->where('resolved_at', '<', now()->subDays(self::ALERTS_DAYS)));
     }
 
     /** @param  Builder<covariant Model>  $old */

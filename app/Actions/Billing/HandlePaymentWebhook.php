@@ -11,8 +11,10 @@ use App\Exceptions\Billing\InvalidWebhook;
 use App\Models\Payment;
 use App\Models\PaymentWebhookEvent;
 use App\Services\Payments\RazorpayWebhookPayload;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * A payment webhook (F04 "Webhook payment.captured (signature verified, idempotent)"):
@@ -66,22 +68,55 @@ final class HandlePaymentWebhook
         ]);
 
         $stored = PaymentWebhookEvent::query()->where('gateway', $this->gateway->name())->where('event_id', $eventId)->firstOrFail();
+
+        return $this->process($stored, $data);
+    }
+
+    /**
+     * Act on a STORED event (steps 3–4): the webhook request above, or an admin replay
+     * (ReplayPaymentWebhook) — a replay has no signature to check (the payload is stored redacted),
+     * so it reaches here only for a row that was signature-verified when it arrived.
+     * A processed event is answered "replayed" without acting again. If processing throws, the
+     * attempt is counted on the row (exception class only) and the exception is rethrown, so the
+     * webhook still answers 500 and the gateway retries.
+     */
+    public function process(PaymentWebhookEvent $stored, ?WebhookEventData $data = null): string
+    {
         if ($stored->processed_at !== null) {
             return self::REPLAYED;
         }
 
-        $payment = $data->payment;
-        $outcome = match (true) {
-            $data->refund !== null && str_starts_with($data->event, 'refund.') => $this->refunds->handle($data->refund),
-            $payment === null => self::IGNORED,
-            in_array($data->event, ['payment.captured', 'order.paid'], true) && $payment->status === PaymentStatus::Captured => $this->activate->handle($payment),
-            $data->event === 'payment.failed' && $payment->status === PaymentStatus::Failed => $this->failed->handle($payment),
-            default => self::IGNORED,
-        };
+        try {
+            $data ??= RazorpayWebhookPayload::parse($stored->payload);
+
+            $payment = $data->payment;
+            $outcome = match (true) {
+                $data->refund !== null && str_starts_with($data->event, 'refund.') => $this->refunds->handle($data->refund),
+                $payment === null => self::IGNORED,
+                in_array($data->event, ['payment.captured', 'order.paid'], true) && $payment->status === PaymentStatus::Captured => $this->activate->handle($payment),
+                $data->event === 'payment.failed' && $payment->status === PaymentStatus::Failed => $this->failed->handle($payment),
+                default => self::IGNORED,
+            };
+        } catch (Throwable $e) {
+            $this->recordFailure($stored, $e);
+
+            throw $e;
+        }
 
         $stored->forceFill(['processed_at' => now(), 'outcome' => $outcome])->save();
 
         return $outcome;
+    }
+
+    /** Count the failed attempt in its own write; a failure to record it must not hide the original error. */
+    private function recordFailure(PaymentWebhookEvent $stored, Throwable $e): void
+    {
+        rescue(fn () => PaymentWebhookEvent::query()->whereKey($stored->getKey())->update([
+            'failed_attempts' => DB::raw('failed_attempts + 1'),
+            'last_failed_at' => now(),
+            'last_error' => mb_substr($e::class, 0, 120),
+            'updated_at' => now(),
+        ]));
     }
 
     /** The order this delivery belongs to, so A06 shows it there; a refund event names only its payment. */

@@ -31,7 +31,9 @@ return [
         'Support' => ['support.view', 'support.respond'],
         'Master data' => ['masters.view', 'masters.edit'],
         // audit.export (P9.2a, owner 2026-11-20): CSV of the audit trail; no seeded role but super admin.
-        'System' => ['audit.view', 'audit.export', 'system.health.view', 'system.horizon', 'system.pulse'],
+        // system.webhooks.replay (re-run a stored payment webhook) and system.alerts (gets the A12 alert emails):
+        // P9.2b2, owner 2026-11-22; no seeded role but super admin.
+        'System' => ['audit.view', 'audit.export', 'system.health.view', 'system.horizon', 'system.pulse', 'system.webhooks.replay', 'system.alerts'],
         'Settings' => ['settings.view', 'settings.edit'],
         'Staff & roles' => ['staff.view', 'staff.invite', 'staff.edit', 'staff.suspend', 'roles.view', 'roles.edit', 'sessions.revoke_any'],
     ],

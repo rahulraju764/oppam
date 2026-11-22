@@ -19,7 +19,6 @@ use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
-use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
 
 /*
@@ -79,6 +78,28 @@ it('A12 scheduler runs: a failure keeps the exception CLASS only — never its m
         ->and(json_encode($run->getAttributes()))->not->toContain('9876543210');
 });
 
+it('A12 scheduler runs: a command that exits non-zero is FAILED — schedule:run fires Finished, THEN Failed', function (): void {
+    $task = scheduledEvent();
+
+    event(new ScheduledTaskStarting($task));
+    $task->exitCode = 1;
+    event(new ScheduledTaskFinished($task, 0.42));   // the real order: Finished first …
+    event(new ScheduledTaskFailed($task, new Exception('Scheduled command [x] failed with exit code [1].')));   // … then Failed
+
+    $run = ScheduledTaskRun::query()->sole();
+    expect($run->status)->toBe(ScheduledRunStatus::Failed)->and($run->error)->toBe('Exit code 1')
+        ->and($run->duration_ms)->toBe(420);
+});
+
+it('A12 scheduler runs: a background task (exit code not known yet) is OK — it was launched', function (): void {
+    $task = scheduledEvent()->runInBackground();
+
+    event(new ScheduledTaskStarting($task));
+    event(new ScheduledTaskFinished($task, 0.01));
+
+    expect(ScheduledTaskRun::query()->sole()->status)->toBe(ScheduledRunStatus::Ok);
+});
+
 it('A12 scheduler runs: a task whose filters say "not now" is SKIPPED', function (): void {
     event(new ScheduledTaskSkipped(scheduledEvent()));
 
@@ -99,13 +120,13 @@ it('A12 scheduler runs: two tasks running in the same process finish their own r
 });
 
 it('A12 scheduler runs: capture never stops a task — a broken table is only reported', function (): void {
-    Schema::drop('scheduled_task_runs');
+    ScheduledTaskRun::creating(fn () => throw new RuntimeException('table gone'));   // the write fails (no DDL: it would commit)
     $task = scheduledEvent();
 
     event(new ScheduledTaskStarting($task));
     event(new ScheduledTaskFinished($task, 0.1));
 
-    expect(true)->toBeTrue();   // nothing thrown
+    expect(ScheduledTaskRun::query()->count())->toBe(0);   // nothing thrown, nothing written
 });
 
 // ---- Webhook receipts ------------------------------------------------------------------------------
@@ -158,8 +179,18 @@ it('A12 webhooks: a 5xx is an error; a throttled 429 and a non-webhook route are
     'no route' => [200, null, null],
 ]);
 
+it('A12 webhooks: a webhook that throws through the real route is a 500 and an ERROR receipt (Razorpay retries)', function (): void {
+    App\Models\PaymentWebhookEvent::updating(fn () => throw new RuntimeException('processing broke'));
+    $delivery = fakeGateway()->capture((string) checkoutOrder(groom())->gateway_order_id);
+
+    postWebhook($delivery)->assertStatus(500);
+
+    $receipt = WebhookReceipt::query()->sole();
+    expect($receipt->outcome)->toBe(WebhookOutcome::Error)->and($receipt->http_status)->toBe(500);
+});
+
 it('A12 webhooks: recording never changes the response — a broken table is only reported', function (): void {
-    Schema::drop('webhook_receipts');
+    WebhookReceipt::creating(fn () => throw new RuntimeException('table gone'));   // the write fails (no DDL: it would commit)
     $delivery = fakeGateway()->capture((string) checkoutOrder(groom())->gateway_order_id);
 
     postWebhook($delivery)->assertOk()->assertJson(['outcome' => 'activated']);

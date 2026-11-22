@@ -30,6 +30,7 @@ use App\Jobs\Reports\PruneReportCapture;
 use App\Jobs\Reports\SendKpiDigest;
 use App\Jobs\Search\SendSavedSearchAlerts;
 use App\Jobs\Support\PruneContactSubmissions;
+use App\Jobs\System\CheckSystemHealth;
 use App\Jobs\System\PruneSystemHealth;
 use App\Jobs\System\SampleSystemHealth;
 use App\Jobs\Verification\PurgeExpiredVerificationDocuments;
@@ -79,9 +80,8 @@ Schedule::job(new PruneOldNotifications)->dailyAt('21:45')->onOneServer()->witho
 // Contact inbox (P8.1b): spam after contact.spam_retention_days, everything after contact.retention_days.
 Schedule::job(new PruneContactSubmissions)->dailyAt('21:55')->onOneServer()->withoutOverlapping();
 
-// A12 system health (P9.2b1): Reverb connections + a broadcast-lag canary every minute (runs inside the
-// scheduler, not queued); scheduler runs / webhook receipts kept 30 days, samples 7 days (22:05 UTC = 03:35 IST).
-Schedule::job(new SampleSystemHealth)->everyMinute()->onOneServer()->withoutOverlapping(5);
+// A12 system health (P9.2b1): scheduler runs / webhook receipts kept 30 days, samples 7 days (22:05 UTC = 03:35 IST).
+// SampleSystemHealth is the LAST entry of this file (see the end).
 Schedule::job(new PruneSystemHealth)->dailyAt('22:05')->onOneServer()->withoutOverlapping();
 
 // Chat (M07, P4.2): the offline message digest every 5 minutes; retention (R-M07-6) nightly.
@@ -123,3 +123,12 @@ Schedule::job(new SendPayoutRunReminder)->timezone('Asia/Kolkata')->dailyAt('09:
 
 // A08: scheduled content goes live within a minute of its time (P8.1a).
 Schedule::job(new PublishScheduledContent)->everyMinute()->onOneServer()->withoutOverlapping();
+
+// A12 alerts (P9.2b2): thresholds checked every minute (queued) — an alert opens with one email to
+// `system.alerts` holders and closes once the condition has been clear for A15 system.alert_clear_minutes.
+Schedule::job(new CheckSystemHealth)->everyMinute()->onOneServer()->withoutOverlapping(5);
+
+// A12 system health (P9.2b1): Reverb connections + a broadcast-lag canary every minute. It runs inside
+// the scheduler (not queued) and asks the Reverb server with a 2 s timeout per call, so it is kept LAST:
+// schedule:run runs due tasks in this file's order, and a slow or down Reverb mustn't delay the others.
+Schedule::job(new SampleSystemHealth)->everyMinute()->onOneServer()->withoutOverlapping(5);

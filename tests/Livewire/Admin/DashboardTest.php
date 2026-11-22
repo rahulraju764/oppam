@@ -164,19 +164,21 @@ it('A02 work-queue cards: how many wait and how long the oldest has waited; past
         ->assertSeeHtml('data-queue-count="moderation.profiles"');
 });
 
-it('A02 alerts: failed background jobs in the last 24 hours', function (): void {
-    foreach ([now()->subHours(2), now()->subDays(3)] as $failedAt) {
-        DB::table('failed_jobs')->insert(['uuid' => (string) Illuminate\Support\Str::uuid(), 'connection' => 'database', 'queue' => 'default',
-            'payload' => '{}', 'exception' => 'x', 'failed_at' => $failedAt]);
-    }
+it('A02 alerts (P9.2b2): the open A12 system alerts are listed; a resolved one and a failed job below the threshold are not', function (): void {
+    App\Models\SystemAlert::factory()->create(['value' => 14, 'threshold' => 10]);
+    App\Models\SystemAlert::factory()->kind(App\Enums\SystemAlertKind::BroadcastLag, 9000, 5000)->resolved()->create();
+    DB::table('failed_jobs')->insert(['uuid' => (string) Illuminate\Support\Str::uuid(), 'connection' => 'database', 'queue' => 'default',
+        'payload' => '{}', 'exception' => 'x', 'failed_at' => now()->subHours(2)]);
     dashAs('super_admin');
 
-    Livewire::test(Dashboard::class)->assertSee('1 background job failed in the last 24 hours.');
+    Livewire::test(Dashboard::class)
+        ->assertSee('14 jobs failed in the last hour (alert above 10).')
+        ->assertDontSee('Live updates wait')
+        ->assertDontSee('background job failed');   // the old "> 0 in 24 h" line is replaced by the PRD "> 10" alert
 });
 
-it('system alerts (failed jobs, backlog) need dashboard.view; a moderator without it still gets the queue alert', function (): void {
-    DB::table('failed_jobs')->insert(['uuid' => (string) Illuminate\Support\Str::uuid(), 'connection' => 'database', 'queue' => 'default',
-        'payload' => '{}', 'exception' => 'x', 'failed_at' => now()->subHour()]);
+it('system alerts (A12 alerts, backlog) need dashboard.view; a moderator without it still gets the queue alert', function (): void {
+    App\Models\SystemAlert::factory()->create();
     ModerationItem::factory()->create(['submitted_at' => now()->subHours(30)]);
     $admin = dashAs('moderator');
     $admin->syncPermissions([]);
@@ -187,7 +189,7 @@ it('system alerts (failed jobs, backlog) need dashboard.view; a moderator withou
 
     Livewire::test(Dashboard::class)
         ->assertSee('Work queues')->assertSee('past the 24-hour target')
-        ->assertDontSee('background job failed')->assertDontSee('Key figures');
+        ->assertDontSee('jobs failed in the last hour')->assertDontSee('Key figures');
 });
 
 it('§11.0: the profile and edited-fields queues listen for live counts and for claims ("being reviewed by …")', function (string $component): void {
@@ -212,9 +214,12 @@ it('listens for live queue counts only when the admin may join admin.queues', fu
     dashAs('moderator');
     expect(Livewire::test(Dashboard::class)->instance()->getListeners())->toHaveKey('echo-private:admin.queues,.queue.count');
 
-    // Finance can't join admin.queues; it follows revenue instead (P5.3).
+    // Finance can't join admin.queues; it follows revenue instead (P5.3) and, with dashboard.view, the A12 alerts (P9.2b2).
     dashAs('finance');
-    expect(Livewire::test(Dashboard::class)->instance()->getListeners())->toBe(['echo-private:admin.dashboard,.revenue.changed' => '$refresh']);
+    expect(Livewire::test(Dashboard::class)->instance()->getListeners())->toBe([
+        'echo-private:admin.dashboard,.revenue.changed' => '$refresh',
+        'echo-private:admin.dashboard,.system.alert' => '$refresh',
+    ]);
 });
 
 // ---- Sidebar badges (PRD §11.0) -----------------------------------------------------------------------

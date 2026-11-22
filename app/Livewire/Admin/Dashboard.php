@@ -44,6 +44,11 @@ final class Dashboard extends Component
             $listeners['echo-private:admin.dashboard,.revenue.changed'] = '$refresh';
         }
 
+        // An A12 alert opened / resolved (P9.2b2): the alert strip re-reads itself (kind + state only).
+        if ($this->admin()->can('dashboard.view')) {
+            $listeners['echo-private:admin.dashboard,.system.alert'] = '$refresh';
+        }
+
         return $listeners;
     }
 

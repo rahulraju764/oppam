@@ -39,6 +39,21 @@ final class WebhookHealth
         return $this->cache->remember(self::CACHE_KEY, self::CACHE_SECONDS, fn (): WebhookHealthData => $this->measure());
     }
 
+    /** A12 alert "webhook signature failures": signature rejections from every provider since $since (one indexed count). */
+    public function signatureRejectionsSince(CarbonImmutable $since): int
+    {
+        return WebhookReceipt::query()
+            ->where('received_at', '>=', $since)
+            ->where('outcome', WebhookOutcome::RejectedSignature->value)
+            ->count();
+    }
+
+    /** After a replay, so the panel's next render shows the list as it now is. */
+    public function forget(): void
+    {
+        $this->cache->forget(self::CACHE_KEY);
+    }
+
     private function measure(): WebhookHealthData
     {
         $rows = WebhookReceipt::query()
@@ -77,13 +92,17 @@ final class WebhookHealth
         $unprocessed = (clone $pending)
             ->orderByDesc('created_at')
             ->limit(self::UNPROCESSED_SHOWN)
-            ->get(['gateway', 'event_id', 'event', 'gateway_order_id', 'created_at'])
+            ->get(['gateway', 'event_id', 'event', 'gateway_order_id', 'created_at', 'failed_attempts', 'last_failed_at', 'last_error', 'replayed_at'])
             ->map(fn (PaymentWebhookEvent $event): UnprocessedWebhookData => new UnprocessedWebhookData(
                 gateway: $event->gateway,
                 eventId: $event->event_id,
                 event: $event->event,
                 gatewayOrderId: $event->gateway_order_id,
                 receivedAt: CarbonImmutable::parse((string) $event->getAttribute('created_at')),
+                failedAttempts: $event->failed_attempts,
+                lastFailedAt: $event->last_failed_at?->toImmutable(),
+                lastError: $event->last_error,
+                replayedAt: $event->replayed_at?->toImmutable(),
             ))
             ->all();
 

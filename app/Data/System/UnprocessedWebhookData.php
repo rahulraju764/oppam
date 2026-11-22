@@ -18,5 +18,9 @@ final readonly class UnprocessedWebhookData
         public string $event,
         public ?string $gatewayOrderId,
         public CarbonImmutable $receivedAt,
+        public int $failedAttempts = 0,
+        public ?CarbonImmutable $lastFailedAt = null,
+        public ?string $lastError = null,   // exception class only
+        public ?CarbonImmutable $replayedAt = null,
     ) {}
 }

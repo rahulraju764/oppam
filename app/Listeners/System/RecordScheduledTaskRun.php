@@ -16,7 +16,8 @@ use Illuminate\Console\Scheduling\Event;
 /**
  * A12 system health: every scheduler run of a task becomes a scheduled_task_runs row — RUNNING
  * when it starts, then OK / FAILED with its duration; a task whose filters said "not now" is
- * SKIPPED. Capture must never stop a task: every write is rescued (a failure is only reported).
+ * SKIPPED. A command that exits non-zero is FAILED (see handleFinished). Capture must never stop a
+ * task: every write is rescued (a failure is only reported).
  * The started row is found again through the Event object, which schedule:run keeps for the run.
  */
 final class RecordScheduledTaskRun
@@ -39,9 +40,25 @@ final class RecordScheduledTaskRun
         });
     }
 
+    /**
+     * schedule:run fires Finished BEFORE it throws for a non-zero exit code (and only then fires
+     * Failed), so the exit code is read here: non-zero → FAILED "Exit code N". The Failed event that
+     * follows finds the row already finished and leaves it. A background task's exit code isn't
+     * known yet when Finished fires — OK there means "launched".
+     */
     public function handleFinished(ScheduledTaskFinished $event): void
     {
-        $this->finish($event->task, ScheduledRunStatus::Ok, (int) round($event->runtime * 1000), null);
+        $task = $event->task;
+        $durationMs = (int) round($event->runtime * 1000);
+        $exitCode = $task->exitCode;
+
+        if ($exitCode !== null && (int) $exitCode !== 0 && ! $task->runInBackground) {
+            $this->finish($task, ScheduledRunStatus::Failed, $durationMs, 'Exit code '.(int) $exitCode);
+
+            return;
+        }
+
+        $this->finish($task, ScheduledRunStatus::Ok, $durationMs, null);
     }
 
     public function handleFailed(ScheduledTaskFailed $event): void

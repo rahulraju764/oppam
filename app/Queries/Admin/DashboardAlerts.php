@@ -8,17 +8,17 @@ use App\Data\Admin\WorkQueueData;
 use App\Enums\ImportsPauseReason;
 use App\Enums\SettingKey;
 use App\Models\Broker;
+use App\Models\SystemAlert;
 use App\Support\Facades\Settings;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
  * The dashboard's alert strip (PRD A02), from what the platform can measure today: moderation
- * items waiting past the SLA (`moderation.sla_hours`), jobs that failed in the last 24 hours, and
- * a queue holding more jobs than `system.queue_backlog_alert`. A lost live connection is shown by
- * the browser itself. Webhook failures and the error rate arrive with payments (P5) and system
- * health (P9.2).
+ * items waiting past the SLA (`moderation.sla_hours`), the open A12 system alerts (P9.2b2: failed
+ * jobs > 10 an hour, missed schedules, webhook signature failures, bounce rate, broadcast lag, Reverb
+ * drop — opened by CheckSystemHealth), and a queue holding more jobs than `system.queue_backlog_alert`.
+ * A lost live connection is shown by the browser itself.
  */
 final class DashboardAlerts
 {
@@ -32,7 +32,7 @@ final class DashboardAlerts
 
     /**
      * @param  list<WorkQueueData>  $workQueues  the queues this admin may see
-     * @param  bool  $system  include the system-health alerts (failed jobs, backlog) — for `dashboard.view`
+     * @param  bool  $system  include the system-health alerts (open A12 alerts, backlog) — for `dashboard.view`
      * @param  bool  $brokers  include bureaus whose imports were auto-paused (§11A B.9 "A07 is alerted") — for `brokers.imports.manage`
      * @param  bool  $bureaus  include bureaus whose adding is paused (R-A07-10) or with open fraud / quality signals (B.12) — for `brokers.view`
      * @param  bool  $payouts  include a broker payout run that is due (§11A B.23) — for `brokers.payout`
@@ -84,9 +84,10 @@ final class DashboardAlerts
             return $alerts;
         }
 
-        $failed = $this->failedJobs();
-        if ($failed > 0) {
-            $alerts[] = ['level' => 'danger', 'text' => trans_choice(':count background job failed in the last 24 hours.|:count background jobs failed in the last 24 hours.', $failed, ['count' => number_format($failed)])];
+        // A12 alerts (P9.2b2): every open system alert — failed jobs > 10 an hour, missed schedules, webhook
+        // signature failures, bounces, broadcast lag, a Reverb drop (CheckSystemHealth / A15 thresholds).
+        foreach ($this->openSystemAlerts() as $alert) {
+            $alerts[] = ['level' => $alert->kind->level(), 'text' => $alert->describe().' '.__('See System health.')];
         }
 
         $threshold = Settings::int(SettingKey::SystemQueueBacklogAlert);
@@ -99,13 +100,10 @@ final class DashboardAlerts
         return $alerts;
     }
 
-    private function failedJobs(): int
+    /** @return \Illuminate\Support\Collection<int, SystemAlert> open alerts, newest first (none rather than no dashboard if unreadable) */
+    private function openSystemAlerts(): \Illuminate\Support\Collection
     {
-        try {
-            return DB::table('failed_jobs')->where('failed_at', '>=', now()->subDay())->count();
-        } catch (Throwable) {
-            return 0;   // e.g. a deployment that keeps failed jobs elsewhere: no alert rather than no dashboard
-        }
+        return rescue(fn () => SystemAlert::query()->open()->orderByDesc('opened_at')->limit(10)->get(), collect(), report: false);
     }
 
     /** @return array<string, int> queue name => jobs waiting (empty when the queue backend can't be asked) */

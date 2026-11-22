@@ -4,8 +4,9 @@ Tick items as they are finished (tests green, quality gate passed, tried in the 
 committed). Session details and prompts: `docs/build-prompts.md`. Spec:
 `docs/Oppam_Matrimony_PRD_v5_Laravel_Livewire_Realtime.md`.
 
-**Current phase:** 9 — Hardening & launch. Phase 8 is built and reviewer-READY (P8.1a/b, P8.2a/b/c, P8.3a/b1/b2, P8.4) but NOT closed: items wait on owner rule-5 review, a browser try, unrun Dusk tests (P8.3a, P8.3b1, P8.3b2, P8.4) and commits. P9.1a/b built, reviewer READY (round 2), not committed (rule 5: RegisterMember signup-source stamp).
-**Next session:** P9.2 — Audit viewer & system health (A12), started 2026-11-20.
+**Current phase:** 9 — Hardening & launch. Phase 8 is built and reviewer-READY (P8.1a/b, P8.2a/b/c, P8.3a/b1/b2, P8.4) but NOT closed: items wait on owner rule-5 review, a browser try, unrun Dusk tests (P8.3a, P8.3b1, P8.3b2, P8.4) and commits. P9.1a/b built, reviewer READY (round 2), committed on `claude/p9.2a` (owner rule-5 review of the RegisterMember signup-source stamp still pending).
+**Next session:** P9.2b2 — Alerts & Razorpay webhook replay (A12, rule 5). P9.2a and P9.2b1 are reviewer READY (P9.2b1: Dusk
+not run, owner rule-5 review of the webhook capture pending, round-1 fixes uncommitted).
 Still open elsewhere: P6.1 Blocker fix uncommitted + Dusk not run; rule-5 owner review of P7.2, P7.8a, P7.8c, P8.2b, P8.2c, P8.3a (SendOtp), P8.3b1 (Mailgun webhook), P9.1a (RegisterMember); owner to confirm Claude's defaults in decisions.md for P6.1, Phase 7 close-out, P8.2c, P8.3a/b1/b2, P8.4, P9.1a/b.
 
 ## Before starting (outside tasks — start early)
@@ -433,8 +434,8 @@ Still open elsewhere: P6.1 Blocker fix uncommitted + Dusk not run; rule-5 owner 
     migrations as a separate migration user, the yearly 7-year archive (DB admin; owner 2026-11-20). **→ P9.2b:** scheduler / webhook capture,
     SystemHealth, alerts, Razorpay webhook replay (rule 5).
   - [ ] P9.2b System health & alerts — split by the owner (2026-11-21, decisions 2026-11-21 P9.2b row) into:
-    - [ ] P9.2b1 Capture, health readers, SystemHealth screen, Pulse — 2026-11-21: **built** (plan approved), on `claude/p9.2a`'s working
-      tree (P9.2a still uncommitted). Migrations 2026_11_21_090000_create_pulse_tables (Pulse's own, published) and
+    - [ ] P9.2b1 Capture, health readers, SystemHealth screen, Pulse — 2026-11-21: **built** (plan approved) on `claude/p9.2a`;
+      **committed as 9d63bd6 BEFORE any review** (process violation, CLAUDE.md rule 2 — P9.2a likewise in 107d49d). Migrations 2026_11_21_090000_create_pulse_tables (Pulse's own, published) and
       2026_11_21_100000_create_system_health_tables (`scheduled_task_runs`, `webhook_receipts`, `health_samples`, index
       payment_webhook_events(processed_at, created_at)); migrated, rolled back, re-migrated on the dev DB. Capture: listener
       RecordScheduledTaskRun (ScheduledTask Starting / Finished / Failed / Skipped, rescued), middleware RecordWebhookReceipt on the
@@ -448,7 +449,36 @@ Still open elsewhere: P6.1 Blocker fix uncommitted + Dusk not run; rule-5 owner 
       Tests: Unit/System/HealthRulesTest (38), Feature/System/CaptureTest (14) + HealthReadersTest (19), Livewire/Admin/SystemHealthScreenTest (9);
       Dusk tests/Browser/Admin/SystemHealthTest written, **not run**. Runs: lint passed, analyse OK; those 80 passed; Billing 234,
       Webhooks 11, Feature/Admin 400, Foundation 15, Settings 209, Feature/Broadcasting 69, Livewire DashboardTest 16 passed.
-      **Full sweep stopped** by Claude Code for low system memory after Unit 185 + Committed 17 — to re-run. Reviewer not run yet.
+      (That first sweep stopped for low memory.)
+      **Review round 1 (2026-11-22): NOT READY.** Its runs: lint passed, analyse OK, 80 session tests passed, full sweep (33 folders
+      from disk) 4,300 passed / 1 skipped / 0 failed, both migrations rolled back + re-run on oppam_testing; Dusk not run (server down).
+      1 **Major**: a scheduled command that exits non-zero was saved as OK. schedule:run fires Finished, then throws, then fires Failed,
+      and the listener closed the row on Finished; the reviewer reproduced it on oppam_testing. Fixed: `handleFinished` reads the exit
+      code and saves FAILED "Exit code N"; a background task stays OK (= launched). CaptureTest fires the real order (red before the fix).
+      Minors fixed (decisions 2026-11-21 P9.2b row, (j)–(m)):
+        - the scheduler / webhook / delivery / broadcast-lag reads and the restart read are rescued; a failed section says
+          "couldn't be read right now" and the rest renders (tests with a throwing cache);
+        - `render()` authorizes on every poll (mutation-checked: the test goes red without the line);
+        - CaptureTest uses throwing model events instead of `Schema::drop` (that DDL committed and forced two `migrate:fresh` runs);
+        - real-route test: a Razorpay webhook that throws → 500 + an ERROR receipt;
+        - `health_samples` bigint id recorded as decision (l);
+        - "See Horizon" in the Redis retry column;
+        - SampleSystemHealth moved to the last schedule entry, so a slow Reverb can't delay the other every-minute tasks.
+      After the fixes: lint passed, analyse OK, session tests 86 passed; **full sweep, 33 folders from disk: 4,305 passed, 1 skipped,
+      0 failed** (Unit 185, Committed 17, Feature Admin 400, Audit 43, Auth 188, Billing 234, Broadcasting 69, Broker 953, Chat 139,
+      Comms 12, Content 262 + 1 skipped, Engagement 126, Foundation 15, Layout 15, Masters 9, Matching 28, Media 47, Moderation 40,
+      Notifications 56, Profile 151, Realtime 9, Reports 51, Safety 45, Search 41, Settings 209, Support 33, System 36,
+      Verification 59, Webhooks 11, Livewire Admin 341, Broker 105, Member 369, Public 7). The 86th test (the broadcast-lag
+      fallback) was added after the sweep; it passed in the session run.
+      **Review round 2 (2026-11-22): READY TO COMMIT** (0 Blockers / 0 Majors). Its runs: lint passed, analyse OK, session 85,
+      Webhooks 11, Billing 234, Livewire/Admin 341, Foundation 15 passed. Its Minors were done after it: a lag / restart fallback
+      test, the mutation check, the docblock re-wrap.
+      Minors still open: the "See Horizon" branch has no test, and it shows "—" when Horizon itself is unreachable.
+      **Open:** Dusk tests/Browser/Admin/SystemHealthTest **not run** (http://localhost:8000 not answering on 2026-11-22);
+      **rule 5: owner's line-by-line review** of RecordWebhookReceipt, the routes/webhooks.php group, InvalidWebhook::outcome()
+      and the Razorpay / MSG91 / mail-bounce controller tags; the round-1/2 fixes are uncommitted.
+      **→ P9.5:** Pulse ingest on Redis (`PULSE_INGEST_DRIVER=redis` + a `pulse:work` daemon, `pulse:check`) and review which
+      default Pulse recorders are needed (CacheInteractions, UserRequests); today every request writes to the DB.
     - [ ] P9.2b2 Alerts (thresholds, system_alerts, CheckSystemHealth, emails, A02 strip, failed-jobs > 10), payment_webhook_events
       failure columns, HandlePaymentWebhook split, Razorpay replay (`system.webhooks.replay`) — not started; **rule 5**.
 - [ ] P9.3 Font Awesome 6, accessibility & performance pass

@@ -268,3 +268,52 @@ it('A06: two open orders that both get paid past a coupon limit are logged for r
 
     Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->once()->with('billing.coupon_over_limit', Mockery::on(fn (array $context): bool => $context['order'] === $second->code));
 });
+
+// ---- P9.2b2 — A12 webhook status: a stored event whose processing threw is counted ------------------
+
+it('A12 webhook failures: processing that throws is a 500, counted on the event with the exception CLASS only; the retry processes it', function (): void {
+    $member = groom();
+    $order = checkoutOrder($member);
+    $delivery = fakeGateway()->capture((string) $order->gateway_order_id);
+    $failing = true;
+    Payment::creating(function () use (&$failing): void {
+        if ($failing) {
+            throw new RuntimeException('member 9876543210 broke it');
+        }
+    });
+
+    postWebhook($delivery)->assertStatus(500);
+    postWebhook($delivery)->assertStatus(500);   // Razorpay retries the same delivery
+
+    $event = PaymentWebhookEvent::query()->sole();
+    expect($event->processed_at)->toBeNull()
+        ->and($event->failed_attempts)->toBe(2)
+        ->and($event->last_error)->toBe('RuntimeException')
+        ->and($event->last_failed_at)->not->toBeNull()
+        ->and(json_encode($event->getAttributes()))->not->toContain('9876543210')
+        ->and($order->refresh()->status)->toBe(OrderStatus::Created);
+
+    $failing = false;
+    postWebhook($delivery)->assertOk()->assertJson(['outcome' => 'activated']);
+
+    expect($event->refresh()->processed_at)->not->toBeNull()->and($event->outcome)->toBe('activated')
+        ->and($event->failed_attempts)->toBe(2);   // the history of failed attempts stays
+});
+
+it('A12 webhook failures: a stored event is processed from its stored (redacted) payload — process() is what a replay calls', function (): void {
+    $order = checkoutOrder(groom());
+    $delivery = fakeGateway()->capture((string) $order->gateway_order_id);
+    $failing = true;
+    Payment::creating(function () use (&$failing): void {
+        if ($failing) {
+            throw new RuntimeException('down');
+        }
+    });
+    postWebhook($delivery)->assertStatus(500);
+    $failing = false;
+
+    $stored = PaymentWebhookEvent::query()->sole();
+    expect(app(App\Actions\Billing\HandlePaymentWebhook::class)->process($stored))->toBe('activated')
+        ->and($order->refresh()->status)->toBe(OrderStatus::Paid)
+        ->and(app(App\Actions\Billing\HandlePaymentWebhook::class)->process($stored->refresh()))->toBe('replayed');
+});

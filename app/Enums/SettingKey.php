@@ -93,6 +93,14 @@ enum SettingKey: string
     case SystemQueueBacklogAlert = 'system.queue_backlog_alert';
     case SystemAuditExportMaxRows = 'system.audit_export_max_rows';
     case SystemMissedScheduleGraceMinutes = 'system.missed_schedule_grace_minutes';
+    // A12 alert thresholds (P9.2b2) — CheckSystemHealth opens an alert (one email) when one is crossed.
+    case SystemAlertFailedJobsPerHour = 'system.alert_failed_jobs_per_hour';
+    case SystemAlertSignatureFailuresPerHour = 'system.alert_signature_failures_per_hour';
+    case SystemAlertBouncePct = 'system.alert_bounce_pct';
+    case SystemAlertBounceMinSent = 'system.alert_bounce_min_sent';
+    case SystemAlertBroadcastLagSeconds = 'system.alert_broadcast_lag_seconds';
+    case SystemAlertReverbDropPct = 'system.alert_reverb_drop_pct';
+    case SystemAlertClearMinutes = 'system.alert_clear_minutes';
     case BrokerStaffSeatsDefault = 'broker.staff_seats_default';
     case BrokerImportRowsPerFile = 'broker.import_rows_per_file';
     case BrokerImportRowsPerDay = 'broker.import_rows_per_day';
@@ -250,6 +258,13 @@ enum SettingKey: string
             self::SystemQueueBacklogAlert => 500,    // A02 alert strip: jobs waiting on one queue before it is called a backlog
             self::SystemAuditExportMaxRows => 50_000,   // A12 (P9.2a): an audit export larger than this is refused — narrow the filters
             self::SystemMissedScheduleGraceMinutes => 10,   // A12 (P9.2b1): a scheduled run not started this long after it was due is "missed"
+            self::SystemAlertFailedJobsPerHour => 10,          // A12 alerts (P9.2b2, PRD "failed jobs > 10"): failed jobs in the last hour
+            self::SystemAlertSignatureFailuresPerHour => 3,    // webhook signature rejections in the last hour, all providers
+            self::SystemAlertBouncePct => 5,                   // PRD "bounce > 5 %": email or SMS bounce rate over 24 hours
+            self::SystemAlertBounceMinSent => 50,              // … only once a channel sent this many in 24 hours (1 of 2 is not 50 %)
+            self::SystemAlertBroadcastLagSeconds => 5,         // PRD "broadcast lag > 5 s"
+            self::SystemAlertReverbDropPct => 30,              // PRD "Reverb connections drop > 30 %" against the highest of the last 15 minutes
+            self::SystemAlertClearMinutes => 5,                // a condition must stay clear this long before its alert closes (no flapping emails)
             self::BrokerStaffSeatsDefault => 5,
             self::BrokerImportRowsPerFile => 500,
             self::BrokerImportRowsPerDay => 1000,
@@ -394,6 +409,13 @@ enum SettingKey: string
             self::SystemQueueBacklogAlert => ['required', 'integer', 'min:10', 'max:100000'],
             self::SystemAuditExportMaxRows => ['required', 'integer', 'min:100', 'max:200000'],
             self::SystemMissedScheduleGraceMinutes => ['required', 'integer', 'min:2', 'max:240'],
+            self::SystemAlertFailedJobsPerHour => ['required', 'integer', 'min:1', 'max:10000'],
+            self::SystemAlertSignatureFailuresPerHour => ['required', 'integer', 'min:1', 'max:10000'],
+            self::SystemAlertBouncePct => ['required', 'integer', 'min:1', 'max:100'],
+            self::SystemAlertBounceMinSent => ['required', 'integer', 'min:1', 'max:100000'],
+            self::SystemAlertBroadcastLagSeconds => ['required', 'integer', 'min:1', 'max:600'],
+            self::SystemAlertReverbDropPct => ['required', 'integer', 'min:5', 'max:100'],
+            self::SystemAlertClearMinutes => ['required', 'integer', 'min:1', 'max:120'],
             self::BrokerStaffSeatsDefault => ['required', 'integer', 'min:1', 'max:100'],
             self::BrokerImportRowsPerFile => ['required', 'integer', 'min:1', 'max:5000'],
             self::BrokerImportRowsPerDay, self::BrokerImportRowsPerDayNew => ['required', 'integer', 'min:1', 'max:20000'],
@@ -502,6 +524,7 @@ enum SettingKey: string
             str_ends_with($this->value, '_days') => __('days'),
             str_ends_with($this->value, '_hours') => __('hours'),
             str_ends_with($this->value, '_minutes') => __('minutes'),
+            str_ends_with($this->value, '_seconds') => __('seconds'),
             str_ends_with($this->value, '_pct') => '%',
             str_ends_with($this->value, '_mb') => 'MB',
             str_ends_with($this->value, '_paise') => __('paise (₹1 = 100)'),
@@ -590,6 +613,13 @@ enum SettingKey: string
             self::SystemQueueBacklogAlert => __('Queue backlog alert at (jobs waiting)'),
             self::SystemAuditExportMaxRows => __('Audit log export: most rows in one file'),
             self::SystemMissedScheduleGraceMinutes => __('Scheduled task counts as missed after (minutes late)'),
+            self::SystemAlertFailedJobsPerHour => __('Alert: failed jobs in an hour above'),
+            self::SystemAlertSignatureFailuresPerHour => __('Alert: webhook signature failures in an hour at'),
+            self::SystemAlertBouncePct => __('Alert: email / SMS bounce rate above'),
+            self::SystemAlertBounceMinSent => __('Bounce alert only after this many sent in 24 hours'),
+            self::SystemAlertBroadcastLagSeconds => __('Alert: broadcast queue lag above'),
+            self::SystemAlertReverbDropPct => __('Alert: live connections drop by more than'),
+            self::SystemAlertClearMinutes => __('Alert closes after the condition is clear for'),
             self::BrokerStaffSeatsDefault => __('Staff seats for a new bureau'),
             self::BrokerImportRowsPerFile => __('Rows per import file'),
             self::BrokerImportRowsPerDay => __('Import rows a bureau may add'),

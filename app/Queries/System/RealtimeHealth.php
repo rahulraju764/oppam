@@ -7,6 +7,7 @@ namespace App\Queries\System;
 use App\Contracts\RealtimeServerStats;
 use App\Data\System\BroadcastLagData;
 use App\Data\System\RealtimeHealthData;
+use App\Data\System\ReverbTrendData;
 use App\Enums\HealthMetric;
 use App\Jobs\System\SampleSystemHealth;
 use App\Models\HealthSample;
@@ -33,6 +34,12 @@ final class RealtimeHealth
 
     /** A dip from at least this many connections to a tenth of them counts as a restart. */
     public const RESTART_DIP_FROM = 20;
+
+    /** The drop alert compares against the highest sample of this many minutes before the latest. */
+    public const TREND_MINUTES = 15;
+
+    /** A latest sample older than this means the sampler isn't running: no drop opinion. */
+    public const TREND_FRESH_MINUTES = 3;
 
     public function __construct(
         private readonly RealtimeServerStats $stats,
@@ -74,7 +81,40 @@ final class RealtimeHealth
         );
     }
 
+    /**
+     * A12 alert "Reverb connections drop > 30 %": the latest per-minute sample against the highest
+     * answered sample of the TREND_MINUTES before it. Null when Reverb isn't set up here or no sample
+     * is fresh (the sampler isn't running) — then the alert has no opinion.
+     */
+    public function trend(): ?ReverbTrendData
+    {
+        if (! $this->stats->configured()) {
+            return null;
+        }
+
+        $samples = HealthSample::query()
+            ->where('metric', HealthMetric::ReverbConnections->value)
+            ->where('sampled_at', '>=', now()->subMinutes(self::TREND_MINUTES + 1))
+            ->orderByDesc('sampled_at')->orderByDesc('id')
+            ->get(['id', 'value', 'sampled_at']);
+
+        $latest = $samples->first();
+        if ($latest === null || $latest->sampled_at->lt(now()->subMinutes(self::TREND_FRESH_MINUTES))) {
+            return null;
+        }
+
+        $peak = $samples->skip(1)->pluck('value')->filter(fn (?int $v): bool => $v !== null)->max();
+
+        return new ReverbTrendData(current: $latest->value, recentPeak: $peak === null ? null : (int) $peak);
+    }
+
+    /** Rescued: a failed read shows as "none seen" rather than breaking the panel. */
     private function lastRestart(): ?CarbonImmutable
+    {
+        return rescue(fn (): ?CarbonImmutable => $this->readLastRestart(), null);
+    }
+
+    private function readLastRestart(): ?CarbonImmutable
     {
         $at = $this->cache->remember(self::CACHE_KEY, self::CACHE_SECONDS, function (): ?string {
             $samples = HealthSample::query()

@@ -43,6 +43,15 @@ final class QueueHealth
         return $this->cache->remember(self::CACHE_KEY, self::CACHE_SECONDS, fn (): QueueHealthData => $this->measure());
     }
 
+    /**
+     * A12 alert "failed jobs > 10": failed jobs since $since, uncached and NOT rescued — the caller
+     * (CheckSystemHealth) treats an unreadable count as unknown, never as 0.
+     */
+    public function failedSince(\Carbon\CarbonImmutable $since): int
+    {
+        return DB::table('failed_jobs')->where('failed_at', '>=', $since)->count();
+    }
+
     private function measure(): QueueHealthData
     {
         $connection = (string) $this->config->get('queue.default');
