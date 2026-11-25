@@ -1,7 +1,7 @@
 <div>
     <x-admin.table :headers="[__('When (IST)'), __('Method'), __('Device'), __('IP address'), __('Browser')]" :caption="__('Sign-ins')" :empty="$events->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-sign-in" :title="__('No sign-ins yet')" />
+            <x-ui.empty-state icon="fa-solid fa-right-to-bracket" :title="__('No sign-ins yet')" />
         </x-slot:emptyState>
 
         @foreach ($events as $event)

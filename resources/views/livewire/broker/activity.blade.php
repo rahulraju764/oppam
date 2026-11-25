@@ -42,7 +42,7 @@
 
         <div class="dashboard-content" wire:loading.class="is-loading" wire:target="staff, group, from, to, gotoPage, nextPage, previousPage">
             @if ($rows->isEmpty())
-                <x-ui.empty-state icon="fa-history" :title="__('No activity found')"
+                <x-ui.empty-state icon="fa-solid fa-clock-rotate-left" :title="__('No activity found')"
                     :message="__('Profiles added, interests answered, exports and staff changes appear here.')" />
             @else
                 <ul class="activity-log">

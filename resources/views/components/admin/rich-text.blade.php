@@ -17,14 +17,14 @@
     <span class="form-label d-block" id="{{ $id }}-label">{{ $label }} *</span>
     <div class="rich-text__toolbar" role="toolbar" aria-labelledby="{{ $id }}-label">
         @if ($headings)
-            <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('formatBlock', 'h3')" aria-label="{{ __('Clause heading') }}"><i class="fa fa-header" aria-hidden="true"></i></button>
-            <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('formatBlock', 'p')" aria-label="{{ __('Normal paragraph') }}"><i class="fa fa-paragraph" aria-hidden="true"></i></button>
+            <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('formatBlock', 'h3')" aria-label="{{ __('Clause heading') }}"><i class="fa-solid fa-heading" aria-hidden="true"></i></button>
+            <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('formatBlock', 'p')" aria-label="{{ __('Normal paragraph') }}"><i class="fa-solid fa-paragraph" aria-hidden="true"></i></button>
         @endif
-        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('bold')" aria-label="{{ __('Bold') }}"><i class="fa fa-bold" aria-hidden="true"></i></button>
-        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('italic')" aria-label="{{ __('Italic') }}"><i class="fa fa-italic" aria-hidden="true"></i></button>
-        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('insertUnorderedList')" aria-label="{{ __('Bulleted list') }}"><i class="fa fa-list-ul" aria-hidden="true"></i></button>
-        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('insertOrderedList')" aria-label="{{ __('Numbered list') }}"><i class="fa fa-list-ol" aria-hidden="true"></i></button>
-        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="openLink()" aria-label="{{ __('Add a link') }}" x-bind:aria-expanded="linking"><i class="fa fa-link" aria-hidden="true"></i></button>
+        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('bold')" aria-label="{{ __('Bold') }}"><i class="fa-solid fa-bold" aria-hidden="true"></i></button>
+        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('italic')" aria-label="{{ __('Italic') }}"><i class="fa-solid fa-italic" aria-hidden="true"></i></button>
+        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('insertUnorderedList')" aria-label="{{ __('Bulleted list') }}"><i class="fa-solid fa-list-ul" aria-hidden="true"></i></button>
+        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="format('insertOrderedList')" aria-label="{{ __('Numbered list') }}"><i class="fa-solid fa-list-ol" aria-hidden="true"></i></button>
+        <button type="button" class="rich-text__btn" x-on:mousedown.prevent="" x-on:click="openLink()" aria-label="{{ __('Add a link') }}" x-bind:aria-expanded="linking"><i class="fa-solid fa-link" aria-hidden="true"></i></button>
     </div>
     <div class="rich-text__link" x-show="linking" x-cloak>
         <label class="visually-hidden" for="{{ $id }}-url">{{ __('Link address') }}</label>

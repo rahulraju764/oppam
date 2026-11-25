@@ -27,12 +27,12 @@
     <div wire:loading.class="is-loading" wire:target="view, rule, source, gotoPage, nextPage, previousPage">
         <x-admin.table :headers="[__('Reason'), __('Source'), __('Sender'), __('Flagged'), __('Status'), '']" :caption="__('Flagged messages')" :empty="$this->flags->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-flag" :title="__('Nothing here')" :message="$view === 'waiting' ? __('No flagged messages are waiting.') : __('No flags match these filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-flag" :title="__('Nothing here')" :message="$view === 'waiting' ? __('No flagged messages are waiting.') : __('No flags match these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($this->flags as $flag)
                 <tr wire:key="flag-{{ $flag->id }}">
-                    <td><x-ui.badge variant="warning" icon="fa-flag">{{ $flag->rule->label() }}</x-ui.badge></td>
+                    <td><x-ui.badge variant="warning" icon="fa-solid fa-flag">{{ $flag->rule->label() }}</x-ui.badge></td>
                     <td>{{ $flag->source->label() }}</td>
                     <td>{{ $flag->sender?->code ?? '—' }}</td>
                     <td>{{ $flag->created_at?->setTimezone(config('oppam.display_timezone'))->format('d M Y, H:i') }}</td>

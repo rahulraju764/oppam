@@ -4,14 +4,14 @@
             <h2 class="h6">{{ __('Force re-verification') }}</h2>
             <p class="small text-muted-brand">{{ __('Removes the Verified badge and asks the member to send an ID again. The reason is recorded in the audit log, not shown to the member.') }}</p>
             <x-ui.textarea :label="__('Reason')" name="revokeReason" wire:model="revokeReason" rows="2" required />
-            <x-ui.button size="sm" variant="danger" type="button" wire:click="revoke" loading="revoke" icon="fa-undo"
+            <x-ui.button size="sm" variant="danger" type="button" wire:click="revoke" loading="revoke" icon="fa-solid fa-arrow-rotate-left"
                          wire:confirm="{{ __('Remove the Verified badge from this member?') }}">{{ __('Remove badge') }}</x-ui.button>
         </div>
     @endif
 
     <x-admin.table :headers="[__('Sent (IST)'), __('Document'), __('Status'), __('Decided'), '']" :caption="__('ID verification requests')" :empty="$requests->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-id-card-o" :title="__('No ID sent')" :message="__('This member has not sent a document for verification.')" />
+            <x-ui.empty-state icon="fa-regular fa-id-card" :title="__('No ID sent')" :message="__('This member has not sent a document for verification.')" />
         </x-slot:emptyState>
 
         @foreach ($requests as $request)

@@ -34,6 +34,14 @@
 <meta name="twitter:title" content="{{ $seo->ogTitle() }}">
 <meta name="twitter:description" content="{{ $seo->ogDescription() }}">
 <meta name="twitter:image" content="{{ asset($seo->ogImage) }}">
+@if ($seo->preloadImage !== null)
+{{-- P9.3c (LCP): the page's main image starts downloading before CSS / JS are parsed. --}}
+<link rel="preload" as="image" href="{{ $seo->preloadImage }}" fetchpriority="high">
+@endif
+{{-- schema.org (P9.3b): @json escapes < > & ' " so content can never close the script tag. --}}
+@foreach ($seo->jsonLd as $block)
+<script type="application/ld+json">@json($block)</script>
+@endforeach
 
 <meta name="theme-color" content="#e02349">
 <link rel="icon" type="image/webp" sizes="32x32" href="{{ asset('images/logo/oppam-logo.webp') }}">

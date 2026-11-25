@@ -11,7 +11,7 @@
                         <h1>{{ __('Daily Matches') }}</h1>
                         @if ($cards !== [])
                             <p class="daily-head__expiry" x-data="countdown({{ $expiresIn }})">
-                                <i class="fa fa-clock-o" aria-hidden="true"></i>
+                                <i class="fa-regular fa-clock" aria-hidden="true"></i>
                                 {{ __('Today’s matches expire in') }} <strong x-text="label">{{ gmdate('G\h i\m', $expiresIn) }}</strong>
                             </p>
                         @endif
@@ -27,13 +27,13 @@
                         @forelse ($cards as $card)
                             <x-profile.row :profile="$card" wire:key="daily-{{ $card->code }}">
                                 <x-slot:actions>
-                                    <x-ui.button type="button" variant="ghost" size="sm" icon="fa-times"
+                                    <x-ui.button type="button" variant="ghost" size="sm" icon="fa-solid fa-xmark"
                                                  wire:click="dismiss('{{ $card->code }}')" loading="dismiss"
                                                  aria-label="{{ __('Not interested in :name', ['name' => $card->name]) }}">{{ __('Not interested') }}</x-ui.button>
                                 </x-slot:actions>
                             </x-profile.row>
                         @empty
-                            <x-ui.empty-state icon="fa-bolt" :title="__('No daily matches right now')"
+                            <x-ui.empty-state icon="fa-solid fa-bolt" :title="__('No daily matches right now')"
                                               :message="__('New matches arrive every morning at 5 AM, picked from your partner preferences.')">
                                 <x-ui.button :href="route('member.matches')" wire:navigate>{{ __('See all my matches') }}</x-ui.button>
                             </x-ui.empty-state>

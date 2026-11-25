@@ -22,10 +22,10 @@
                     @if ($contactAccess->opens())
                         <p class="form-text">{{ $contactAccess->message() }}</p>
                         <button type="button" class="view-btn" x-data x-on:click="$dispatch('open-modal', { name: 'view-contact' })">
-                            <i class="fa fa-phone" aria-hidden="true"></i> {{ __('View Contact') }}
+                            <i class="fa-solid fa-phone" aria-hidden="true"></i> {{ __('View Contact') }}
                         </button>
                     @else
-                        <p class="form-text"><i class="fa fa-lock" aria-hidden="true"></i> {{ $contactAccess->message() }}</p>
+                        <p class="form-text"><i class="fa-solid fa-lock" aria-hidden="true"></i> {{ $contactAccess->message() }}</p>
                         @if ($contactAccess->suggestsUpgrade() && $plansUrl)
                             <a href="{{ $plansUrl }}" class="view-btn" wire:navigate>{{ __('See plans') }}</a>
                         @endif

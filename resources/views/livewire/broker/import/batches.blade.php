@@ -10,7 +10,7 @@
             </div>
 
             @if ($batches->isEmpty())
-                <x-ui.empty-state icon="fa-upload" :title="__('No batches yet')"
+                <x-ui.empty-state icon="fa-solid fa-upload" :title="__('No batches yet')"
                     :message="__('Upload a filled-in template to add many clients at once.')" />
                 <p class="text-center mb-0"><a href="{{ route('broker.import') }}" wire:navigate>{{ __('Go to bulk import') }}</a></p>
             @else

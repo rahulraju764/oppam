@@ -48,7 +48,7 @@
 
         <x-slot:footer>
             <x-ui.button type="button" variant="ghost" x-on:click="$dispatch('close-modal', { name: 'send-interest' })">{{ __('Cancel') }}</x-ui.button>
-            <x-ui.button form="send-interest-form" icon="fa-envelope" loading="send">{{ __('Send interest') }}</x-ui.button>
+            <x-ui.button form="send-interest-form" icon="fa-solid fa-envelope" loading="send">{{ __('Send interest') }}</x-ui.button>
         </x-slot:footer>
     </x-ui.modal>
 </div>

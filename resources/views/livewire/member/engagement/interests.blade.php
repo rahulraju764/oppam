@@ -58,7 +58,7 @@
                                 </div>
                                 @if ($pendingReceived && $rows !== [])
                                     <div x-data>
-                                        <x-ui.button type="button" variant="outline" size="sm" icon="fa-times" wire:click="declineSelected" loading="declineSelected"
+                                        <x-ui.button type="button" variant="outline" size="sm" icon="fa-solid fa-xmark" wire:click="declineSelected" loading="declineSelected"
                                                      x-bind:disabled="$wire.selected.length === 0">{{ __('Decline selected') }}</x-ui.button>
                                     </div>
                                 @endif
@@ -79,11 +79,11 @@
                                                 <button type="button" class="btn-decline" wire:click="answerRequest('{{ $code }}', '{{ $row['type']->value }}', false)"
                                                         wire:loading.attr="disabled" wire:target="answerRequest('{{ $code }}', '{{ $row['type']->value }}', false)"
                                                         aria-label="{{ __('Decline the request from :name', ['name' => $row['card']->name]) }}">
-                                                    <i class="fa fa-times" aria-hidden="true"></i>{{ __('Decline') }}</button>
+                                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>{{ __('Decline') }}</button>
                                                 <button type="button" class="btn-accept" wire:click="answerRequest('{{ $code }}', '{{ $row['type']->value }}', true)"
                                                         wire:loading.attr="disabled" wire:target="answerRequest('{{ $code }}', '{{ $row['type']->value }}', true)"
                                                         aria-label="{{ __('Approve the request from :name', ['name' => $row['card']->name]) }}">
-                                                    <i class="fa fa-check" aria-hidden="true"></i>{{ __('Approve') }}</button>
+                                                    <i class="fa-solid fa-check" aria-hidden="true"></i>{{ __('Approve') }}</button>
                                             @elseif ($row['status'] === \App\Enums\InterestStatus::Pending && $box === 'received')
                                                 <div class="form-check interest-pick">
                                                     <input class="form-check-input" type="checkbox" id="interest-pick-{{ $code }}" name="selected[]" value="{{ $code }}" wire:model="selected">
@@ -91,21 +91,21 @@
                                                 </div>
                                                 <button type="button" class="btn-decline" wire:click="decline('{{ $code }}')" wire:loading.attr="disabled" wire:target="decline('{{ $code }}')"
                                                         aria-label="{{ __('Decline :name', ['name' => $row['card']->name]) }}">
-                                                    <i class="fa fa-times" aria-hidden="true"></i>{{ __('Decline') }}</button>
+                                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>{{ __('Decline') }}</button>
                                                 <button type="button" class="btn-accept" wire:click="accept('{{ $code }}')" wire:loading.attr="disabled" wire:target="accept('{{ $code }}')"
                                                         aria-label="{{ __('Accept :name', ['name' => $row['card']->name]) }}">
-                                                    <i class="fa fa-check" aria-hidden="true"></i>{{ __('Accept') }}</button>
+                                                    <i class="fa-solid fa-check" aria-hidden="true"></i>{{ __('Accept') }}</button>
                                             @elseif ($row['status'] === \App\Enums\InterestStatus::Pending)
                                                 <x-ui.badge :variant="$row['status']->badge()">{{ $row['status']->label() }}</x-ui.badge>
                                                 <button type="button" class="btn-decline" wire:click="withdraw('{{ $code }}')" wire:loading.attr="disabled" wire:target="withdraw('{{ $code }}')"
                                                         aria-label="{{ __('Withdraw the interest sent to :name', ['name' => $row['card']->name]) }}">
-                                                    <i class="fa fa-undo" aria-hidden="true"></i>{{ __('Withdraw') }}</button>
+                                                    <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>{{ __('Withdraw') }}</button>
                                             @else
                                                 <x-ui.badge :variant="$row['status']->badge()">{{ $row['status']->label() }}</x-ui.badge>
                                             @endif
 
                                             @unless ($requests)
-                                                <span class="visit-time"><i class="fa fa-clock-o" aria-hidden="true"></i> {{ $row['when'] }}</span>
+                                                <span class="visit-time"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ $row['when'] }}</span>
                                                 @if ($row['message'] !== '')
                                                     <p class="interest-note">“{{ $row['message'] }}”</p>
                                                 @endif
@@ -113,7 +113,7 @@
                                         </x-slot:actions>
                                     </x-profile.row>
                                 @empty
-                                    <x-ui.empty-state icon="fa-envelope-o"
+                                    <x-ui.empty-state icon="fa-regular fa-envelope"
                                                       :title="$requests ? __('No requests waiting') : __('No interests here yet')"
                                                       :message="$requests ? __('When someone asks to see your photos or horoscope, you decide here.') : ($box === 'sent' ? __('Send an interest from a profile you like — it is the first step to connect.') : __('A complete profile with photos gets more interests.'))">
                                         <x-ui.button :href="route('member.matches')" wire:navigate>{{ __('See my matches') }}</x-ui.button>

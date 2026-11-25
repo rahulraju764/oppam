@@ -9,7 +9,7 @@
 
     <x-admin.table :headers="[__('Order'), __('Member'), __('Plan'), __('Total'), __('Status'), __('Why'), __('Created (IST)')]" :caption="__('Stuck orders')" :empty="$orders->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-check" :title="__('No stuck orders')" :message="__('Every order is settled.')" />
+            <x-ui.empty-state icon="fa-solid fa-check" :title="__('No stuck orders')" :message="__('Every order is settled.')" />
         </x-slot:emptyState>
 
         @foreach ($orders as $order)

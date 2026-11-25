@@ -10,7 +10,7 @@
         </div>
         @if ($canExport)
             <div>
-                <x-ui.button variant="outline" size="sm" type="button" icon="fa-download" wire:click="export" wire:loading.attr="disabled" wire:target="export" dusk="audit-export">
+                <x-ui.button variant="outline" size="sm" type="button" icon="fa-solid fa-download" wire:click="export" wire:loading.attr="disabled" wire:target="export" dusk="audit-export">
                     {{ __('Export CSV') }}
                 </x-ui.button>
             </div>
@@ -50,10 +50,10 @@
         </div>
         <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
             @if ($entity !== '')
-                <x-ui.badge variant="muted" icon="fa-filter">{{ __('Timeline of :what', ['what' => strtoupper(\Illuminate\Support\Str::after($entity, ':'))]) }}</x-ui.badge>
+                <x-ui.badge variant="muted" icon="fa-solid fa-filter">{{ __('Timeline of :what', ['what' => strtoupper(\Illuminate\Support\Str::after($entity, ':'))]) }}</x-ui.badge>
                 <x-ui.button size="sm" variant="link" type="button" wire:click="$set('entity', '')">{{ __('Show all records') }}</x-ui.button>
             @endif
-            <x-ui.button size="sm" variant="ghost" type="button" wire:click="clearFilters" icon="fa-times">{{ __('Clear filters') }}</x-ui.button>
+            <x-ui.button size="sm" variant="ghost" type="button" wire:click="clearFilters" icon="fa-solid fa-xmark">{{ __('Clear filters') }}</x-ui.button>
         </div>
     </div>
 
@@ -72,7 +72,7 @@
     <div wire:loading.class="opacity-50" wire:target="actor,action,subjectType,subject,from,to,search,entity,clearFilters,nextPage,previousPage,setPage">
         <x-admin.table :headers="[__('When (IST)'), __('Who'), __('Action'), __('Subject'), __('Reason'), '']" :caption="__('Audit log')" :empty="$rows->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-history" :title="__('No entries')" :message="__('No audit entry matches these filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-clock-rotate-left" :title="__('No entries')" :message="__('No audit entry matches these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($rows as $row)

@@ -565,11 +565,18 @@ it('Gate D: the bureau portal fits 320, 768, 1024 and 1440 px without sideways s
                 ->waitForLocation('/broker/verify-device');
             app(TrustedDevices::class)->trust($owner, hash('sha256', (string) $browser->cookie((string) config('oppam.auth.device_cookie'))));
 
-            assertFitsWidths($browser, '/favicon.ico', array_map(fn (string $path): string => '/broker'.$path, [
+            $pages = array_map(fn (string $path): string => '/broker'.$path, [
                 '', '/activity', '/earnings', '/import', '/import/batches', '/import/'.$batch->code, '/kyc', '/materials', '/profiles', '/profiles/create',
                 '/profiles/'.$client->code, '/profiles/'.$client->code.'/edit', '/profiles/'.$client->code.'/inbox', '/profiles/'.$client->code.'/notes',
                 '/referrals', '/staff', '/staff/'.$colleague->code,
-            ]));
+            ]);
+            assertFitsWidths($browser, '/favicon.ico', $pages);
+
+            // P9.3b: every broker page passes WCAG 2.1 A/AA (axe-core) at phone width.
+            foreach ($pages as $page) {
+                $browser->visit($page)->waitFor('main#main')->waitUntilMissing('#preloader', 10)->pause(300);
+                assertAccessible($browser, $page);
+            }
         });
     });
 

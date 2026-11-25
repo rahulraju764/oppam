@@ -7,7 +7,7 @@
         </div>
         @if ($contentType->canCreate())
             @can('content.edit')
-                <x-ui.button type="button" icon="fa-plus" wire:click="create" loading="create" dusk="content-new">{{ __('New :item', ['item' => $contentType->singular()]) }}</x-ui.button>
+                <x-ui.button type="button" icon="fa-solid fa-plus" wire:click="create" loading="create" dusk="content-new">{{ __('New :item', ['item' => $contentType->singular()]) }}</x-ui.button>
             @endcan
         @endif
     </div>
@@ -21,7 +21,7 @@
 
     <x-admin.table :headers="[__('Item'), __('Status'), __('Order'), __('Actions')]" :caption="$contentType->label()" :empty="$rows->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-file-text-o" :title="__('Nothing here yet')" :message="__('Nothing matches this status.')" />
+            <x-ui.empty-state icon="fa-regular fa-file-lines" :title="__('Nothing here yet')" :message="__('Nothing matches this status.')" />
         </x-slot:emptyState>
 
         @foreach ($rows as $row)

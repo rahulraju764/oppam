@@ -17,6 +17,6 @@
 @endphp
 
 <span {{ $attributes->class(['chip', $variantClass]) }}>
-    @if ($icon)<i class="fa {{ $icon }}" aria-hidden="true"></i>@endif
+    @if ($icon)<i class="{{ $icon }}" aria-hidden="true"></i>@endif
     {{ $slot }}
 </span>

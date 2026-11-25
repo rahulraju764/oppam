@@ -110,4 +110,7 @@ Check at **320 px, 375 px, 768 px (tablet), 1024 px, 1440 px**:
 
 - Keep the template's markup and class names when converting a page; improve only what the PRD
   or `docs/template-notes.md` lists as a fix.
-- Font Awesome 6 migration is its own task (P9.3) — don't mix icon renames into feature work.
+- Icons are Font Awesome 6 Free (done in P9.3a): write the full class, style + name (`fa-solid fa-heart`,
+  `fa-regular fa-bell`, `fa-brands fa-instagram`), decorative icons `aria-hidden="true"`, an icon that carries
+  meaning gets `role="img"` + `aria-label` (or visible text). No bare `fa`, no FA 4.7 names — see
+  `docs/fa4-to-fa6-map.md`; `IconClassesTest` fails the build otherwise.

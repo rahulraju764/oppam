@@ -235,3 +235,49 @@ it('admin-typed and member-typed text in a notification is escaped where it is s
         ->assertSee('<script>alert(1)</script> Hello');
     Livewire::test(NotificationBell::class)->call('open')->assertDontSeeHtml('<script>alert(1)</script>');
 });
+
+it('P9.3b (P3.2 hand-over): an open /notifications listens for ".notifications.read" from another tab or device', function (): void {
+    $me = ntUser();
+    $this->actingAs($me, 'web');
+
+    expect(Livewire::test(Index::class)->instance()->getListeners())
+        ->toHaveKey('echo-private:App.Models.User.'.$me->id.',.notifications.read', 'readElsewhere');
+});
+
+it('P9.3b: read elsewhere — count 0 marks every loaded row read; otherwise only the rows now read change, in place (no reload, no "new")', function (): void {
+    $me = ntUser();
+    foreach (range(1, 3) as $n) {
+        $me->notify(new DailyMatchesReady($n));
+    }
+    $this->actingAs($me, 'web');
+    $page = Livewire::test(Index::class);
+    $ids = array_column($page->get('items'), 'id');
+    expect(array_column($page->get('items'), 'unread'))->toBe([true, true, true]);
+
+    // Another tab read one of them.
+    DatabaseNotification::query()->whereKey($ids[1])->update(['read_at' => now()]);
+    $page->call('readElsewhere', ['unread_count' => 2]);
+    expect(array_column($page->get('items'), 'unread'))->toBe([true, false, true])
+        ->and(array_column($page->get('items'), 'id'))->toBe($ids)
+        ->and($page->get('hasNew'))->toBeFalse();
+
+    $page->call('readElsewhere', ['unread_count' => 0]);
+    expect(array_column($page->get('items'), 'unread'))->toBe([false, false, false]);
+});
+
+it('P9.3b: read elsewhere in the "Unread only" view removes the rows now read; another member\'s reads never leak in', function (): void {
+    $me = ntUser();
+    $other = ntUser('+919877700002');
+    $me->notify(new DailyMatchesReady(1));
+    $me->notify(new DailyMatchesReady(2));
+    $other->notify(new DailyMatchesReady(9));
+    $this->actingAs($me, 'web');
+
+    $page = Livewire::withQueryParams(['unread' => '1'])->test(Index::class);
+    $ids = array_column($page->get('items'), 'id');
+    DatabaseNotification::query()->whereKey($ids[0])->update(['read_at' => now()]);
+    DatabaseNotification::query()->where('notifiable_id', $other->id)->update(['read_at' => now()]);
+
+    $page->call('readElsewhere', ['unread_count' => 1]);
+    expect(array_column($page->get('items'), 'id'))->toBe([$ids[1]]);
+});

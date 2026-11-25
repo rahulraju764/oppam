@@ -14,7 +14,7 @@
         <div @class(['col-12', 'col-xl-7' => $profile !== null])>
             <x-admin.table :headers="[__('Profile'), __('Code typed'), __('Suggestions'), __('Joined (IST)'), '']" :caption="__('Unverified codes (:n)', ['n' => $total])" :empty="$rows->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-check-circle-o" :title="__('All caught up')" :message="__('No codes are waiting for review.')" />
+                    <x-ui.empty-state icon="fa-regular fa-circle-check" :title="__('All caught up')" :message="__('No codes are waiting for review.')" />
                 </x-slot:emptyState>
 
                 @foreach ($rows as $row)
@@ -64,9 +64,9 @@
 
                     <x-ui.textarea :label="__('Reason (kept in the audit log)')" name="reason" wire:model="reason" rows="2" />
 
-                    <x-ui.button class="w-100 mb-2" type="button" wire:click="link" loading="link" icon="fa-link" dusk="uc-link"
+                    <x-ui.button class="w-100 mb-2" type="button" wire:click="link" loading="link" icon="fa-solid fa-link" dusk="uc-link"
                                  wire:confirm="{{ __('Link this member to the chosen bureau? Attribution is permanent.') }}">{{ __('Link to bureau') }}</x-ui.button>
-                    <x-ui.button class="w-100" variant="outline" type="button" wire:click="clear" loading="clear" icon="fa-eraser">{{ __('Clear code') }}</x-ui.button>
+                    <x-ui.button class="w-100" variant="outline" type="button" wire:click="clear" loading="clear" icon="fa-solid fa-eraser">{{ __('Clear code') }}</x-ui.button>
                 </div>
             </div>
         @endif

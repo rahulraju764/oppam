@@ -26,7 +26,7 @@
                     </div>
                 @endif
                 <div class="col-12 col-lg-2">
-                    <x-ui.button class="w-100" type="submit" icon="fa-calculator" loading="create" dusk="payout-run-create">{{ __('Preview run') }}</x-ui.button>
+                    <x-ui.button class="w-100" type="submit" icon="fa-solid fa-calculator" loading="create" dusk="payout-run-create">{{ __('Preview run') }}</x-ui.button>
                 </div>
             </div>
         </form>
@@ -34,7 +34,7 @@
 
     <x-admin.table :headers="[__('Run'), __('Period'), __('Lines'), __('To pay'), __('Status'), __('Created (IST)')]" :caption="__('Payout runs')" :empty="$runs->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-bank" :title="__('No payout runs yet')" :message="__('Create the first run for last month above.')" />
+            <x-ui.empty-state icon="fa-solid fa-building-columns" :title="__('No payout runs yet')" :message="__('Create the first run for last month above.')" />
         </x-slot:emptyState>
 
         @foreach ($runs as $run)

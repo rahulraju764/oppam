@@ -7,7 +7,11 @@
 /* ---- vendor ---- */
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import 'swiper/css/bundle';
-@import 'font-awesome/css/font-awesome.css';
+/* Font Awesome 6 Free (P9.3a): core + the three free styles; icons are full classes, e.g. "fa-solid fa-heart" (docs/fa4-to-fa6-map.md). */
+@import '@fortawesome/fontawesome-free/css/fontawesome.css';
+@import '@fortawesome/fontawesome-free/css/solid.css';
+@import '@fortawesome/fontawesome-free/css/regular.css';
+@import '@fortawesome/fontawesome-free/css/brands.css';
 
 /* ---- fonts: self-hosted (no Google Fonts CDN). Weights = --fw-regular/medium/semibold/bold ---- */
 @import '@fontsource/manrope/400.css';

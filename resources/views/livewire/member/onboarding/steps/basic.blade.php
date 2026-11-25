@@ -2,7 +2,7 @@
      $locked: fields the member can no longer change (R-M02-1) — shown disabled with the reason. --}}
 @if ($locked !== [])
     <p class="form-text" id="basic-locked-hint">
-        <i class="fa fa-lock" aria-hidden="true"></i>
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
         {{ __('Some details can’t be changed here once set. Please contact support if one of them is wrong.') }}
     </p>
 @endif
@@ -85,7 +85,7 @@
             wrapper-class="form-group" input-class="form-control" label-class="" />
     @else
         <p class="form-text referral-code-field__hint">
-            <i class="fa fa-handshake-o" aria-hidden="true"></i>
+            <i class="fa-regular fa-handshake" aria-hidden="true"></i>
             {{ __('Referred by :bureau', ['bureau' => $referral['bureau']]) }}
         </p>
     @endif

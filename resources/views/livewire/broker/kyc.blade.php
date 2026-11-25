@@ -93,8 +93,8 @@
         <div class="side-bar vf-why">
             <h2>{{ __('Why KYC?') }}</h2>
             <ul class="vf-why-list">
-                <li><i class="fa fa-check" aria-hidden="true"></i> {{ __('Your bureau handles other people’s personal data — we confirm who runs it.') }}</li>
-                <li><i class="fa fa-check" aria-hidden="true"></i> {{ __('Commission is paid only to a verified bank account.') }}</li>
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Your bureau handles other people’s personal data — we confirm who runs it.') }}</li>
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Commission is paid only to a verified bank account.') }}</li>
             </ul>
         </div>
     </div>

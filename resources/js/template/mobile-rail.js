@@ -21,7 +21,7 @@ function buildDrawer({ label, openLabel, closeLabel }) {
     fab.className = 'profile-fab d-lg-none';
     fab.hidden = true;
     fab.setAttribute('aria-label', openLabel);
-    fab.innerHTML = '<i class="fa fa-sliders" aria-hidden="true"></i>';
+    fab.innerHTML = '<i class="fa-solid fa-sliders" aria-hidden="true"></i>';
 
     const fabLabel = document.createElement('span');
     fabLabel.className = 'profile-fab-label';
@@ -35,7 +35,7 @@ function buildDrawer({ label, openLabel, closeLabel }) {
     drawer.setAttribute('aria-modal', 'true');
     drawer.setAttribute('aria-label', label);
     drawer.innerHTML = '<div class="profile-drawer-panel">'
-        + '<button type="button" class="profile-drawer-close"><i class="fa fa-times" aria-hidden="true"></i></button>'
+        + '<button type="button" class="profile-drawer-close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>'
         + '<div class="profile-drawer-body"></div></div>';
     drawer.querySelector('.profile-drawer-close').setAttribute('aria-label', closeLabel);
 

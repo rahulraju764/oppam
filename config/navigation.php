@@ -15,9 +15,9 @@ return [
 
     // Header "Matches" dropdown + tab-bar Matches sheet, in this order, with these icons.
     'matches' => [
-        ['route' => 'member.profiles', 'label' => 'All Profiles', 'icon' => 'fa-users', 'description' => 'Browse everyone'],
-        ['route' => 'member.matches', 'label' => 'My Matches', 'icon' => 'fa-heart', 'description' => 'Your funnel'],
-        ['route' => 'member.matches.daily', 'label' => 'Daily Matches', 'icon' => 'fa-bolt', 'description' => "Today's picks"],
+        ['route' => 'member.profiles', 'label' => 'All Profiles', 'icon' => 'fa-solid fa-users', 'description' => 'Browse everyone'],
+        ['route' => 'member.matches', 'label' => 'My Matches', 'icon' => 'fa-solid fa-heart', 'description' => 'Your funnel'],
+        ['route' => 'member.matches.daily', 'label' => 'Daily Matches', 'icon' => 'fa-solid fa-bolt', 'description' => "Today's picks"],
     ],
 
     // Routes that light the Matches section (its pages + a member profile opened from them).

@@ -11,14 +11,23 @@ import { initCarousels } from '../template/carousels';
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('carousel', () => ({
         instances: [],
+        gone: false,
 
         init() {
             this.$nextTick(() => {
-                this.instances = initCarousels(this.$el);
+                // initCarousels loads Swiper on first use (P9.3c), so it resolves later: the element may be gone by then.
+                initCarousels(this.$el).then((instances) => {
+                    if (this.gone) {
+                        instances.forEach((swiper) => swiper.destroy(true, false));
+                        return;
+                    }
+                    this.instances = instances;
+                }).catch((error) => console.error('Carousel could not load:', error));
             });
         },
 
         destroy() {
+            this.gone = true;
             this.instances.forEach((swiper) => swiper.destroy(true, false));
             this.instances = [];
         },

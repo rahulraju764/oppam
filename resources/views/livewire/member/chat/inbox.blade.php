@@ -40,12 +40,12 @@
 
                     <span class="msg-thread-body">
                         <span class="msg-thread-top">
-                            <strong class="msg-thread-name">{{ $item->name }}@if ($item->muted) <i class="fa fa-bell-slash msg-thread-muted" aria-hidden="true"></i><span class="visually-hidden">{{ __('(muted)') }}</span>@endif</strong>
+                            <strong class="msg-thread-name">{{ $item->name }}@if ($item->muted) <i class="fa-solid fa-bell-slash msg-thread-muted" aria-hidden="true"></i><span class="visually-hidden">{{ __('(muted)') }}</span>@endif</strong>
                             <span class="msg-thread-time">{{ $item->timeLabel() }}</span>
                         </span>
                         <span class="msg-thread-last">
                             @if ($item->frozen)
-                                <i class="fa fa-lock" aria-hidden="true"></i> {{ __('Closed for new messages') }}
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i> {{ __('Closed for new messages') }}
                             @elseif ($item->preview === null)
                                 {{ __('Messages are private') }}
                             @else
@@ -64,11 +64,11 @@
                         wire:click="{{ $item->archived ? 'unarchive' : 'archive' }}('{{ $item->code }}')"
                         wire:loading.attr="disabled" wire:target="archive,unarchive"
                         aria-label="{{ $item->archived ? __('Move :name back to your inbox', ['name' => $item->name]) : __('Archive the conversation with :name', ['name' => $item->name]) }}">
-                    <i @class(['fa', 'fa-inbox' => $item->archived, 'fa-archive' => ! $item->archived]) aria-hidden="true"></i>
+                    <i @class(['fa-solid fa-inbox' => $item->archived, 'fa-solid fa-box-archive' => ! $item->archived]) aria-hidden="true"></i>
                 </button>
             </div>
         @empty
-            <x-ui.empty-state icon="fa-comments-o" class="msg-list-empty"
+            <x-ui.empty-state icon="fa-regular fa-comments" class="msg-list-empty"
                 :title="match (true) {
                     $search !== '' => __('No conversation with that name'),
                     $filter === 'unread' => __('All caught up'),

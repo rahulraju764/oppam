@@ -9,7 +9,7 @@ use App\Enums\OrderStatus;
 use App\Enums\ReferralStatus;
 use App\Enums\RefundStatus;
 use App\Enums\SubscriptionSource;
-use Carbon\CarbonImmutable;
+use App\Queries\Reports\Concerns\SqlMedian;
 use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -65,12 +65,9 @@ final class LiveRevenue
                     ->whereColumn('earlier.profile_id', 'orders.profile_id')->where('earlier.status', OrderStatus::Paid->value)
                     ->where(fn ($w) => $w->whereColumn('earlier.paid_at', '<', 'orders.paid_at')
                         ->orWhere(fn ($tie) => $tie->whereColumn('earlier.paid_at', '=', 'orders.paid_at')->whereColumn('earlier.id', '<', 'orders.id'))))
-                ->selectRaw('users.created_at as signed_up, orders.paid_at as paid')
-                ->get()
-                ->map(fn (object $r): int => (int) CarbonImmutable::parse((string) $r->signed_up)->diffInDays(CarbonImmutable::parse((string) $r->paid)))
-                ->sort()->values()->all();
+                ->selectRaw('TIMESTAMPDIFF(DAY, users.created_at, orders.paid_at) as v');   // whole days, as before
 
-            return $days === [] ? null : $days[intdiv(count($days), 2)];
+            return SqlMedian::of($days);   // one query, not every first payment in PHP (P9.3c)
         });
     }
 

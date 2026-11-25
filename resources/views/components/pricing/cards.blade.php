@@ -7,7 +7,7 @@
     @empty
         <div class="col-12">
             <x-ui.card>
-                <x-ui.empty-state icon="fa-diamond" :title="__('Membership plans are being updated')"
+                <x-ui.empty-state icon="fa-regular fa-gem" :title="__('Membership plans are being updated')"
                                   :message="__('Please check back shortly, or contact us to upgrade.')" />
             </x-ui.card>
         </div>

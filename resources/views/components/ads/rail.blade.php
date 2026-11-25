@@ -19,7 +19,7 @@
 <aside class="ad-rail" aria-label="{{ __('Sponsored') }}">
     @if ($rail->promo)
         <div class="ad-unit ad-promo" data-rail="weave">
-            <span class="ad-promo-icon"><i class="fa fa-diamond" aria-hidden="true"></i></span>
+            <span class="ad-promo-icon"><i class="fa-regular fa-gem" aria-hidden="true"></i></span>
             <h3>{{ $rail->promo->heading }}</h3>
             @if ($rail->promo->copy)
                 <p>{{ $rail->promo->copy }}</p>
@@ -29,7 +29,7 @@
         </div>
     @elseif ($rail->showUpgrade && $plansUrl)
         <div class="ad-unit ad-promo" data-rail="weave">
-            <span class="ad-promo-icon"><i class="fa fa-diamond" aria-hidden="true"></i></span>
+            <span class="ad-promo-icon"><i class="fa-regular fa-gem" aria-hidden="true"></i></span>
             <h3>{{ __('Go Premium') }}</h3>
             <p>{{ __('Call and chat with your matches, see who viewed you, and get 3x more responses.') }}</p>
             <a href="{{ $plansUrl }}" class="ad-promo-btn" wire:navigate>{{ __('Upgrade Now') }}</a>
@@ -73,7 +73,7 @@
                 @foreach ($services as $service)
                     <li>
                         <a href="{{ $service['url'] }}" target="_blank" rel="noopener sponsored">
-                            <i class="fa {{ $service['icon'] }}" aria-hidden="true"></i>
+                            <i class="{{ $service['icon'] }}" aria-hidden="true"></i>
                             {{ $service['label'] }}
                         </a>
                     </li>

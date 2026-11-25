@@ -8,7 +8,7 @@
             </div>
 
             <x-ui.card>
-                <x-ui.empty-state icon="fa-hourglass-half" :title="__('Your profile :code is under review', ['code' => $profile?->code])"
+                <x-ui.empty-state icon="fa-solid fa-hourglass-half" :title="__('Your profile :code is under review', ['code' => $profile?->code])"
                     :message="__('Reviews usually finish within 24 hours. We will let you know as soon as your profile is live — then you can start searching and connecting.')">
                     <p class="form-text mb-0">
                         {{ __('Profile completeness: :percent%', ['percent' => $profile?->completeness ?? 0]) }}

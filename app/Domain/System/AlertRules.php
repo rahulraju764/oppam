@@ -20,7 +20,8 @@ use App\Queries\System\RealtimeHealth;
  *  - live connections fell by more than threshold % against the highest of the last minutes —
  *    only from RealtimeHealth::RESTART_DIP_FROM (20) connections, so a quiet night isn't an alarm;
  *    a server that stopped answering after having connections counts as a 100 % drop.
- * A source that couldn't be read is "unknown" for its kind.
+ * A source that couldn't be read is "unknown" for its kind — and so is a lag that isn't being measured
+ * or a Reverb server that hasn't answered once in the window, so an alert doesn't close mid-outage.
  */
 final class AlertRules
 {
@@ -50,14 +51,15 @@ final class AlertRules
         $check(SystemAlertKind::BounceRate, $bounce, $t->bouncePct, $bounce !== null && $bounce > $t->bouncePct);
 
         $lagMs = $readings->broadcastLag?->lagMs;
-        if ($readings->broadcastLag === null) {
+        if ($readings->broadcastLag === null || $lagMs === null) {   // not measured (worker / canary stopped): no opinion, an open alert stays
             $unknown[] = SystemAlertKind::BroadcastLag;
-        } elseif ($lagMs !== null && $lagMs > $t->broadcastLagSeconds * 1000) {
+        } elseif ($lagMs > $t->broadcastLagSeconds * 1000) {
             $breaches[SystemAlertKind::BroadcastLag->value] = ['value' => $lagMs, 'threshold' => $t->broadcastLagSeconds * 1000];
         }
 
         $drop = self::reverbDropPct($readings);
-        if ($readings->reverb === null) {
+        // Down for the whole window (no answered sample at all): no opinion — an open drop alert stays open.
+        if ($readings->reverb === null || ($readings->reverb->current === null && $readings->reverb->recentPeak === null)) {
             $unknown[] = SystemAlertKind::ReverbDrop;
         } elseif ($drop !== null && $drop > $t->reverbDropPct) {
             $breaches[SystemAlertKind::ReverbDrop->value] = ['value' => $drop, 'threshold' => $t->reverbDropPct];

@@ -3869,6 +3869,13 @@ header {
   font-weight: var(--fw-semibold);
 }
 
+/* FA6 (P9.3a): an icon's weight IS its style (400 regular, 900 solid) — the semibold above would turn an
+   outline icon into the solid one on the current tab, so icons keep their own style's weight. */
+.mobile-footer .is-current i.fa-regular,
+.mobile-footer button[aria-expanded="true"] i.fa-regular { font-weight: 400; }
+.mobile-footer .is-current i.fa-solid,
+.mobile-footer button[aria-expanded="true"] i.fa-solid { font-weight: 900; }
+
 .mobile-footer a img {
   width: 24px;
   height: 24px;
@@ -7662,7 +7669,7 @@ body:has(.page-nav) {
 
 /* --color-secondary-dark, not --color-secondary: the light teal is 3.3:1 and
    this is a meaningful glyph, not decoration. */
-.vf-why-list .fa {
+.vf-why-list :is(.fa-solid, .fa-regular, .fa-brands) {
   flex: 0 0 auto;
   margin-top: 3px;
   color: var(--color-secondary-dark);
@@ -7786,7 +7793,7 @@ body:has(.page-nav) {
 
 /* #8a6100 on #fff8e6 is 5.6:1 — the light amber of the border would not clear AA
    for text. */
-.demo-banner .fa {
+.demo-banner :is(.fa-solid, .fa-regular, .fa-brands) {
   flex: 0 0 auto;
   margin-top: 2px;
   font-size: var(--text-md);
@@ -7880,7 +7887,7 @@ body:has(.page-nav) {
   margin-bottom: var(--space-3);
 }
 
-.checkout-features .fa {
+.checkout-features :is(.fa-solid, .fa-regular, .fa-brands) {
   color: var(--color-secondary-dark);
 }
 
@@ -8002,7 +8009,7 @@ body:has(.page-nav) {
   margin-bottom: 0;
 }
 
-.branch-line .fa {
+.branch-line :is(.fa-solid, .fa-regular, .fa-brands) {
   flex: 0 0 auto;
   margin-top: 4px;
   width: 16px;

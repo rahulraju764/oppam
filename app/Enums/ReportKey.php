@@ -38,11 +38,11 @@ enum ReportKey: string
     public function icon(): string
     {
         return match ($this) {
-            self::Growth => 'fa-line-chart',
-            self::Engagement => 'fa-heart',
-            self::Marketplace => 'fa-balance-scale',
-            self::Revenue => 'fa-inr',
-            self::Trust => 'fa-shield',
+            self::Growth => 'fa-solid fa-chart-line',
+            self::Engagement => 'fa-solid fa-heart',
+            self::Marketplace => 'fa-solid fa-scale-balanced',
+            self::Revenue => 'fa-solid fa-indian-rupee-sign',
+            self::Trust => 'fa-solid fa-shield',
         };
     }
 }

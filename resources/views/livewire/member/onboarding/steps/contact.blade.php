@@ -8,7 +8,7 @@
             <input id="contact-mobile" name="contact-mobile" type="tel" class="form-control" value="{{ $phone }}" readonly
                    aria-describedby="contact-mobile-hint">
             <small id="contact-mobile-hint" class="text-muted-brand">
-                <i class="fa fa-check-circle" aria-hidden="true"></i> {{ __('Verified. Change it from Settings after your profile is live.') }}
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ __('Verified. Change it from Settings after your profile is live.') }}
             </small>
         </div>
     </div>

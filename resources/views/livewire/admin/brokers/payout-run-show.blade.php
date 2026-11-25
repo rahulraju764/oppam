@@ -5,20 +5,20 @@
 <div>
     <div class="admin-page-head">
         <div>
-            <p class="mb-1"><a href="{{ route('admin.brokers.payouts') }}" wire:navigate><i class="fa fa-angle-left" aria-hidden="true"></i> {{ __('All payout runs') }}</a></p>
+            <p class="mb-1"><a href="{{ route('admin.brokers.payouts') }}" wire:navigate><i class="fa-solid fa-angle-left" aria-hidden="true"></i> {{ __('All payout runs') }}</a></p>
             <h1>{{ $run->code }} <span class="text-muted-brand">· {{ $run->label() }}</span></h1>
             <p>
                 <x-ui.badge :variant="$run->status->badgeVariant()">{{ $run->status->label() }}</x-ui.badge>
-                @if ($needsSecond)<x-ui.badge variant="warning" icon="fa-users">{{ __('Needs a second approver') }}</x-ui.badge>@endif
+                @if ($needsSecond)<x-ui.badge variant="warning" icon="fa-solid fa-users">{{ __('Needs a second approver') }}</x-ui.badge>@endif
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2">
             @if ($run->status === \App\Enums\PayoutRunStatus::Draft)
-                <x-ui.button type="button" icon="fa-check" wire:click="approve" loading="approve" dusk="payout-run-approve"
+                <x-ui.button type="button" icon="fa-solid fa-check" wire:click="approve" loading="approve" dusk="payout-run-approve"
                              wire:confirm="{{ __('Approve this payout run? Amounts are fixed from now on.') }}">
                     {{ $run->approved_by_admin_id ? __('Give second approval') : __('Approve') }}
                 </x-ui.button>
-                <x-ui.button type="button" variant="outline" icon="fa-trash" x-on:click="$dispatch('open-modal', { name: 'payout-discard' })">{{ __('Discard draft') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" icon="fa-solid fa-trash-can" x-on:click="$dispatch('open-modal', { name: 'payout-discard' })">{{ __('Discard draft') }}</x-ui.button>
             @endif
         </div>
     </div>
@@ -39,7 +39,7 @@
     <x-admin.table :headers="[__('Bureau'), __('Earned'), __('Clawback'), __('Carried in'), __('TDS'), __('Net'), __('Status'), __('UTR'), '']"
                    :caption="__('Payout lines')" :empty="$items->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-bank" :title="__('No lines')" :message="__('This run has no bureau lines.')" />
+            <x-ui.empty-state icon="fa-solid fa-building-columns" :title="__('No lines')" :message="__('This run has no bureau lines.')" />
         </x-slot:emptyState>
 
         @foreach ($items as $item)
@@ -49,7 +49,7 @@
                     <a href="{{ route('admin.brokers.show', ['broker' => $code]) }}" wire:navigate><strong>{{ $code }}</strong></a>
                     <div class="small">{{ $item->broker?->displayName() }}</div>
                     @if ($item->status === \App\Enums\PayoutItemStatus::Pending && ! $item->broker?->isPayable())
-                        <x-ui.badge variant="danger" icon="fa-exclamation-triangle">{{ __('Can’t be paid now') }}</x-ui.badge>
+                        <x-ui.badge variant="danger" icon="fa-solid fa-triangle-exclamation">{{ __('Can’t be paid now') }}</x-ui.badge>
                     @endif
                 </td>
                 <td>{{ \App\ValueObjects\Money::paise($item->gross_paise)->formatWithSymbol() }}</td>
@@ -68,11 +68,11 @@
                     <div class="d-flex flex-wrap gap-1 justify-content-end">
                         @if ($item->status === \App\Enums\PayoutItemStatus::Pending)
                             @if ($run->status === \App\Enums\PayoutRunStatus::Approved)
-                                <x-ui.button size="sm" type="button" icon="fa-check" wire:click="openLine('{{ $code }}', 'paid')" dusk="payout-paid-{{ $code }}">{{ __('Mark paid') }}</x-ui.button>
+                                <x-ui.button size="sm" type="button" icon="fa-solid fa-check" wire:click="openLine('{{ $code }}', 'paid')" dusk="payout-paid-{{ $code }}">{{ __('Mark paid') }}</x-ui.button>
                             @endif
-                            <x-ui.button size="sm" variant="outline" type="button" icon="fa-share" wire:click="openLine('{{ $code }}', 'roll')">{{ __('Roll forward') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-share" wire:click="openLine('{{ $code }}', 'roll')">{{ __('Roll forward') }}</x-ui.button>
                         @elseif ($item->status === \App\Enums\PayoutItemStatus::Paid)
-                            <x-ui.button size="sm" variant="outline" icon="fa-file-pdf-o"
+                            <x-ui.button size="sm" variant="outline" icon="fa-regular fa-file-pdf"
                                          :href="route('admin.brokers.payouts.statement', ['run' => $run->code, 'broker' => $code])">{{ __('Statement') }}</x-ui.button>
                         @endif
                     </div>

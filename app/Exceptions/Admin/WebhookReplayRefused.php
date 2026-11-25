@@ -21,6 +21,8 @@ final class WebhookReplayRefused extends RuntimeException
 
     public const TOO_MANY = 6;
 
+    public const UNREADABLE = 7;
+
     public static function alreadyProcessed(): self
     {
         return new self(__('This webhook has already been processed — there is nothing to replay.'), self::ALREADY_PROCESSED);
@@ -28,7 +30,7 @@ final class WebhookReplayRefused extends RuntimeException
 
     public static function notConfirmed(): self
     {
-        return new self(__('Razorpay doesn’t confirm this payment (it isn’t listed for the order with that status), so it wasn’t replayed.'), self::NOT_CONFIRMED);
+        return new self(__('Razorpay doesn’t confirm this payment (it doesn’t list the same payment, amount and status for the order), so it wasn’t replayed.'), self::NOT_CONFIRMED);
     }
 
     public static function gatewayUnavailable(): self
@@ -44,6 +46,11 @@ final class WebhookReplayRefused extends RuntimeException
     public static function failedAgain(string $errorClass): self
     {
         return new self(__('Processing failed again (:error). The attempt is counted on the webhook and the error was reported.', ['error' => class_basename($errorClass)]), self::FAILED_AGAIN);
+    }
+
+    public static function unreadable(): self
+    {
+        return new self(__('The stored copy of this webhook can’t be read, so it wasn’t replayed. Check the order in Billing instead.'), self::UNREADABLE);
     }
 
     public static function tooMany(): self

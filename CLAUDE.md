@@ -242,7 +242,10 @@ Plain controllers only for: file downloads/streams (PDF, zip, xlsx, invoices), w
   `href="#"`) for actions, contrast tokens for text.
 - Known template fixes: remove "VishwakarmaMatrimony" text; login/register become
   `<button type="submit">`; bell counts become live; caste depends on religion.
-- Font Awesome 4.7 → 6 is a separate task (class renames) — don't mix it into feature work.
+- Icons are **Font Awesome 6 Free** (P9.3a): always the full class, style + name — `fa-solid fa-heart`,
+  `fa-regular fa-bell`, `fa-brands fa-facebook-f` — in Blade, component props (`icon="fa-solid fa-plus"`), PHP and JS.
+  No bare `fa` class, no FA 4.7 names; pick an icon free in that style. Map + rules: `docs/fa4-to-fa6-map.md`;
+  `tests/Feature/Foundation/IconClassesTest.php` enforces it.
 
 ## Testing rules
 

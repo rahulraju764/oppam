@@ -69,9 +69,9 @@
                                     @foreach ($row['cells'] as $index => $cell)
                                         <td @class(['is-featured' => $index === $comparison->featuredColumn])>
                                             @if ($cell === true)
-                                                <i class="fa fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Included') }}</span>
+                                                <i class="fa-solid fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Included') }}</span>
                                             @elseif ($cell === false)
-                                                <i class="fa fa-minus" aria-hidden="true"></i><span class="visually-hidden">{{ __('Not included') }}</span>
+                                                <i class="fa-solid fa-minus" aria-hidden="true"></i><span class="visually-hidden">{{ __('Not included') }}</span>
                                             @else
                                                 {{ $cell }}
                                             @endif

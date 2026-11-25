@@ -11,10 +11,30 @@
    Added for Livewire: an element that already carries a Swiper is skipped (so a
    re-run after a morph is harmless), and every instance is destroyed when the page
    is left, or its autoplay timer would keep running against a detached node.
+
+   P9.3c: Swiper's JS is loaded only on a page that has a carousel (home, dashboard
+   strips, ad rail) — a separate chunk instead of ~140 KB in every page's bundle. Its
+   CSS stays in app.css: the home hero (the LCP element) must lay out before the JS
+   arrives, or it would shift. So initCarousels() is async.
 ============================================================================= */
 
-import Swiper from 'swiper/bundle';
 import { onPage, prefersReducedMotion } from './lifecycle';
+
+let swiperModule = null;
+
+/**
+ * Swiper, imported once and only when a page has a carousel. A failed load (offline, or a stale chunk after a
+ * deploy in a long-lived wire:navigate tab) is not cached: the next page tries again.
+ */
+function loadSwiper() {
+    swiperModule ??= import('swiper/bundle')
+        .then((module) => module.default)
+        .catch((error) => {
+            swiperModule = null;
+            throw error;
+        });
+    return swiperModule;
+}
 
 function autoplayOpts(delay) {
     if (prefersReducedMotion) return false;
@@ -108,21 +128,32 @@ const configs = {
     }),
 };
 
-/** Initialise every carousel under `root` that has not been initialised yet. */
-export function initCarousels(root = document) {
-    const created = [];
-
+/**
+ * Initialise every carousel under `root` that has not been initialised yet. Resolves with the new
+ * instances — an empty list, without loading Swiper at all, when there is no carousel.
+ */
+export async function initCarousels(root = document) {
+    const pending = [];
     Object.entries(configs).forEach(([selector, options]) => {
         root.querySelectorAll(selector).forEach((el) => {
-            if (el.swiper) return;
-            created.push(new Swiper(el, options(el)));
+            if (!el.swiper) pending.push([el, options]);
         });
     });
+    if (pending.length === 0) return [];
 
-    return created;
+    const Swiper = await loadSwiper();
+
+    // Another init (a re-run after a morph) may have taken an element while Swiper was loading.
+    return pending.filter(([el]) => !el.swiper && el.isConnected).map(([el, options]) => new Swiper(el, options(el)));
 }
 
 onPage((signal) => {
-    const instances = initCarousels();
-    signal.addEventListener('abort', () => instances.forEach((swiper) => swiper.destroy(true, false)));
+    initCarousels().then((instances) => {
+        const destroyAll = () => instances.forEach((swiper) => swiper.destroy(true, false));
+        if (signal.aborted) {
+            destroyAll();   // the page was left while Swiper was loading
+            return;
+        }
+        signal.addEventListener('abort', destroyAll);
+    }).catch((error) => console.error('Carousels could not load:', error));   // the slides stay readable, just static
 });

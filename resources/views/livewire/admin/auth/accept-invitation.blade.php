@@ -1,7 +1,7 @@
 <div>
     @if ($email === null)
         <h1>{{ __('Invitation not valid') }}</h1>
-        <x-ui.empty-state icon="fa-envelope-o" :title="__('This link can’t be used')"
+        <x-ui.empty-state icon="fa-regular fa-envelope" :title="__('This link can’t be used')"
                           :message="__('It has expired, was already used, or was replaced by a newer invitation. Ask a super admin to invite you again.')" />
     @else
         <h1>{{ __('Welcome, :name', ['name' => $name]) }}</h1>

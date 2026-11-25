@@ -25,7 +25,7 @@
     <div wire:loading.class="is-loading" wire:target="status, category, search, gotoPage, nextPage, previousPage">
         <x-admin.table :headers="[__('Ticket'), __('From'), __('Topic'), __('Status'), __('First reply due (IST)'), __('Assigned'), '']" :caption="__('Support tickets')" :empty="$this->tickets->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-life-ring" :title="__('Nothing here')" :message="__('No tickets match these filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-life-ring" :title="__('Nothing here')" :message="__('No tickets match these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($this->tickets as $ticket)
@@ -39,7 +39,7 @@
                             <span class="small text-muted-brand">{{ __('Replied :date', ['date' => $ticket->first_responded_at->timezone($timezone)->format('d M, g:i a')]) }}</span>
                         @else
                             {{ $ticket->first_response_due_at->timezone($timezone)->format('d M, g:i a') }}
-                            @if ($ticket->isFirstResponseOverdue())<div><x-ui.badge variant="danger" icon="fa-clock-o">{{ __('Overdue') }}</x-ui.badge></div>@endif
+                            @if ($ticket->isFirstResponseOverdue())<div><x-ui.badge variant="danger" icon="fa-regular fa-clock">{{ __('Overdue') }}</x-ui.badge></div>@endif
                         @endif
                     </td>
                     <td>{{ $ticket->assignee?->name ?? '—' }}</td>

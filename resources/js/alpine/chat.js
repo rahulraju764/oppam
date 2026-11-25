@@ -246,7 +246,7 @@ document.addEventListener('alpine:init', () => {
             if (document.querySelector(`[data-chat-thread="${CSS.escape(data.code)}"]`)) return;
 
             window.dispatchEvent(new CustomEvent('toast', {
-                detail: { title: data.title, body: data.body, url: data.url, icon: 'fa-envelope-o' },
+                detail: { title: data.title, body: data.body, url: data.url, icon: 'fa-regular fa-envelope' },
             }));
         },
     }));

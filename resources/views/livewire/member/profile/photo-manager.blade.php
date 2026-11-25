@@ -15,7 +15,7 @@
         </p>
 
         @if ($photos === [])
-            <x-ui.empty-state icon="fa-camera" :title="__('No photos yet')"
+            <x-ui.empty-state icon="fa-solid fa-camera" :title="__('No photos yet')"
                 :message="__('Profiles with photos get far more responses. Add at least one to submit your profile.')" />
         @else
             <ul class="photo-grid" wire:sort="movePhoto" aria-labelledby="photos-label" aria-describedby="photos-hint">
@@ -25,7 +25,7 @@
                             <img src="{{ $photo->cardUrl }}" alt="{{ $photo->processing ? __('Photo :n is being prepared', ['n' => $index + 1]) : ($photo->caption ?? __('Your photo :n', ['n' => $index + 1])) }}"
                                  width="300" height="375" loading="lazy">
                             @if ($index === 0)
-                                <x-ui.badge variant="verified" icon="fa-star" class="photo-tile__primary">{{ __('Profile photo') }}</x-ui.badge>
+                                <x-ui.badge variant="verified" icon="fa-solid fa-star" class="photo-tile__primary">{{ __('Profile photo') }}</x-ui.badge>
                             @endif
                             @if ($photo->status)
                                 <x-ui.badge :variant="$photo->status->badgeVariant()" class="photo-tile__status">{{ $photo->status->label() }}</x-ui.badge>
@@ -46,15 +46,15 @@
                             @if ($index > 0)
                                 <button type="button" class="ui-link-btn" wire:click="movePhoto(@js($photo->uuid), 0)">{{ __('Make profile photo') }}</button>
                                 <button type="button" class="ui-icon-btn" wire:click="movePhoto(@js($photo->uuid), {{ $index - 1 }})"
-                                        aria-label="{{ __('Move photo :n earlier', ['n' => $index + 1]) }}"><i class="fa fa-arrow-left" aria-hidden="true"></i></button>
+                                        aria-label="{{ __('Move photo :n earlier', ['n' => $index + 1]) }}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></button>
                             @endif
                             @if (! $loop->last)
                                 <button type="button" class="ui-icon-btn" wire:click="movePhoto(@js($photo->uuid), {{ $index + 1 }})"
-                                        aria-label="{{ __('Move photo :n later', ['n' => $index + 1]) }}"><i class="fa fa-arrow-right" aria-hidden="true"></i></button>
+                                        aria-label="{{ __('Move photo :n later', ['n' => $index + 1]) }}"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
                             @endif
                             <span x-data="{ sure: false }" class="photo-tile__delete">
                                 <button type="button" class="ui-icon-btn is-danger" x-show="! sure" x-on:click="sure = true"
-                                        aria-label="{{ __('Delete photo :n', ['n' => $index + 1]) }}"><i class="fa fa-trash" aria-hidden="true"></i></button>
+                                        aria-label="{{ __('Delete photo :n', ['n' => $index + 1]) }}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
                                 <span x-show="sure" x-cloak>
                                     {{ __('Delete?') }}
                                     <button type="button" class="ui-link-btn is-danger" wire:click="deletePhoto(@js($photo->uuid))">{{ __('Yes') }}</button>
@@ -69,7 +69,7 @@
 
         @if (count($photos) < $maxPhotos)
             <label class="photo-add view-btn" for="photo-input">
-                <i class="fa fa-plus" aria-hidden="true"></i> {{ count($photos) === 0 ? __('Add your profile photo') : __('Add another photo') }}
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> {{ count($photos) === 0 ? __('Add your profile photo') : __('Add another photo') }}
             </label>
             <input id="photo-input" name="photo-input" type="file" class="visually-hidden"
                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif" x-on:change="choose($event)"
@@ -94,10 +94,10 @@
         @if ($hasHoroscope)
             <p class="mb-2">
                 @if ($horoscopeLink)
-                    <a href="{{ $horoscopeLink }}" target="_blank" rel="noopener"><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ __('View your horoscope') }}</a>
+                    <a href="{{ $horoscopeLink }}" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> {{ __('View your horoscope') }}</a>
                 @else
                     {{-- Bureau form (P7.3): the file is kept, but only members open horoscopes. --}}
-                    <span><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ __('Horoscope uploaded') }}</span>
+                    <span><i class="fa-regular fa-file-lines" aria-hidden="true"></i> {{ __('Horoscope uploaded') }}</span>
                 @endif
                 <button type="button" class="ui-link-btn ms-2" wire:click="deleteHoroscope">{{ __('Remove') }}</button>
             </p>
@@ -115,8 +115,8 @@
             <img data-crop-image alt="{{ __('Photo to crop') }}">
         </div>
         <x-slot:footer>
-            <button type="button" class="ui-icon-btn" x-on:click="rotate(-90)" aria-label="{{ __('Rotate left') }}"><i class="fa fa-rotate-left" aria-hidden="true"></i></button>
-            <button type="button" class="ui-icon-btn" x-on:click="rotate(90)" aria-label="{{ __('Rotate right') }}"><i class="fa fa-rotate-right" aria-hidden="true"></i></button>
+            <button type="button" class="ui-icon-btn" x-on:click="rotate(-90)" aria-label="{{ __('Rotate left') }}"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i></button>
+            <button type="button" class="ui-icon-btn" x-on:click="rotate(90)" aria-label="{{ __('Rotate right') }}"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i></button>
             <button type="button" class="ui-link-btn" x-on:click="cancel()">{{ __('Cancel') }}</button>
             <button type="button" class="view-btn" x-on:click="confirm()">{{ __('Use this photo') }}</button>
         </x-slot:footer>

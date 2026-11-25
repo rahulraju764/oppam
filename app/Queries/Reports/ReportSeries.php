@@ -29,16 +29,29 @@ final class ReportSeries
     {
         $values = array_map(fn (ReportMetric $m): string => $m->value, $metrics);
 
-        /** @var array<string, int> $sums */
-        $sums = $this->cached('totals', $range, $values, fn (): array => ReportSnapshot::query()
-            ->whereIn('metric', $values)->where('dimension', '')
-            ->whereBetween('day', [$range->from->toDateString(), $range->to->toDateString()])
-            ->selectRaw('metric, SUM(value) as total')->groupBy('metric')
-            ->pluck('total', 'metric')->map(fn ($v): int => (int) $v)->all());
+        // Flows are summed over the period; a stock (a level) is its value on the last snapshotted day — read
+        // inside the same cached entry (P9.3c: it was 2 uncached queries per stock metric per render). The key
+        // kind is new ("totals2") so an entry cached before this change (sums only) is never read as levels.
+        /** @var array<string, int> $totals */
+        $totals = $this->cached('totals2', $range, $values, function () use ($range, $metrics, $values): array {
+            $sums = ReportSnapshot::query()
+                ->whereIn('metric', $values)->where('dimension', '')
+                ->whereBetween('day', [$range->from->toDateString(), $range->to->toDateString()])
+                ->selectRaw('metric, SUM(value) as total')->groupBy('metric')
+                ->pluck('total', 'metric')->map(fn ($v): int => (int) $v)->all();
+
+            foreach ($metrics as $metric) {
+                if ($metric->kind() === 'stock') {
+                    $sums[$metric->value] = $this->level($range, $metric);
+                }
+            }
+
+            return $sums;
+        });
 
         $out = [];
         foreach ($metrics as $metric) {
-            $out[$metric->value] = $metric->kind() === 'stock' ? $this->level($range, $metric) : (int) ($sums[$metric->value] ?? 0);
+            $out[$metric->value] = (int) ($totals[$metric->value] ?? 0);
         }
 
         return $out;

@@ -23,19 +23,19 @@
                 <label for="referralLink" class="form-label">{{ __('Your referral link') }}</label>
                 <div class="input-group">
                     <input type="text" id="referralLink" name="referral_link" class="form-control" value="{{ $link }}" readonly x-ref="link" x-on:focus="$event.target.select()">
-                    <x-ui.button type="button" variant="outline" icon="fa-clipboard" x-on:click="copy()" dusk="copy-link">{{ __('Copy') }}</x-ui.button>
+                    <x-ui.button type="button" variant="outline" icon="fa-solid fa-paste" x-on:click="copy()" dusk="copy-link">{{ __('Copy') }}</x-ui.button>
                 </div>
                 <p class="form-text" role="status" aria-live="polite"><span x-show="copied" x-cloak>{{ __('Link copied.') }}</span></p>
             </div>
         </div>
 
         <div class="dashboard-content broker-materials__qr">
-            <h2 class="broker-widget__title"><i class="fa fa-qrcode" aria-hidden="true"></i> {{ __('QR code') }}</h2>
+            <h2 class="broker-widget__title"><i class="fa-solid fa-qrcode" aria-hidden="true"></i> {{ __('QR code') }}</h2>
             <img src="{{ $qrDataUri }}" width="240" height="240" alt="{{ __('QR code for :link', ['link' => $link]) }}">
             <div class="broker-materials__downloads">
-                <x-ui.button :href="route('broker.materials.qr.svg')" variant="outline" icon="fa-download" download>{{ __('QR (SVG)') }}</x-ui.button>
-                <x-ui.button :href="route('broker.materials.qr.png')" variant="outline" icon="fa-download" download>{{ __('QR (PNG)') }}</x-ui.button>
-                <x-ui.button :href="route('broker.materials.poster')" icon="fa-file-pdf-o" download dusk="poster-download">{{ __('A4 poster (PDF)') }}</x-ui.button>
+                <x-ui.button :href="route('broker.materials.qr.svg')" variant="outline" icon="fa-solid fa-download" download>{{ __('QR (SVG)') }}</x-ui.button>
+                <x-ui.button :href="route('broker.materials.qr.png')" variant="outline" icon="fa-solid fa-download" download>{{ __('QR (PNG)') }}</x-ui.button>
+                <x-ui.button :href="route('broker.materials.poster')" icon="fa-regular fa-file-pdf" download dusk="poster-download">{{ __('A4 poster (PDF)') }}</x-ui.button>
             </div>
         </div>
     </div>

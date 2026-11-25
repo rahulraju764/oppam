@@ -47,7 +47,7 @@
                 @foreach ($links as $link)
                     {{-- Plain links (no wire:navigate): Horizon and Pulse are separate apps. --}}
                     <a href="{{ $link->url }}" @class(['admin-nav-link', 'active' => $link->active]) @if ($link->active) aria-current="page" @endif>
-                        <i class="fa {{ $link->icon }}" aria-hidden="true"></i>
+                        <i class="{{ $link->icon }}" aria-hidden="true"></i>
                         <span>{{ $link->label }}</span>
                         @php($badge = $queueBadges[$link->url] ?? null)
                         {{-- A queue without a live key (escalations) shows its badge only while something waits. --}}
@@ -70,7 +70,7 @@
         <div class="admin-main">
             <header class="admin-topbar">
                 <button type="button" class="admin-menu-toggle" x-on:click="menu = ! menu" aria-controls="admin-sidebar" x-bind:aria-expanded="menu" aria-label="{{ __('Toggle menu') }}">
-                    <i class="fa fa-bars" aria-hidden="true"></i>
+                    <i class="fa-solid fa-bars" aria-hidden="true"></i>
                 </button>
                 <p class="admin-topbar__title">{{ $title ?? __('Admin') }}</p>
                 <span class="admin-topbar__spacer"></span>

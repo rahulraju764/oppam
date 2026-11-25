@@ -26,7 +26,7 @@
     <div wire:loading.class="is-loading" wire:target="tab, search, gotoPage, nextPage, previousPage">
         <x-admin.table :headers="[__('Reference'), __('From'), __('Topic'), __('Status'), __('Received (IST)'), __('Assigned'), '']" :caption="__('Contact messages')" :empty="$this->submissions->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-envelope-open-o" :title="__('Nothing here')" :message="__('No contact messages in this tab.')" />
+                <x-ui.empty-state icon="fa-regular fa-envelope-open" :title="__('Nothing here')" :message="__('No contact messages in this tab.')" />
             </x-slot:emptyState>
 
             @foreach ($this->submissions as $row)

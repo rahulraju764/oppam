@@ -7,10 +7,10 @@
         <div>
             <h1>{{ $ticket->subject }}</h1>
             <p>
-                <a href="{{ route('admin.support.tickets') }}" wire:navigate><i class="fa fa-arrow-left" aria-hidden="true"></i> {{ __('Back to tickets') }}</a>
+                <a href="{{ route('admin.support.tickets') }}" wire:navigate><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ __('Back to tickets') }}</a>
                 · {{ $ticket->code }} · {{ $ticket->source->label() }}
                 · <x-ui.badge :variant="$ticket->status->badgeVariant()">{{ $ticket->status->label() }}</x-ui.badge>
-                @if ($ticket->isFirstResponseOverdue())<x-ui.badge variant="danger" icon="fa-clock-o">{{ __('First reply overdue') }}</x-ui.badge>@endif
+                @if ($ticket->isFirstResponseOverdue())<x-ui.badge variant="danger" icon="fa-regular fa-clock">{{ __('First reply overdue') }}</x-ui.badge>@endif
             </p>
         </div>
     </div>
@@ -24,7 +24,7 @@
                             <span class="ticket-thread__meta">
                                 @if ($line->author === \App\Enums\TicketAuthor::Admin)
                                     {{ $line->admin?->name ?? __('Support') }}
-                                    @if ($line->is_internal)<x-ui.badge variant="warning" icon="fa-lock">{{ __('Internal note') }}</x-ui.badge>@endif
+                                    @if ($line->is_internal)<x-ui.badge variant="warning" icon="fa-solid fa-lock">{{ __('Internal note') }}</x-ui.badge>@endif
                                 @else
                                     {{ $ticket->name }}
                                 @endif
@@ -51,7 +51,7 @@
                             <input class="form-check-input" type="checkbox" id="ticketInternal" name="internal" wire:model.live="internal">
                             <label class="form-check-label" for="ticketInternal">{{ __('Internal note — not sent to the member') }}</label>
                         </div>
-                        <x-ui.button type="submit" loading="send" class="mt-2" :icon="$internal ? 'fa-lock' : 'fa-reply'">{{ $internal ? __('Add note') : __('Send reply') }}</x-ui.button>
+                        <x-ui.button type="submit" loading="send" class="mt-2" :icon="$internal ? 'fa-solid fa-lock' : 'fa-solid fa-reply'">{{ $internal ? __('Add note') : __('Send reply') }}</x-ui.button>
                     </form>
                 @elseif (! $ticket->status->acceptsReplies())
                     <x-ui.alert type="info" class="mt-3">{{ __('This ticket is closed.') }}</x-ui.alert>

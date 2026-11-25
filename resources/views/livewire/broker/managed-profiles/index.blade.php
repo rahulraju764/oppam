@@ -42,7 +42,7 @@
 
         <div class="dashboard-content" wire:loading.class="is-loading" wire:target="search, status, assignee, gotoPage, nextPage, previousPage, assignSelected">
             @if ($profiles->isEmpty())
-                <x-ui.empty-state icon="fa-users" :title="$filtered ? __('No profiles match') : __('No client profiles yet')"
+                <x-ui.empty-state icon="fa-solid fa-users" :title="$filtered ? __('No profiles match') : __('No client profiles yet')"
                     :message="$filtered ? __('Try another search or filter.') : __('Add your first client — it takes a few minutes and our team reviews it before it goes live.')" />
                 @if ($canCreate && ! $filtered)
                     <p class="text-center mb-0"><a href="{{ route('broker.profiles.create') }}" wire:navigate class="view-btn">{{ __('Add a profile') }}</a></p>

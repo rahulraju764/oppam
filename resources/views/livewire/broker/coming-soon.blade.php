@@ -4,7 +4,7 @@
             <div class="content-header">
                 <h1>{{ $title }}</h1>
             </div>
-            <x-ui.empty-state icon="fa-wrench" :title="__('Opening soon')" :message="__('This part of the bureau portal opens soon.')">
+            <x-ui.empty-state icon="fa-solid fa-wrench" :title="__('Opening soon')" :message="__('This part of the bureau portal opens soon.')">
                 <x-ui.button :href="route('broker.dashboard')" variant="outline" wire:navigate>{{ __('Back to the dashboard') }}</x-ui.button>
             </x-ui.empty-state>
         </div>

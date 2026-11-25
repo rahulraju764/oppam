@@ -2,17 +2,17 @@
 @inject('nav', 'App\Support\Navigation\Navigation')
 
 @foreach ([
-    ['home', 'Home', 'fa-home'],
-    ['plans', 'Packages & FAQ', 'fa-diamond'],
-    ['contact', 'Contact', 'fa-phone'],
-    ['login', 'Login', 'fa-sign-in'],
+    ['home', 'Home', 'fa-solid fa-house'],
+    ['plans', 'Packages & FAQ', 'fa-regular fa-gem'],
+    ['contact', 'Contact', 'fa-solid fa-phone'],
+    ['login', 'Login', 'fa-solid fa-right-to-bracket'],
 ] as [$routeName, $label, $icon])
     @php($url = $nav->url($routeName))
     @if ($url)
         @php($active = $nav->isActive($routeName))
         <li class="nav-item">
             <a @class(['nav-link head-link', 'active' => $active]) href="{{ $url }}" wire:navigate @if ($active) aria-current="page" @endif>
-                <i class="fa {{ $icon }}" aria-hidden="true"></i>
+                <i class="{{ $icon }}" aria-hidden="true"></i>
                 <span>{{ __($label) }}</span>
             </a>
         </li>

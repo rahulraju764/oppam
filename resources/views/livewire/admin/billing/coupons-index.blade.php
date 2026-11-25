@@ -6,13 +6,13 @@
             <p>{{ __('An order keeps the discount it was created with. A used coupon can be deactivated, not deleted.') }}</p>
         </div>
         @can('billing.coupons.edit')
-            <x-ui.button type="button" icon="fa-plus" wire:click="create" loading="create" dusk="coupon-new">{{ __('New coupon') }}</x-ui.button>
+            <x-ui.button type="button" icon="fa-solid fa-plus" wire:click="create" loading="create" dusk="coupon-new">{{ __('New coupon') }}</x-ui.button>
         @endcan
     </div>
 
     <x-admin.table :headers="[__('Code'), __('Discount'), __('Used'), __('Valid (IST)'), __('Status'), __('Actions')]" :caption="__('Coupons')" :empty="$coupons->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-ticket" :title="__('No coupons yet')" :message="__('Create one to offer a discount at checkout.')" />
+            <x-ui.empty-state icon="fa-solid fa-ticket" :title="__('No coupons yet')" :message="__('Create one to offer a discount at checkout.')" />
         </x-slot:emptyState>
 
         @foreach ($coupons as $coupon)

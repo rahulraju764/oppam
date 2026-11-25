@@ -508,6 +508,9 @@ tags and call `AOS.init()` at the top of the `onReady` block.
 **Font Awesome is still 4.7 (2016, unmaintained)** — deliberately. Upgrading to v6
 renames every icon class site-wide (`fa fa-heart` → `fa-solid fa-heart`), so it is
 its own job, not a drive-by. `TODO(backend):` in `script.php`.
+**Done in P9.3a (2026-11-22):** the Laravel app is on Font Awesome 6 Free (npm `@fortawesome/fontawesome-free`),
+converted with Font Awesome's own v4 shim map — see `docs/fa4-to-fa6-map.md`. The template copy here stays on 4.7
+as the visual reference.
 
 ### `links.php` order is load-bearing: vendor CSS first, ours last
 

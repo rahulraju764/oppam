@@ -22,7 +22,7 @@
                 <div class="col-lg-5">
                     <div class="contact-aside">
                         <div class="location">
-                            <span class="location-icon"><i class="fa fa-phone" aria-hidden="true"></i></span>
+                            <span class="location-icon"><i class="fa-solid fa-phone" aria-hidden="true"></i></span>
                             <div class="location-body">
                                 <h3>{{ __('Contact') }}</h3>
                                 <ul class="location-content">
@@ -37,7 +37,7 @@
                         </div>
 
                         <div class="location">
-                            <span class="location-icon"><i class="fa fa-map-marker" aria-hidden="true"></i></span>
+                            <span class="location-icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
                             <div class="location-body">
                                 <h3>{{ __('Address') }}</h3>
                                 <ul class="location-content">
@@ -51,7 +51,7 @@
                         </div>
 
                         <div class="location">
-                            <span class="location-icon"><i class="fa fa-clock-o" aria-hidden="true"></i></span>
+                            <span class="location-icon"><i class="fa-regular fa-clock" aria-hidden="true"></i></span>
                             <div class="location-body">
                                 <h3>{{ __('Office Hours') }}</h3>
                                 <ul class="location-content">
@@ -64,9 +64,9 @@
                             <div class="social-media-links">
                                 <h2>{{ __('Follow More') }}</h2>
                                 <div class="social_media">
-                                    @foreach (['facebook' => ['Facebook', 'fa-facebook'], 'twitter' => ['Twitter', 'fa-twitter'], 'instagram' => ['Instagram', 'fa-instagram'], 'linkedin' => ['LinkedIn', 'fa-linkedin'], 'youtube' => ['YouTube', 'fa-youtube-play']] as $network => [$networkName, $icon])
+                                    @foreach (['facebook' => ['Facebook', 'fa-brands fa-facebook-f'], 'twitter' => ['Twitter', 'fa-brands fa-twitter'], 'instagram' => ['Instagram', 'fa-brands fa-instagram'], 'linkedin' => ['LinkedIn', 'fa-brands fa-linkedin-in'], 'youtube' => ['YouTube', 'fa-brands fa-youtube']] as $network => [$networkName, $icon])
                                         @isset($social[$network])
-                                            <a href="{{ $social[$network] }}" target="_blank" rel="noopener" aria-label="{{ __('Oppam Matrimony on :network', ['network' => $networkName]) }}"><i class="fa {{ $icon }}" aria-hidden="true"></i></a>
+                                            <a href="{{ $social[$network] }}" target="_blank" rel="noopener" aria-label="{{ __('Oppam Matrimony on :network', ['network' => $networkName]) }}"><i class="{{ $icon }}" aria-hidden="true"></i></a>
                                         @endisset
                                     @endforeach
                                 </div>

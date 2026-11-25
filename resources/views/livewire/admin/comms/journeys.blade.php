@@ -15,7 +15,7 @@
         <x-admin.table :headers="[__('Journey'), __('Sends on'), __('Channel'), __('Last :n days', ['n' => \App\Livewire\Admin\Comms\Journeys::STATS_DAYS]), __('Status'), '']"
                        :caption="__('Automated journeys')" :empty="$journeys->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-road" :title="__('No journeys set up')" :message="__('Run the database migrations to add the four journeys.')" />
+                <x-ui.empty-state icon="fa-solid fa-road" :title="__('No journeys set up')" :message="__('Run the database migrations to add the four journeys.')" />
             </x-slot:emptyState>
 
             @foreach ($keys as $key)

@@ -11,7 +11,7 @@
                 <x-ui.badge :variant="$row->status->badgeVariant()">{{ $row->status->label() }}</x-ui.badge>
             </p>
         </div>
-        <x-ui.button :href="route('admin.comms.campaigns.index')" variant="ghost" icon="fa-arrow-left" wire:navigate>{{ __('All campaigns') }}</x-ui.button>
+        <x-ui.button :href="route('admin.comms.campaigns.index')" variant="ghost" icon="fa-solid fa-arrow-left" wire:navigate>{{ __('All campaigns') }}</x-ui.button>
     </div>
 
     @if ($row->status === \App\Enums\CampaignStatus::PendingApproval)

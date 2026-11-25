@@ -1088,7 +1088,7 @@
         border: 0;
         content: "\f107";
         /* fa-angle-down */
-        font: normal normal normal 16px/1 FontAwesome;
+        font: normal normal 900 16px/1 "Font Awesome 6 Free";   /* FA6 (P9.3a): the solid style is weight 900 */
         color: var(--color-gr-dark);
         transition: transform var(--transition);
     }

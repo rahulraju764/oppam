@@ -16,7 +16,7 @@
         </div>
         <x-slot:footer>
             <x-ui.button type="button" variant="ghost" x-on:click="close()">{{ __('Keep browsing') }}</x-ui.button>
-            <x-ui.button type="button" variant="outline" icon="fa-envelope" x-show="info.code"
+            <x-ui.button type="button" variant="outline" icon="fa-solid fa-envelope" x-show="info.code"
                          x-on:click="close(); window.Livewire?.dispatch('compose-interest', { code: info.code })">{{ __('Send interest') }}</x-ui.button>
             {{-- Blade directives aren't compiled inside component attributes, so the fallback is echoed. --}}
             <x-ui.button :href="$mutualUrl" x-bind:href="info.url || {{ \Illuminate\Support\Js::from($mutualUrl) }}"

@@ -14,35 +14,35 @@
             <h2 class="safety-section__title">{{ __('Our safety tips') }}</h2>
             <ul class="safety-tips">
                 <li class="safety-tip">
-                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa fa-inr"></i></span>
+                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa-solid fa-indian-rupee-sign"></i></span>
                     <div>
                         <h3>{{ __('Never send money') }}</h3>
                         <p>{{ __('No genuine match asks for money — not for a visa, a medical emergency, a customs fee or a “gift”. If anyone asks, stop and report them.') }}</p>
                     </div>
                 </li>
                 <li class="safety-tip">
-                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa fa-users"></i></span>
+                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
                     <div>
                         <h3>{{ __('Involve your family early') }}</h3>
                         <p>{{ __('Let your family speak to theirs before things become serious. Someone who avoids meeting your family is a warning sign.') }}</p>
                     </div>
                 </li>
                 <li class="safety-tip">
-                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa fa-coffee"></i></span>
+                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa-solid fa-mug-saucer"></i></span>
                     <div>
                         <h3>{{ __('Meet in public') }}</h3>
                         <p>{{ __('For the first meetings choose a busy public place, tell someone where you will be, and travel there on your own.') }}</p>
                     </div>
                 </li>
                 <li class="safety-tip">
-                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa fa-lock"></i></span>
+                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
                     <div>
                         <h3>{{ __('Keep personal details private') }}</h3>
                         <p>{{ __('Chat on Oppam until you are comfortable. Never share bank details, OTPs, ID documents or your home address.') }}</p>
                     </div>
                 </li>
                 <li class="safety-tip">
-                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa fa-check-circle"></i></span>
+                    <span class="safety-tip__icon" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span>
                     <div>
                         <h3>{{ __('Prefer verified profiles') }}</h3>
                         <p>{{ __('The Verified badge means our team checked an ID document. Verify your own profile too — it builds trust both ways.') }}</p>
@@ -59,8 +59,8 @@
             </ol>
             @if ($member)
                 <p>
-                    <a href="{{ route('member.settings', ['tab' => 'blocked']) }}" wire:navigate><i class="fa fa-ban" aria-hidden="true"></i> {{ __('Your blocked & ignored members') }}</a>
-                    · <a href="{{ route('member.help') }}" wire:navigate><i class="fa fa-life-ring" aria-hidden="true"></i> {{ __('Ask our support team') }}</a>
+                    <a href="{{ route('member.settings', ['tab' => 'blocked']) }}" wire:navigate><i class="fa-solid fa-ban" aria-hidden="true"></i> {{ __('Your blocked & ignored members') }}</a>
+                    · <a href="{{ route('member.help') }}" wire:navigate><i class="fa-solid fa-life-ring" aria-hidden="true"></i> {{ __('Ask our support team') }}</a>
                 </p>
             @endif
 

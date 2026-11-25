@@ -13,7 +13,8 @@
             x-bind:aria-disabled="busy.toString()" x-bind:aria-busy="busy.toString()"
             aria-pressed="{{ $liked ? 'true' : 'false' }}" x-bind:aria-pressed="on.toString()"
             aria-label="{{ $label }}">
-        <i @class(['fa', $liked ? 'fa-heart' : 'fa-heart-o']) x-bind:class="on ? 'fa-heart' : 'fa-heart-o'" aria-hidden="true"></i>
+        {{-- FA6: filled = solid, outline = regular. Alpine's object form removes the false key's classes first, so only one style is ever on. --}}
+        <i @class(['fa-solid fa-heart' => $liked, 'fa-regular fa-heart' => ! $liked]) x-bind:class="{ 'fa-regular fa-heart': ! on, 'fa-solid fa-heart': on }" aria-hidden="true"></i>
         @unless ($variant === 'tile')
             <span aria-hidden="true" x-text="on ? @js(__('Liked')) : @js(__('Like'))">{{ $liked ? __('Liked') : __('Like') }}</span>
         @endunless

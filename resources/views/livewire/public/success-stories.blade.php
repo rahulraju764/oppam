@@ -13,7 +13,7 @@
             </div>
 
             @if ($stories === [])
-                <x-ui.empty-state icon="fa-heart-o" :title="__('No stories yet')" :message="__('The first couples are writing theirs now.')" />
+                <x-ui.empty-state icon="fa-regular fa-heart" :title="__('No stories yet')" :message="__('The first couples are writing theirs now.')" />
             @else
                 <div class="row g-4 story-grid">
                     @foreach ($stories as $story)

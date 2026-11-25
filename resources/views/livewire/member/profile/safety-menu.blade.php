@@ -5,22 +5,22 @@
 <div class="safety-menu" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
     <button type="button" class="send-int safety-menu__toggle" x-on:click="open = ! open" x-bind:aria-expanded="open"
             aria-haspopup="true" aria-controls="safety-menu-{{ $profileCode }}">
-        <i class="fa fa-ellipsis-h" aria-hidden="true"></i>{{ __('More') }}
+        <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>{{ __('More') }}
     </button>
     <ul class="safety-menu__list" id="safety-menu-{{ $profileCode }}" x-show="open" x-cloak>
         <li>
             <button type="button" class="safety-menu__item" x-on:click="open = false; $dispatch('open-modal', { name: 'report-profile' })">
-                <i class="fa fa-flag" aria-hidden="true"></i>{{ __('Report :name', ['name' => $name]) }}
+                <i class="fa-solid fa-flag" aria-hidden="true"></i>{{ __('Report :name', ['name' => $name]) }}
             </button>
         </li>
         <li>
             <button type="button" class="safety-menu__item" x-on:click="open = false; $dispatch('open-modal', { name: 'ignore-profile' })">
-                <i class="fa fa-eye-slash" aria-hidden="true"></i>{{ __('Ignore') }}
+                <i class="fa-regular fa-eye-slash" aria-hidden="true"></i>{{ __('Ignore') }}
             </button>
         </li>
         <li>
             <button type="button" class="safety-menu__item safety-menu__item--danger" x-on:click="open = false; $dispatch('open-modal', { name: 'block-profile' })">
-                <i class="fa fa-ban" aria-hidden="true"></i>{{ __('Block') }}
+                <i class="fa-solid fa-ban" aria-hidden="true"></i>{{ __('Block') }}
             </button>
         </li>
     </ul>

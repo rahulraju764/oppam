@@ -4,11 +4,11 @@
 
     @if ($canAdd)
         <x-ui.textarea :label="__('New note')" name="noteBody" wire:model="noteBody" rows="3" />
-        <x-ui.button size="sm" type="button" wire:click="add" loading="add" icon="fa-plus">{{ __('Add note') }}</x-ui.button>
+        <x-ui.button size="sm" type="button" wire:click="add" loading="add" icon="fa-solid fa-plus">{{ __('Add note') }}</x-ui.button>
     @endif
 
     @if ($notes->isEmpty())
-        <x-ui.empty-state icon="fa-sticky-note-o" :title="__('No notes yet')" />
+        <x-ui.empty-state icon="fa-regular fa-note-sticky" :title="__('No notes yet')" />
     @else
         <ul class="list-unstyled mt-4 admin-notes">
             @foreach ($notes as $note)

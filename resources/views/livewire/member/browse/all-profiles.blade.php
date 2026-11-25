@@ -18,23 +18,23 @@
                         <div class="search-sheet__head d-lg-none">
                             <h2 class="h5 mb-0">{{ __('Browse') }}</h2>
                             <button type="button" class="search-sheet__close" x-on:click="sheet = false" aria-label="{{ __('Close') }}">
-                                <i class="fa fa-times" aria-hidden="true"></i>
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                             </button>
                         </div>
 
                         <nav class="side-bar" aria-label="{{ __('Match categories') }}">
                             <p class="sidebar-section-title">{{ __('Browse') }}</p>
                             <a href="{{ route('member.profiles') }}" class="nav-link-custom active" aria-current="page" wire:navigate>
-                                <span class="nav-link-label"><i class="fa fa-users" aria-hidden="true"></i> {{ __('All Profiles') }}</span>
-                                <span class="nav-count"><i class="fa fa-angle-right" aria-hidden="true"></i></span>
+                                <span class="nav-link-label"><i class="fa-solid fa-users" aria-hidden="true"></i> {{ __('All Profiles') }}</span>
+                                <span class="nav-count"><i class="fa-solid fa-angle-right" aria-hidden="true"></i></span>
                             </a>
                             <a href="{{ route('member.matches.daily') }}" class="nav-link-custom" wire:navigate>
-                                <span class="nav-link-label"><i class="fa fa-bolt" aria-hidden="true"></i> {{ __('Daily Matches') }}</span>
-                                <span class="nav-count"><i class="fa fa-angle-right" aria-hidden="true"></i></span>
+                                <span class="nav-link-label"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{ __('Daily Matches') }}</span>
+                                <span class="nav-count"><i class="fa-solid fa-angle-right" aria-hidden="true"></i></span>
                             </a>
                             <a href="{{ route('member.search') }}" class="nav-link-custom" wire:navigate>
-                                <span class="nav-link-label"><i class="fa fa-search" aria-hidden="true"></i> {{ __('Advanced Search') }}</span>
-                                <span class="nav-count"><i class="fa fa-angle-right" aria-hidden="true"></i></span>
+                                <span class="nav-link-label"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('Advanced Search') }}</span>
+                                <span class="nav-count"><i class="fa-solid fa-angle-right" aria-hidden="true"></i></span>
                             </a>
 
                             <div class="sidebar-divider"></div>
@@ -58,13 +58,13 @@
                                         </select>
                                         <button type="button" class="saved-search__action" wire:click="startRename('{{ $saved->id }}')"
                                                 aria-haspopup="dialog" aria-label="{{ __('Rename :name', ['name' => $saved->name]) }}">
-                                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                                            <i class="fa-solid fa-pencil" aria-hidden="true"></i>
                                         </button>
                                         <button type="button" class="saved-search__action saved-search__action--danger"
                                                 wire:click="deleteSavedSearch('{{ $saved->id }}')"
                                                 wire:confirm="{{ __('Delete the saved search “:name”?', ['name' => $saved->name]) }}"
                                                 aria-label="{{ __('Delete :name', ['name' => $saved->name]) }}">
-                                            <i class="fa fa-trash" aria-hidden="true"></i>
+                                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -93,7 +93,7 @@
                                 </div>
                             </div>
 
-                            <x-ui.button type="button" variant="outline" icon="fa-bars" id="open-browse" class="w-100 mb-3 d-lg-none" x-on:click="sheet = true"
+                            <x-ui.button type="button" variant="outline" icon="fa-solid fa-bars" id="open-browse" class="w-100 mb-3 d-lg-none" x-on:click="sheet = true"
                                          aria-controls="browse-rail" x-bind:aria-expanded="sheet">{{ __('Browse & saved searches') }}</x-ui.button>
 
                             @if ($notice)
@@ -108,7 +108,7 @@
                                 @forelse ($cards as $card)
                                     <x-profile.row :profile="$card" highlight wire:key="all-{{ $card->code }}" />
                                 @empty
-                                    <x-ui.empty-state icon="fa-users" :title="__('No profiles yet')"
+                                    <x-ui.empty-state icon="fa-solid fa-users" :title="__('No profiles yet')"
                                                       :message="__('New members join every day. Try Advanced Search with wider filters.')">
                                         <x-ui.button :href="route('member.search')" wire:navigate>{{ __('Open Advanced Search') }}</x-ui.button>
                                     </x-ui.empty-state>

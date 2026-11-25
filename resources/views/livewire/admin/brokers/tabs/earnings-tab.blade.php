@@ -20,7 +20,7 @@
         <x-admin.table :headers="[__('Profile'), __('Type'), __('Order'), __('Base'), __('Rate'), __('Commission'), __('Status'), __('Earned (IST)'), __('Payout')]"
                        :caption="__('Commission ledger')" :empty="$rows->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-inr" :title="__('No commission yet')" :message="__('Referred and managed profiles appear here once they are attributed to this bureau.')" />
+                <x-ui.empty-state icon="fa-solid fa-indian-rupee-sign" :title="__('No commission yet')" :message="__('Referred and managed profiles appear here once they are attributed to this bureau.')" />
             </x-slot:emptyState>
 
             @foreach ($rows as $row)

@@ -34,7 +34,7 @@
 
                         @foreach ($summary->queued as $next)
                             <p class="checkout-note text-muted-brand">
-                                <i class="fa fa-calendar-plus-o" aria-hidden="true"></i>
+                                <i class="fa-regular fa-calendar-plus" aria-hidden="true"></i>
                                 {{ __('Then :plan from :from until :until.', ['plan' => $next['plan'], 'from' => $date($next['starts_at']), 'until' => $date($next['ends_at'])]) }}
                             </p>
                         @endforeach
@@ -42,14 +42,14 @@
                         <ul class="checkout-features">
                             @foreach ($summary->features as $feature)
                                 <li @class(['is-off' => ! $feature['included']])>
-                                    <i @class(['fa', 'fa-check' => $feature['included'], 'fa-minus' => ! $feature['included']]) aria-hidden="true"></i>
+                                    <i @class(['fa-solid fa-check' => $feature['included'], 'fa-solid fa-minus' => ! $feature['included']]) aria-hidden="true"></i>
                                     {{ $feature['label'] }}
                                     <span class="visually-hidden">{{ $feature['included'] ? __('Included') : __('Not included') }}</span>
                                 </li>
                             @endforeach
                         </ul>
 
-                        <x-ui.button :href="route('plans')" icon="fa-diamond" wire:navigate>
+                        <x-ui.button :href="route('plans')" icon="fa-regular fa-gem" wire:navigate>
                             {{ $summary->isFree() ? __('Upgrade membership') : __('Renew or upgrade') }}
                         </x-ui.button>
                     </div>
@@ -94,7 +94,7 @@
                         <h2>{{ __('Payments & invoices') }}</h2>
 
                         @if ($orders->isEmpty())
-                            <x-ui.empty-state icon="fa-file-text-o" :title="__('No payments yet')"
+                            <x-ui.empty-state icon="fa-regular fa-file-lines" :title="__('No payments yet')"
                                               :message="__('Your orders and GST invoices will appear here after you buy a membership.')" />
                         @else
                             <p class="visually-hidden" wire:loading wire:target="gotoPage, nextPage, previousPage" role="status">{{ __('Loading orders…') }}</p>
@@ -130,7 +130,7 @@
                                                 <td>
                                                     @if ($order->invoice)
                                                         <a href="{{ route('member.billing.invoice', ['invoice' => $order->invoice->number]) }}">
-                                                            <i class="fa fa-download" aria-hidden="true"></i>
+                                                            <i class="fa-solid fa-download" aria-hidden="true"></i>
                                                             {{ $order->invoice->number }}<span class="visually-hidden"> {{ __('(PDF)') }}</span>
                                                         </a>
                                                     @else
@@ -140,7 +140,7 @@
                                                         @if ($refund->creditNote)
                                                             <div class="billing-refund">
                                                                 <a href="{{ route('member.billing.credit-note', ['number' => $refund->creditNote->number]) }}">
-                                                                    <i class="fa fa-download" aria-hidden="true"></i>
+                                                                    <i class="fa-solid fa-download" aria-hidden="true"></i>
                                                                     {{ __('Credit note :number', ['number' => $refund->creditNote->number]) }}<span class="visually-hidden"> {{ __('(PDF)') }}</span>
                                                                 </a>
                                                             </div>

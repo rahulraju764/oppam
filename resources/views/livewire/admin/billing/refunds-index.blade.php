@@ -23,7 +23,7 @@
 
     <x-admin.table :headers="[__('Refund'), __('Order'), __('Member'), __('Amount'), __('Category'), __('Reason'), __('Status'), __('Requested by'), __('Actions')]" :caption="__('Refunds')" :empty="$refunds->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-undo" :title="__('Nothing here')" :message="__('No refund has this status.')" />
+            <x-ui.empty-state icon="fa-solid fa-arrow-rotate-left" :title="__('Nothing here')" :message="__('No refund has this status.')" />
         </x-slot:emptyState>
 
         @foreach ($refunds as $refund)

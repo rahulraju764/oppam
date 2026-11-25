@@ -117,7 +117,7 @@ final class WorkQueues
         $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
 
-        return new WorkQueueData(MessageFlag::QUEUE_KEY, __('Flagged messages'), 'admin.chat.flags', 'fa-flag', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
+        return new WorkQueueData(MessageFlag::QUEUE_KEY, __('Flagged messages'), 'admin.chat.flags', 'fa-solid fa-flag', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
     }
 
     /** A05: ID requests waiting (escalated ones included), the oldest first sent. */
@@ -127,7 +127,7 @@ final class WorkQueues
         $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::VerificationAgingBreachHours));
 
-        return new WorkQueueData(VerificationRequest::QUEUE_KEY, __('ID verification'), 'admin.verification.index', 'fa-id-card-o', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
+        return new WorkQueueData(VerificationRequest::QUEUE_KEY, __('ID verification'), 'admin.verification.index', 'fa-regular fa-id-card', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
     }
 
     /** A07 (P7.1): bureau applications without KYC + KYC submissions waiting, the oldest first. */
@@ -138,7 +138,7 @@ final class WorkQueues
         $oldest = collect([$oldestKyc, $oldestApplication])->filter()->map(fn (mixed $at): CarbonImmutable => CarbonImmutable::parse((string) $at))->min();
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
 
-        return new WorkQueueData(KycQueue::QUEUE_KEY, __('Bureau KYC'), 'admin.brokers.kyc', 'fa-building-o', KycQueue::waitingCount(), $oldest, $oldest !== null && $oldest->lt($breach));
+        return new WorkQueueData(KycQueue::QUEUE_KEY, __('Bureau KYC'), 'admin.brokers.kyc', 'fa-regular fa-building', KycQueue::waitingCount(), $oldest, $oldest !== null && $oldest->lt($breach));
     }
 
     /**
@@ -160,9 +160,9 @@ final class WorkQueues
         $rows = BillingInvestigation::query()->open();
 
         return [
-            $queue(__('Stuck orders'), 'admin.billing.stuck', 'fa-exclamation-triangle', (clone $stuck)->count(), (clone $stuck)->min('orders.created_at')),
-            $queue(__('Refunds to approve'), 'admin.billing.refunds', 'fa-undo', (clone $refunds)->count(), (clone $refunds)->min('created_at')),
-            $queue(__('Reconciliation'), 'admin.billing.investigations', 'fa-search', (clone $rows)->count(), (clone $rows)->min('created_at')),
+            $queue(__('Stuck orders'), 'admin.billing.stuck', 'fa-solid fa-triangle-exclamation', (clone $stuck)->count(), (clone $stuck)->min('orders.created_at')),
+            $queue(__('Refunds to approve'), 'admin.billing.refunds', 'fa-solid fa-arrow-rotate-left', (clone $refunds)->count(), (clone $refunds)->min('created_at')),
+            $queue(__('Reconciliation'), 'admin.billing.investigations', 'fa-solid fa-magnifying-glass', (clone $rows)->count(), (clone $rows)->min('created_at')),
         ];
     }
 
@@ -173,7 +173,7 @@ final class WorkQueues
         $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
         $due = $row?->due !== null ? CarbonImmutable::parse((string) $row->due) : null;
 
-        return new WorkQueueData(AbuseCase::QUEUE_KEY, __('Safety cases'), 'admin.safety.cases', 'fa-shield', (int) ($row->waiting ?? 0), $oldest, $due !== null && $due->isPast());
+        return new WorkQueueData(AbuseCase::QUEUE_KEY, __('Safety cases'), 'admin.safety.cases', 'fa-solid fa-shield', (int) ($row->waiting ?? 0), $oldest, $due !== null && $due->isPast());
     }
 
     /** A10 (P6.2): tickets waiting for us; breached when a first reply is overdue. */
@@ -185,7 +185,7 @@ final class WorkQueues
         $overdue = SupportTicket::query()->whereNull('first_responded_at')->whereIn('status', [TicketStatus::Open->value, TicketStatus::PendingMember->value])
             ->where('first_response_due_at', '<', now())->exists();
 
-        return new WorkQueueData(SupportTicket::QUEUE_KEY, __('Open tickets'), 'admin.support.tickets', 'fa-life-ring', (int) ($row->waiting ?? 0), $oldest, $overdue);
+        return new WorkQueueData(SupportTicket::QUEUE_KEY, __('Open tickets'), 'admin.support.tickets', 'fa-solid fa-life-ring', (int) ($row->waiting ?? 0), $oldest, $overdue);
     }
 
     /** A13: abuse signals waiting for a moderator, the oldest first raised. */
@@ -195,7 +195,7 @@ final class WorkQueues
         $oldest = $row?->oldest !== null ? CarbonImmutable::parse((string) $row->oldest) : null;
         $breach = CarbonImmutable::now()->subHours(Settings::int(SettingKey::ModerationSlaHours));
 
-        return new WorkQueueData(EngagementSignal::QUEUE_KEY, __('Abuse signals'), 'admin.chat.signals', 'fa-bolt', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
+        return new WorkQueueData(EngagementSignal::QUEUE_KEY, __('Abuse signals'), 'admin.chat.signals', 'fa-solid fa-bolt', (int) ($row->waiting ?? 0), $oldest, $oldest !== null && $oldest->lt($breach));
     }
 
     /** @return list<WorkQueueData> */
@@ -220,10 +220,10 @@ final class WorkQueues
         $ofType = fn (ModerationItemType $type): Collection => $rows->where('type', $type->value);
 
         return [
-            $queue(ModerationItemType::ProfileNew->queueKey(), __('Profiles to moderate'), 'admin.moderation.profiles', 'fa-check-square-o', $ofType(ModerationItemType::ProfileNew)),
-            $queue(ModerationItemType::Photo->queueKey(), __('Photos'), 'admin.moderation.photos', 'fa-picture-o', $ofType(ModerationItemType::Photo)),
-            $queue(ModerationItemType::ProfileEdit->queueKey(), __('Edited fields'), 'admin.moderation.edits', 'fa-pencil-square-o', $ofType(ModerationItemType::ProfileEdit)),
-            $queue(null, __('Escalations'), self::ESCALATIONS_ROUTE, 'fa-level-up', $rows->where('status', ModerationStatus::Escalated->value)),
+            $queue(ModerationItemType::ProfileNew->queueKey(), __('Profiles to moderate'), 'admin.moderation.profiles', 'fa-regular fa-square-check', $ofType(ModerationItemType::ProfileNew)),
+            $queue(ModerationItemType::Photo->queueKey(), __('Photos'), 'admin.moderation.photos', 'fa-regular fa-image', $ofType(ModerationItemType::Photo)),
+            $queue(ModerationItemType::ProfileEdit->queueKey(), __('Edited fields'), 'admin.moderation.edits', 'fa-regular fa-pen-to-square', $ofType(ModerationItemType::ProfileEdit)),
+            $queue(null, __('Escalations'), self::ESCALATIONS_ROUTE, 'fa-solid fa-turn-up', $rows->where('status', ModerationStatus::Escalated->value)),
         ];
     }
 }

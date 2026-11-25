@@ -79,7 +79,7 @@
                         </div>
                     </div>
                     <p class="form-text">{{ __('They get an SMS link (valid 72 hours) to set a password and confirm their mobile.') }}</p>
-                    <x-ui.button loading="invite" icon="fa-paper-plane">{{ __('Send invitation') }}</x-ui.button>
+                    <x-ui.button loading="invite" icon="fa-solid fa-paper-plane">{{ __('Send invitation') }}</x-ui.button>
                 </form>
             @endif
         </div>
@@ -87,7 +87,7 @@
         <div class="dashboard-content mb-4" wire:loading.class="is-loading" wire:target="cancel">
             <h2 class="managed-form__heading">{{ __('Your team') }}</h2>
             @if ($members->count() <= 1)
-                <x-ui.empty-state icon="fa-id-badge" :title="__('Only you so far')"
+                <x-ui.empty-state icon="fa-regular fa-id-badge" :title="__('Only you so far')"
                     :message="__('Invite managers, data entry staff and telecallers so each works with their own login.')" />
             @endif
             <ul class="staff-list">

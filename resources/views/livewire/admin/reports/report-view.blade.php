@@ -11,8 +11,8 @@
         </div>
         @if ($canExport && $range)
             <div class="d-flex gap-2 flex-wrap">
-                <x-ui.button type="button" variant="secondary" size="sm" icon="fa-file-text-o" wire:click="export('csv')" loading="export" dusk="export-csv">{{ __('Export CSV') }}</x-ui.button>
-                <x-ui.button type="button" variant="secondary" size="sm" icon="fa-file-excel-o" wire:click="export('xlsx')" loading="export" dusk="export-xlsx">{{ __('Export Excel') }}</x-ui.button>
+                <x-ui.button type="button" variant="secondary" size="sm" icon="fa-regular fa-file-lines" wire:click="export('csv')" loading="export" dusk="export-csv">{{ __('Export CSV') }}</x-ui.button>
+                <x-ui.button type="button" variant="secondary" size="sm" icon="fa-regular fa-file-excel" wire:click="export('xlsx')" loading="export" dusk="export-xlsx">{{ __('Export Excel') }}</x-ui.button>
             </div>
         @endif
     </div>
@@ -43,7 +43,7 @@
 
     <div wire:loading.class="is-loading" wire:target="preset, from, to, compare, gotoPage, nextPage, previousPage">
         @if (! $data)
-            <x-ui.empty-state icon="fa-calendar" :title="__('Choose a valid period')" :message="__('Pick a start and end date, up to yesterday.')" />
+            <x-ui.empty-state icon="fa-solid fa-calendar-days" :title="__('Choose a valid period')" :message="__('Pick a start and end date, up to yesterday.')" />
         @else
             <div class="row g-3 mb-3">
                 @foreach ($data->stats as $stat)
@@ -85,7 +85,7 @@
                 <h2 class="admin-section-title">{{ $table->title }}</h2>
                 <x-admin.table :headers="$table->headers" :caption="$table->title" :empty="$table->rows === []" class="mb-3" wire:key="table-{{ $table->key }}">
                     <x-slot:emptyState>
-                        <x-ui.empty-state icon="fa-table" :title="__('No data for this period')" :message="__('Numbers appear after the nightly snapshot has run for these days.')" />
+                        <x-ui.empty-state icon="fa-solid fa-table" :title="__('No data for this period')" :message="__('Numbers appear after the nightly snapshot has run for these days.')" />
                     </x-slot:emptyState>
                     @foreach ($table->rows as $row)
                         <tr>
@@ -101,7 +101,7 @@
                 <h2 class="admin-section-title">{{ __('Live profiles with no interest in :days days', ['days' => $queueDays]) }}</h2>
                 <x-admin.table :headers="[__('Profile'), __('Gender'), __('District'), __('Live since')]" :caption="__('No-interest work queue')" :empty="$queue->isEmpty()">
                     <x-slot:emptyState>
-                        <x-ui.empty-state icon="fa-check" :title="__('Every live profile got an interest recently')" :message="__('Nobody to follow up with right now.')" />
+                        <x-ui.empty-state icon="fa-solid fa-check" :title="__('Every live profile got an interest recently')" :message="__('Nobody to follow up with right now.')" />
                     </x-slot:emptyState>
                     @foreach ($queue as $profile)
                         <tr wire:key="queue-{{ $profile->code }}">

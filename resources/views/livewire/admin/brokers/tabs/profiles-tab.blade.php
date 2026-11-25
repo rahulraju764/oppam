@@ -10,7 +10,7 @@
     <div wire:loading.class="opacity-50" wire:target="status,gotoPage,nextPage,previousPage">
         <x-admin.table :headers="[__('Profile'), __('Name'), __('Status'), __('Assigned to'), __('Source'), __('Updated')]" :caption="__('Managed profiles')" :empty="$profiles->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-users" :title="__('No managed profiles')" :message="__('This bureau manages no profile with this status.')" />
+                <x-ui.empty-state icon="fa-solid fa-users" :title="__('No managed profiles')" :message="__('This bureau manages no profile with this status.')" />
             </x-slot:emptyState>
 
             @foreach ($profiles as $profile)

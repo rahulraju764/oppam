@@ -19,10 +19,10 @@
                 <p class="form-text">{{ __('It lists the columns in the right order, with drop-downs for religion, mother tongue, education and more.') }}</p>
                 <div class="managed-detail__actions mb-4">
                     <a href="{{ route('broker.import.template.xlsx') }}" class="ui-btn ui-btn--outline" download>
-                        <i class="fa fa-file-excel-o" aria-hidden="true"></i> {{ __('Excel template (.xlsx)') }}
+                        <i class="fa-regular fa-file-excel" aria-hidden="true"></i> {{ __('Excel template (.xlsx)') }}
                     </a>
                     <a href="{{ route('broker.import.template.csv') }}" class="ui-btn ui-btn--ghost" download>
-                        <i class="fa fa-file-text-o" aria-hidden="true"></i> {{ __('CSV version') }}
+                        <i class="fa-regular fa-file-lines" aria-hidden="true"></i> {{ __('CSV version') }}
                     </a>
                 </div>
 
@@ -48,7 +48,7 @@
                         @error('photos') <p class="invalid-feedback d-block" id="importPhotos-error" role="alert">{{ $message }}</p> @enderror
                     </div>
 
-                    <x-ui.button loading="startImport" icon="fa-upload" wire:loading.attr="disabled" wire:target="startImport,sheet,photos">{{ __('Upload and check') }}</x-ui.button>
+                    <x-ui.button loading="startImport" icon="fa-solid fa-upload" wire:loading.attr="disabled" wire:target="startImport,sheet,photos">{{ __('Upload and check') }}</x-ui.button>
                 </form>
             @endif
         </div>

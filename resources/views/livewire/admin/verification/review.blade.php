@@ -11,10 +11,10 @@
                 {{ $request->doc_type->label() }} · {{ $request->maskedNumber() }} ·
                 {{ __('sent :when', ['when' => $request->submitted_at->diffForHumans()]) }}
                 <x-ui.badge :variant="$request->status->badgeVariant()">{{ $request->status->label() }}</x-ui.badge>
-                @if ($request->is_priority)<x-ui.badge variant="premium" icon="fa-diamond">{{ __('Paid') }}</x-ui.badge>@endif
+                @if ($request->is_priority)<x-ui.badge variant="premium" icon="fa-regular fa-gem">{{ __('Paid') }}</x-ui.badge>@endif
             </p>
         </div>
-        <x-ui.button variant="ghost" :href="route('admin.verification.index')" icon="fa-arrow-left">{{ __('Back to queue') }}</x-ui.button>
+        <x-ui.button variant="ghost" :href="route('admin.verification.index')" icon="fa-solid fa-arrow-left">{{ __('Back to queue') }}</x-ui.button>
     </div>
 
     @if ($claimedBy)
@@ -31,11 +31,11 @@
                 <h2 class="h5">{{ __('Automatic checks') }}</h2>
                 @forelse ($flags as $row)
                     <p class="mb-1">
-                        <x-ui.badge :variant="$row['flag']->isSerious() ? 'danger' : 'warning'" icon="fa-flag">{{ $row['flag']->label() }}</x-ui.badge>
+                        <x-ui.badge :variant="$row['flag']->isSerious() ? 'danger' : 'warning'" icon="fa-solid fa-flag">{{ $row['flag']->label() }}</x-ui.badge>
                         <span class="small">{{ $row['detail'] }}</span>
                     </p>
                 @empty
-                    <p class="mb-0 text-muted-brand"><i class="fa fa-check" aria-hidden="true"></i> {{ __('Nothing flagged.') }}</p>
+                    <p class="mb-0 text-muted-brand"><i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Nothing flagged.') }}</p>
                 @endforelse
             </div>
 
@@ -46,7 +46,7 @@
                     @if ($documentUrls !== [])
                         <span class="small text-muted-brand" x-data="{ left: {{ max(0, $viewerUntil - now()->getTimestamp()) }} }"
                               x-init="const t = setInterval(() => { left = Math.max(0, left - 1); if (left === 0) { clearInterval(t); $wire.$refresh(); } }, 1000)">
-                            <i class="fa fa-clock-o" aria-hidden="true"></i>
+                            <i class="fa-regular fa-clock" aria-hidden="true"></i>
                             {{ __('Viewer closes in') }} <strong x-text="`${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`" aria-live="off"></strong>
                         </span>
                     @endif
@@ -59,10 +59,10 @@
                 @elseif ($documentUrls === [])
                     <p class="small text-muted-brand mt-2">{{ __('Opening the viewer is logged, and so is every page it loads. The links work for :m minutes in this browser only.', ['m' => config('oppam.verification.link_minutes')]) }}</p>
                     @if ($canViewDocuments)
-                        <x-ui.button type="button" variant="outline" icon="fa-eye" wire:click="viewDocuments" loading="viewDocuments" dusk="view-documents">{{ __('View documents') }}</x-ui.button>
+                        <x-ui.button type="button" variant="outline" icon="fa-regular fa-eye" wire:click="viewDocuments" loading="viewDocuments" dusk="view-documents">{{ __('View documents') }}</x-ui.button>
                     @endif
                 @else
-                    <p class="small mt-2"><i class="fa fa-lock" aria-hidden="true"></i> {{ __('Access is logged. Don’t save, copy or photograph these documents.') }}</p>
+                    <p class="small mt-2"><i class="fa-solid fa-lock" aria-hidden="true"></i> {{ __('Access is logged. Don’t save, copy or photograph these documents.') }}</p>
                     <div class="vf-viewer-grid">
                         @foreach ($request->documents as $document)
                             @php($url = $documentUrls[$document->side->slug()] ?? null)
@@ -84,7 +84,7 @@
                             </figure>
                         @endforeach
                     </div>
-                    <x-ui.button type="button" variant="ghost" size="sm" icon="fa-times" wire:click="closeViewer">{{ __('Close viewer') }}</x-ui.button>
+                    <x-ui.button type="button" variant="ghost" size="sm" icon="fa-solid fa-xmark" wire:click="closeViewer">{{ __('Close viewer') }}</x-ui.button>
                 @endif
             </div>
 
@@ -141,15 +141,15 @@
                 <h2 class="h5">{{ __('Decision') }}</h2>
 
                 @if ($canDecide)
-                    <x-ui.button class="w-100 mb-3" type="button" wire:click="approve" loading="approve" icon="fa-check" dusk="verify-approve">{{ __('Approve — add Verified badge') }}</x-ui.button>
+                    <x-ui.button class="w-100 mb-3" type="button" wire:click="approve" loading="approve" icon="fa-solid fa-check" dusk="verify-approve">{{ __('Approve — add Verified badge') }}</x-ui.button>
 
                     <x-ui.select :label="__('Reason (reject)')" name="reason" wire:model="reason" :options="$reasons" :placeholder="__('Choose a reason')" />
                     <x-ui.textarea :label="__('Note to the member')" name="note" wire:model="note" rows="3" :hint="__('Shown below the reason. Required for “Other”.')" />
-                    <x-ui.button class="w-100 mb-3" variant="danger" type="button" wire:click="reject" loading="reject" icon="fa-times">{{ __('Reject') }}</x-ui.button>
+                    <x-ui.button class="w-100 mb-3" variant="danger" type="button" wire:click="reject" loading="reject" icon="fa-solid fa-xmark">{{ __('Reject') }}</x-ui.button>
 
                     @if ($request->status !== \App\Enums\VerificationStatus::Escalated)
                         <x-ui.textarea :label="__('Escalation note (internal)')" name="escalationNote" wire:model="escalationNote" rows="2" :hint="__('For the super admin; never shown to the member.')" />
-                        <x-ui.button class="w-100 mb-2" variant="ghost" type="button" wire:click="escalate" loading="escalate" icon="fa-level-up">{{ __('Escalate to super admin') }}</x-ui.button>
+                        <x-ui.button class="w-100 mb-2" variant="ghost" type="button" wire:click="escalate" loading="escalate" icon="fa-solid fa-turn-up">{{ __('Escalate to super admin') }}</x-ui.button>
                     @endif
                     <x-ui.button class="w-100" variant="link" type="button" wire:click="release">{{ __('Skip (back to queue)') }}</x-ui.button>
                 @elseif (! $request->status->isOpen())

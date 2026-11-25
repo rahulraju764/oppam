@@ -14,7 +14,7 @@
     <div wire:loading.class="opacity-50" wire:target="stage,gotoPage,nextPage,previousPage">
         <x-admin.table :headers="[__('Profile'), __('Joined'), __('Stage'), __('Commission')]" :caption="__('Referrals')" :empty="$rows->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-share-alt" :title="__('No referrals')" :message="__('No member has joined with this bureau’s code yet.')" />
+                <x-ui.empty-state icon="fa-solid fa-share-nodes" :title="__('No referrals')" :message="__('No member has joined with this bureau’s code yet.')" />
             </x-slot:emptyState>
 
             @foreach ($rows as $row)

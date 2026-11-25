@@ -14,16 +14,16 @@
     @if ($item['locked'])
         <li class="nav-item d-lg-none">
             <span class="nav-link head-link broker-nav-locked" aria-disabled="true">
-                <i class="fa {{ $item['icon'] }}" aria-hidden="true"></i>
+                <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                 <span>{{ $item['label'] }}</span>
-                <small><i class="fa fa-lock" aria-hidden="true"></i> {{ __('after KYC') }}</small>
+                <small><i class="fa-solid fa-lock" aria-hidden="true"></i> {{ __('after KYC') }}</small>
             </span>
         </li>
     @else
         @php($active = $nav->isActive($item['route']))
         <li @class(['nav-item', 'd-lg-none' => $shown >= 3])>
             <a @class(['nav-link head-link', 'active' => $active]) href="{{ route($item['route']) }}" wire:navigate @if ($active) aria-current="page" @endif>
-                <i class="fa {{ $item['icon'] }}" aria-hidden="true"></i>
+                <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                 <span>{{ $item['label'] }}</span>
             </a>
         </li>

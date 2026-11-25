@@ -27,7 +27,7 @@
     <div wire:loading.class="is-loading" wire:target="channel, status, member, gotoPage, nextPage, previousPage, resend">
         <x-admin.table :headers="[__('Sent (IST)'), __('Channel'), __('To'), __('Message'), __('Status'), __('Provider id'), '']" :caption="__('Outbound messages')" :empty="$this->messages->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-envelope-open-o" :title="__('Nothing here')" :message="__('No messages match these filters.')" />
+                <x-ui.empty-state icon="fa-regular fa-envelope-open" :title="__('Nothing here')" :message="__('No messages match these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($this->messages as $row)

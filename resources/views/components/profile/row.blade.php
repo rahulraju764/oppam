@@ -51,10 +51,10 @@
         <h3 class="pf-dt-m">
             {{ $profile->code }}
             @if ($profile->isVerified)
-                <x-ui.badge variant="verified" icon="fa-check-circle">{{ __('Verified') }}</x-ui.badge>
+                <x-ui.badge variant="verified" icon="fa-solid fa-circle-check">{{ __('Verified') }}</x-ui.badge>
             @endif
             @if ($featured)
-                <x-ui.badge variant="premium" icon="fa-star" class="profile-featured">{{ __('Featured') }}</x-ui.badge>
+                <x-ui.badge variant="premium" icon="fa-solid fa-star" class="profile-featured">{{ __('Featured') }}</x-ui.badge>
             @endif
             @if ($profile->meta)
                 <span>{{ $profile->meta }}</span>

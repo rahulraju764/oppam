@@ -58,7 +58,7 @@
                             @endif
                                 <span class="step-number">
                                     @if ($progress?->isComplete($item))
-                                        <i class="fa fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Done:') }}</span>
+                                        <i class="fa-solid fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Done:') }}</span>
                                     @else
                                         {{ $item->value }}
                                     @endif
@@ -115,22 +115,22 @@
                                     @if ($current->previous())
                                         {{-- Back keeps what was typed (partial save) before leaving the step. --}}
                                         <button type="button" class="wizard-back" wire:click="previous" wire:loading.attr="disabled" wire:target="previous">
-                                            <i class="fa fa-arrow-left" aria-hidden="true"></i> {{ __('Back') }}
+                                            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ __('Back') }}
                                         </button>
                                     @endif
                                     @if ($current->next())
                                         <button type="submit" class="view-btn" wire:loading.attr="disabled" wire:target="next">
                                             <span class="ui-spinner" wire:loading wire:target="next" aria-hidden="true"></span>
-                                            {{ __('continue') }} <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                                            {{ __('continue') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                         </button>
                                     @else
                                         {{-- Last step: submit for review (R-M02-2). --}}
                                         <button type="submit" class="view-btn" wire:loading.attr="disabled" wire:target="submit">
                                             <span class="ui-spinner" wire:loading wire:target="submit" aria-hidden="true"></span>
                                             @if ($profile?->status === \App\Enums\ProfileStatus::Active)
-                                                {{ __('Save changes') }} <i class="fa fa-check" aria-hidden="true"></i>
+                                                {{ __('Save changes') }} <i class="fa-solid fa-check" aria-hidden="true"></i>
                                             @else
-                                                {{ __('Submit for review') }} <i class="fa fa-check" aria-hidden="true"></i>
+                                                {{ __('Submit for review') }} <i class="fa-solid fa-check" aria-hidden="true"></i>
                                             @endif
                                         </button>
                                     @endif

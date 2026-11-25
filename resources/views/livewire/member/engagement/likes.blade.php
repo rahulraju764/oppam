@@ -31,7 +31,7 @@
 
                     <div wire:loading.remove wire:target="show">
                         @if ($locked && $counts['liked-me'] === 0)
-                            <x-ui.empty-state icon="fa-heart-o" :title="__('No likes yet')" :message="__('A complete profile with photos gets more likes.')">
+                            <x-ui.empty-state icon="fa-regular fa-heart" :title="__('No likes yet')" :message="__('A complete profile with photos gets more likes.')">
                                 <x-ui.button :href="route('member.profile.me')" wire:navigate>{{ __('Improve my profile') }}</x-ui.button>
                             </x-ui.empty-state>
                         @elseif ($locked)
@@ -56,7 +56,7 @@
                                         <x-slot:actions>
                                             <span class="visit-time">
                                                 @if ($row['new'])<x-ui.badge variant="premium">{{ __('New') }}</x-ui.badge>@endif
-                                                <i class="fa fa-clock-o" aria-hidden="true"></i>
+                                                <i class="fa-regular fa-clock" aria-hidden="true"></i>
                                                 {{ $tab === 'liked' ? __('You liked :when', ['when' => $row['when']]) : __('Liked you :when', ['when' => $row['when']]) }}
                                             </span>
                                         </x-slot:actions>
@@ -67,7 +67,7 @@
                                         'mutual' => [__('No mutual likes yet'), __('When someone you liked likes you back, they appear here.')],
                                         default => [__('No likes yet'), __('A complete profile with photos gets more likes.')],
                                     })
-                                    <x-ui.empty-state icon="fa-heart-o" :title="$empty[0]" :message="$empty[1]">
+                                    <x-ui.empty-state icon="fa-regular fa-heart" :title="$empty[0]" :message="$empty[1]">
                                         <x-ui.button :href="route('member.matches')" wire:navigate>{{ __('See my matches') }}</x-ui.button>
                                     </x-ui.empty-state>
                                 @endforelse

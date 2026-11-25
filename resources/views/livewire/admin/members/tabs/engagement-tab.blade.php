@@ -4,7 +4,7 @@
 --}}
 <div>
     @unless ($hasProfile)
-        <x-ui.card><x-ui.empty-state icon="fa-heart-o" :title="__('No profile yet')" :message="__('This account has not started a profile.')" /></x-ui.card>
+        <x-ui.card><x-ui.empty-state icon="fa-regular fa-heart" :title="__('No profile yet')" :message="__('This account has not started a profile.')" /></x-ui.card>
     @else
         <div class="row g-3 mb-3">
             @foreach ([
@@ -22,7 +22,7 @@
 
         <x-admin.table :headers="[__('When (IST)'), __('Direction'), __('Other member'), __('Status'), __('Answered')]" :caption="__('Interests')" :empty="$interests->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-envelope-o" :title="__('No interests yet')" />
+                <x-ui.empty-state icon="fa-regular fa-envelope" :title="__('No interests yet')" />
             </x-slot:emptyState>
 
             @foreach ($interests as $interest)

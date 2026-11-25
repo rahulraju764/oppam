@@ -26,6 +26,25 @@ beforeEach(function (): void {
     $this->seed(PlansSeeder::class);
 });
 
+/** P9.3c budget: the home band shows from ONE featured member, and member photos go to the fake disks. */
+function budgetFeaturedMembersOn(): void
+{
+    fakeMediaDisks();
+    App\Models\Setting::query()->whereKey(App\Enums\SettingKey::ContentHomeMembersMin->value)->delete();
+    App\Models\Setting::factory()->keyed(App\Enums\SettingKey::ContentHomeMembersMin, 1)->create();
+    app(App\Services\Settings\SettingsRepository::class)->flush();
+}
+
+/** A member FeaturedMembers shows: premium, verified, opted in, photos visible to all, an approved converted photo. */
+function budgetFeaturedMember(): void
+{
+    $user = contentMember();
+    addTestPhoto($user, convert: true)->forceFill(['moderation_status' => App\Enums\PhotoStatus::Approved])->save();
+    $user->profile->forceFill(['first_name' => 'Featured', 'is_premium' => true, 'is_verified' => true])->save();
+    $settings = App\Models\PrivacySetting::query()->find($user->profile->id) ?? (new App\Models\PrivacySetting)->forceFill(['profile_id' => $user->profile->id]);
+    $settings->forceFill(['photo_visibility' => App\Enums\PhotoVisibility::AllMembers, 'show_on_home' => true, 'hide_from_search' => false])->save();
+}
+
 it('M12: the home page is DB-driven: changing a block, banner or testimonial changes the page', function (): void {
     $this->seed(ContentSeeder::class);
     HomeBlock::query()->where('block_key', 'steps')->sole()->forceFill(['content' => [...HomeBlock::query()->where('block_key', 'steps')->sole()->content, 'heading' => 'Edited steps heading']])->save();
@@ -150,6 +169,23 @@ it('M12: content pages don’t grow queries with their rows', function (string $
     'home' => ['/', function (int $n): void {
         Testimonial::factory()->published()->count($n)->create();
         expect(Testimonial::query()->live()->count())->toBeGreaterThanOrEqual($n);
+    }],
+    // P9.3c: the home page also grows its banners and its featured-members band — still no query per row.
+    // The members are REAL featured members (premium, verified, opted in, approved photo with its card
+    // conversion — FeaturedMembers' rules), and the band is asserted to show them (review round 1: a plain
+    // member never reaches the band, which made this check vacuous).
+    'home: banners + featured members' => ['/', function (int $n): void {
+        budgetFeaturedMembersOn();
+        Banner::factory()->published()->count(min($n, 6))->create();
+        foreach (range(1, $n) as $_) {
+            budgetFeaturedMember();
+        }
+        // A member abroad shows their country from the cached master list — read once, not per row. The profile
+        // factory creates master rows, which bump the masters cache version (MasterDataObserver), so the list is
+        // warmed AFTER the members are made: both renders then compare like for like.
+        app(App\Services\Masters\Masters::class)->countries();
+        expect(Banner::query()->live()->count())->toBeGreaterThanOrEqual(min($n, 6))
+            ->and(count(app(App\Queries\Content\FeaturedMembers::class)->forViewer(null)))->toBeGreaterThanOrEqual(min($n, 2));
     }],
 ]);
 

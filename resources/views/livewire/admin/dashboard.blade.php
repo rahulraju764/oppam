@@ -62,7 +62,7 @@
             @foreach ($queues as $queue)
                 <div class="col-sm-6 col-xl-3" wire:key="queue-{{ $queue->routeName }}">
                     <a href="{{ route($queue->routeName) }}" @class(['admin-queue-card', 'is-breached' => $queue->breached])>
-                        <span class="admin-queue-card__label"><i class="fa {{ $queue->icon }}" aria-hidden="true"></i> {{ $queue->label }}</span>
+                        <span class="admin-queue-card__label"><i class="{{ $queue->icon }}" aria-hidden="true"></i> {{ $queue->label }}</span>
                         <span class="admin-queue-card__count" @if ($queue->key) data-queue-count="{{ $queue->key }}" @endif>{{ number_format($queue->count) }}</span>
                         <span class="admin-queue-card__age">
                             @if ($queue->oldest)
@@ -89,7 +89,8 @@
                         <div class="admin-chart" wire:ignore x-data="adminChart(@js($chart))">
                             <canvas x-ref="canvas" role="img" aria-labelledby="chart-{{ $chart['id'] }}-title"></canvas>
                         </div>
-                        <table class="visually-hidden">
+                        {{-- visually-hidden on a wrapper: a <table> ignores the 1 px width and overflowed 320 px screens (P9.3b) --}}
+                        <div class="visually-hidden"><table>
                             <caption>{{ $chart['title'] }}</caption>
                             <thead>
                                 <tr>
@@ -105,7 +106,7 @@
                                     </tr>
                                 @endforeach
                             </tbody>
-                        </table>
+                        </table></div>
                     </x-ui.card>
                 </div>
             @endforeach
@@ -115,7 +116,7 @@
             <h2 class="admin-section-title">{{ __('Recent activity') }}</h2>
             <x-admin.table :headers="[__('When (IST)'), __('Who'), __('Action'), __('On')]" :caption="__('Latest audited actions')" :empty="$activity->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-history" :title="__('Nothing recorded yet')" />
+                    <x-ui.empty-state icon="fa-solid fa-clock-rotate-left" :title="__('Nothing recorded yet')" />
                 </x-slot:emptyState>
                 @foreach ($activity as $entry)
                     <tr wire:key="audit-{{ $entry->id }}">
@@ -129,7 +130,7 @@
         @endif
     @elseif ($queues === [])
         <x-ui.card>
-            <x-ui.empty-state icon="fa-compass" :title="__('Your tools are in the menu')" :message="__('Use the sidebar to reach the areas your role gives you.')" />
+            <x-ui.empty-state icon="fa-regular fa-compass" :title="__('Your tools are in the menu')" :message="__('Use the sidebar to reach the areas your role gives you.')" />
         </x-ui.card>
     @endif
 </div>

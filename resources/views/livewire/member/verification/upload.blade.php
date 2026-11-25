@@ -13,9 +13,9 @@
                     <div class="side-bar vf-why">
                         <h2>{{ __('Why verify?') }}</h2>
                         <ul class="vf-why-list">
-                            <li><i class="fa fa-check" aria-hidden="true"></i> {{ __('A verified badge sits on your profile and in every search result.') }}</li>
-                            <li><i class="fa fa-check" aria-hidden="true"></i> {{ __('Families filter for verified profiles — yours gets seen more.') }}</li>
-                            <li><i class="fa fa-check" aria-hidden="true"></i> {{ __('Your document is seen by our verification team and nobody else. It is never shown on your profile, and it is deleted 90 days after the check.') }}</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('A verified badge sits on your profile and in every search result.') }}</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Families filter for verified profiles — yours gets seen more.') }}</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Your document is seen by our verification team and nobody else. It is never shown on your profile, and it is deleted 90 days after the check.') }}</li>
                         </ul>
                         <p class="vf-why-note text-muted-brand">
                             {{ __('Read how we handle your data in our') }}
@@ -37,7 +37,7 @@
                             @foreach ($steps as $step)
                                 <li class="vf-step is-{{ $step['state'] }}" wire:key="step-{{ $loop->index }}">
                                     <span class="vf-step-mark" aria-hidden="true">
-                                        <i @class(['fa', 'fa-check' => $step['state'] === 'done', 'fa-circle-o' => $step['state'] !== 'done'])></i>
+                                        <i @class(['fa-solid fa-check' => $step['state'] === 'done', 'fa-regular fa-circle' => $step['state'] !== 'done'])></i>
                                     </span>
                                     <span class="vf-step-body">
                                         <span class="vf-step-title">
@@ -61,8 +61,8 @@
                                 <h2>{{ __('You’re verified') }}</h2>
                                 <p>{{ __('Your Verified badge shows on your profile and in search results.') }}</p>
                             </div>
-                            <p><x-ui.badge variant="verified" icon="fa-check-circle">{{ __('Verified') }}</x-ui.badge></p>
-                            <x-ui.button :href="route('member.profile.me')" variant="outline" icon="fa-user-o" wire:navigate>{{ __('View my profile') }}</x-ui.button>
+                            <p><x-ui.badge variant="verified" icon="fa-solid fa-circle-check">{{ __('Verified') }}</x-ui.badge></p>
+                            <x-ui.button :href="route('member.profile.me')" variant="outline" icon="fa-regular fa-user" wire:navigate>{{ __('View my profile') }}</x-ui.button>
                         @elseif ($state === 'pending')
                             <div class="content-header">
                                 <h2>{{ __('Your document is being checked') }}</h2>

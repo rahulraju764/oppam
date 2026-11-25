@@ -3,10 +3,10 @@
         <div>
             <h1>{{ __('Review :code', ['code' => $profile->code]) }}</h1>
             <p>{{ $profile->fullName() }} · {{ $profile->gender->label() }}, {{ $profile->age() }} · {{ __('submitted :when', ['when' => $item->submitted_at->diffForHumans()]) }}
-                @if ($item->is_priority) · <x-ui.badge variant="premium" icon="fa-diamond">{{ __('Paid lane') }}</x-ui.badge>@endif
+                @if ($item->is_priority) · <x-ui.badge variant="premium" icon="fa-regular fa-gem">{{ __('Paid lane') }}</x-ui.badge>@endif
             </p>
         </div>
-        <x-ui.button variant="ghost" :href="route('admin.moderation.profiles')" icon="fa-arrow-left">{{ __('Back to queue') }}</x-ui.button>
+        <x-ui.button variant="ghost" :href="route('admin.moderation.profiles')" icon="fa-solid fa-arrow-left">{{ __('Back to queue') }}</x-ui.button>
     </div>
 
     @if ($claimedBy)
@@ -22,9 +22,9 @@
             <div class="ui-card mb-4">
                 <h2 class="h5">{{ __('Automatic checks') }}</h2>
                 @forelse ($flags as $flag)
-                    <p class="mb-1"><x-ui.badge variant="warning" icon="fa-flag">{{ $flag->message }}</x-ui.badge></p>
+                    <p class="mb-1"><x-ui.badge variant="warning" icon="fa-solid fa-flag">{{ $flag->message }}</x-ui.badge></p>
                 @empty
-                    <p class="mb-0 text-muted-brand"><i class="fa fa-check" aria-hidden="true"></i> {{ __('Nothing flagged.') }}</p>
+                    <p class="mb-0 text-muted-brand"><i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Nothing flagged.') }}</p>
                 @endforelse
             </div>
 
@@ -72,18 +72,18 @@
                 <h2 class="h5">{{ __('Decision') }}</h2>
 
                 @if ($canDecide)
-                    <x-ui.button class="w-100 mb-3" type="button" wire:click="approve" loading="approve" icon="fa-check">{{ __('Approve') }}</x-ui.button>
+                    <x-ui.button class="w-100 mb-3" type="button" wire:click="approve" loading="approve" icon="fa-solid fa-check">{{ __('Approve') }}</x-ui.button>
 
                     <x-ui.select :label="__('Reason (reject / changes)')" name="reason" wire:model="reason" :options="$reasons" :placeholder="__('Choose a reason')" />
                     <x-ui.textarea :label="__('Note to the member')" name="note" wire:model="note" rows="3" :hint="__('Shown to the member. Required for “Other” and for escalations (then it is for the super admin).')" />
 
-                    <x-ui.button class="w-100 mb-2" variant="danger" type="button" wire:click="reject" loading="reject" icon="fa-times">{{ __('Reject') }}</x-ui.button>
+                    <x-ui.button class="w-100 mb-2" variant="danger" type="button" wire:click="reject" loading="reject" icon="fa-solid fa-xmark">{{ __('Reject') }}</x-ui.button>
 
                     <x-ui.select :label="__('Step to fix')" name="step" wire:model="step" :options="$steps" />
-                    <x-ui.button class="w-100 mb-2" variant="outline" type="button" wire:click="requestChanges" loading="requestChanges" icon="fa-pencil">{{ __('Request changes') }}</x-ui.button>
+                    <x-ui.button class="w-100 mb-2" variant="outline" type="button" wire:click="requestChanges" loading="requestChanges" icon="fa-solid fa-pencil">{{ __('Request changes') }}</x-ui.button>
 
                     @if ($item->status !== \App\Enums\ModerationStatus::Escalated)
-                        <x-ui.button class="w-100 mb-2" variant="ghost" type="button" wire:click="escalate" loading="escalate" icon="fa-level-up">{{ __('Escalate to super admin') }}</x-ui.button>
+                        <x-ui.button class="w-100 mb-2" variant="ghost" type="button" wire:click="escalate" loading="escalate" icon="fa-solid fa-turn-up">{{ __('Escalate to super admin') }}</x-ui.button>
                     @endif
                     <x-ui.button class="w-100" variant="link" type="button" wire:click="release">{{ __('Skip (back to queue)') }}</x-ui.button>
                 @elseif ($item->status === \App\Enums\ModerationStatus::Escalated)

@@ -5,7 +5,7 @@
 
     <x-admin.table :headers="[__('Login'), __('Role'), __('Scope'), __('Clients'), __('Last sign-in'), __('Status'), '']" :caption="__('Staff')" :empty="$staff->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-users" :title="__('No logins yet')" :message="__('The owner has not finished applying.')" />
+            <x-ui.empty-state icon="fa-solid fa-users" :title="__('No logins yet')" :message="__('The owner has not finished applying.')" />
         </x-slot:emptyState>
 
         @foreach ($staff as $login)
@@ -24,9 +24,9 @@
                     @can('brokers.staff.edit')
                         @if ($login->status === \App\Enums\BureauStaffStatus::Active)
                             <div class="d-flex flex-wrap justify-content-end gap-1">
-                                <x-ui.button size="sm" variant="ghost" type="button" icon="fa-mobile" wire:click="confirm('staff-reset', '{{ $login->code }}')">{{ __('Reset devices') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="ghost" type="button" icon="fa-solid fa-mobile-screen-button" wire:click="confirm('staff-reset', '{{ $login->code }}')">{{ __('Reset devices') }}</x-ui.button>
                                 @unless ($login->isOwner())
-                                    <x-ui.button size="sm" variant="outline" type="button" icon="fa-user-times" wire:click="confirm('staff-deactivate', '{{ $login->code }}')">{{ __('Deactivate') }}</x-ui.button>
+                                    <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-user-xmark" wire:click="confirm('staff-deactivate', '{{ $login->code }}')">{{ __('Deactivate') }}</x-ui.button>
                                 @endunless
                             </div>
                         @endif

@@ -9,7 +9,7 @@
 @endif
 
 @if ($checks === [])
-    <x-ui.empty-state icon="fa-sliders" :title="__('No specific preferences')" :message="__(':name is open to all matches.', ['name' => $name])" />
+    <x-ui.empty-state icon="fa-solid fa-sliders" :title="__('No specific preferences')" :message="__(':name is open to all matches.', ['name' => $name])" />
 @else
     <div class="dtl-basic-info is-wide">
         <div class="basic-info-hd">
@@ -22,9 +22,9 @@
                     <td class="dtls">{{ $check->wanted }}</td>
                     <td class="dtls text-end">
                         @if ($check->matches)
-                            <i class="fa fa-check-circle is-match" aria-hidden="true"></i><span class="visually-hidden">{{ __('You match') }}</span>
+                            <i class="fa-solid fa-circle-check is-match" aria-hidden="true"></i><span class="visually-hidden">{{ __('You match') }}</span>
                         @else
-                            <i class="fa fa-times-circle is-miss" aria-hidden="true"></i><span class="visually-hidden">{{ __('You don’t match') }}</span>
+                            <i class="fa-solid fa-circle-xmark is-miss" aria-hidden="true"></i><span class="visually-hidden">{{ __('You don’t match') }}</span>
                         @endif
                     </td>
                 </tr>

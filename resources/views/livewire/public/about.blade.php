@@ -34,11 +34,11 @@
             </div>
 
             <div class="row g-4">
-                @foreach (['fa-shield', 'fa-lock', 'fa-users', 'fa-map-marker'] as $icon)
+                @foreach (['fa-solid fa-shield', 'fa-solid fa-lock', 'fa-solid fa-users', 'fa-solid fa-location-dot'] as $icon)
                     <div class="col-lg-6 col-md-6 col-12">
                         <div class="value-card">
                             <span class="value-icon">
-                                <i class="fa {{ $icon }}" aria-hidden="true"></i>
+                                <i class="{{ $icon }}" aria-hidden="true"></i>
                             </span>
                             <div>
                                 <h3>{{ $blocks['values']->text('value'.$loop->iteration.'_title') }}</h3>

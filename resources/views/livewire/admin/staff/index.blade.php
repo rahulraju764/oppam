@@ -5,7 +5,7 @@
             <p>{{ __('Staff accounts, their roles and access. Every change is written to the audit log.') }}</p>
         </div>
         @can('staff.invite')
-            <x-ui.button type="button" icon="fa-user-plus" x-on:click="$dispatch('open-modal', { name: 'invite-admin' })">{{ __('Invite staff') }}</x-ui.button>
+            <x-ui.button type="button" icon="fa-solid fa-user-plus" x-on:click="$dispatch('open-modal', { name: 'invite-admin' })">{{ __('Invite staff') }}</x-ui.button>
         @endcan
     </div>
 
@@ -15,7 +15,7 @@
 
     <x-admin.table :headers="[__('Name'), __('Email'), __('Role'), __('Status'), __('Last sign-in'), '']" :caption="__('Admin users')" :empty="$this->admins->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-user-secret" :title="__('No admins match')" :message="__('Try a different name or email.')" />
+            <x-ui.empty-state icon="fa-solid fa-user-secret" :title="__('No admins match')" :message="__('Try a different name or email.')" />
         </x-slot:emptyState>
 
         @foreach ($this->admins as $admin)
@@ -44,7 +44,7 @@
                 </td>
                 <td>
                     @if ($admin->isLocked())
-                        <x-ui.badge variant="warning" icon="fa-lock">{{ __('Locked') }}</x-ui.badge>
+                        <x-ui.badge variant="warning" icon="fa-solid fa-lock">{{ __('Locked') }}</x-ui.badge>
                     @elseif ($admin->isActive())
                         <x-ui.badge variant="success">{{ __('Active') }}</x-ui.badge>
                     @else

@@ -75,12 +75,18 @@ it('A12 alerts: bounce rate above 5 % alerts — only for a channel that sent th
     'nothing sent' => [[], null],
 ]);
 
-it('A12 alerts: broadcast lag above 5 s alerts (stored in ms); no measurement is not an alert', function (?int $lagMs, bool $crossed): void {
+it('A12 alerts: broadcast lag above 5 s alerts (stored in ms); no measurement is UNKNOWN (an open alert stays open)', function (?int $lagMs, bool $crossed, bool $unknown): void {
     $result = AlertRules::evaluate(readings(['broadcastLag' => new BroadcastLagData($lagMs, null, false)]), thresholds());
 
     expect($result->breached(SystemAlertKind::BroadcastLag))->toBe($crossed)
-        ->and($result->isUnknown(SystemAlertKind::BroadcastLag))->toBeFalse();
-})->with(['5 s' => [5000, false], '5.1 s' => [5100, true], 'not measured' => [null, false]]);
+        ->and($result->isUnknown(SystemAlertKind::BroadcastLag))->toBe($unknown);
+})->with(['5 s' => [5000, false, false], '5.1 s' => [5100, true, false], 'not measured' => [null, false, true]]);
+
+it('A12 alerts (review round 1): Reverb down for the whole window (no answered sample) is UNKNOWN, not clear', function (): void {
+    $result = AlertRules::evaluate(readings(['reverb' => new ReverbTrendData(current: null, recentPeak: null)]), thresholds());
+
+    expect($result->isUnknown(SystemAlertKind::ReverbDrop))->toBeTrue()->and($result->breached(SystemAlertKind::ReverbDrop))->toBeFalse();
+});
 
 it('A12 alerts: Reverb connections dropping more than 30 % from the recent peak alert; a quiet server or no history does not', function (?int $current, ?int $peak, ?int $drop): void {
     $result = AlertRules::evaluate(readings(['reverb' => new ReverbTrendData($current, $peak)]), thresholds());

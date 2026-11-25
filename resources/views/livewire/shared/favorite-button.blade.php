@@ -13,7 +13,8 @@
             aria-pressed="{{ $favorited ? 'true' : 'false' }}" x-bind:aria-pressed="on.toString()"
             aria-label="{{ $label }}">
         <span class="short-icon">
-            <i @class(['fa', $favorited ? 'fa-star' : 'fa-star-o']) x-bind:class="on ? 'fa-star' : 'fa-star-o'" aria-hidden="true"></i>
+            {{-- FA6: filled = solid, outline = regular (Alpine's object form keeps only one style on). --}}
+            <i @class(['fa-solid fa-star' => $favorited, 'fa-regular fa-star' => ! $favorited]) x-bind:class="{ 'fa-regular fa-star': ! on, 'fa-solid fa-star': on }" aria-hidden="true"></i>
         </span>
         @if ($variant === 'page')
             <span aria-hidden="true" x-text="on ? @js(__('Favorited')) : @js(__('Favorite'))">{{ $favorited ? __('Favorited') : __('Favorite') }}</span>

@@ -33,7 +33,7 @@
             @foreach ($widgets as $widget)
                 <div class="col-md-6 col-12" wire:key="widget-{{ $widget['key'] }}">
                     <div class="dashboard-content broker-widget h-100">
-                        <h2 class="broker-widget__title"><i class="fa {{ $widget['icon'] }}" aria-hidden="true"></i> {{ $widget['title'] }}</h2>
+                        <h2 class="broker-widget__title"><i class="{{ $widget['icon'] }}" aria-hidden="true"></i> {{ $widget['title'] }}</h2>
                         @if (isset($widget['stats']))
                             <dl class="broker-widget__stats">
                                 @foreach ($widget['stats'] as $label => $value)

@@ -30,7 +30,7 @@
                 </div>
             </div>
         @elseif ($cards === [])
-            <x-ui.empty-state icon="fa-heart-o" :title="$empty" />
+            <x-ui.empty-state icon="fa-regular fa-heart" :title="$empty" />
         @else
             <div class="swiper match-slider">
                 <div class="swiper-wrapper">
@@ -43,7 +43,7 @@
 
         @if ($viewAll && ! $locked)
             <div class="content-btn">
-                <a href="{{ $viewAll }}" class="view-btn" wire:navigate>{{ __('View All') }} <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
+                <a href="{{ $viewAll }}" class="view-btn" wire:navigate>{{ __('View All') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
             </div>
         @endif
     </section>

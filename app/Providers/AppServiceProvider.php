@@ -82,6 +82,7 @@ use App\Services\Settings\SiteIdentity;
 use App\Services\Sms\LogSmsGateway;
 use App\Services\Sms\Msg91Gateway;
 use App\Services\Verification\EncryptedDocumentVault;
+use App\Support\Database\LazyLoadingGuard;
 use App\Support\Facades\Feature;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Auth\SessionGuard;
@@ -221,9 +222,9 @@ final class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Catch N+1 queries, silently discarded attributes and missing attributes
-        // everywhere except production (oppam-code-standards: Eloquent rules).
-        Model::shouldBeStrict(! $this->app->isProduction());
+        // Catch N+1 queries, silently discarded attributes and missing attributes everywhere except
+        // production (oppam-code-standards: Eloquent rules); in production a lazy load is logged (P9.3c).
+        LazyLoadingGuard::configure($this->app->isProduction());
 
         // Broadcast channels (PRD §9.3). Here, not in bootstrap/app.php `channels:` (see there), so they
         // are registered on every boot — including with cached routes.
@@ -261,8 +262,9 @@ final class AppServiceProvider extends ServiceProvider
         Livewire::addPersistentMiddleware([
             EnsurePhoneIsVerified::class,
             EnsureProfileOnboarded::class,
-            // A08 re-acceptance: an action on a page opened before a material version went live is
-            // refused (409) too, on member and bureau pages alike (only where the route had it).
+            // A08 re-acceptance: an action on a page opened before a material version went live never
+            // runs — the call is redirected to /legal/accept (P9.3b), on member and bureau pages alike
+            // (only where the route had it).
             EnsureLegalTermsAccepted::class,
         ]);
 

@@ -33,7 +33,7 @@
             @endforeach
             <x-ui.textarea :label="__('Reason (recorded in the audit log)')" name="reason" id="profile-edit-reason" wire:model="reason" rows="2" required />
             @error('form')<p class="text-danger small" role="alert">{{ $message }}</p>@enderror
-            <x-ui.button type="button" wire:click="save" loading="save" icon="fa-check">{{ __('Save changes') }}</x-ui.button>
+            <x-ui.button type="button" wire:click="save" loading="save" icon="fa-solid fa-check">{{ __('Save changes') }}</x-ui.button>
         @endif
     @endif
 </div>

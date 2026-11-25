@@ -1,13 +1,13 @@
 <div>
     <div class="admin-page-head">
         <div>
-            <p class="mb-1"><a href="{{ route('admin.members.index') }}" wire:navigate><i class="fa fa-angle-left" aria-hidden="true"></i> {{ __('All members') }}</a></p>
+            <p class="mb-1"><a href="{{ route('admin.members.index') }}" wire:navigate><i class="fa-solid fa-angle-left" aria-hidden="true"></i> {{ __('All members') }}</a></p>
             <h1>{{ $profile->fullName() }} <span class="text-muted-brand">· {{ $profile->code }}</span></h1>
             <p>
                 <x-ui.badge :variant="$member->status->badgeVariant()">{{ __('Account: :s', ['s' => $member->status->label()]) }}</x-ui.badge>
                 <x-ui.badge :variant="$profile->status->badgeVariant()">{{ __('Profile: :s', ['s' => $profile->status->label()]) }}</x-ui.badge>
-                @if ($profile->is_premium)<x-ui.badge variant="premium" icon="fa-diamond">{{ __('Paid') }}</x-ui.badge>@endif
-                @if ($profile->is_verified)<x-ui.badge variant="verified" icon="fa-check">{{ __('ID verified') }}</x-ui.badge>@endif
+                @if ($profile->is_premium)<x-ui.badge variant="premium" icon="fa-regular fa-gem">{{ __('Paid') }}</x-ui.badge>@endif
+                @if ($profile->is_verified)<x-ui.badge variant="verified" icon="fa-solid fa-check">{{ __('ID verified') }}</x-ui.badge>@endif
             </p>
         </div>
     </div>
@@ -60,41 +60,41 @@
                     <div class="d-flex flex-wrap gap-2">
                         @can('members.suspend')
                             @if ($isActive)
-                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-ban" x-on:click="$dispatch('open-modal', { name: 'member-suspend' })">{{ __('Suspend') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-solid fa-ban" x-on:click="$dispatch('open-modal', { name: 'member-suspend' })">{{ __('Suspend') }}</x-ui.button>
                             @elseif ($isSuspended)
-                                <x-ui.button size="sm" type="button" icon="fa-check" x-on:click="$dispatch('open-modal', { name: 'member-reactivate' })">{{ __('Reactivate') }}</x-ui.button>
+                                <x-ui.button size="sm" type="button" icon="fa-solid fa-check" x-on:click="$dispatch('open-modal', { name: 'member-reactivate' })">{{ __('Reactivate') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('members.edit')
                             @if ($canHide)
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-eye-slash" x-on:click="$dispatch('open-modal', { name: 'member-hide' })">{{ __('Hide profile') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-regular fa-eye-slash" x-on:click="$dispatch('open-modal', { name: 'member-hide' })">{{ __('Hide profile') }}</x-ui.button>
                             @elseif ($canUnhide)
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-eye" x-on:click="$dispatch('open-modal', { name: 'member-unhide' })">{{ __('Unhide profile') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-regular fa-eye" x-on:click="$dispatch('open-modal', { name: 'member-unhide' })">{{ __('Unhide profile') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('members.edit')
                             @if (! $isDeleted && $phoneVerified)
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-key" x-on:click="$dispatch('open-modal', { name: 'member-reset-password' })">{{ __('Reset password') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-key" x-on:click="$dispatch('open-modal', { name: 'member-reset-password' })">{{ __('Reset password') }}</x-ui.button>
                             @endif
                             @if ($isActive && ! $phoneVerified)
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-mobile" x-on:click="$dispatch('open-modal', { name: 'member-resend-otp' })">{{ __('Resend verification code') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-mobile-screen-button" x-on:click="$dispatch('open-modal', { name: 'member-resend-otp' })">{{ __('Resend verification code') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('members.impersonate')
                             @if ($isActive && $phoneVerified)
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-user-secret" x-on:click="$dispatch('open-modal', { name: 'member-impersonate' })">{{ __('View as member') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-user-secret" x-on:click="$dispatch('open-modal', { name: 'member-impersonate' })">{{ __('View as member') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('billing.force_activate')
                             @if ($isActive && $member->hasVerifiedPhone())
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-gift" x-on:click="$dispatch('open-modal', { name: 'member-grant' })">{{ __('Grant complimentary plan') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-gift" x-on:click="$dispatch('open-modal', { name: 'member-grant' })">{{ __('Grant complimentary plan') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('members.delete')
                             @if (! $isDeleted)
-                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-trash" x-on:click="$dispatch('open-modal', { name: 'member-delete' })">{{ __('Delete') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-solid fa-trash-can" x-on:click="$dispatch('open-modal', { name: 'member-delete' })">{{ __('Delete') }}</x-ui.button>
                             @elseif ($restorableUntil)
-                                <x-ui.button size="sm" type="button" icon="fa-undo" x-on:click="$dispatch('open-modal', { name: 'member-restore' })">{{ __('Restore') }}</x-ui.button>
+                                <x-ui.button size="sm" type="button" icon="fa-solid fa-arrow-rotate-left" x-on:click="$dispatch('open-modal', { name: 'member-restore' })">{{ __('Restore') }}</x-ui.button>
                             @endif
                         @endcan
                     </div>

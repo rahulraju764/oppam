@@ -7,6 +7,7 @@ namespace App\Livewire\Public;
 use App\Data\Content\SeoData;
 use App\Queries\Billing\PlanCatalog;
 use App\Queries\Content\PublicContent;
+use App\Services\Seo\StructuredData;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -26,19 +27,21 @@ final class Plans extends Component
     {
         $durations = $catalog->durations();
         $duration = in_array($this->duration, $durations, true) ? $this->duration : ($durations[0] ?? PlanCatalog::DEFAULT_DURATION);
+        $faqs = app(PublicContent::class)->faqs();
 
         return view('livewire.public.plans', [
             'plans' => $catalog->cards(ctaUrl: null, duration: $duration, toCheckout: true),
             'durations' => $durations,
             'selectedDuration' => $duration,
             'comparison' => $catalog->comparison(),
-            'faqs' => app(PublicContent::class)->faqs(),
+            'faqs' => $faqs,
         ])->layout('layouts::public', ['seo' => new SeoData(
             title: 'Membership Packages & FAQ | Oppam Matrimony',
             description: 'Upgrade your membership and unlock premium features, and find answers to common questions about registration, profiles and privacy.',
             keywords: 'Matrimony Membership Plans, Premium Matrimony Kerala, Matrimony Packages, Matrimony FAQ, Kerala Matrimony, Oppam Matrimony',
             ogTitle: 'Choose Your Membership Plan',
             ogDescription: 'Enjoy premium benefits and connect with more compatible profiles.',
+            jsonLd: array_filter([app(StructuredData::class)->faqPage($faqs)]),
         )]);
     }
 }

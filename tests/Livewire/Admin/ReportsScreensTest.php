@@ -169,4 +169,4 @@ it('A09 the report page runs a bounded number of queries (no N+1 as data grows)'
     $page->set('preset', '90d')->assertOk();
 
     expect(count(DB::getQueryLog()))->toBeLessThanOrEqual($few * 2 + 5);
-})->with(['engagement', 'revenue', 'trust']);
+})->with(['growth', 'engagement', 'marketplace', 'revenue', 'trust']);   // P9.3c: all five reports

@@ -33,7 +33,7 @@
                    :headers="[__('Profile'), __('Document'), __('Checks'), $list === 'decided' ? __('Decided (IST)') : __('Waiting since (IST)'), $list === 'decided' ? __('Decision') : __('Reviewer'), '']"
                    :caption="__('ID verification requests')" :empty="$this->requests->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-id-card-o" :title="$list === 'decided' ? __('No decisions yet') : __('All caught up')"
+            <x-ui.empty-state icon="fa-regular fa-id-card" :title="$list === 'decided' ? __('No decisions yet') : __('All caught up')"
                               :message="$list === 'decided' ? __('Nothing was decided in the last 90 days.') : __('No ID documents are waiting.')" />
         </x-slot:emptyState>
 
@@ -42,14 +42,14 @@
             <tr wire:key="vr-{{ $request->id }}" @class(['vf-row', 'is-'.$level => $request->status->isOpen()])>
                 <td>
                     <strong>{{ $request->profile?->code }}</strong>
-                    @if ($request->is_priority)<x-ui.badge variant="premium" icon="fa-diamond">{{ __('Paid') }}</x-ui.badge>@endif
+                    @if ($request->is_priority)<x-ui.badge variant="premium" icon="fa-regular fa-gem">{{ __('Paid') }}</x-ui.badge>@endif
                     <div class="small">{{ $request->profile?->fullName() }}
                         <span class="text-muted-brand">{{ $request->profile?->gender->label() }}, {{ $request->profile?->age() }}</span></div>
                 </td>
                 <td>{{ $request->doc_type->label() }}<div class="small text-muted-brand">{{ $request->maskedNumber() }}</div></td>
                 <td>
                     @forelse ($request->flagCodes() as $flag)
-                        <x-ui.badge :variant="$flag->isSerious() ? 'danger' : 'warning'" icon="fa-flag">{{ $flag->label() }}</x-ui.badge>
+                        <x-ui.badge :variant="$flag->isSerious() ? 'danger' : 'warning'" icon="fa-solid fa-flag">{{ $flag->label() }}</x-ui.badge>
                     @empty
                         <span class="text-muted-brand small">{{ __('None') }}</span>
                     @endforelse
@@ -59,7 +59,7 @@
                         {{ $request->decided_at?->timezone($timezone)->format('d M, g:i a') }}
                     @else
                         {{ $request->submitted_at->timezone($timezone)->format('d M, g:i a') }}
-                        <div><x-ui.badge :variant="$aging->variant($level)" icon="fa-clock-o">{{ $aging->label($level) }}</x-ui.badge></div>
+                        <div><x-ui.badge :variant="$aging->variant($level)" icon="fa-regular fa-clock">{{ $aging->label($level) }}</x-ui.badge></div>
                     @endif
                 </td>
                 <td>
@@ -67,7 +67,7 @@
                         <x-ui.badge :variant="$request->status->badgeVariant()">{{ $request->status->label() }}</x-ui.badge>
                         <div class="small text-muted-brand">{{ $request->decidedBy?->name }}</div>
                     @elseif ($request->claimed_until?->isFuture())
-                        <x-ui.badge variant="warning" icon="fa-eye">{{ __('Being reviewed by :name', ['name' => $request->claimedBy?->name]) }}</x-ui.badge>
+                        <x-ui.badge variant="warning" icon="fa-regular fa-eye">{{ __('Being reviewed by :name', ['name' => $request->claimedBy?->name]) }}</x-ui.badge>
                     @endif
                 </td>
                 <td class="text-end">

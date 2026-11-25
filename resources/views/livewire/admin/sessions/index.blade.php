@@ -11,7 +11,7 @@
 
     <x-admin.table :headers="[__('Admin'), __('Device'), __('IP address'), __('Started (IST)'), __('Last active (IST)'), '']" :caption="__('Live sessions')" :empty="$this->sessions->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-desktop" :title="__('No live sessions')" />
+            <x-ui.empty-state icon="fa-solid fa-desktop" :title="__('No live sessions')" />
         </x-slot:emptyState>
 
         @foreach ($this->sessions as $session)

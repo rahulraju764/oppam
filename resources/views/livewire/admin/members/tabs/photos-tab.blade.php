@@ -1,7 +1,7 @@
 <div class="ui-card">
     <h2 class="h6">{{ __('Photos') }}</h2>
     @if ($photos->isEmpty())
-        <x-ui.empty-state icon="fa-picture-o" :title="__('No photos')" :message="__('This member has not added any photos.')" />
+        <x-ui.empty-state icon="fa-regular fa-image" :title="__('No photos')" :message="__('This member has not added any photos.')" />
     @else
         <ul class="mod-photo-grid list-unstyled">
             @foreach ($photos as $photo)

@@ -103,7 +103,12 @@ final class HandlePaymentWebhook
             throw $e;
         }
 
-        $stored->forceFill(['processed_at' => now(), 'outcome' => $outcome])->save();
+        // Marked only while still unprocessed: a Razorpay retry and an admin replay can both get here
+        // (the sub-actions keep the money side single — row locks / payment id); the FIRST outcome stays
+        // on the row instead of the last writer's "duplicate".
+        PaymentWebhookEvent::query()->whereKey($stored->getKey())->whereNull('processed_at')
+            ->update(['processed_at' => now(), 'outcome' => $outcome, 'updated_at' => now()]);
+        $stored->refresh();
 
         return $outcome;
     }

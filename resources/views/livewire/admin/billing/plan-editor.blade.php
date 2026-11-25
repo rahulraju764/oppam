@@ -57,7 +57,7 @@
                 </fieldset>
                 @can('billing.plans.edit')
                     <div class="mt-3">
-                        <x-ui.button type="submit" icon="fa-save" loading="saveCard" dusk="plan-save">{{ __('Save card and prices') }}</x-ui.button>
+                        <x-ui.button type="submit" icon="fa-regular fa-floppy-disk" loading="saveCard" dusk="plan-save">{{ __('Save card and prices') }}</x-ui.button>
                     </div>
                 @endcan
             </form>
@@ -81,7 +81,7 @@
                     @endforeach
                 </fieldset>
                 @can('billing.plans.edit')
-                    <x-ui.button type="submit" icon="fa-save" loading="saveEntitlements" dusk="plan-save-rules">{{ __('Save entitlements') }}</x-ui.button>
+                    <x-ui.button type="submit" icon="fa-regular fa-floppy-disk" loading="saveEntitlements" dusk="plan-save-rules">{{ __('Save entitlements') }}</x-ui.button>
                 @endcan
             </form>
         </div>

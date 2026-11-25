@@ -44,7 +44,9 @@ it('P9.2b1: the system health panel loads every card from the sidebar and fits e
 });
 
 it('P9.2b2: the alerts section and the webhook replay dialog (reason, confirm) work and fit every width', function (): void {
-    App\Models\SystemAlert::factory()->create(['value' => 4242, 'threshold' => 10]);
+    // Resolved (open_key null): can't collide with a real open alert on the dev DB; still listed (resolved this week).
+    // Note: the replay below leaves one system.webhook_replayed row in the append-only audit log of the dev DB.
+    App\Models\SystemAlert::factory()->resolved()->create(['value' => 4242, 'threshold' => 10]);
     App\Models\PaymentWebhookEvent::factory()->create([
         'event_id' => DUSK_STUCK_EVENT, 'event' => 'payment.authorized', 'processed_at' => null, 'outcome' => null,
         'payload' => json_encode(['entity' => 'event', 'event' => 'payment.authorized', 'contains' => [], 'payload' => []]),
@@ -61,6 +63,7 @@ it('P9.2b2: the alerts section and the webhook replay dialog (reason, confirm) w
             ->assertSee(DUSK_STUCK_EVENT)
             ->click('@webhook-replay-open')
             ->waitForText('Replay payment webhook')
+            ->assertSeeIn('@webhook-replay-target', DUSK_STUCK_EVENT)
             ->type('#webhook-replay-reason', 'Dusk: retry after the outage')
             ->press('Replay webhook')
             ->waitForText('replayed: ignored', 15);

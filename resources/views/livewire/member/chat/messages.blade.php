@@ -22,7 +22,7 @@
                             <livewire:member.chat.thread :with-code="$open" :key="'chat-thread-'.$open" />
                         @else
                             <div class="msg-panel msg-panel--empty">
-                                <x-ui.empty-state icon="fa-comments-o" :title="__('Choose a conversation')"
+                                <x-ui.empty-state icon="fa-regular fa-comments" :title="__('Choose a conversation')"
                                                   :message="__('Pick someone from your conversations to read and reply. Accept an interest to start a new one.')" />
                             </div>
                         @endif

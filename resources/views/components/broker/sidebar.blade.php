@@ -11,12 +11,12 @@
 
 <div class="dashboard-sidebar broker-sidebar">
     <div class="sidebar-profile">
-        <span class="broker-sidebar__mark" aria-hidden="true"><i class="fa fa-building-o"></i></span>
+        <span class="broker-sidebar__mark" aria-hidden="true"><i class="fa-regular fa-building"></i></span>
         <h3>{{ $bureau->bureauName }}</h3>
         <h4>{{ $bureau->code }}</h4>
         <span>{{ $bureau->roleLabel }}</span>
         @if (! $bureau->verified)
-            <p class="broker-sidebar__status"><x-ui.badge variant="warning" icon="fa-clock-o">{{ __('KYC: :status', ['status' => $bureau->statusLabel]) }}</x-ui.badge></p>
+            <p class="broker-sidebar__status"><x-ui.badge variant="warning" icon="fa-regular fa-clock">{{ __('KYC: :status', ['status' => $bureau->statusLabel]) }}</x-ui.badge></p>
         @endif
     </div>
 
@@ -24,14 +24,14 @@
         @foreach ($bureau->menu as $item)
             @if ($item['locked'])
                 <span class="broker-sidebar__locked" aria-disabled="true">
-                    <i class="fa {{ $item['icon'] }}" aria-hidden="true"></i>
+                    <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                     {{ $item['label'] }}
-                    <small><i class="fa fa-lock" aria-hidden="true"></i> {{ __('after KYC') }}</small>
+                    <small><i class="fa-solid fa-lock" aria-hidden="true"></i> {{ __('after KYC') }}</small>
                 </span>
             @else
                 @php($active = $nav->isActive($item['route']))
                 <a href="{{ route($item['route']) }}" @class(['active' => $active]) @if ($active) aria-current="page" @endif wire:navigate>
-                    <i class="fa {{ $item['icon'] }}" aria-hidden="true"></i>
+                    <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                     {{ $item['label'] }}
                 </a>
             @endif

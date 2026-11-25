@@ -123,7 +123,7 @@
         <h2 class="safety-list__title">{{ __('Recent sign-ins') }}</h2>
         <p class="form-text">{{ __('The devices that signed in to your account in the last 90 days. Don’t recognise one? Change your password and sign out all other devices.') }}</p>
         @if ($devices === [])
-            <x-ui.empty-state icon="fa-laptop" :title="__('No sign-ins to show')" :message="__('Sign-ins from the last 90 days appear here.')" />
+            <x-ui.empty-state icon="fa-solid fa-laptop" :title="__('No sign-ins to show')" :message="__('Sign-ins from the last 90 days appear here.')" />
         @else
             <ul class="safety-list">
                 @foreach ($devices as $i => $device)

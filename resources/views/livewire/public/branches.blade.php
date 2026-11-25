@@ -10,7 +10,7 @@
             </div>
 
             @if ($branches === [])
-                <x-ui.empty-state icon="fa-map-marker" :title="__('Our offices will be listed here soon')" :message="__('Until then, get in touch and we will help you directly.')" />
+                <x-ui.empty-state icon="fa-solid fa-location-dot" :title="__('Our offices will be listed here soon')" :message="__('Until then, get in touch and we will help you directly.')" />
             @endif
 
             <div class="row g-4">
@@ -23,20 +23,20 @@
                             </div>
                             <address class="branch-card-body">
                                 <p class="branch-line">
-                                    <i class="fa fa-map-marker" aria-hidden="true"></i>
+                                    <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
                                     <span>{{ $branch->address }}</span>
                                 </p>
                                 <p class="branch-line">
-                                    <i class="fa fa-phone" aria-hidden="true"></i>
+                                    <i class="fa-solid fa-phone" aria-hidden="true"></i>
                                     <a href="tel:{{ $branch->tel }}">{{ $branch->phone }}</a>
                                 </p>
                                 <p class="branch-line">
-                                    <i class="fa fa-clock-o" aria-hidden="true"></i>
+                                    <i class="fa-regular fa-clock" aria-hidden="true"></i>
                                     <span>{{ $branch->hours }}</span>
                                 </p>
                                 @if ($branch->mapUrl !== null)
                                     <p class="branch-line">
-                                        <i class="fa fa-map-o" aria-hidden="true"></i>
+                                        <i class="fa-regular fa-map" aria-hidden="true"></i>
                                         <a href="{{ $branch->mapUrl }}" target="_blank" rel="noopener noreferrer">{{ __('View on map') }}</a>
                                     </p>
                                 @endif

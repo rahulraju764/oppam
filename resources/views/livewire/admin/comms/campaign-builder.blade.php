@@ -8,7 +8,7 @@
             <h1>{{ $editing ? __('Edit campaign') : __('New campaign') }}</h1>
             <p>{{ __('Saved as a draft. Nothing is sent until you press Send on the campaign page.') }}</p>
         </div>
-        <x-ui.button :href="route('admin.comms.campaigns.index')" variant="ghost" icon="fa-arrow-left" wire:navigate>{{ __('All campaigns') }}</x-ui.button>
+        <x-ui.button :href="route('admin.comms.campaigns.index')" variant="ghost" icon="fa-solid fa-arrow-left" wire:navigate>{{ __('All campaigns') }}</x-ui.button>
     </div>
 
     <form wire:submit="save" novalidate id="campaignForm" x-data>

@@ -21,7 +21,7 @@
                     <x-ui.input :label="__('GST month')" name="month" id="ord-gst-month" type="month" :value="$lastMonth" required />
                 </div>
                 <div class="col-4 col-md-3">
-                    <x-ui.button variant="outline" type="submit" icon="fa-download">{{ __('GST CSV') }}</x-ui.button>
+                    <x-ui.button variant="outline" type="submit" icon="fa-solid fa-download">{{ __('GST CSV') }}</x-ui.button>
                 </div>
             </form>
         @endcan
@@ -29,7 +29,7 @@
 
     <x-admin.table :headers="[__('Order'), __('Member'), __('Plan'), __('Total'), __('Status'), __('Created (IST)')]" :caption="__('Orders')" :empty="$orders->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-file-text-o" :title="__('No orders found')" :message="__('Try another code or status.')" />
+            <x-ui.empty-state icon="fa-regular fa-file-lines" :title="__('No orders found')" :message="__('Try another code or status.')" />
         </x-slot:emptyState>
 
         @foreach ($orders as $order)

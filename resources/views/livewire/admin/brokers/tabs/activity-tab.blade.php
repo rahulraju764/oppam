@@ -20,7 +20,7 @@
     <div wire:loading.class="opacity-50" wire:target="staff,group,from,to,gotoPage,nextPage,previousPage">
         <x-admin.table :headers="[__('When'), __('Who'), __('What'), __('About')]" :caption="__('Activity')" :empty="$rows->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-history" :title="__('No activity')" :message="__('Nothing matches these filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-clock-rotate-left" :title="__('No activity')" :message="__('Nothing matches these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($rows as $row)

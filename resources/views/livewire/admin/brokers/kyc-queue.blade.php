@@ -23,7 +23,7 @@
         <div @class(['col-12', 'col-xl-7' => $broker !== null])>
             <x-admin.table :headers="[__('Bureau'), __('Owner'), __('District'), __('Status'), __('Since (IST)'), '']" :caption="__('Bureaus')" :empty="$this->brokers->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-id-card-o" :title="__('All caught up')" :message="__('Nothing is waiting in this list.')" />
+                    <x-ui.empty-state icon="fa-regular fa-id-card" :title="__('All caught up')" :message="__('Nothing is waiting in this list.')" />
                 </x-slot:emptyState>
 
                 @foreach ($this->brokers as $row)
@@ -71,9 +71,9 @@
                     @if ($kyc && $kyc->pan_image_path !== null)
                         @if ($panUrl === '')
                             <p class="small text-muted-brand">{{ __('Opening the PAN image is logged, and so is every load. The link works for :m minutes in this browser only.', ['m' => config('oppam.broker.kyc_link_minutes')]) }}</p>
-                            <x-ui.button type="button" variant="outline" size="sm" icon="fa-eye" wire:click="viewPan" loading="viewPan" dusk="kyc-view-pan">{{ __('View PAN image') }}</x-ui.button>
+                            <x-ui.button type="button" variant="outline" size="sm" icon="fa-regular fa-eye" wire:click="viewPan" loading="viewPan" dusk="kyc-view-pan">{{ __('View PAN image') }}</x-ui.button>
                         @else
-                            <p class="small"><i class="fa fa-lock" aria-hidden="true"></i> {{ __('Access is logged. Don’t save, copy or photograph this document.') }}</p>
+                            <p class="small"><i class="fa-solid fa-lock" aria-hidden="true"></i> {{ __('Access is logged. Don’t save, copy or photograph this document.') }}</p>
                             <figure class="vf-viewer" wire:key="pan-{{ $panUntil }}" x-data x-on:contextmenu.prevent x-on:dragstart.prevent>
                                 <figcaption>{{ __('PAN card') }}</figcaption>
                                 @if ($kyc->pan_image_mime === 'application/pdf')
@@ -89,7 +89,7 @@
                                     @for ($i = 0; $i < 12; $i++)<span>{{ $watermark }}</span>@endfor
                                 </div>
                             </figure>
-                            <x-ui.button type="button" variant="ghost" size="sm" icon="fa-times" wire:click="closePan">{{ __('Close viewer') }}</x-ui.button>
+                            <x-ui.button type="button" variant="ghost" size="sm" icon="fa-solid fa-xmark" wire:click="closePan">{{ __('Close viewer') }}</x-ui.button>
                         @endif
                     @endif
                 </div>
@@ -98,14 +98,14 @@
                     <h2 class="h5">{{ __('Decision') }}</h2>
                     @if ($kyc?->status === \App\Enums\KycSubmissionStatus::Pending || in_array($broker->status, [\App\Enums\BrokerStatus::Applied, \App\Enums\BrokerStatus::KycPending], true))
                         @if ($kyc?->status === \App\Enums\KycSubmissionStatus::Pending)
-                            <x-ui.button class="w-100 mb-3" type="button" wire:click="approve" loading="approve" icon="fa-check" dusk="kyc-approve">{{ __('Approve KYC — activate bureau') }}</x-ui.button>
+                            <x-ui.button class="w-100 mb-3" type="button" wire:click="approve" loading="approve" icon="fa-solid fa-check" dusk="kyc-approve">{{ __('Approve KYC — activate bureau') }}</x-ui.button>
                         @endif
                         <x-ui.textarea :label="__('Reason (shown to the owner)')" name="reason" wire:model="reason" rows="2" />
                         @if ($kyc?->status === \App\Enums\KycSubmissionStatus::Pending)
-                            <x-ui.button class="w-100 mb-2" variant="outline" type="button" wire:click="rejectKyc" loading="rejectKyc" icon="fa-undo">{{ __('Reject KYC (owner resends)') }}</x-ui.button>
+                            <x-ui.button class="w-100 mb-2" variant="outline" type="button" wire:click="rejectKyc" loading="rejectKyc" icon="fa-solid fa-arrow-rotate-left">{{ __('Reject KYC (owner resends)') }}</x-ui.button>
                         @endif
                         @if (in_array($broker->status, [\App\Enums\BrokerStatus::Applied, \App\Enums\BrokerStatus::KycPending], true))
-                            <x-ui.button class="w-100" variant="danger" type="button" wire:click="rejectApplication" loading="rejectApplication" icon="fa-times"
+                            <x-ui.button class="w-100" variant="danger" type="button" wire:click="rejectApplication" loading="rejectApplication" icon="fa-solid fa-xmark"
                                          wire:confirm="{{ __('Reject this application and close the bureau?') }}">{{ __('Reject application') }}</x-ui.button>
                         @endif
                     @else

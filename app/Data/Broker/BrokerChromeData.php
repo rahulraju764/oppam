@@ -19,16 +19,16 @@ final readonly class BrokerChromeData
 {
     /** route name => [label, icon, permission] — in sidebar order; later sessions add their routes. */
     public const MENU = [
-        'broker.dashboard' => ['Dashboard', 'fa-tachometer', BureauPermission::DashboardView],
-        'broker.profiles.index' => ['Client profiles', 'fa-users', BureauPermission::ProfilesView],
-        'broker.profiles.create' => ['Add a profile', 'fa-user-plus', BureauPermission::ProfilesCreate],
-        'broker.import' => ['Bulk import', 'fa-upload', BureauPermission::ProfilesImport],
-        'broker.referrals' => ['Referrals', 'fa-share-alt', BureauPermission::ReferralsView],
-        'broker.earnings' => ['Earnings', 'fa-inr', BureauPermission::EarningsView],
-        'broker.staff.index' => ['Staff', 'fa-id-badge', BureauPermission::StaffManage],
-        'broker.activity' => ['Activity', 'fa-history', BureauPermission::ActivityView],
-        'broker.materials' => ['Materials', 'fa-qrcode', BureauPermission::MaterialsView],
-        'broker.kyc' => ['KYC & bank', 'fa-id-card-o', BureauPermission::KycManage],
+        'broker.dashboard' => ['Dashboard', 'fa-solid fa-gauge-high', BureauPermission::DashboardView],
+        'broker.profiles.index' => ['Client profiles', 'fa-solid fa-users', BureauPermission::ProfilesView],
+        'broker.profiles.create' => ['Add a profile', 'fa-solid fa-user-plus', BureauPermission::ProfilesCreate],
+        'broker.import' => ['Bulk import', 'fa-solid fa-upload', BureauPermission::ProfilesImport],
+        'broker.referrals' => ['Referrals', 'fa-solid fa-share-nodes', BureauPermission::ReferralsView],
+        'broker.earnings' => ['Earnings', 'fa-solid fa-indian-rupee-sign', BureauPermission::EarningsView],
+        'broker.staff.index' => ['Staff', 'fa-regular fa-id-badge', BureauPermission::StaffManage],
+        'broker.activity' => ['Activity', 'fa-solid fa-clock-rotate-left', BureauPermission::ActivityView],
+        'broker.materials' => ['Materials', 'fa-solid fa-qrcode', BureauPermission::MaterialsView],
+        'broker.kyc' => ['KYC & bank', 'fa-regular fa-id-card', BureauPermission::KycManage],
     ];
 
     /**

@@ -26,7 +26,7 @@
 
             @if ($ctaUrl)
                 <a href="{{ $ctaUrl }}" class="view-btn" wire:navigate>
-                    {{ $isMember ? $memberLabel : __('Register Free') }} <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                    {{ $isMember ? $memberLabel : __('Register Free') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </a>
             @endif
         </div>

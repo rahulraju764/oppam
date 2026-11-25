@@ -5,7 +5,7 @@
             <h1>{{ __('Subscriptions') }}</h1>
         </div>
         @can('billing.force_activate')
-            <x-ui.button type="button" icon="fa-gift" x-on:click="$dispatch('open-modal', { name: 'plan-grant' })" dusk="plan-grant-open">{{ __('Grant complimentary') }}</x-ui.button>
+            <x-ui.button type="button" icon="fa-solid fa-gift" x-on:click="$dispatch('open-modal', { name: 'plan-grant' })" dusk="plan-grant-open">{{ __('Grant complimentary') }}</x-ui.button>
         @endcan
     </div>
 
@@ -19,7 +19,7 @@
 
     <x-admin.table :headers="[__('Member'), __('Plan'), __('Source'), __('Status'), __('Starts (IST)'), __('Ends (IST)')]" :caption="__('Subscriptions')" :empty="$subscriptions->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-credit-card" :title="__('Nothing here')" :message="__('No subscription matches this view.')" />
+            <x-ui.empty-state icon="fa-regular fa-credit-card" :title="__('Nothing here')" :message="__('No subscription matches this view.')" />
         </x-slot:emptyState>
 
         @foreach ($subscriptions as $subscription)

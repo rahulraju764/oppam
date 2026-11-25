@@ -23,7 +23,7 @@
 
             <div wire:loading.class="is-loading" wire:target="tab, accept, decline, gotoPage, nextPage, previousPage">
                 @if ($cards === [])
-                    <x-ui.empty-state icon="fa-inbox"
+                    <x-ui.empty-state icon="fa-solid fa-inbox"
                         :title="$tab === 'sent' ? __('No interests sent yet') : __('Nothing here')"
                         :message="$tab === 'pending'
                             ? __('Interests members send to this client appear here. You can answer them after speaking to the family.')
@@ -52,7 +52,7 @@
                                 </div>
                                 @if ($tab === 'pending')
                                     <div class="client-inbox__actions">
-                                        <x-ui.button type="button" size="sm" icon="fa-check" wire:click="accept('{{ $card['code'] }}')" loading="accept">
+                                        <x-ui.button type="button" size="sm" icon="fa-solid fa-check" wire:click="accept('{{ $card['code'] }}')" loading="accept">
                                             {{ __('Accept for client') }}
                                         </x-ui.button>
                                         <x-ui.button type="button" size="sm" variant="outline" wire:click="decline('{{ $card['code'] }}')" loading="decline">
@@ -102,7 +102,7 @@
                             </div>
                         </div>
                     </div>
-                    <x-ui.button loading="send" icon="fa-paper-plane">{{ __('Send interest') }}</x-ui.button>
+                    <x-ui.button loading="send" icon="fa-solid fa-paper-plane">{{ __('Send interest') }}</x-ui.button>
                 </form>
             @endif
         </div>

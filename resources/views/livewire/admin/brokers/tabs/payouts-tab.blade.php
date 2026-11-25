@@ -2,7 +2,7 @@
     <x-admin.table :headers="[__('Run'), __('Period'), __('Earned'), __('Clawback'), __('Carried in'), __('TDS'), __('Net'), __('Status'), __('UTR'), '']"
                    :caption="__('Payouts')" :empty="$items->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-bank" :title="__('No payouts yet')" :message="__('This bureau has not been in a payout run.')" />
+            <x-ui.empty-state icon="fa-solid fa-building-columns" :title="__('No payouts yet')" :message="__('This bureau has not been in a payout run.')" />
         </x-slot:emptyState>
 
         @foreach ($items as $item)
@@ -30,7 +30,7 @@
                 <td class="text-end">
                     @if ($item->status === \App\Enums\PayoutItemStatus::Paid)
                         @can('brokers.payout')
-                            <x-ui.button size="sm" variant="outline" icon="fa-file-pdf-o"
+                            <x-ui.button size="sm" variant="outline" icon="fa-regular fa-file-pdf"
                                          :href="route('admin.brokers.payouts.statement', ['run' => $item->run?->code, 'broker' => $broker->code])">{{ __('Statement') }}</x-ui.button>
                         @endcan
                     @endif

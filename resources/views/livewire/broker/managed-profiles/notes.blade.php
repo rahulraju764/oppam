@@ -49,14 +49,14 @@
                     @error('follow_up_on') <p class="invalid-feedback d-block" role="alert">{{ $message }}</p> @enderror
                 </div>
 
-                <x-ui.button loading="add" icon="fa-plus">{{ __('Add note') }}</x-ui.button>
+                <x-ui.button loading="add" icon="fa-solid fa-plus">{{ __('Add note') }}</x-ui.button>
             </form>
         </div>
 
         <div class="dashboard-content" wire:loading.class="is-loading" wire:target="gotoPage, nextPage, previousPage, complete">
             <h2 class="managed-form__heading">{{ __('History') }}</h2>
             @if ($notes->isEmpty())
-                <x-ui.empty-state icon="fa-sticky-note-o" :title="__('No notes yet')"
+                <x-ui.empty-state icon="fa-regular fa-note-sticky" :title="__('No notes yet')"
                     :message="__('Record calls and meetings with the family, and set a date to follow up.')" />
             @else
                 <ul class="client-notes">
@@ -73,7 +73,7 @@
                             <p class="client-notes__body">{{ $note->body }}</p>
                             @if ($note->follow_up_on)
                                 <div class="client-notes__follow">
-                                    <i class="fa fa-bell-o" aria-hidden="true"></i>
+                                    <i class="fa-regular fa-bell" aria-hidden="true"></i>
                                     {{ __('Follow up on :date', ['date' => $note->follow_up_on->format('j M Y')]) }}
                                     @if ($note->follow_up_done_at)
                                         <x-ui.badge variant="success">{{ __('Done') }}</x-ui.badge>

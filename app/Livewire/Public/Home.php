@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Queries\Billing\PlanCatalog;
 use App\Queries\Content\FeaturedMembers;
 use App\Queries\Content\PublicContent;
+use App\Services\Seo\StructuredData;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -23,9 +24,10 @@ final class Home extends Component
     {
         $viewer = auth('web')->user();
         $blocks = $content->blocks();
+        $banners = $content->banners();
 
         return view('livewire.public.home', [
-            'banners' => $content->banners(),
+            'banners' => $banners,
             'blocks' => $blocks,
             'counters' => $content->counters($blocks),
             'members' => $featured->forViewer($viewer instanceof User ? $viewer : null),
@@ -37,6 +39,8 @@ final class Home extends Component
             keywords: 'Kerala Matrimony, Oppam Matrimony, Malayali Matrimony, Kerala Brides, Kerala Grooms, Online Matrimony Kerala, Marriage Portal Kerala, Trusted Matrimony Kerala',
             ogTitle: 'Find Genuine Kerala Matches with Oppam Matrimony',
             ogDescription: 'Join Oppam Matrimony and discover verified Kerala bride and groom profiles through secure matchmaking and trusted matrimony services.',
+            jsonLd: [app(StructuredData::class)->organization()],
+            preloadImage: ($banners[0] ?? null)?->imageUrl,   // the hero's first slide is the LCP image (P9.3c)
         )]);
     }
 }

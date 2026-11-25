@@ -22,7 +22,7 @@
                 <div class="col-lg-9 col-md-12 col-sm-12 col-12">
                     @if ($hidden)
                         {{-- R-M06-6: an admin support session sees the number only, never whom or the notes. --}}
-                        <x-ui.empty-state icon="fa-lock" :title="trans_choice(':count favourite|:count favourites', $used, ['count' => number_format($used)])"
+                        <x-ui.empty-state icon="fa-solid fa-lock" :title="trans_choice(':count favourite|:count favourites', $used, ['count' => number_format($used)])"
                                           :message="__('Favourites and their notes are private and are not shown during a support session.')" />
                     @else
                     @if ($unavailable > 0)
@@ -37,9 +37,9 @@
                             <span class="fav-toolbar__count" aria-live="polite"
                                   x-text="$wire.selected.length ? @js(__(':n selected')).replace(':n', $wire.selected.length) : @js(__('Tick profiles to act on several at once'))">{{ __('Tick profiles to act on several at once') }}</span>
                             <span class="fav-toolbar__actions">
-                                <x-ui.button type="button" size="sm" icon="fa-envelope" wire:click="interestSelected" loading="interestSelected"
+                                <x-ui.button type="button" size="sm" icon="fa-solid fa-envelope" wire:click="interestSelected" loading="interestSelected"
                                              x-bind:disabled="$wire.selected.length === 0">{{ __('Send interest to selected') }}</x-ui.button>
-                                <x-ui.button type="button" variant="outline" size="sm" icon="fa-trash-o" wire:click="removeSelected" loading="removeSelected"
+                                <x-ui.button type="button" variant="outline" size="sm" icon="fa-regular fa-trash-can" wire:click="removeSelected" loading="removeSelected"
                                              x-bind:disabled="$wire.selected.length === 0">{{ __('Remove selected') }}</x-ui.button>
                             </span>
                         </div>
@@ -71,7 +71,7 @@
                                 </x-slot:actions>
                             </x-profile.row>
                         @empty
-                            <x-ui.empty-state icon="fa-star-o" :title="__('No favourites yet')"
+                            <x-ui.empty-state icon="fa-regular fa-star" :title="__('No favourites yet')"
                                               :message="__('Tap the star on a profile to keep it here. Nobody is told.')">
                                 <x-ui.button :href="route('member.matches')" wire:navigate>{{ __('See my matches') }}</x-ui.button>
                             </x-ui.empty-state>

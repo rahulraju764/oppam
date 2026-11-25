@@ -18,7 +18,7 @@
                         <div class="search-sheet__head d-lg-none">
                             <h2 class="h5 mb-0">{{ __('My Matches') }}</h2>
                             <button type="button" class="search-sheet__close" x-on:click="sheet = false" aria-label="{{ __('Close') }}">
-                                <i class="fa fa-times" aria-hidden="true"></i>
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                             </button>
                         </div>
 
@@ -28,7 +28,7 @@
                                 <button type="button" class="nav-link-custom nav-link-button @if ($item === $current) active @endif"
                                         wire:click="show('{{ $item->value }}')" x-on:click="sheet = false"
                                         aria-pressed="{{ $item === $current ? 'true' : 'false' }}">
-                                    <span class="nav-link-label"><i class="fa {{ $item->icon() }}" aria-hidden="true"></i> {{ $item->label() }}</span>
+                                    <span class="nav-link-label"><i class="{{ $item->icon() }}" aria-hidden="true"></i> {{ $item->label() }}</span>
                                     <span class="nav-count">{{ number_format($counts[$item->value] ?? 0) }}</span>
                                 </button>
                             @endforeach
@@ -37,12 +37,12 @@
 
                             <p class="sidebar-section-title">{{ __('Browse') }}</p>
                             <a href="{{ route('member.profiles') }}" class="nav-link-custom" wire:navigate>
-                                <span class="nav-link-label"><i class="fa fa-users" aria-hidden="true"></i> {{ __('All Profiles') }}</span>
-                                <span class="nav-count"><i class="fa fa-angle-right" aria-hidden="true"></i></span>
+                                <span class="nav-link-label"><i class="fa-solid fa-users" aria-hidden="true"></i> {{ __('All Profiles') }}</span>
+                                <span class="nav-count"><i class="fa-solid fa-angle-right" aria-hidden="true"></i></span>
                             </a>
                             <a href="{{ route('member.matches.daily') }}" class="nav-link-custom" wire:navigate>
-                                <span class="nav-link-label"><i class="fa fa-bolt" aria-hidden="true"></i> {{ __('Daily Matches') }}</span>
-                                <span class="nav-count"><i class="fa fa-angle-right" aria-hidden="true"></i></span>
+                                <span class="nav-link-label"><i class="fa-solid fa-bolt" aria-hidden="true"></i> {{ __('Daily Matches') }}</span>
+                                <span class="nav-count"><i class="fa-solid fa-angle-right" aria-hidden="true"></i></span>
                             </a>
                         </nav>
                     </div>
@@ -79,7 +79,7 @@
                                 </div>
                             </div>
 
-                            <x-ui.button type="button" variant="outline" icon="fa-bars" id="open-matches-rail" class="w-100 mb-3 d-lg-none"
+                            <x-ui.button type="button" variant="outline" icon="fa-solid fa-bars" id="open-matches-rail" class="w-100 mb-3 d-lg-none"
                                          x-on:click="sheet = true" aria-controls="matches-rail" x-bind:aria-expanded="sheet">{{ __('All match categories') }}</x-ui.button>
 
                             @if ($notice)
@@ -94,7 +94,7 @@
                                 @forelse ($cards as $card)
                                     <x-profile.row :profile="$card" wire:key="match-{{ $card->code }}" />
                                 @empty
-                                    <x-ui.empty-state icon="fa-heart-o" :title="__('No matches here yet')"
+                                    <x-ui.empty-state icon="fa-regular fa-heart" :title="__('No matches here yet')"
                                                       :message="__('New members join every day. Widening your partner preferences brings more matches.')">
                                         <x-ui.button :href="route('member.profiles')" wire:navigate>{{ __('Browse all profiles') }}</x-ui.button>
                                     </x-ui.empty-state>

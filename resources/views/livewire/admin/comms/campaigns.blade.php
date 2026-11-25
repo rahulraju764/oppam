@@ -8,7 +8,7 @@
             <p>{{ __('One message on one channel to a segment of members. Members who switched off offers on that channel are never included.') }}</p>
         </div>
         @if ($canSend)
-            <x-ui.button :href="route('admin.comms.campaigns.builder')" icon="fa-plus" wire:navigate dusk="campaign-new">{{ __('New campaign') }}</x-ui.button>
+            <x-ui.button :href="route('admin.comms.campaigns.builder')" icon="fa-solid fa-plus" wire:navigate dusk="campaign-new">{{ __('New campaign') }}</x-ui.button>
         @endif
     </div>
 
@@ -34,7 +34,7 @@
         <x-admin.table :headers="[__('Campaign'), __('Channel'), __('Audience'), __('Sent'), __('Opened'), __('Clicked'), __('Status'), __('Created (IST)')]"
                        :caption="__('Campaigns')" :empty="$this->campaigns->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-paper-plane-o"
+                <x-ui.empty-state icon="fa-regular fa-paper-plane"
                                   :title="$status !== '' || $channel !== '' ? __('No campaigns match these filters') : __('No campaigns yet')"
                                   :message="$canSend ? __('Create one to reach a segment of members by email, SMS or in the bell.') : __('Campaigns your team sends appear here.')" />
             </x-slot:emptyState>

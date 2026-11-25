@@ -40,10 +40,24 @@ final class EnsureLegalTermsAccepted
 
         $pending = $this->versions->pendingFor($user);
         if ($pending->blocks()) {
+            // A Livewire call on a page that was open before the new terms: a redirect, which Livewire
+            // follows as a full-page visit, instead of its 409 error dialog (P9.3b). The page the member was
+            // on (the Referer, same host only) becomes the return address — never /livewire/update itself.
+            if ($request->hasHeader('X-Livewire')) {
+                // Same scheme + host + port, as a path under the site root: `javascript://host/…`, another port and
+                // `host.evil.com` all fail this (review P9.3b M2) — the login screens redirect to url.intended as is.
+                $page = (string) $request->headers->get('referer', '');
+                if (str_starts_with($page, $request->getSchemeAndHttpHost().'/')) {
+                    $request->session()->put('url.intended', $page);
+                }
+
+                return redirect()->route('legal.accept');
+            }
+
             // Only a page the member opened is somewhere to come back to. A background request
-            // (Echo's channel auth POST, a Livewire call, fetch) is refused without becoming the
-            // return address: found by Dusk, the accept page sent members to GET /broadcasting/auth.
-            if (! $request->isMethod('GET') || $request->expectsJson() || $request->ajax() || $request->hasHeader('X-Livewire')) {
+            // (Echo's channel auth POST, fetch) is refused without becoming the return address:
+            // found by Dusk, the accept page sent members to GET /broadcasting/auth.
+            if (! $request->isMethod('GET') || $request->expectsJson() || $request->ajax()) {
                 abort(409, __('Please accept the updated terms to continue.'));
             }
             $request->session()->put('url.intended', $request->fullUrl());

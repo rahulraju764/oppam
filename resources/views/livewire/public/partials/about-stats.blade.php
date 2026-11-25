@@ -9,7 +9,7 @@
         <div class="stat-tile">
             <div class="stat-icon">
                 @if (str_starts_with($counter->icon, 'fa-'))
-                    <i class="fa {{ $counter->icon }}" aria-hidden="true"></i>
+                    <i class="{{ $counter->icon }}" aria-hidden="true"></i>
                 @else
                     <img src="{{ asset($counter->icon) }}" class="img-fluid" alt="" width="128" height="128" loading="lazy" decoding="async">
                 @endif

@@ -19,7 +19,7 @@
             <div class="ui-modal__head">
                 <h2 class="ui-modal__title" id="{{ $titleId }}">{{ $title }}</h2>
                 <button type="button" class="ui-modal__close" x-on:click="open = false" aria-label="{{ __('Close') }}">
-                    <i class="fa fa-times" aria-hidden="true"></i>
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="ui-modal__body">{{ $slot }}</div>

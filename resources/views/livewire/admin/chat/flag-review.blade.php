@@ -8,7 +8,7 @@
         <div>
             <h1>{{ __('Review flagged message') }}</h1>
             <p>
-                <a href="{{ route('admin.chat.flags') }}" wire:navigate><i class="fa fa-arrow-left" aria-hidden="true"></i> {{ __('Back to flagged messages') }}</a>
+                <a href="{{ route('admin.chat.flags') }}" wire:navigate><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ __('Back to flagged messages') }}</a>
             </p>
         </div>
     </div>
@@ -19,7 +19,7 @@
                 <h2 class="admin-section-title">{{ __('About this flag') }}</h2>
                 <dl class="mod-facts">
                     <dt>{{ __('Reason') }}</dt>
-                    <dd><x-ui.badge variant="warning" icon="fa-flag">{{ $flag->rule->label() }}</x-ui.badge></dd>
+                    <dd><x-ui.badge variant="warning" icon="fa-solid fa-flag">{{ $flag->rule->label() }}</x-ui.badge></dd>
                     <dt>{{ __('Source') }}</dt>
                     <dd>{{ $flag->source->label() }}</dd>
                     <dt>{{ __('Sender') }}</dt>
@@ -107,11 +107,11 @@
                 <h2 class="admin-section-title">{{ __('Message') }}</h2>
                 @if (! $revealed)
                     <p>{{ __('Messages are private. Reveal only this message and the three messages around it — your view is recorded in the audit log.') }}</p>
-                    <x-ui.button type="button" wire:click="reveal" loading="reveal" icon="fa-eye">{{ __('Reveal message') }}</x-ui.button>
+                    <x-ui.button type="button" wire:click="reveal" loading="reveal" icon="fa-regular fa-eye">{{ __('Reveal message') }}</x-ui.button>
                 @endif
                 @if ($breakGlassUrl)
                     <p class="small mt-3 mb-0">
-                        <a href="{{ $breakGlassUrl }}" wire:navigate><i class="fa fa-unlock-alt" aria-hidden="true"></i> {{ __('Read the whole conversation (break-glass, audited)') }}</a>
+                        <a href="{{ $breakGlassUrl }}" wire:navigate><i class="fa-solid fa-unlock" aria-hidden="true"></i> {{ __('Read the whole conversation (break-glass, audited)') }}</a>
                     </p>
                 @endif
                 @if ($revealed)

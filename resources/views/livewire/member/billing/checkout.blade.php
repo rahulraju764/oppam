@@ -25,7 +25,7 @@
 
             @if (! $available)
                 <div class="demo-banner" role="alert">
-                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
                     <div>
                         <strong>{{ __('Payments are not enabled yet — no payment is taken.') }}</strong>
                         <p>{{ __('Nothing is charged and no order is created on this page. To buy a membership,') }}
@@ -34,7 +34,7 @@
                 </div>
             @elseif ($testMode)
                 <div class="demo-banner" role="alert">
-                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
                     <div>
                         <strong>{{ __('Test mode — no real payment is taken.') }}</strong>
                         <p>{{ __('This build uses a simulated payment gateway. “Complete test payment” activates the plan without any money changing hands.') }}</p>
@@ -94,7 +94,7 @@
 
                         <ul class="checkout-features">
                             @foreach ($features as $feature)
-                                <li><i class="fa fa-check" aria-hidden="true"></i> {{ $feature }}</li>
+                                <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ $feature }}</li>
                             @endforeach
                         </ul>
 
@@ -112,7 +112,7 @@
                         <div class="checkout-coupon">
                             @if ($appliedCoupon)
                                 <div class="checkout-coupon-applied" role="status">
-                                    <span><i class="fa fa-tag" aria-hidden="true"></i> {{ __('Code :code applied', ['code' => $appliedCoupon]) }}</span>
+                                    <span><i class="fa-solid fa-tag" aria-hidden="true"></i> {{ __('Code :code applied', ['code' => $appliedCoupon]) }}</span>
                                     <x-ui.button variant="link" size="sm" type="button" wire:click="removeCoupon" loading="removeCoupon">{{ __('Remove') }}</x-ui.button>
                                 </div>
                             @else

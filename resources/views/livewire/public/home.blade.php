@@ -30,8 +30,8 @@
                 @endforeach
             </div>
 
-            <button class="swiper-button-prev" type="button" aria-label="{{ __('Previous slide') }}"><span><i class="fa fa-angle-left" aria-hidden="true"></i></span></button>
-            <button class="swiper-button-next" type="button" aria-label="{{ __('Next slide') }}"><span><i class="fa fa-angle-right" aria-hidden="true"></i></span></button>
+            <button class="swiper-button-prev" type="button" aria-label="{{ __('Previous slide') }}"><span><i class="fa-solid fa-angle-left" aria-hidden="true"></i></span></button>
+            <button class="swiper-button-next" type="button" aria-label="{{ __('Next slide') }}"><span><i class="fa-solid fa-angle-right" aria-hidden="true"></i></span></button>
             <div class="swiper-pagination"></div>
         </div>
         @endif
@@ -58,7 +58,7 @@
                     <div class="about-image">
                         <img src="{{ asset('images/home/oppam-proposal-01-800-700.webp') }}" alt="" class="img-fluid" width="800" height="700" loading="lazy" decoding="async">
                         <div class="video-icon">
-                            <i class="fa fa-play" aria-hidden="true"></i>
+                            <i class="fa-solid fa-play" aria-hidden="true"></i>
                         </div>
                     </div>
                 </div>
@@ -138,7 +138,7 @@
             @if ($registerUrl)
                 <div class="row">
                     <div class="col-12 text-center">
-                        <a href="{{ $registerUrl }}" class="view-btn" wire:navigate>{{ $blocks['members']->text('cta_label') }} <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
+                        <a href="{{ $registerUrl }}" class="view-btn" wire:navigate>{{ $blocks['members']->text('cta_label') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </div>
             @endif

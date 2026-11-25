@@ -23,7 +23,7 @@
         @if ($hint === null)
             {{ __('Did a marriage bureau send you? Enter its code.') }}
         @elseif ($hint->valid)
-            <i class="fa fa-check-circle" aria-hidden="true"></i>
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
             {{ $hint->district !== null ? __(':name, :district', ['name' => $hint->name, 'district' => $hint->district]) : $hint->name }}
         @else
             {{ __('We couldn’t find this code. You can still continue — our team will check it.') }}

@@ -12,7 +12,7 @@
 
     @if ($this->items->isEmpty())
         <div class="ui-card">
-            <x-ui.empty-state icon="fa-level-up" :title="__('Nothing escalated')" />
+            <x-ui.empty-state icon="fa-solid fa-turn-up" :title="__('Nothing escalated')" />
         </div>
     @else
         @if ($canDecide)
@@ -53,7 +53,7 @@
                                 <div class="mb-2">
                                     <strong>{{ $row['label'] }}</strong>
                                     @foreach ($row['flags'] as $flag)
-                                        <x-ui.badge variant="warning" icon="fa-flag">{{ $flag }}</x-ui.badge>
+                                        <x-ui.badge variant="warning" icon="fa-solid fa-flag">{{ $flag }}</x-ui.badge>
                                     @endforeach
                                     <div class="mod-diff">
                                         <del>{{ $row['old'] ?? '—' }}</del>

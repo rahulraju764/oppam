@@ -36,7 +36,7 @@
                         <nav class="sidebar-menu" aria-label="{{ __('Member menu') }}">
                             @foreach ($menu as $item)
                                 <a href="{{ route($item[0], $item[3] ?? []) }}{{ isset($item[4]) ? '#'.$item[4] : '' }}" wire:navigate>
-                                    <i class="fa {{ $item[2] }}" aria-hidden="true"></i> {{ $item[1] }}
+                                    <i class="{{ $item[2] }}" aria-hidden="true"></i> {{ $item[1] }}
                                 </a>
                             @endforeach
                         </nav>

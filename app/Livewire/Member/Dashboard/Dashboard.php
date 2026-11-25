@@ -45,18 +45,18 @@ final class Dashboard extends Component
     private function menu(): array
     {
         return [
-            ['member.profile.me', __('My Profile'), 'fa-user-o'],
-            ['member.profile.me', __('Partner Preferences'), 'fa-sliders', [], 'partner-preferences'],
-            ['member.matches', __('My Matches'), 'fa-heart-o'],
-            ['member.profiles', __('All Profiles'), 'fa-users'],
-            ['member.matches.daily', __('Daily Matches'), 'fa-bolt'],
-            ['member.likes', __('Likes'), 'fa-thumbs-o-up'],
-            ['member.favorites', __('Favorites'), 'fa-star-o'],
-            ['member.interests', __('Interests'), 'fa-paper-plane-o'],
-            ['member.messages', __('Messages'), 'fa-envelope-o'],
-            ['member.visitors', __('Visitors'), 'fa-eye'],
-            ['member.verify', __('Verify Profile'), 'fa-check-circle-o'],
-            ['member.settings', __('Settings'), 'fa-cog'],
+            ['member.profile.me', __('My Profile'), 'fa-regular fa-user'],
+            ['member.profile.me', __('Partner Preferences'), 'fa-solid fa-sliders', [], 'partner-preferences'],
+            ['member.matches', __('My Matches'), 'fa-regular fa-heart'],
+            ['member.profiles', __('All Profiles'), 'fa-solid fa-users'],
+            ['member.matches.daily', __('Daily Matches'), 'fa-solid fa-bolt'],
+            ['member.likes', __('Likes'), 'fa-regular fa-thumbs-up'],
+            ['member.favorites', __('Favorites'), 'fa-regular fa-star'],
+            ['member.interests', __('Interests'), 'fa-regular fa-paper-plane'],
+            ['member.messages', __('Messages'), 'fa-regular fa-envelope'],
+            ['member.visitors', __('Visitors'), 'fa-regular fa-eye'],
+            ['member.verify', __('Verify Profile'), 'fa-regular fa-circle-check'],
+            ['member.settings', __('Settings'), 'fa-solid fa-gear'],
         ];
     }
 

@@ -11,6 +11,7 @@ use App\Enums\PhotoStatus;
 use App\Enums\ProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Profile;
+use App\Queries\Reports\Concerns\SqlMedian;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -130,28 +131,25 @@ final class LiveMetrics
                 ->groupBy('messages.conversation_id')
                 ->selectRaw('messages.conversation_id, MIN(messages.id) as first_id, COUNT(*) as messages, COUNT(DISTINCT messages.sender_profile_id) as senders');
 
-            $threads = DB::query()->fromSub($perThread, 't')->get(['messages', 'senders']);
+            // Totals over the per-thread rows in SQL (P9.3c: not every thread loaded into PHP).
+            $totals = DB::query()->fromSub($perThread, 't')
+                ->selectRaw('COALESCE(SUM(CASE WHEN senders >= 2 THEN 1 ELSE 0 END), 0) as replied, COALESCE(SUM(messages), 0) as messages')
+                ->first();
 
-            // The first answer from the OTHER member: joined once per conversation (index conversation_id, id).
-            $replies = DB::query()->fromSub($perThread, 't')
+            // The first answer from the OTHER member: joined once per conversation (index conversation_id, id);
+            // the typical minutes as one SQL median (the same whole minutes and upper-median rule as before).
+            $replyMinutes = DB::query()->fromSub($perThread, 't')
                 ->join('messages as first', 'first.id', '=', 't.first_id')
                 ->join('messages as reply', fn ($j) => $j->on('reply.conversation_id', '=', 't.conversation_id')
                     ->whereColumn('reply.sender_profile_id', '!=', 'first.sender_profile_id')->where('reply.type', '!=', $system))
                 ->groupBy('t.conversation_id', 'first.created_at')
-                ->selectRaw('first.created_at as first_at, MIN(reply.created_at) as reply_at')
-                ->get();
-
-            $minutes = [];
-            foreach ($replies as $r) {
-                $minutes[] = (int) CarbonImmutable::parse((string) $r->first_at)->diffInMinutes(CarbonImmutable::parse((string) $r->reply_at));
-            }
-            sort($minutes);
+                ->selectRaw('TIMESTAMPDIFF(MINUTE, first.created_at, MIN(reply.created_at)) as v');
 
             return [
                 'started' => $started,
-                'replied' => $threads->where('senders', '>=', 2)->count(),
-                'messages' => (int) $threads->sum('messages'),
-                'median_reply_minutes' => $minutes === [] ? null : $minutes[intdiv(count($minutes), 2)],
+                'replied' => (int) ($totals->replied ?? 0),
+                'messages' => (int) ($totals->messages ?? 0),
+                'median_reply_minutes' => SqlMedian::of($replyMinutes),
             ];
         });
     }

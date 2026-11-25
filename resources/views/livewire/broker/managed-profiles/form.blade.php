@@ -50,7 +50,7 @@
                     </x-ui.checkbox>
                 @else
                     <p class="form-text mb-0">
-                        <i class="fa fa-check-circle" aria-hidden="true"></i>
+                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
                         {{ __('Client consent confirmed on :date.', ['date' => $profile->broker_consent_confirmed_at?->timezone(config('oppam.display_timezone'))->format('j M Y')]) }}
                     </p>
                 @endif
@@ -70,7 +70,7 @@
                                 @disabled(! $canOpen || $isOpen)>
                             <span class="managed-form__step">
                                 @if ($progress?->isComplete($item))
-                                    <i class="fa fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Done:') }}</span>
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Done:') }}</span>
                                 @else
                                     {{ $item->value }}
                                 @endif
@@ -118,9 +118,9 @@
                                         @if (! $profile)
                                             {{ __('Save draft') }}
                                         @elseif ($item->next())
-                                            {{ __('Save & continue') }} <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                                            {{ __('Save & continue') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                         @else
-                                            {{ __('Save') }} <i class="fa fa-check" aria-hidden="true"></i>
+                                            {{ __('Save') }} <i class="fa-solid fa-check" aria-hidden="true"></i>
                                         @endif
                                     </button>
                                 </div>
@@ -140,7 +140,7 @@
                     <button type="button" class="view-btn" wire:click="submit" wire:loading.attr="disabled" wire:target="submit"
                             @disabled(! ($progress?->isReadyToSubmit() ?? false))>
                         <span class="ui-spinner" wire:loading wire:target="submit" aria-hidden="true"></span>
-                        {{ __('Submit for review') }} <i class="fa fa-check" aria-hidden="true"></i>
+                        {{ __('Submit for review') }} <i class="fa-solid fa-check" aria-hidden="true"></i>
                     </button>
                 </div>
             @endif

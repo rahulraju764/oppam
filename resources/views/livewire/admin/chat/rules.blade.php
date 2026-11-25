@@ -64,7 +64,7 @@
             <div class="col-lg-4">
                 <x-ui.select :label="__('Where in the conversation')" name="position" id="rulePosition" wire:model="position" :options="$positions" />
                 <div class="mt-3">
-                    <x-ui.button type="button" icon="fa-flask" wire:click="test" loading="test">{{ __('Try it') }}</x-ui.button>
+                    <x-ui.button type="button" icon="fa-solid fa-flask" wire:click="test" loading="test">{{ __('Try it') }}</x-ui.button>
                 </div>
             </div>
         </div>
@@ -90,7 +90,7 @@
                 <p class="small mt-2">{{ __('“Block the message” refuses it: nothing is stored and the member is asked to edit it.') }}</p>
                 <div class="mt-3">
                     <x-ui.textarea :label="__('Sample message')" name="draftSample" id="ruleDraftSample" wire:model="sample" error="sample" rows="2" />
-                    <x-ui.button size="sm" variant="outline" type="button" icon="fa-flask" wire:click="testDraft" loading="testDraft" class="mt-2">{{ __('Try this draft') }}</x-ui.button>
+                    <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-flask" wire:click="testDraft" loading="testDraft" class="mt-2">{{ __('Try this draft') }}</x-ui.button>
                     @include('livewire.admin.chat.partials.rule-result')
                 </div>
                 <div class="mt-3">

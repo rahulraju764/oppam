@@ -147,27 +147,37 @@ final class AuditLogQuery
         ];
     }
 
+    public const SUBJECT_TYPES_KEY = 'audit:subject-types';
+
+    public const AREAS_KEY = 'audit:areas';
+
+    /** A day: AuditLogger forgets the lists the moment a new subject type / area is written (P9.3c). */
+    public const LISTS_SECONDS = 86_400;
+
     /**
-     * Subject types present in the trail (the subject-type filter's allow-list), cached 10 minutes.
+     * Subject types present in the trail (the subject-type filter's allow-list). A loose index scan on
+     * (subject_type, …) — "Using index for group-by", not a pass over the trail (P9.3c EXPLAIN).
      *
      * @return list<string>
      */
     public function subjectTypes(): array
     {
         /** @var list<string> */
-        return Cache::remember('audit:subject-types', 600, fn (): array => DB::table('audit_logs')
+        return Cache::remember(self::SUBJECT_TYPES_KEY, self::LISTS_SECONDS, fn (): array => DB::table('audit_logs')
             ->whereNotNull('subject_type')->distinct()->orderBy('subject_type')->pluck('subject_type')->map(fn ($t): string => (string) $t)->all());
     }
 
     /**
-     * Area prefixes present in the trail ("billing", "brokers", …), cached 10 minutes.
+     * Area prefixes present in the trail ("billing", "brokers", …). DISTINCT `action` is a loose index scan
+     * on (action, created_at) — a few dozen index entries, split in PHP; an expression (SUBSTRING_INDEX)
+     * would read every row (P9.3c EXPLAIN).
      *
      * @return list<string>
      */
     public function areas(): array
     {
         /** @var list<string> */
-        return Cache::remember('audit:areas', 600, fn (): array => DB::table('audit_logs')->distinct()->pluck('action')
+        return Cache::remember(self::AREAS_KEY, self::LISTS_SECONDS, fn (): array => DB::table('audit_logs')->distinct()->pluck('action')
             ->map(fn ($a): string => explode('.', (string) $a)[0])->unique()->sort()->values()->all());
     }
 

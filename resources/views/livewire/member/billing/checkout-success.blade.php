@@ -11,7 +11,7 @@
                     <div class="checkout-card billing-status" @if ($polling) wire:poll.2s="check" @endif>
                         @switch($state)
                             @case('paid')
-                                <i class="fa fa-check-circle" aria-hidden="true"></i>
+                                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
                                 <h1>{{ __('Payment received') }}</h1>
                                 <p role="status">
                                     {{ __('Your :plan membership is active until :date.', [
@@ -27,16 +27,16 @@
                                     @endif
                                 </dl>
                                 <div class="billing-status-actions">
-                                    <x-ui.button :href="route('member.messages')" icon="fa-comments" wire:navigate>{{ __('Go to messages') }}</x-ui.button>
+                                    <x-ui.button :href="route('member.messages')" icon="fa-solid fa-comments" wire:navigate>{{ __('Go to messages') }}</x-ui.button>
                                     @if ($record->invoice)
-                                        <x-ui.button variant="outline" icon="fa-download"
+                                        <x-ui.button variant="outline" icon="fa-solid fa-download"
                                                      :href="route('member.billing.invoice', ['invoice' => $record->invoice->number])">{{ __('Download invoice') }}</x-ui.button>
                                     @endif
                                 </div>
                                 @break
 
                             @case('failed')
-                                <i class="fa fa-times-circle" aria-hidden="true"></i>
+                                <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
                                 <h1>{{ __('Payment didn’t go through') }}</h1>
                                 <p role="status">{{ __('No money was taken for order :code. You can try again, or choose another payment method.', ['code' => $record->code]) }}</p>
                                 <div class="billing-status-actions">
@@ -46,7 +46,7 @@
                                 @break
 
                             @case('closed')
-                                <i class="fa fa-times-circle" aria-hidden="true"></i>
+                                <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
                                 <h1>{{ __('This order has closed') }}</h1>
                                 <p role="status">{{ __('Order :code was not paid. If money left your account, it will be matched to this order automatically — or contact us with the order number.', ['code' => $record->code]) }}</p>
                                 <div class="billing-status-actions">

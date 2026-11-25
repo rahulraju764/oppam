@@ -56,11 +56,48 @@ final class Index extends Component
     /** @return array<string, string> */
     public function getListeners(): array
     {
+        $channel = 'echo-private:App.Models.User.'.$this->member()->id;
+
         return [
-            'echo-private:App.Models.User.'.$this->member()->id.',.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated' => 'arrived',
+            $channel.',.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated' => 'arrived',
+            $channel.',.notifications.read' => 'readElsewhere',   // read in another tab / device (P9.3b)
             'realtime-reconnected' => 'arrived',
             'notifications-all-read' => 'showAllRead',   // "Mark all as read" in the header bell
         ];
+    }
+
+    /**
+     * Notifications were marked read somewhere (another tab, another device, or this one): the event carries
+     * only the new unread count, never ids. 0 → everything shown is read; otherwise re-read just the loaded
+     * rows' read state (one owner-scoped query) and update them in place — no list jump, no "new" button.
+     *
+     * @param  array{unread_count?: int}  $event
+     */
+    public function readElsewhere(array $event = []): void
+    {
+        if ((int) ($event['unread_count'] ?? -1) === 0) {
+            $this->showAllRead();
+
+            return;
+        }
+
+        $ids = array_column($this->items, 'id');
+        if ($ids === []) {
+            return;
+        }
+
+        $member = $this->member();
+        $read = DatabaseNotification::query()
+            ->where('notifiable_type', $member->getMorphClass())
+            ->where('notifiable_id', $member->id)
+            ->whereKey($ids)
+            ->whereNotNull('read_at')
+            ->pluck('id')->all();
+
+        $this->items = collect($this->items)
+            ->reject(fn (array $item): bool => $this->unread && in_array($item['id'], $read, true))
+            ->map(fn (array $item): array => in_array($item['id'], $read, true) ? [...$item, 'unread' => false] : $item)
+            ->values()->all();
     }
 
     public function updatedGroup(): void

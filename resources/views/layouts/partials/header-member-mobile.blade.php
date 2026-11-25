@@ -15,7 +15,7 @@
     @else
         <div class="mobile-left">
     @endif
-        <img src="{{ $member->photoUrl }}" alt="" width="600" height="600" fetchpriority="high" decoding="async">
+        <img src="{{ $member->photoUrl }}" alt="" width="600" height="600" decoding="async">
         <div class="mobile-user-info">
             <h4>{{ $member->name }}</h4>
             <span class="member-badge">{{ __(':plan Member', ['plan' => $member->planLabel]) }}</span>
@@ -30,7 +30,7 @@
         @if ($plansUrl)
             @php($onPlans = $nav->isActive('plans'))
             <a href="{{ $plansUrl }}" @class(['mobile-upgrade', 'is-current' => $onPlans]) @if ($onPlans) aria-current="page" @endif aria-label="{{ __('Upgrade membership') }}" wire:navigate>
-                <i class="fa fa-diamond" aria-hidden="true"></i>
+                <i class="fa-regular fa-gem" aria-hidden="true"></i>
             </a>
         @endif
 
@@ -42,7 +42,7 @@
             <livewire:shared.notification-bell variant="mobile" :key="'bell-mobile'" />
         @elseif ($notificationsUrl)
             <a href="{{ $notificationsUrl }}" class="mobile-bell" aria-label="{{ trans_choice('Notifications (:count unread)', $member->unreadNotifications, ['count' => $member->unreadNotifications]) }}" wire:navigate>
-                <i class="fa fa-bell-o" aria-hidden="true"></i>
+                <i class="fa-regular fa-bell" aria-hidden="true"></i>
                 @if ($member->unreadNotifications > 0)
                     <span class="mobile-bell-count" aria-hidden="true">{{ $member->unreadNotifications }}</span>
                 @endif

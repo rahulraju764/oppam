@@ -21,7 +21,7 @@
                             <div class="content-header search-sheet__head">
                                 <div class="content-title"><h2>{{ __('Find your match') }}</h2></div>
                                 <button type="button" class="search-sheet__close d-lg-none" x-on:click="sheet = false" aria-label="{{ __('Close filters') }}">
-                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                                 </button>
                             </div>
 
@@ -32,7 +32,7 @@
                                            placeholder="{{ __('e.g. OPM12370') }}" wire:model="profileId" autocomplete="off"
                                            @if ($idError) aria-invalid="true" aria-describedby="profile-id-error" @endif>
                                     <button type="submit" class="id-search-btn" aria-label="{{ __('Find profile by ID') }}">
-                                        <i class="fa fa-search" aria-hidden="true"></i>
+                                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                                     </button>
                                 </div>
                                 @if ($idError)
@@ -112,7 +112,7 @@
 
                                 <details class="more-filters mt-4" @if ($activeFilters > 6) open @endif>
                                     <summary class="more-filters-toggle">
-                                        <i class="fa fa-sliders" aria-hidden="true"></i>
+                                        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
                                         <span class="more-filters-label">{{ __('More filters') }}</span>
                                     </summary>
 
@@ -220,7 +220,7 @@
                                     <p class="mb-0" aria-live="polite">{{ trans_choice(':count profile|:count profiles', $total, ['count' => number_format($total)]) }}</p>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <x-ui.button type="button" variant="outline" size="sm" icon="fa-bookmark-o" wire:click="openSaveModal" aria-haspopup="dialog">{{ __('Save search') }}</x-ui.button>
+                                    <x-ui.button type="button" variant="outline" size="sm" icon="fa-regular fa-bookmark" wire:click="openSaveModal" aria-haspopup="dialog">{{ __('Save search') }}</x-ui.button>
                                     <div class="search-sort mb-0">
                                         <label class="visually-hidden" for="sort">{{ __('Sort by') }}</label>
                                         <select class="form-select profile-select" id="sort" name="sort" wire:model.live="filters.sort">
@@ -233,7 +233,7 @@
                                 <x-ui.alert type="success">{{ $saveSuccess }}</x-ui.alert>
                             @endif
 
-                            <x-ui.button type="button" variant="outline" icon="fa-sliders" id="open-filters" class="w-100 mb-3 d-lg-none" x-on:click="sheet = true" aria-controls="search-filters" x-bind:aria-expanded="sheet">
+                            <x-ui.button type="button" variant="outline" icon="fa-solid fa-sliders" id="open-filters" class="w-100 mb-3 d-lg-none" x-on:click="sheet = true" aria-controls="search-filters" x-bind:aria-expanded="sheet">
                                 {{ $activeFilters > 0 ? trans_choice('Filters (:count)|Filters (:count)', $activeFilters, ['count' => $activeFilters]) : __('Filters') }}
                             </x-ui.button>
 
@@ -249,7 +249,7 @@
                                 @forelse ($cards as $card)
                                     <x-profile.row :profile="$card" highlight wire:key="result-{{ $card->code }}" />
                                 @empty
-                                    <x-ui.empty-state icon="fa-search" :title="__('No profiles match')"
+                                    <x-ui.empty-state icon="fa-solid fa-magnifying-glass" :title="__('No profiles match')"
                                                       :message="__('Try fewer filters, a wider age range or another district.')" />
                                 @endforelse
                             </div>

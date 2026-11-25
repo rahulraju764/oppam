@@ -6,13 +6,13 @@
         </div>
         <div>
             <a href="{{ route('admin.billing.plans') }}" class="btn btn-outline-primary" wire:navigate>
-                <i class="fa fa-tags me-1" aria-hidden="true"></i> {{ __('Manage Plans & Pricing (A06)') }}
+                <i class="fa-solid fa-tags me-1" aria-hidden="true"></i> {{ __('Manage Plans & Pricing (A06)') }}
             </a>
         </div>
     </div>
 
     <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-        <i class="fa fa-info-circle fa-lg me-3" aria-hidden="true"></i>
+        <i class="fa-solid fa-circle-info fa-lg me-3" aria-hidden="true"></i>
         <div>
             {{ __('Plan allowances (chat replies, contact numbers, daily recommendations, incognito browsing) are stored in ') }}
             <code>plan_features</code>{{ __('. Edits made in the Plans editor immediately reflect here and on the member upgrade page.') }}
@@ -42,9 +42,9 @@
                             @foreach ($row['cells'] as $idx => $cell)
                                 <td @class(['bg-light-primary' => $idx === $comparison->featuredColumn])>
                                     @if ($cell === true)
-                                        <i class="fa fa-check text-success fs-5" aria-label="Yes"></i>
+                                        <i class="fa-solid fa-check text-success fs-5" role="img" aria-label="{{ __('Yes') }}"></i>
                                     @elseif ($cell === false)
-                                        <i class="fa fa-times text-muted" aria-label="No"></i>
+                                        <i class="fa-solid fa-xmark text-muted" role="img" aria-label="{{ __('No') }}"></i>
                                     @else
                                         <span class="fw-bold">{{ $cell }}</span>
                                     @endif

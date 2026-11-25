@@ -13,7 +13,7 @@
     <div class="msg-panel-head">
         <div class="msg-panel-who">
             <a href="{{ route('member.messages') }}" class="msg-back d-lg-none" wire:navigate aria-label="{{ __('Back to conversations') }}">
-                <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
             </a>
             <span class="msg-panel-avatar">
                 <img src="{{ $photoUrl }}" alt="" width="600" height="600" loading="lazy" decoding="async">
@@ -33,11 +33,11 @@
             @unless ($support)
                 <button type="button" class="msg-icon-btn" wire:click="setMuted({{ $muted ? 'false' : 'true' }})" wire:loading.attr="disabled" wire:target="setMuted"
                         aria-pressed="{{ $muted ? 'true' : 'false' }}" aria-label="{{ $muted ? __('Unmute this conversation') : __('Mute this conversation') }}">
-                    <i @class(['fa', 'fa-bell-slash' => $muted, 'fa-bell-o' => ! $muted]) aria-hidden="true"></i>
+                    <i @class(['fa-solid fa-bell-slash' => $muted, 'fa-regular fa-bell' => ! $muted]) aria-hidden="true"></i>
                 </button>
                 <button type="button" class="msg-icon-btn" x-on:click="$dispatch('open-modal', { name: 'report-chat' })"
                         aria-label="{{ __('Report :name', ['name' => $firstName]) }}" title="{{ __('Report') }}">
-                    <i class="fa fa-flag-o" aria-hidden="true"></i>
+                    <i class="fa-regular fa-flag" aria-hidden="true"></i>
                 </button>
             @endunless
             @if ($profileUrl)
@@ -81,14 +81,14 @@
                                 <img src="{{ $message->imageUrl }}" alt="{{ $message->mine ? __('Photo you sent') : __('Photo from :name', ['name' => $firstName]) }}" loading="lazy" decoding="async">
                             </a>
                         @else
-                            <p class="msg-bubble-text">@if ($message->deleted)<i class="fa fa-ban" aria-hidden="true"></i> @endif{{ $message->text }}</p>
+                            <p class="msg-bubble-text">@if ($message->deleted)<i class="fa-solid fa-ban" aria-hidden="true"></i> @endif{{ $message->text }}</p>
                         @endif
                         <p class="msg-bubble-time">
                             <span class="visually-hidden">{{ $message->mine ? __('You,') : $name.',' }}</span>
                             {{ $message->at->format('H:i') }}
                             @if ($message->tick && ! $message->deleted)
                                 <span @class(['msg-tick', 'is-read' => $message->tick === 'read'])>
-                                    <i class="fa fa-check" aria-hidden="true"></i>@if ($message->tick !== 'sent')<i class="fa fa-check" aria-hidden="true"></i>@endif
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i>@if ($message->tick !== 'sent')<i class="fa-solid fa-check" aria-hidden="true"></i>@endif
                                     <span class="visually-hidden">{{ $message->tickLabel() }}</span>
                                 </span>
                             @endif
@@ -149,11 +149,11 @@
             <div class="msg-composer-tools">
                 <button type="button" class="msg-icon-btn" x-on:click="emojiOpen = ! emojiOpen" x-bind:aria-expanded="emojiOpen"
                         aria-controls="msg-emoji" aria-label="{{ __('Add an emoji') }}">
-                    <i class="fa fa-smile-o" aria-hidden="true"></i>
+                    <i class="fa-regular fa-face-smile" aria-hidden="true"></i>
                 </button>
                 @if ($canSendPhotos)
                     <label class="msg-icon-btn" for="msgPhoto" title="{{ __('Send a photo') }}">
-                        <i class="fa fa-camera" aria-hidden="true"></i>
+                        <i class="fa-solid fa-camera" aria-hidden="true"></i>
                         <span class="visually-hidden">{{ __('Send a photo') }}</span>
                     </label>
                     <input type="file" id="msgPhoto" name="photo" class="visually-hidden" accept="image/jpeg,image/png,image/webp"
@@ -174,7 +174,7 @@
                       x-on:keydown.enter="if (! $event.shiftKey && ! $event.isComposing) { $event.preventDefault(); submit() }"></textarea>
 
             <button type="submit" class="btn msg-composer-send" x-bind:disabled="body.trim() === ''">
-                <i class="fa fa-paper-plane" aria-hidden="true"></i>
+                <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
                 <span class="msg-composer-send-label">{{ __('Send') }}</span>
             </button>
         </form>
@@ -187,7 +187,7 @@
     @elseif (! $support)
         <div class="msg-composer is-locked" role="status">
             <p class="msg-locked-text">
-                <i class="fa fa-lock" aria-hidden="true"></i>
+                <i class="fa-solid fa-lock" aria-hidden="true"></i>
                 {{ $state->message() }}
             </p>
             @if ($upgradable)

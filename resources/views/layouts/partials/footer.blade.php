@@ -24,15 +24,15 @@
                     @if ($social !== [])
                         <div class="social_media">
                             @foreach ([
-                                'facebook' => ['Facebook', 'fa-facebook'],
-                                'twitter' => ['Twitter', 'fa-twitter'],
-                                'instagram' => ['Instagram', 'fa-instagram'],
-                                'linkedin' => ['LinkedIn', 'fa-linkedin'],
-                                'youtube' => ['YouTube', 'fa-youtube-play'],
+                                'facebook' => ['Facebook', 'fa-brands fa-facebook-f'],
+                                'twitter' => ['Twitter', 'fa-brands fa-twitter'],
+                                'instagram' => ['Instagram', 'fa-brands fa-instagram'],
+                                'linkedin' => ['LinkedIn', 'fa-brands fa-linkedin-in'],
+                                'youtube' => ['YouTube', 'fa-brands fa-youtube'],
                             ] as $network => [$networkName, $icon])
                                 @isset($social[$network])
                                     <a href="{{ $social[$network] }}" target="_blank" rel="noopener" aria-label="{{ __('Oppam Matrimony on :network', ['network' => $networkName]) }}">
-                                        <i class="fa {{ $icon }}" aria-hidden="true"></i>
+                                        <i class="{{ $icon }}" aria-hidden="true"></i>
                                     </a>
                                 @endisset
                             @endforeach
@@ -85,7 +85,7 @@
                     <h3>{{ __('Get In Touch') }}</h3>
 
                     <div class="office-icon-text">
-                        <i class="fa fa-map-marker" aria-hidden="true"></i>
+                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
                         <address>
                             @if ($site->mapUrl)
                                 <a href="{{ $site->mapUrl }}" target="_blank" rel="noopener">
@@ -100,7 +100,7 @@
                     </div>
 
                     <div class="office-icon-text">
-                        <i class="fa fa-phone" aria-hidden="true"></i>
+                        <i class="fa-solid fa-phone" aria-hidden="true"></i>
                         <div class="contact-links">
                             @foreach ($site->phones as $dial => $display)
                                 <a href="tel:{{ $dial }}">{{ $display }}</a>
@@ -109,7 +109,7 @@
                     </div>
 
                     <div class="office-icon-text">
-                        <i class="fa fa-envelope" aria-hidden="true"></i>
+                        <i class="fa-solid fa-envelope" aria-hidden="true"></i>
                         <div class="contact-links">
                             @foreach ($site->emails as $email)
                                 <a href="mailto:{{ $email }}">{{ $email }}</a>

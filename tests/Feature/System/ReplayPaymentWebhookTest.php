@@ -189,3 +189,40 @@ it('A12 replay rate limit: the 11th replay in an hour is refused', function (): 
     expect(fn () => replay($admin, $event, action: $action))
         ->toThrow(fn (WebhookReplayRefused $e) => expect($e->getCode())->toBe(WebhookReplayRefused::TOO_MANY));
 });
+
+it('A12 replay (review round 1): the gateway listing the payment with a different status or amount is refused', function (string $status, int $amountDelta): void {
+    [$order, $event] = stuckCapture();
+    $payload = json_decode($event->payload, true)['payload']['payment']['entity'];
+    $gateway = Mockery::mock(PaymentGateway::class);
+    $gateway->shouldReceive('paymentsForOrder')->andReturn([new App\Data\Billing\GatewayPaymentData(
+        id: $payload['id'], orderId: $payload['order_id'], amountPaise: $payload['amount'] + $amountDelta, currency: 'INR',
+        status: App\Enums\PaymentStatus::from(strtoupper($status)),
+    )]);
+    $action = new ReplayPaymentWebhook(app(HandlePaymentWebhook::class), $gateway, app(AuditLogger::class));
+
+    expect(fn () => replay(adminWithRole('super_admin'), $event, action: $action))
+        ->toThrow(fn (WebhookReplayRefused $e) => expect($e->getCode())->toBe(WebhookReplayRefused::NOT_CONFIRMED));
+    expect($order->refresh()->status)->toBe(OrderStatus::Created);
+})->with([
+    'failed at the gateway' => ['failed', 0],
+    'a different amount' => ['captured', -100],
+]);
+
+it('A12 replay (review round 1): a stored copy that can\'t be read is refused and audited, not an error page', function (): void {
+    $event = PaymentWebhookEvent::factory()->create(['event_id' => 'evt_unreadable', 'payload' => '{"not":"an event"}', 'processed_at' => null, 'outcome' => null]);
+
+    expect(fn () => replay(adminWithRole('super_admin'), $event))
+        ->toThrow(fn (WebhookReplayRefused $e) => expect($e->getCode())->toBe(WebhookReplayRefused::UNREADABLE));
+    expect(AuditLog::query()->where('action', 'system.webhook_replay_refused')->sole()->after)->toMatchArray(['refused' => WebhookReplayRefused::UNREADABLE]);
+});
+
+it('A12 webhook race (review round 1): a retry and a replay both processing keep the FIRST outcome on the row; money moves once', function (): void {
+    [$order, $event] = stuckCapture();
+    $stale = PaymentWebhookEvent::query()->findOrFail($event->id);   // a second worker that read the row before the first finished
+
+    expect(app(HandlePaymentWebhook::class)->process($event))->toBe('activated')
+        ->and(app(HandlePaymentWebhook::class)->process($stale))->toBe('duplicate');
+
+    expect($event->refresh()->outcome)->toBe('activated')
+        ->and(Subscription::query()->count())->toBe(1)->and(Payment::query()->count())->toBe(1);
+});

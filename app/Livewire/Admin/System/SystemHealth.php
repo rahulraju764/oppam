@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Lazy;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
@@ -44,9 +45,14 @@ final class SystemHealth extends Component
 
     public const RESOLVED_SHOWN_DAYS = 7;
 
-    /** The webhook picked for replay (gateway + the gateway's own event id — never a ULID); checked again on replay. */
+    /**
+     * The webhook picked for replay (gateway + the gateway's own event id — never a ULID). Locked: only
+     * pickReplay() sets it, so the dialog and the row replay() acts on can't drift apart; checked again on replay.
+     */
+    #[Locked]
     public string $replayGateway = '';
 
+    #[Locked]
     public string $replayEventId = '';
 
     public string $reason = '';
@@ -64,14 +70,27 @@ final class SystemHealth extends Component
         $this->authorize('system.health.view');
     }
 
+    /**
+     * Pick the row to replay and open the confirm dialog — on the server, so the dialog (rendered from
+     * $replayEventId) always names the row that "Replay webhook" will act on.
+     */
+    public function pickReplay(string $gateway, string $eventId): void
+    {
+        $this->authorize('system.webhooks.replay');
+        $this->resetErrorBag();
+        $this->replayGateway = $gateway;
+        $this->replayEventId = $eventId;
+        $this->validate($this->replayRules());
+        $this->reset('reason');
+
+        $this->dispatch('open-modal', name: 'webhook-replay');
+    }
+
     public function replay(ReplayPaymentWebhook $replay): void
     {
         $this->authorize('system.webhooks.replay');
         $this->resetErrorBag();
-        $this->validate([
-            'replayGateway' => ['required', 'string', 'regex:/^[a-z0-9_]{1,20}$/'],
-            'replayEventId' => ['required', 'string', 'regex:/^[A-Za-z0-9_\-]{1,64}$/'],
-        ]);
+        $this->validate($this->replayRules());
 
         try {
             $outcome = $replay->handle($this->admin(), $this->replayGateway, $this->replayEventId, $this->reason);
@@ -129,6 +148,15 @@ final class SystemHealth extends Component
             'graceMinutes' => Settings::int(SettingKey::SystemMissedScheduleGraceMinutes),
             'p95Ceiling' => RequestOutcomes::BUCKETS[array_key_last(RequestOutcomes::BUCKETS)],
         ]);
+    }
+
+    /** @return array<string, list<string>> */
+    private function replayRules(): array
+    {
+        return [
+            'replayGateway' => ['required', 'string', 'regex:/^[a-z0-9_]{1,20}$/'],
+            'replayEventId' => ['required', 'string', 'regex:/^[A-Za-z0-9_\-]{1,64}$/'],
+        ];
     }
 
     private function admin(): AdminUser

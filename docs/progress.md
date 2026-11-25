@@ -480,10 +480,270 @@ Still open elsewhere: P6.1 Blocker fix uncommitted + Dusk not run; rule-5 owner 
       **→ P9.5:** Pulse ingest on Redis (`PULSE_INGEST_DRIVER=redis` + a `pulse:work` daemon, `pulse:check`) and review which
       default Pulse recorders are needed (CacheInteractions, UserRequests); today every request writes to the DB.
     - [ ] P9.2b2 Alerts (thresholds, system_alerts, CheckSystemHealth, emails, A02 strip, failed-jobs > 10), payment_webhook_events
-      failure columns, HandlePaymentWebhook split, Razorpay replay (`system.webhooks.replay`) — not started; **rule 5**.
-- [ ] P9.3 Font Awesome 6, accessibility & performance pass
+      failure columns, HandlePaymentWebhook split, Razorpay replay (`system.webhooks.replay`) — 2026-11-22: **built** (plan approved;
+      decisions 2026-11-22 P9.2b2 row: owner (1) replay confirms with the gateway, (2) `system.alerts` permission; Claude's defaults
+      (a)–(j)). **Rule 5 (payments / webhooks): owner review.** Migrations:
+        - 2026_11_22_100000: payment_webhook_events failed_attempts / last_failed_at / last_error / replayed_at / replayed_by;
+        - 2026_11_22_110000: system_alerts, with a unique open_key.
+      Both migrated, rolled back and re-migrated on oppam_testing; migrated on the dev DB, and AdminRolesSeeder re-run there.
+      What was built:
+        - `HandlePaymentWebhook` split into handle() + process(stored); a throw counts the attempt (class only) and is rethrown (500).
+        - `ReplayPaymentWebhook` (`system.webhooks.replay`, super admin): reason, 10 an hour, a cache lock, the gateway
+          confirmation for payment events, audited when done / refused / failed. `WebhookReplayRefused` codes. A Replay button
+          and confirm modal in the SystemHealth "not processed" table, which also shows the failed attempts.
+        - Alerts:
+          - `SystemAlertKind` (6 PRD kinds), `SystemAlert` + factory;
+          - 7 A15 `system.alert_*` settings (+ a `seconds` unit);
+          - pure `AlertRules`, `SyncSystemAlerts` (open → one email after commit to active `system.alerts` holders; closes after
+            the clear minutes; unknown sources left alone);
+          - `CheckSystemHealth` every minute on `default`, before SampleSystemHealth;
+          - the `SystemAlertOpened` mail and `SystemAlertChanged` {kind, state} on admin.dashboard;
+          - A02 strip lists the open alerts and **replaces** the "failed jobs > 0 in 24 h" line;
+          - an Alerts section on the health panel; live listeners for `dashboard.view`;
+          - resolved alerts pruned after 90 days.
+        - Readers: QueueHealth::failedSince (uncached, unrescued), WebhookHealth::signatureRejectionsSince / forget,
+          RealtimeHealth::trend.
+      Tests:
+        - new: Unit/System/AlertRulesTest (27, 28 after round 1), Feature/System/SystemAlertsTest (18), Feature/System/ReplayPaymentWebhookTest (12);
+        - Billing/PaymentWebhookTest +2;
+        - SystemHealthScreenTest +6 (replay UI ×4, alerts section, listeners);
+        - DashboardTest: 2 cases updated to the new alert source (behaviour change of decision (h), not a weakening), and 1
+          exact listener set extended with `.system.alert`;
+        - Dusk SystemHealthTest +1 (alerts + replay dialog) written, **not run** (http://localhost:8000 not answering).
+      Runs: pint passed, analyse OK. Affected folders: 427 passed; Settings 259 passed.
+      **Full sweep, 33 folders from disk: 4,377 passed, 1 skipped, 1 failed** — SafetySupportScreensTest "ticket page: internal
+      notes …" failed once in the sweep, then passed alone and in a full Livewire/Admin re-run (348 passed): **flaky**, message
+      not kept.
+      By hand on the dev DB: 11 failed jobs → one CheckSystemHealth run → FAILED_JOBS 11/10 open, 1 alert mail queued, the A02
+      strip showed it; the test rows were removed.
+      **Review round 1 (2026-11-22): NOT READY.** It found the work already committed as **8170b50** (by the owner, before any
+      review and before the rule-5 review: process violation, recorded). 1 **Major**: the replay dialog was rendered from props set
+      client-side without a round trip, so it named a blank or the previous row while replaying another. Fixed: `pickReplay()` on
+      the server (authorize, validate, then open the dialog), `#[Locked]` target props, a Livewire test switching rows, and a Dusk
+      assertion of the id. Minors fixed with tests:
+        - a stored copy that can't be parsed → refused (code 7) and audited;
+        - the gateway check also matches order, amount and currency;
+        - first-outcome-wins marking for a retry racing a replay (conditional update);
+        - an unmeasured lag / Reverb down all window = unknown, not clear;
+        - stale view comment; Dusk fixture alert created resolved (and its dev-DB audit row noted);
+        - **the flaky SafetySupportScreensTest found**: en_IN faker first names can be two words and `{first_name}` renders the
+          first word (CannedResponseRenderer's intended `strtok`) — the test now expects the first word.
+      Decisions P9.2b2 (k)–(n). After the fixes, every affected folder: Unit 213, Feature/System 70, Billing 236, Webhooks 11,
+      Foundation 15, Settings 216, Feature/Admin 400, Livewire/Admin 350, Livewire/Member 369 passed; then the #[Locked] change:
+      SystemHealthScreenTest + Feature/System 90 passed; pint passed, analyse OK.
+      **Review round 2 (2026-11-22): READY TO COMMIT** (0 Blockers / 0 Majors). Its runs: lint passed, analyse OK; Unit/System,
+      Feature/System, Billing, Webhooks, SystemHealthScreenTest, SafetySupportScreensTest, DashboardTest: 428 passed;
+      SafetySupportScreensTest ×3 clean. Its 4 Minors done after it: decisions (k)–(n), one wording for the gateway check,
+      `#[Locked]` replay target (+ tamper test), this entry. The full 33-folder sweep was last run before the round-1 fixes.
+      **Open:** Dusk SystemHealthTest not run (http://localhost:8000 not answering); **owner rule-5 review** of
+      HandlePaymentWebhook, ReplayPaymentWebhook, WebhookReplayRefused, SystemHealth::pickReplay/replay + the replay dialog, the
+      2026_11_22_100000 migration and their tests; owner to confirm decisions (a)–(n), especially (h); the round-1 fixes are
+      uncommitted.
+- [ ] P9.3 Font Awesome 6, accessibility & performance pass — split by the owner (2026-11-22, decisions P9.3 row) into:
+  - [ ] P9.3a Font Awesome 4.7 → 6 — 2026-11-22: **built** (plan approved). Built on top of the uncommitted P9.2b2 round fixes
+    (owner's choice; P9.2b2's 14 files are listed apart for review — `system-health.blade.php` is in both).
+    - **Package.** `font-awesome` 4.7.0 is removed and `@fortawesome/fontawesome-free` ^6.7.2 added. app.css / admin.css import
+      the core + solid + regular + brands styles (no all.css, no v4 shims).
+    - **Class map** `docs/fa4-to-fa6-map.md` (161 icons), generated from FA's own `js/v4-shims.js` + `metadata/icon-families.json`
+      (primary names, free-style check) — 0 unresolved.
+    - **Conversion by script:** 188 files, 715 icon tokens → `fa-{style} fa-{name}`, 263 bare `fa` prefixes removed (views,
+      components, enums, DTOs, WorkQueues, config navs, JS).
+    - **By hand:**
+      - toast `<i :class>` + the toasts.js allow-list (`fa-{style} fa-{name}`);
+      - like / favourite toggles through Alpine's object `:class` (solid ↔ regular);
+      - CSS: 7 `.fa` scopes → `:is(.fa-solid, .fa-regular, .fa-brands)`, 3 renamed selectors, the template caret font;
+      - entitlements matrix icons get `role="img"` + `__()` labels;
+      - component docblocks, CLAUDE.md, the oppam-ui-standards skill and template-notes updated (they agreed — no conflict).
+    - **Tests:**
+      - `tests/Feature/Foundation/IconClassesTest` (3: styled names that exist free in their style; no bare `fa`; enum / nav
+        icons). Mutation-checked: a probe view with `fa fa-heart-o`, `icon="fa-search"` and `fa-regular fa-bolt` failed it
+        on all 4 counts, and the probe was removed.
+      - Dusk `Mobile/IconsRenderTest` + `Admin/IconsRenderTest` (every visible icon drawn by an FA6 font, non-zero width)
+        with the helper `brokenFontAwesomeIcons()` in tests/Support/dusk.php — written, **not run** (http://localhost:8000
+        not answering).
+    - **Runs:** pint passed, analyse OK. `npm run build` OK: FA6 woff2 / ttf emitted, the 4.7 webfonts gone. app CSS 485 → 536 KB
+      (89 KB gzip), to be measured in P9.3c. **Full sweep, 33 folders from disk: 4,388 passed, 1 skipped, 0 failed.**
+    - **Review round 1 (2026-11-22): NOT READY.** No code Blockers / Majors: its own verifier checked all 161 map rows against
+      FA's v4-shims.js + icon-families.json (0 mismatches) and found no damage across the 560 diff hunks. The verdict was
+      NOT READY only because Claude Code switched the session into plan mode mid-review (to plan P9.3b), so the reviewer
+      couldn't run the build or Pest. Process lesson: no planning while a reviewer runs.
+      Minors fixed:
+        - the current mobile-footer tab's semibold weight turned the outline Profile icon solid (FA6 weight = style) →
+          `i.fa-regular` / `i.fa-solid` keep 400 / 900 there (style.css); no other icon font-weight rule exists;
+        - guard gaps → it also scans routes / database / lang; catches a bare `fa` anywhere in a class list and runtime-built
+          names (`'fa-'.`, `"fa-" +`, `` `fa-${` ``); new test 4 checks `.fa-*` CSS selectors (comments stripped) and the
+          FontAwesome family. Probe view / CSS failed it as intended and were removed;
+        - the Dusk helper also fails an icon drawn at the wrong weight for its style.
+    - **Review round 2 (2026-11-22): READY TO COMMIT** (0 Blockers / 0 Majors). Its runs: lint passed, analyse OK, `npm run build`
+      (FA6 fonts only, no FontAwesome in the built CSS), Foundation 19, Livewire/Member 369, Livewire/Admin 350,
+      Layout + Content 277 passed, 1 skipped (ext-exif). Its 2 Minors done after it: interpolated names (`fa-{$x}`,
+      `fa-{{ $x }}`), single-quoted `class='… fa …'` and an `'fa' =>` @class key now fail the guard (probe confirmed, then
+      removed; guard 4/4 on the tree), and this entry.
+    - **Open:** Dusk Mobile/IconsRenderTest + Admin/IconsRenderTest not run (http://localhost:8000 not answering); the owner's
+      visual check of the 4.7 → 6 glyph differences (house / gear shapes, fa-lg 1.25em, non-monospaced widths); a toast
+      broadcast queued before the deploy shows the bell (old icon name) — harmless; uncommitted (on top of the P9.2b2 fixes).
+  - [ ] P9.3b Accessibility — 2026-11-22: **built** (plan approved; decisions 2026-11-22 P9.3b row (a)–(g)). On top of the
+    uncommitted P9.2b2 + P9.3a work (the tree's file list before P9.3b is kept in the scratchpad for review).
+    - **Package:** `axe-core` ^4.14 (dev).
+    - **Live regions / landmarks:**
+      - `<x-ui.toast-stack />` in `layouts/public.blade.php` (a signed-in member's live toasts were lost on public pages);
+      - the skip link in `layouts/admin-auth.blade.php`.
+    - **Hand-overs:**
+      - `<table class="visually-hidden">` → wrapper div in `admin/dashboard` and `admin/chat/overview`;
+      - chat photo `<label>` focus ring (`.msg-icon-btn:has(+ input:focus-visible)`);
+      - `/notifications` `readElsewhere()` on `.notifications.read`;
+      - `EnsureLegalTermsAccepted`: a Livewire call → redirect to /legal/accept (same-host Referer as the return address)
+        instead of the 409 dialog;
+      - `App\Services\Seo\StructuredData` + `SeoData::$jsonLd` + `head.blade.php` → Organization on `/`, FAQPage on `/plans`.
+    - **Tests:**
+      - `Feature/Content/StructuredDataTest` (4, incl. `</script>` escaping);
+      - `Feature/Layout/AccessibilityLandmarksTest` (6);
+      - `Feature/Content/LegalVersioningTest`: 2 cases updated from 409 to the redirect (behaviour change (e), not a
+        weakening) + 1 new (same-host Referer kept, foreign one ignored, never /livewire);
+      - `Livewire/Member/NotificationsTest` +3.
+    - **Dusk** (written, **not run**: http://localhost:8000 not answering):
+      - `assertAccessible()` helper (tests/Support/dusk.php);
+      - Mobile/AccessibilityPublicTest (13 public pages + admin sign-in with skip-link keyboard check);
+      - Member/AccessibilityMemberTest (20 member pages + the chat report dialog; `/messages` widths 320–1440);
+      - Admin/AccessibilityAdminTest (19 admin screens + the A13 rule dialog; A02 + all `/chat/*` widths 320–1440);
+      - axe on every page of Mobile/BrokerPortalTest;
+      - Member/PresenceHiddenTest (two browsers, dot goes);
+      - Member/SignOutOtherDeviceTest (two browsers, other device → /login live).
+      Any violation axe finds when these first run is still to be fixed.
+    - **Runs:** pint passed, analyse OK, build OK. StructuredData 4, Landmarks 6, LegalVersioning 25, Notifications 23 passed.
+      **Full sweep, 33 folders from disk: 4,403 passed, 1 skipped (ext-exif), 0 failed** (= 4,388 after P9.3a + 15 new):
+        - 2026-11-22: Unit 213, Committed 17, Feature Admin 400, Audit 43, Auth 188, Billing 236, Broadcasting 69 — then the
+          background run was stopped by Claude Code for low system memory (0.9 GB free; not a test failure);
+        - 2026-11-23, in the foreground: Broker 953 (in three parts, incl. ManagedProfiles / Security), Chat 139, Comms 12,
+          Content 267 + 1 skipped, Engagement 126, Foundation 19, Layout 21, Masters 9, Matching 28, Media 47, Moderation 40,
+          Notifications 56, Profile 151, Realtime 9, Reports 51, Safety 45, Search 41, Settings 216, Support 33, System 70,
+          Verification 59, Webhooks 11, Livewire Public 7, Broker 105, Admin 350, Member 372.
+    - **Review round 1 (2026-11-23): READY TO COMMIT** (0 Blockers / 0 Majors). It confirmed in Livewire 4.4.6's source that
+      the persistent-middleware redirect stops the call before any action and the JS follows it as a page visit.
+      Its runs: lint passed, analyse OK, build OK, Feature/Content 267 + 1 skipped, Feature/Layout 21, Landmarks 6,
+      LegalVersioning 25, Notifications 23, Broker/Security 230, Admin DashboardTest 16; every Dusk path checked against
+      route:list; Dusk not run (server down). Its Minors, done after it:
+        - **M2 (open redirect hardening):** the Referer becomes the return address only under this exact scheme + host + port
+          (`getSchemeAndHttpHost().'/'`), so `javascript://host/…`, another port, `host.evil.com` and `//host` all fail;
+          AcceptTerms' own check compares with `url('/').'/'` (a look-alike host was let through). Tests for all five
+          Referers plus the look-alike `url.intended`;
+        - M7: a real blocked Livewire update with a Referer keeps it as `url.intended`; `asPrivate()` drops `jsonLd` (test);
+        - M1: the admin-login skip-link check no longer depends on Tab order (the email field is autofocused) — it checks
+          the skip link is the first tabbable element;
+        - M5: member and broker axe runs wait out the `#preloader` curtain;
+        - M6: AppServiceProvider comment (redirect, not 409);
+        - M8: `duskMemberCleanup()` also deletes the throwaway member's notifications (polymorphic, no FK).
+      LegalVersioning 28, Content + Broker/Security 500 passed after these; pint passed, analyse OK.
+    - **Open (P9.3b):**
+      - the Dusk suites have never run (http://localhost:8000 down) — the axe violations they find, the width checks and
+        the two-browser proofs are unproven;
+      - **review M3** — the A13 flag-review (`/chat/flags/{flag}`) and break-glass reader (`/chat/break-glass/{grant}`)
+        screens, and dialogs at 320–1440 px (report-chat, A13 confirm modals), need chat fixtures on the dev DB; the
+        earlier claim "all /chat/* widths" covered the list screens only. Proposed: add them the first time Dusk can run
+        (owner to agree);
+      - M9 — axe "needs review" results (e.g. contrast over hero images) aren't failed; the photo focus ring has no
+        automated proof and `:has()` is missing on iOS 15.0–15.3 — the owner's browser check.
+    - **Review round 2 (2026-11-23): READY TO COMMIT** (only the round-1 fixes; 0 Blockers / 0 Majors). M2 held against
+      uppercase host, `host@evil`, backslashes, trailing dot, explicit port, `javascript://`, `//host` (all fail safe).
+      Its runs: lint passed, analyse OK, LegalVersioning 28, Feature/Auth 188, Broker/Security 230 passed; Dusk not run.
+      Its two Minors are hand-overs:
+        - **→ P9.5:** behind a TLS proxy without `trustProxies`, `getSchemeAndHttpHost()` is `http://` while the Referer is
+          `https://` → the return address is never kept (fails safe; members land on the default page) — check it in the
+          deploy smoke test once trustProxies is set;
+        - **→ P9.4:** `Member/Auth/Login` and `Broker/Auth/VerifyDevice` redirect to `url.intended` without their own
+          same-origin check — every current writer is safe; share AcceptTerms' `url('/').'/'` guard as defence in depth.
+    - **Unassigned hand-overs found by the review (M4), owner to place:** broker "dialogs at other widths" (the portal has
+      inline confirms, no modals — axe + widths now cover its pages); ~80 hardcoded "Oppam Matrimony" strings and inline
+      FQCNs in views (P8.4 → P9.3; code-quality, not a11y / perf) — proposed: a P9.5 pre-launch clean-up item.
+  - [ ] P9.3c Performance — 2026-11-23: **built** (plan approved; decisions 2026-11-23 P9.3c row (a)–(j); measurements
+    `docs/perf/2026-11.md`). On top of the uncommitted P9.2b2 + P9.3a + P9.3b work (tree list + diff before P9.3c kept in the
+    scratchpad).
+    - **N+1:**
+      - `App\Support\Database\LazyLoadingGuard` (production logs a lazy load; elsewhere throws);
+      - query-budget tests `tests/Livewire/Member/QueryBudgetTest` (search, profile, inbox, notifications, dashboard strip,
+        admin members), home banners + featured members in `PublicContentPagesTest`, growth + marketplace in the reports
+        budget. No N+1 found.
+    - **Medians in SQL:** `App\Queries\Reports\Concerns\SqlMedian` (of / byGroup) used by LiveOps (medians + moderators as
+      SQL aggregates), LiveRevenue, LiveMetrics (per-thread subquery once; totals in SQL).
+    - **Audit lists:** cached a day, dropped by AuditLogger on a new area / type; the double call in AuditLogIndex removed.
+      **ReportSeries:** stock levels inside the cached totals.
+    - **Slow log + EXPLAIN** on the 100k bench (schema migrated first): search p50 270 ms / **p95 1,898 ms** on the 16 MB
+      buffer pool (over budget — memory-bound, no missing index; P9.5 pool sizing, already handed over). **No index
+      migration** (EXPLAIN showed none missing). `.env.example` Pulse thresholds 200 / 500 ms.
+    - **Front end:**
+      - Swiper JS on demand: entry bundle 237.7 → 81.6 KB (Swiper 156 KB chunk on carousel pages only);
+      - hero preload (`SeoData::$preloadImage`);
+      - chrome images lose `fetchpriority="high"`;
+      - fonts unchanged (all weights used; unused faces don't download).
+    - **`scripts/lighthouse.mjs`** written (npx lighthouse@12, mobile, simulated 4G, production build).
+    - **Tests:**
+      - Reports/SqlMedianTest 13 (odd / even / empty / ties / NULLs, 200-run equality with the old PHP rule, groups,
+        verification / ticket hours, moderator SQL rows, fixed query count);
+      - Reports/SnapshotTest +1 (stock cached);
+      - Audit/AuditFilterListsTest 3;
+      - Foundation/LazyLoadingGuardTest 3;
+      - Livewire/Member/QueryBudgetTest 6;
+      - Performance/BundleSplitTest 1 + LcpHintsTest 3;
+      - PublicContentPagesTest +1 dataset; ReportsScreensTest +2 datasets.
+    - **Runs:** pint passed, analyse OK, build OK; Reports + ReportsScreens 81, Audit 46, Foundation, Performance 4, the budget
+      tests passed.
+    - **Found on the way:** the profile / home "growth" in the first runs was a section going from empty to shown (fixed eager
+      loads; the masters cache version bumped by the profile factory's master rows), not per-row queries — the tests now start
+      with each section showing.
+    - **Incident:** a `php -r` edit with an unchecked `preg_replace` emptied `app/Providers/AppServiceProvider.php`; restored
+      from `git show HEAD:` + the saved pre-P9.3c diff (`git apply --include`), verified by diff (only the intended lines
+      differ). Memory note added.
+    - **Open:** Lighthouse not run (http://localhost:8000 down) — the LCP target is unmeasured; **deferred, owner to agree:**
+      banner 960 px variant + srcset, the preloader curtain.
+    - **Full sweep 2026-11-23, 34 folders from disk (foreground, one at a time; Broker in three parts): 4,439 passed,
+      1 skipped (ext-exif), 0 failed** — Unit 213, Committed 17, Feature Admin 400, Audit 46, Auth 188, Billing 236,
+      Broadcasting 69, Broker 953, Chat 139, Comms 12, Content 271 + 1 skipped, Engagement 126, Foundation 22, Layout 21,
+      Masters 9, Matching 28, Media 47, Moderation 40, Notifications 56, Performance 4, Profile 151, Realtime 9, Reports 65,
+      Safety 45, Search 41, Settings 216, Support 33, System 70, Verification 59, Webhooks 11, Livewire Public 7, Broker 105,
+      Admin 352, Member 378 (= 4,403 after P9.3b + 4 from P9.3b's round-1 fixes + 32 new in P9.3c).
+    - **Review round 1 (2026-11-23): NOT READY** — 0 Blockers, 2 Majors. Its runs: lint passed, analyse OK, build OK,
+      Reports 65, Audit 46, Foundation 22, Performance 4, QueryBudget 6, ReportsScreens 18, AuditScreens 20,
+      PublicContentPages 23 passed; its own probe confirmed flat counts for search, profile (empty → shown, then flat at 101)
+      and the daily strip. The incident restore was verified clean (AppServiceProvider differs only by the guard).
+        - **Major 1 — my error:** the home "featured members" budget never rendered one (a plain member doesn't qualify), so
+          "no growth" was unproven, and my "empty → shown" story for the home +1 was wrong (it was the masters cache
+          version). Fixed: the dataset builds real featured members (premium, verified, opted in, approved converted
+          photo) and asserts the band shows them in both renders — still no growth; perf doc corrected.
+        - **Major 2:** Lighthouse / LCP unmeasured and the deferral not approved by the owner — **owner decision, asked.**
+        - Minors fixed:
+          - AuditLogger refreshes the filter lists after commit and rescued (a cache outage can't roll back an admin action);
+          - LazyLoadingGuard logs once per model + relation per process (test: 4-row N+1 → 1 line);
+          - a failed Swiper chunk load isn't cached and is caught in both callers;
+          - BundleSplitTest also scans the entry's statically imported chunks; the perf doc counts the shared 157 KB chunk
+            (per-page JS ~395 → ~239 KB);
+          - LcpHintsTest asserts the preload href is the hero's first image;
+          - lighthouse.mjs passes the cookie through a temp headers file (cmd.exe quoting, cookie off the command line).
+        - Minors left: the reports budget stays loose (`few*2+5`, pre-existing; SqlMedianTest pins LiveOps exactly);
+          SqlMedian / EXPLAIN-name asserts checked on MariaDB only — watch the first MySQL 8 CI run.
+      After the fixes: pint passed, analyse OK, build OK; Content + Audit + Foundation 340 passed + 1 skipped, Performance 4,
+      LazyLoadingGuard 4.
+    - **Owner decisions (2026-11-23):**
+      - **Lighthouse / LCP → P9.4, against staging** (with the load test and real TTFB; staging has a sized buffer pool):
+        run `node scripts/lighthouse.mjs` there;
+      - the 960 px banner variant + srcset stays deferred until Lighthouse shows the mobile LCP needs it;
+      - the template's preloader curtain is kept unless Lighthouse shows it delays LCP;
+      - the earlier unassigned hand-overs (~80 hardcoded "Oppam Matrimony" strings + inline FQCNs in views) → P9.5 pre-launch
+        clean-up;
+      - the A13 flag-review / break-glass detail screens' width + axe checks are added the first time Dusk can run.
+    - **Review round 2 (2026-11-23): READY TO COMMIT** (0 Blockers / 0 Majors). Its probe: the home band shows 2 and 6
+      featured members at 8 queries both times, and a fake per-member query is caught (10 → 20); AuditLogger after-commit
+      refresh verified in and outside a transaction (a rollback leaves the cache, a cache outage doesn't break `record()`).
+      Its runs: lint passed, analyse OK, build OK (entry 81.7 KB, Swiper chunk 156 KB, shared chunk 157 KB),
+      PublicContentPages 23, Audit 46, Foundation 23, Performance 4, AuditScreens 20 passed. Its Minors done (perf doc size,
+      decisions row attribution); kept by design: the lazy-load log is once per model + relation per worker (a signal to fix,
+      not a counter). It recommended a fresh full sweep before commit (AuditLogger runs on every audited write) — see below.
 - [ ] P9.4 Security review & load test
+  - Hand-over from P9.3c (owner 2026-11-23): **Lighthouse on staging** — `node scripts/lighthouse.mjs` (mobile, simulated 4G,
+    production build) for home / search / profile / dashboard; LCP < 2.5 s (PRD §14); writes docs/perf/lighthouse-<date>.md.
+    Then decide the banner srcset and the preloader curtain from its LCP element / timings.
 - [ ] P9.5 Deployment
+  - Hand-over (owner 2026-11-23, from P8.4 via the P9.3b review): pre-launch clean-up of ~80 hardcoded "Oppam Matrimony"
+    strings (use the A15 site name) and inline FQCNs in views.
 - [ ] Launch: APP_INDEXABLE=true (unless seo.indexable was set in A15 settings), live Razorpay keys, monitoring green
 
 ## Notes / deviations

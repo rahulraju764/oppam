@@ -552,6 +552,9 @@ body.search-sheet-open .mobile-footer { display: none; }
 .msg-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: var(--tap-min); height: var(--tap-min); margin: 0; border: 0; border-radius: var(--radius-circle); background: none; color: var(--color-gr-dark); cursor: pointer; }
 .msg-icon-btn:hover, .msg-icon-btn[aria-pressed="true"], .msg-icon-btn[aria-expanded="true"] { background: var(--bg-mist); color: var(--color-primary); }
 .msg-icon-btn:focus-visible, .msg-icebreaker:focus-visible, .msg-emoji-btn:focus-visible, .msg-unsend-btn:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+/* P9.3b: the photo button is a <label> for a visually hidden file input — the input takes the focus, so show
+   it on the label (same pattern as .photo-add in ui-kit.css); the 2px outline keeps it visible on any background. */
+.msg-icon-btn:has(+ input:focus-visible) { box-shadow: var(--ring-focus); outline: 2px solid var(--color-primary); outline-offset: 1px; }
 .msg-earlier { display: flex; justify-content: center; }
 .msg-bubble.is-deleted { background: var(--color-default); border: var(--border-hair); color: var(--color-gr-dark); font-style: italic; }
 .msg-bubble.is-me.is-deleted .msg-bubble-time { color: var(--color-gr-dark); }
@@ -597,9 +600,9 @@ body.search-sheet-open .mobile-footer { display: none; }
 .checkout-line-discount dd { color: var(--color-success); }
 .checkout-test { margin-top: var(--space-4); display: grid; gap: var(--space-2); }
 .billing-status { text-align: center; }
-.billing-status .fa { font-size: var(--text-3xl); margin-bottom: var(--space-3); }
-.billing-status .fa-check-circle { color: var(--color-success); }
-.billing-status .fa-times-circle { color: var(--color-primary-dark); }
+.billing-status :is(.fa-solid, .fa-regular, .fa-brands) { font-size: var(--text-3xl); margin-bottom: var(--space-3); }
+.billing-status .fa-circle-check { color: var(--color-success); }
+.billing-status .fa-circle-xmark { color: var(--color-primary-dark); }
 .billing-status-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-5); }
 
 /* ---- §7.3 "highlighted in search" (P5.2): Gold / Diamond result rows ---- */
@@ -657,7 +660,7 @@ body.search-sheet-open .mobile-footer { display: none; }
 .broker-materials__qr img { max-width: 100%; height: auto; margin-bottom: var(--space-4); }
 .broker-materials__downloads { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
 .referral-code-field__hint { margin-bottom: 0; color: var(--color-gr-dark); }
-.referral-code-field__hint .fa-check-circle { color: var(--color-secondary-dark); }
+.referral-code-field__hint .fa-circle-check { color: var(--color-secondary-dark); }
 /* P7.3 managed profiles (§11A B.6): the one-sitting form (accordion), list, detail and notes. */
 .managed-form__heading { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
 .managed-form__section .managed-form__heading { margin: 0; }
@@ -777,7 +780,7 @@ body.search-sheet-open .mobile-footer { display: none; }
 .ticket-thread__body { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 .contact-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 .contact-sent { padding: var(--space-7); border-radius: var(--radius-card); background: var(--bg-teal); text-align: center; }
-.contact-sent .fa { font-size: var(--text-3xl); color: var(--color-secondary-dark); }
+.contact-sent :is(.fa-solid, .fa-regular, .fa-brands) { font-size: var(--text-3xl); color: var(--color-secondary-dark); }
 .contact-sent h2 { margin: var(--space-3) 0; font-size: var(--text-xl); }
 
 /* Home hero with no published banners: the register form flows in the page (P8.1a). */
@@ -795,7 +798,7 @@ body.search-sheet-open .mobile-footer { display: none; }
 }
 
 /* The branches counter has no bundled image. */
-.stat-icon .fa {
+.stat-icon :is(.fa-solid, .fa-regular, .fa-brands) {
     color: var(--color-primary);
     font-size: var(--text-2xl);
 }

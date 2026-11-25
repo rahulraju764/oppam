@@ -10,7 +10,7 @@
        aria-label="{{ $label }}" wire:navigate
        x-data="{ polling: null }" x-on:realtime-fallback.window="polling ??= setInterval(() => $wire.refreshBell(), 30000)"
        x-on:livewire:navigating.window="clearInterval(polling)">
-        <i class="fa fa-bell-o" aria-hidden="true"></i>
+        <i class="fa-regular fa-bell" aria-hidden="true"></i>
         @if ($unread > 0)
             <span class="mobile-bell-count" aria-hidden="true">{{ $unread > 99 ? '99+' : $unread }}</span>
         @endif
@@ -24,7 +24,7 @@
          x-on:livewire:navigating.window="clearInterval(polling)">
         <button type="button" class="nav-bell" aria-label="{{ $label }}" aria-haspopup="true" aria-controls="nt-dropdown"
                 x-bind:aria-expanded="open" x-on:click="open = ! open; if (open) $wire.open()">
-            <i class="fa fa-bell-o" aria-hidden="true"></i>
+            <i class="fa-regular fa-bell" aria-hidden="true"></i>
             @if ($unread > 0)
                 <span class="nav-bell-count" aria-hidden="true">{{ $unread > 99 ? '99+' : $unread }}</span>
             @endif
@@ -47,7 +47,7 @@
                 <ul class="nt-list nt-list--compact">
                     @foreach ($items as $item)
                         <li @class(['nt-item', 'is-unread' => $item['unread']]) wire:key="bell-{{ $item['id'] }}">
-                            <span class="nt-icon {{ $item['iconClass'] }}"><i class="fa {{ $item['icon'] }}" aria-hidden="true"></i></span>
+                            <span class="nt-icon {{ $item['iconClass'] }}"><i class="{{ $item['icon'] }}" aria-hidden="true"></i></span>
                             <span class="nt-body">
                                 <a href="{{ $item['url'] }}" class="nt-text stretched-link" wire:navigate>{{ $item['title'] }}</a>
                                 <span class="nt-time text-muted-brand">{{ $item['when'] }}</span>

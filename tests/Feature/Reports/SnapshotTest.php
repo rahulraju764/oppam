@@ -183,3 +183,28 @@ it('A09 schedules: the snapshot at 00:30 IST, capture pruning at 04:30 IST, expo
         ->and($prune->expression)->toBe('30 4 * * *')
         ->and($events->contains(fn ($e) => str_contains((string) $e->description, 'ExpireAdminExports')))->toBeTrue();
 });
+
+it('A09 read side (P9.3c): a stock metric is its level on the last snapshotted day, cached with the sums — a second read runs no query', function (): void {
+    foreach (['2026-11-01' => [100, 4], '2026-11-02' => [120, 6], '2026-11-04' => [130, 9]] as $day => [$active, $likes]) {
+        ReportSnapshot::query()->insert([
+            ['metric' => ReportMetric::ActiveProfiles->value, 'day' => $day, 'dimension' => '', 'value' => $active, 'computed_at' => now()],
+            ['metric' => 'likes_sent', 'day' => $day, 'dimension' => '', 'value' => $likes, 'computed_at' => now()],
+        ]);
+    }
+    $series = app(ReportSeries::class);
+    $metrics = [ReportMetric::ActiveProfiles, ReportMetric::LikesSent];
+
+    // 01–03: the level on the 02nd (the last day with a snapshot), the flow summed.
+    expect($series->totals(ReportRange::of('2026-11-01', '2026-11-03'), $metrics))
+        ->toBe(['active_profiles' => 120, 'likes_sent' => 10])
+        ->and($series->totals(ReportRange::of('2026-11-05', '2026-11-06'), $metrics))
+        ->toBe(['active_profiles' => 0, 'likes_sent' => 0]);   // nothing snapshotted in the range
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $series->totals(ReportRange::of('2026-11-01', '2026-11-03'), $metrics);
+    $snapshotQueries = collect(DB::getQueryLog())->filter(fn (array $q): bool => str_contains($q['query'], 'report_snapshots'))->count();
+    DB::disableQueryLog();
+
+    expect($snapshotQueries)->toBe(0);
+});

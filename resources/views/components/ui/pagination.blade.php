@@ -24,11 +24,11 @@
     <nav class="pagination-bar" aria-label="{{ $label ?? __('Results pages') }}">
         @if ($paginator->onFirstPage())
             <span class="page-link is-disabled" aria-disabled="true" aria-label="{{ __('Previous page') }}">
-                <i class="fa fa-angle-left" aria-hidden="true"></i>
+                <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
             </span>
         @else
             <a href="{{ $paginator->previousPageUrl() }}" class="page-link" rel="prev" aria-label="{{ __('Previous page') }}" wire:navigate>
-                <i class="fa fa-angle-left" aria-hidden="true"></i>
+                <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
             </a>
         @endif
 
@@ -46,11 +46,11 @@
 
         @if ($paginator->hasMorePages())
             <a href="{{ $paginator->nextPageUrl() }}" class="page-link" rel="next" aria-label="{{ __('Next page') }}" wire:navigate>
-                <i class="fa fa-angle-right" aria-hidden="true"></i>
+                <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
             </a>
         @else
             <span class="page-link is-disabled" aria-disabled="true" aria-label="{{ __('Next page') }}">
-                <i class="fa fa-angle-right" aria-hidden="true"></i>
+                <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
             </span>
         @endif
     </nav>

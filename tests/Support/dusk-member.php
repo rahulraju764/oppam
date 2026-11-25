@@ -22,6 +22,9 @@ function duskMemberCleanup(string $e164 = DUSK_MEMBER_PHONE): void
     if ($user !== null) {
         // Model by model, so the media library's delete hook removes photo rows + files too.
         Profile::withTrashed()->where('user_id', $user->id)->get()->each(fn (Profile $profile) => $profile->forceDelete());
+        // Notifications are polymorphic (no FK), so they would outlive the throwaway member on the dev DB (P9.3b review M8).
+        Illuminate\Notifications\DatabaseNotification::query()
+            ->where('notifiable_type', $user->getMorphClass())->where('notifiable_id', $user->id)->delete();
         $user->forceDelete();
     }
 

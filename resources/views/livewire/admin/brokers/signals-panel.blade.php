@@ -6,9 +6,9 @@
     @if ($signals->isNotEmpty())
         <div class="ui-card mb-4" role="region" aria-label="{{ __('Fraud and quality signals') }}">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                <h2 class="h6 mb-2"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ __('Signals to review (:n)', ['n' => $signals->count()]) }}</h2>
+                <h2 class="h6 mb-2"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{ __('Signals to review (:n)', ['n' => $signals->count()]) }}</h2>
                 @can('brokers.payout')
-                    <x-ui.button size="sm" variant="danger" type="button" icon="fa-ban" wire:click="confirm('signal-void-all')" dusk="signal-void-all-open">{{ __('Void all commissions') }}</x-ui.button>
+                    <x-ui.button size="sm" variant="danger" type="button" icon="fa-solid fa-ban" wire:click="confirm('signal-void-all')" dusk="signal-void-all-open">{{ __('Void all commissions') }}</x-ui.button>
                 @endcan
             </div>
             <ul class="list-unstyled mb-0">
@@ -27,7 +27,7 @@
                             </div>
                         </div>
                         @can('brokers.edit')
-                            <x-ui.button size="sm" variant="outline" type="button" icon="fa-check" wire:click="confirm('signal-resolve', '{{ $signal->id }}')">{{ __('Resolve') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-check" wire:click="confirm('signal-resolve', '{{ $signal->id }}')">{{ __('Resolve') }}</x-ui.button>
                         @endcan
                     </li>
                 @endforeach

@@ -140,10 +140,11 @@ it('refuses a background request with 409 and never makes it the page to return 
     $this->get(memberUrl('/settings'))->assertRedirect(route('legal.accept'));
     expect(session('url.intended'))->toBe(memberUrl('/settings'));
 
-    // Echo's channel auth (pusher-js sends no JSON Accept header), a fetch, a Livewire call.
+    // Echo's channel auth (pusher-js sends no JSON Accept header) and a fetch are refused with 409. A Livewire call
+    // is redirected instead (P9.3b — Livewire follows it, no error dialog); without a Referer it changes no return address.
     $this->post(memberUrl('/broadcasting/auth'), ['channel_name' => 'private-App.Models.User.'.$member->id, 'socket_id' => '1.1'])->assertStatus(409);
     $this->get(memberUrl('/dashboard'), ['X-Requested-With' => 'XMLHttpRequest'])->assertStatus(409);
-    $this->get(memberUrl('/dashboard'), ['X-Livewire' => '1'])->assertStatus(409);
+    $this->get(memberUrl('/dashboard'), ['X-Livewire' => '1'])->assertRedirect(route('legal.accept'));
     expect(session('url.intended'))->toBe(memberUrl('/settings'));
 
     Livewire::test(AcceptTerms::class)->set('agree', true)->call('accept')->assertRedirect(memberUrl('/settings'));
@@ -208,13 +209,55 @@ it('checks once per session and again when a new version goes live (A08 performa
     $this->get(memberUrl('/settings'))->assertRedirect(route('legal.accept'));
 });
 
-it('refuses an action on a page opened before a material version went live (A08, persistent middleware)', function (): void {
+it('sends an action on a page opened before a material version went live to the accept page — a redirect Livewire follows, not its 409 error dialog (A08, persistent middleware; P9.3b)', function (): void {
     $member = memberWithPhone();
     $this->actingAs($member);
     $page = $this->withCredentials()->get(memberUrl('/settings'))->assertOk()->getContent();
 
     publishLegal();
-    bureauLivewireUpdate((string) $page)->assertStatus(409);
+    bureauLivewireUpdate((string) $page)->assertRedirect(route('legal.accept'));
+});
+
+it('P9.3b: a blocked Livewire call returns the member to the page they were on (same-host Referer only), never to /livewire/update', function (): void {
+    publishLegal();
+    $this->actingAs(memberWithPhone());
+
+    $this->get(memberUrl('/dashboard'), ['X-Livewire' => '1', 'Referer' => memberUrl('/settings?tab=privacy')])->assertRedirect(route('legal.accept'));
+    expect(session('url.intended'))->toBe(memberUrl('/settings?tab=privacy'));
+
+    // Review M2: only a path on this exact scheme + host + port becomes the return address.
+    $host = parse_url(memberUrl('/'), PHP_URL_HOST);
+    foreach (['https://evil.example/phish', 'javascript://'.$host.'/%0Aalert(1)', 'http://'.$host.'.evil.com/x', 'http://'.$host.':8081/x', '//'.$host.'/x'] as $referer) {
+        session()->forget('url.intended');
+        $this->get(memberUrl('/dashboard'), ['X-Livewire' => '1', 'Referer' => $referer])->assertRedirect(route('legal.accept'));
+        expect(session('url.intended'))->toBeNull("Referer $referer must not become the return address");
+    }
+});
+
+it('P9.3b: a real blocked Livewire update keeps the page it came from as the return address (review M7)', function (): void {
+    $member = memberWithPhone();
+    $this->actingAs($member);
+    $page = $this->withCredentials()->get(memberUrl('/settings'))->assertOk()->getContent();
+    publishLegal();
+
+    $this->withHeaders(['Referer' => memberUrl('/settings?tab=privacy')]);
+    bureauLivewireUpdate((string) $page)->assertRedirect(route('legal.accept'));
+
+    expect(session('url.intended'))->toBe(memberUrl('/settings?tab=privacy'));
+});
+
+it('P9.3b: accepting returns only to a path on this site — a look-alike host is ignored (review M2)', function (): void {
+    publishLegal();
+    $this->actingAs(memberWithPhone());
+
+    session()->put('url.intended', rtrim(url('/'), '/').'.evil.com/x');
+    Livewire::test(AcceptTerms::class)->set('agree', true)->call('accept')->assertRedirect(app(App\Support\Navigation\MemberLanding::class)->url(auth('web')->user()));
+});
+
+it('P9.3b: a private page carries no structured data — asPrivate() drops jsonLd (review M7)', function (): void {
+    $seo = new App\Data\Content\SeoData(jsonLd: [['@type' => 'Organization']]);
+
+    expect($seo->asPrivate()->jsonLd)->toBe([])->and($seo->jsonLd)->toHaveCount(1);
 });
 
 it('never stops an admin support session, and it cannot agree for the member (A08, A01)', function (): void {

@@ -19,8 +19,8 @@
             <h2 class="h4 mt-4">Buttons &amp; chips</h2>
             <div class="d-flex flex-wrap gap-3 align-items-center">
                 <a href="{{ route('styleguide') }}" class="upgrade-btn">Upgrade Now</a>
-                <a href="{{ route('styleguide') }}" class="view-btn">View All <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
-                <div class="contact-button m-0"><button type="button"><i class="fa fa-paper-plane" aria-hidden="true"></i> Send Message</button></div>
+                <a href="{{ route('styleguide') }}" class="view-btn">View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                <div class="contact-button m-0"><button type="button"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send Message</button></div>
                 <span class="chip">Free</span>
                 <span class="chip">Gold</span>
             </div>

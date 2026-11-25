@@ -133,7 +133,8 @@ it('ticket page: internal notes are marked; a canned response is filled in; repl
 
     $page = Livewire::test(TicketShow::class, ['ticket' => $ticket->code])->assertSee('Help me please')
         ->set('canned', $canned->id)->call('useCanned')
-        ->assertSet('reply', 'Hi '.$member->profile->first_name.', about '.$ticket->code.'.');
+        // {first_name} is the FIRST word of the name (CannedResponseRenderer); en_IN faker sometimes gives two ("Ram Gopal").
+        ->assertSet('reply', 'Hi '.strtok(trim($member->profile->first_name), ' ').', about '.$ticket->code.'.');
     $page->set('internal', true)->set('reply', 'Checked the OTP logs')->call('send')->assertSee('Internal note');
     $page->set('reply', 'Please try again now')->call('send')->assertDispatched('toast', type: 'success');
     expect($ticket->refresh()->status)->toBe(TicketStatus::PendingMember);

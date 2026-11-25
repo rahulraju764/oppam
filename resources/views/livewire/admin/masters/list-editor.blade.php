@@ -1,7 +1,7 @@
 <div>
     <div class="admin-page-head">
         <div>
-            <p class="mb-1"><a href="{{ route('admin.masters.index') }}" wire:navigate><i class="fa fa-angle-left" aria-hidden="true"></i> {{ __('Master data') }}</a></p>
+            <p class="mb-1"><a href="{{ route('admin.masters.index') }}" wire:navigate><i class="fa-solid fa-angle-left" aria-hidden="true"></i> {{ __('Master data') }}</a></p>
             <h1>{{ __($list->label) }}</h1>
             <p>
                 @if ($list->isWordList)
@@ -11,7 +11,7 @@
                 @endif
             </p>
         </div>
-        <x-ui.button variant="outline" icon="fa-download" :href="route('admin.masters.export', array_filter(['list' => $list->key, 'parent' => $list->hasParent() ? $parent : null]))">{{ __('Export CSV') }}</x-ui.button>
+        <x-ui.button variant="outline" icon="fa-solid fa-download" :href="route('admin.masters.export', array_filter(['list' => $list->key, 'parent' => $list->hasParent() ? $parent : null]))">{{ __('Export CSV') }}</x-ui.button>
     </div>
 
     <div class="ui-card mb-3">
@@ -38,7 +38,7 @@
                 @unless ($list->isWordList)
                     <div class="col-12 col-md-3"><x-ui.input :label="__('Malayalam label')" name="newLabelMl" wire:model="newLabelMl" lang="ml" /></div>
                 @endunless
-                <div class="col-12 col-md-2"><x-ui.button type="submit" icon="fa-plus" loading="add">{{ __('Add') }}</x-ui.button></div>
+                <div class="col-12 col-md-2"><x-ui.button type="submit" icon="fa-solid fa-plus" loading="add">{{ __('Add') }}</x-ui.button></div>
             </div>
         </form>
     @endif
@@ -47,7 +47,7 @@
         <x-admin.table :headers="array_values(array_filter([$canEdit && $sortable ? __('Order') : null, __('Code'), $list->isWordList ? __('Word') : __('Label'), $list->isWordList ? null : __('Malayalam'), __('Status'), __('Used by'), $canEdit ? '' : null]))"
                        :caption="__($list->label)" :empty="$rows->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-list" :title="__('No rows')" :message="$q !== '' ? __('Nothing matches your search.') : __('Add the first row above.')" />
+                <x-ui.empty-state icon="fa-solid fa-list" :title="__('No rows')" :message="$q !== '' ? __('Nothing matches your search.') : __('Add the first row above.')" />
             </x-slot:emptyState>
 
             @foreach ($rows as $row)
@@ -56,9 +56,9 @@
                     @if ($canEdit && $sortable) draggable="true" x-data x-on:dragstart="$dispatch('master-drag', { id: {{ $id }} })" x-on:dragover.prevent x-on:drop.prevent="$dispatch('master-drop', { id: {{ $id }} })" @endif>
                     @if ($canEdit && $sortable)
                         <td class="text-nowrap">
-                            <span class="admin-drag-handle" aria-hidden="true"><i class="fa fa-arrows-v"></i></span>
-                            <button type="button" class="btn btn-sm btn-link" wire:click="move({{ $id }}, -1)" @disabled($loop->first) aria-label="{{ __('Move :label up', ['label' => $row->label]) }}"><i class="fa fa-arrow-up" aria-hidden="true"></i></button>
-                            <button type="button" class="btn btn-sm btn-link" wire:click="move({{ $id }}, 1)" @disabled($loop->last) aria-label="{{ __('Move :label down', ['label' => $row->label]) }}"><i class="fa fa-arrow-down" aria-hidden="true"></i></button>
+                            <span class="admin-drag-handle" aria-hidden="true"><i class="fa-solid fa-up-down"></i></span>
+                            <button type="button" class="btn btn-sm btn-link" wire:click="move({{ $id }}, -1)" @disabled($loop->first) aria-label="{{ __('Move :label up', ['label' => $row->label]) }}"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                            <button type="button" class="btn btn-sm btn-link" wire:click="move({{ $id }}, 1)" @disabled($loop->last) aria-label="{{ __('Move :label down', ['label' => $row->label]) }}"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
                         </td>
                     @endif
                     <td><code>{{ $row->code }}</code></td>
@@ -83,10 +83,10 @@
                                 <x-ui.button size="sm" type="button" wire:click="saveEdit" loading="saveEdit">{{ __('Save') }}</x-ui.button>
                                 <x-ui.button size="sm" variant="ghost" type="button" wire:click="cancelEdit">{{ __('Cancel') }}</x-ui.button>
                             @else
-                                <x-ui.button size="sm" variant="ghost" type="button" wire:click="edit({{ $id }})" icon="fa-pencil">{{ __('Edit') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="ghost" type="button" wire:click="edit({{ $id }})" icon="fa-solid fa-pencil">{{ __('Edit') }}</x-ui.button>
                                 <x-ui.button size="sm" variant="ghost" type="button" wire:click="toggle({{ $id }})">{{ $row->is_active ? __('Deactivate') : __('Activate') }}</x-ui.button>
                                 @if (($usage[$id] ?? 0) === 0)
-                                    <x-ui.button size="sm" variant="ghost" type="button" wire:click="delete({{ $id }})" wire:confirm="{{ __('Delete :label? This can\'t be undone.', ['label' => $row->label]) }}" icon="fa-trash">{{ __('Delete') }}</x-ui.button>
+                                    <x-ui.button size="sm" variant="ghost" type="button" wire:click="delete({{ $id }})" wire:confirm="{{ __('Delete :label? This can\'t be undone.', ['label' => $row->label]) }}" icon="fa-solid fa-trash-can">{{ __('Delete') }}</x-ui.button>
                                 @endif
                             @endif
                         </td>
@@ -113,7 +113,7 @@
                     @error('csv')<p class="invalid-feedback d-block" role="alert">{{ $message }}</p>@enderror
                 </div>
                 <div class="col-12 col-md-6">
-                    <x-ui.button type="button" variant="outline" wire:click="previewImport" loading="previewImport" icon="fa-eye" wire:loading.attr="disabled" wire:target="csv,previewImport">{{ __('Preview changes') }}</x-ui.button>
+                    <x-ui.button type="button" variant="outline" wire:click="previewImport" loading="previewImport" icon="fa-regular fa-eye" wire:loading.attr="disabled" wire:target="csv,previewImport">{{ __('Preview changes') }}</x-ui.button>
                     <span class="small text-muted-brand" wire:loading wire:target="csv">{{ __('Uploading…') }}</span>
                 </div>
             </div>
@@ -145,7 +145,7 @@
                         </tr>
                     @endforeach
                 </x-admin.table>
-                <x-ui.button class="mt-3" type="button" wire:click="applyImport" loading="applyImport" icon="fa-check" :disabled="$errorCount > 0" wire:loading.attr="disabled" wire:target="csv,applyImport">{{ __('Apply import') }}</x-ui.button>
+                <x-ui.button class="mt-3" type="button" wire:click="applyImport" loading="applyImport" icon="fa-solid fa-check" :disabled="$errorCount > 0" wire:loading.attr="disabled" wire:target="csv,applyImport">{{ __('Apply import') }}</x-ui.button>
             @endif
         </div>
     @endif

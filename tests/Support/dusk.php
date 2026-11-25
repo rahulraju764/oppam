@@ -117,3 +117,54 @@ function assertFitsWidths(Browser $signedIn, string $landing, array $urls): void
         }
     }
 }
+
+/**
+ * P9.3b — WCAG 2.1 A / AA check of the page as it is now (PRD §14), with axe-core from node_modules.
+ * Every violation fails, whatever its impact; `$skipRules` (axe rule ids) is for a decision recorded in
+ * docs/decisions.md only. Call it after the page (and any dialog being checked) has settled.
+ *
+ * @param  list<string>  $skipRules
+ */
+function assertAccessible(Browser $browser, string $page, array $skipRules = []): void
+{
+    if (! $browser->script('return typeof window.axe === "object";')[0]) {
+        $browser->script((string) file_get_contents(base_path('node_modules/axe-core/axe.min.js')));
+    }
+
+    $browser->driver->manage()->timeouts()->setScriptTimeout(60);
+    $violations = $browser->driver->executeAsyncScript(sprintf(<<<'JS'
+        const done = arguments[arguments.length - 1];
+        const skip = %s;
+        axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }, resultTypes: ['violations'] })
+            .then(r => done(r.violations.filter(v => ! skip.includes(v.id)).map(v =>
+                `${v.id} (${v.impact}) — ${v.help} — ` + v.nodes.slice(0, 3).map(n => n.target.join(' ')).join(' | ')
+                + (v.nodes.length > 3 ? ` (+${v.nodes.length - 3} more)` : ''))))
+            .catch(e => done(['axe failed to run: ' + e.message]));
+    JS, json_encode(array_values($skipRules), JSON_THROW_ON_ERROR)));
+
+    expect($violations)->toBe([], "WCAG 2.1 A/AA violations on $page");
+}
+
+/**
+ * P9.3a — visible <i> icons NOT drawn by Font Awesome 6 (wrong font, no glyph, or zero width): an icon
+ * whose class or font didn't load is an empty box that width checks alone don't catch.
+ *
+ * @return list<string> "class — font / content / width" per broken icon
+ */
+function brokenFontAwesomeIcons(Browser $browser): array
+{
+    return $browser->script(<<<'JS'
+        return [...document.querySelectorAll('i[class*="fa-"]')]
+            .filter(i => i.offsetParent !== null)
+            .map(i => {
+                const before = getComputedStyle(i, '::before');
+                // FA6's style IS its weight: regular / brands draw at 400, solid at 900 — a CSS rule that changes an
+                // icon's weight silently swaps it to the other style's glyph (e.g. an outline icon turning filled).
+                const want = i.classList.contains('fa-solid') ? '900' : '400';
+                return { cls: i.className, font: before.fontFamily || getComputedStyle(i).fontFamily, content: before.content,
+                    width: i.getBoundingClientRect().width, weight: String(before.fontWeight || getComputedStyle(i).fontWeight), want };
+            })
+            .filter(x => !/Font Awesome 6/.test(x.font) || x.content === 'none' || x.content === '""' || x.width === 0 || x.weight !== x.want)
+            .map(x => `${x.cls} — ${x.font} / ${x.content} / ${x.width}px / weight ${x.weight} (want ${x.want})`);
+    JS)[0];
+}

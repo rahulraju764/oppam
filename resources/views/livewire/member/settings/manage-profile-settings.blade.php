@@ -36,7 +36,7 @@
                         <span>{{ __('Asked on :date', ['date' => $export->created_at->timezone('Asia/Kolkata')->format('j M Y, g:i a')]) }}</span>
                         @if ($export->isDownloadable())
                             <x-ui.badge variant="success">{{ __('Ready until :time', ['time' => $export->expires_at?->timezone('Asia/Kolkata')->format('j M, g:i a')]) }}</x-ui.badge>
-                            <x-ui.button variant="secondary" size="sm" icon="fa-download"
+                            <x-ui.button variant="secondary" size="sm" icon="fa-solid fa-download"
                                          :href="route('member.settings.data-export.download', ['code' => $export->code])">{{ __('Download') }}</x-ui.button>
                         @elseif ($export->status === \App\Enums\DataExportStatus::Queued)
                             <x-ui.badge variant="warning">{{ __('Being prepared') }}</x-ui.badge>

@@ -17,6 +17,7 @@ use App\Services\Payments\RazorpayWebhookPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -26,7 +27,7 @@ use Throwable;
  *  - The stored payload is redacted, so its signature can't be checked again; it was verified when it
  *    arrived (HandlePaymentWebhook stores only signature-valid events). As a second check (owner,
  *    2026-11-22) a PAYMENT event replays only when the gateway still lists that payment for the order
- *    with the same status — not listed / different → refused; gateway down → refused. Refund events
+ *    with the same amount, currency and status — not listed / different → refused; gateway down → refused. Refund events
  *    skip this: SettleRefund asks the gateway itself.
  *  - One replay of a row at a time (cache lock); processing itself is idempotent (payment id).
  *  - Reason required; at most 10 replays an admin an hour; every replay that reaches the gateway
@@ -113,7 +114,11 @@ final class ReplayPaymentWebhook
     /** @throws WebhookReplayRefused */
     private function confirmWithGateway(PaymentWebhookEvent $event): void
     {
-        $data = RazorpayWebhookPayload::parse($event->payload);
+        try {
+            $data = RazorpayWebhookPayload::parse($event->payload);
+        } catch (InvalidArgumentException) {
+            throw WebhookReplayRefused::unreadable();   // it parsed on arrival; refused and audited rather than an error page
+        }
         $payment = $data->payment;
 
         if ($payment === null || ($data->refund !== null && str_starts_with($data->event, 'refund.'))) {
@@ -126,7 +131,9 @@ final class ReplayPaymentWebhook
             throw WebhookReplayRefused::gatewayUnavailable();
         }
 
-        $confirmed = array_filter($listed, fn (GatewayPaymentData $p): bool => $p->id === $payment->id && $p->status === $payment->status);
+        // The gateway must list the SAME payment: id, order, amount, currency and status (review round 1).
+        $confirmed = array_filter($listed, fn (GatewayPaymentData $p): bool => $p->id === $payment->id && $p->orderId === $payment->orderId
+            && $p->amountPaise === $payment->amountPaise && $p->currency === $payment->currency && $p->status === $payment->status);
         if ($confirmed === []) {
             throw WebhookReplayRefused::notConfirmed();
         }

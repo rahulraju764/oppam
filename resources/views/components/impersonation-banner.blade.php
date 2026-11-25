@@ -9,7 +9,7 @@
     <div class="impersonation-banner" role="status">
         <div class="container impersonation-banner__inner">
             <p class="mb-0">
-                <i class="fa fa-user-secret" aria-hidden="true"></i>
+                <i class="fa-solid fa-user-secret" aria-hidden="true"></i>
                 {{ __('Support view: you are signed in as this member (:admin). Ends at :time IST. Password, email, payments, contact views and anything that reaches other members are disabled.', [
                     'admin' => $impersonation->admin_label,
                     'time' => $impersonation->expires_at?->timezone(config('oppam.display_timezone'))->format('g:i a'),

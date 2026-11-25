@@ -26,6 +26,9 @@
     @include('layouts.partials.preloader')
     @include('layouts.partials.header', ['member' => $member, 'pageNav' => $nav->pageNav($pageNav)])
     <x-impersonation-banner />
+    {{-- P9.3b (PRD §14 live regions): a signed-in member on a public page has the member header — chat badge,
+         bell, realtime.js — whose live toasts were lost without a stack here. role="status" aria-live="polite". --}}
+    <x-ui.toast-stack />
     @if (app(\App\Queries\Content\PreviewContext::class)->active())
         <div class="container is-chrome" data-content-preview>
             <x-ui.alert type="warning">{{ __('Preview: this page shows unpublished content. Visitors don’t see this.') }} {{ __('Version :v.', ['v' => app(\App\Queries\Content\PreviewContext::class)->version()]) }}</x-ui.alert>

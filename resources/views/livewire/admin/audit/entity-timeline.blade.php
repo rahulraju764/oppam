@@ -6,7 +6,7 @@
     @if ($viewerLink)
         <div class="d-flex justify-content-end mb-2">
             <a href="{{ route('admin.audit.index', ['entity' => $entityFilter]) }}" wire:navigate class="small">
-                <i class="fa fa-history" aria-hidden="true"></i> {{ __('Open in the audit log') }}
+                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> {{ __('Open in the audit log') }}
             </a>
         </div>
     @endif
@@ -17,7 +17,7 @@
 
     <x-admin.table :headers="[__('When (IST)'), __('By'), __('What'), __('Subject'), __('Reason')]" :caption="__('Timeline')" :empty="$entries->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-history" :title="__('Nothing recorded yet')" :message="__('Admin changes and sensitive reads about this record will appear here.')" />
+            <x-ui.empty-state icon="fa-solid fa-clock-rotate-left" :title="__('Nothing recorded yet')" :message="__('Admin changes and sensitive reads about this record will appear here.')" />
         </x-slot:emptyState>
 
         @foreach ($entries as $entry)

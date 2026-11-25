@@ -6,7 +6,7 @@
 <div>
     @if ($sentCode !== null)
         <div class="contact-sent" role="status">
-            <i class="fa fa-check-circle" aria-hidden="true"></i>
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
             <h2>{{ __('Thank you — we’ve got your message') }}</h2>
             <p>
                 @if ($sentCode !== '—')
@@ -70,7 +70,7 @@
 
             <div class="contact-button">
                 <button type="submit" wire:loading.attr="disabled" wire:target="send">
-                    <i class="fa fa-paper-plane" aria-hidden="true" wire:loading.remove wire:target="send"></i>
+                    <i class="fa-solid fa-paper-plane" aria-hidden="true" wire:loading.remove wire:target="send"></i>
                     <span class="spinner-border spinner-border-sm" aria-hidden="true" wire:loading wire:target="send"></span>
                     {{ __('Send Message') }}
                 </button>

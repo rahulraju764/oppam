@@ -10,7 +10,7 @@
 
     <x-admin.table :headers="[__('Export'), __('Report'), __('Period'), __('Rows'), __('Status'), __('Requested (IST)'), '']" :caption="__('My report exports')" :empty="$exports->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-download" :title="__('No exports yet')" :message="__('Exports larger than a quick download appear here.')" />
+            <x-ui.empty-state icon="fa-solid fa-download" :title="__('No exports yet')" :message="__('Exports larger than a quick download appear here.')" />
         </x-slot:emptyState>
         @foreach ($exports as $export)
             <tr wire:key="export-{{ $export->code }}">

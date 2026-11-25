@@ -6,7 +6,7 @@
     @foreach ($announcements as $announcement)
         <div class="announcement-bar" role="region" aria-label="{{ __('Announcement') }}" wire:key="ann-{{ $announcement->code }}" dusk="announcement-{{ $announcement->code }}">
             <div class="container is-chrome announcement-bar__inner">
-                <i class="fa fa-bullhorn announcement-bar__icon" aria-hidden="true"></i>
+                <i class="fa-solid fa-bullhorn announcement-bar__icon" aria-hidden="true"></i>
                 <p class="announcement-bar__text">
                     <strong>{{ $announcement->title }}</strong>
                     <span>{{ $announcement->body }}</span>
@@ -20,7 +20,7 @@
                 @if ($announcement->is_dismissible)
                     <button type="button" class="announcement-bar__close" wire:click="dismiss('{{ $announcement->code }}')"
                             wire:loading.attr="disabled" wire:target="dismiss" aria-label="{{ __('Dismiss announcement: :title', ['title' => $announcement->title]) }}">
-                        <i class="fa fa-times" aria-hidden="true"></i>
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                     </button>
                 @endif
             </div>

@@ -7,7 +7,7 @@
     <div class="admin-page-head">
         <div>
             <h1>{{ __('Safety case :code', ['code' => $case->code]) }}</h1>
-            <p><a href="{{ route('admin.safety.cases') }}" wire:navigate><i class="fa fa-arrow-left" aria-hidden="true"></i> {{ __('Back to safety cases') }}</a></p>
+            <p><a href="{{ route('admin.safety.cases') }}" wire:navigate><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ __('Back to safety cases') }}</a></p>
         </div>
     </div>
 
@@ -24,11 +24,11 @@
                     <dt>{{ __('Priority') }}</dt>
                     <dd>
                         <x-ui.badge :variant="$case->priority->badgeVariant()">{{ $case->priority->label() }}</x-ui.badge>
-                        @if ($case->escalated_at)<x-ui.badge variant="danger" icon="fa-level-up">{{ __('Escalated :date', ['date' => $case->escalated_at->timezone($timezone)->format('d M, g:i a')]) }}</x-ui.badge>@endif
+                        @if ($case->escalated_at)<x-ui.badge variant="danger" icon="fa-solid fa-turn-up">{{ __('Escalated :date', ['date' => $case->escalated_at->timezone($timezone)->format('d M, g:i a')]) }}</x-ui.badge>@endif
                     </dd>
                     <dt>{{ __('Act by (IST)') }}</dt>
                     <dd>{{ $case->sla_due_at->timezone($timezone)->format('d M Y, g:i a') }}
-                        @if ($case->isOverdue())<x-ui.badge variant="danger" icon="fa-clock-o">{{ __('Overdue') }}</x-ui.badge>@endif</dd>
+                        @if ($case->isOverdue())<x-ui.badge variant="danger" icon="fa-regular fa-clock">{{ __('Overdue') }}</x-ui.badge>@endif</dd>
                     <dt>{{ __('Reports') }}</dt>
                     <dd>{{ trans_choice(':count report from|:count reports from', $case->reports_count, ['count' => $case->reports_count]) }} {{ trans_choice(':count member|:count members', $case->reporters_count, ['count' => $case->reporters_count]) }}</dd>
                     <dt>{{ __('Assigned to') }}</dt>
@@ -61,7 +61,7 @@
                         <dd>{{ $profile->is_verified ? __('Yes') : __('No') }}</dd>
                         @if ($profile->legal_hold_at)
                             <dt>{{ __('Legal hold') }}</dt>
-                            <dd><x-ui.badge variant="danger" icon="fa-gavel">{{ __('Since :date', ['date' => $profile->legal_hold_at->timezone($timezone)->format('d M Y')]) }}</x-ui.badge></dd>
+                            <dd><x-ui.badge variant="danger" icon="fa-solid fa-gavel">{{ __('Since :date', ['date' => $profile->legal_hold_at->timezone($timezone)->format('d M Y')]) }}</x-ui.badge></dd>
                         @endif
                     </dl>
                 @else
@@ -112,7 +112,7 @@
                             {{ $profile->legal_hold_at ? __('Lift legal hold') : __('Place legal hold') }}
                         </x-ui.button>
                         @if ($evidencePackUrl)
-                            <x-ui.button size="sm" type="button" :href="$evidencePackUrl" icon="fa-download">{{ __('Download evidence pack') }}</x-ui.button>
+                            <x-ui.button size="sm" type="button" :href="$evidencePackUrl" icon="fa-solid fa-download">{{ __('Download evidence pack') }}</x-ui.button>
                         @endif
                     </div>
                 </div>
@@ -150,7 +150,7 @@
                 <h2 class="admin-section-title">{{ __('Conversation evidence') }}</h2>
                 @if (! $revealed)
                     <p>{{ __('Messages are private. Reveal only the reported messages and the few around each — your view is recorded in the audit log.') }}</p>
-                    <x-ui.button type="button" wire:click="reveal" loading="reveal" icon="fa-eye">{{ __('Reveal evidence') }}</x-ui.button>
+                    <x-ui.button type="button" wire:click="reveal" loading="reveal" icon="fa-regular fa-eye">{{ __('Reveal evidence') }}</x-ui.button>
                 @elseif ($evidence === [])
                     <p class="small text-muted-brand mb-0">{{ __('No chat messages were reported in this case.') }}</p>
                 @else

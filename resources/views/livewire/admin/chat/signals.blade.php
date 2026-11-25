@@ -27,7 +27,7 @@
         @if ($view === 'paused')
             <x-admin.table :headers="[__('Member'), __('Paused until (IST)'), __('Reason'), __('By'), '']" :caption="__('Members whose sending is paused')" :empty="$this->pauses->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-pause-circle" :title="__('Nobody is paused')" :message="__('Pauses you set on a signal show here until they end.')" />
+                    <x-ui.empty-state icon="fa-solid fa-circle-pause" :title="__('Nobody is paused')" :message="__('Pauses you set on a signal show here until they end.')" />
                 </x-slot:emptyState>
 
                 @foreach ($this->pauses as $pause)
@@ -55,12 +55,12 @@
         @else
             <x-admin.table :headers="[__('Kind'), __('Member'), __('What happened'), __('Raised'), __('Status'), '']" :caption="__('Abuse signals')" :empty="$this->signals->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-bolt" :title="__('Nothing here')" :message="$view === 'waiting' ? __('No abuse signals are waiting.') : __('No signals match these filters.')" />
+                    <x-ui.empty-state icon="fa-solid fa-bolt" :title="__('Nothing here')" :message="$view === 'waiting' ? __('No abuse signals are waiting.') : __('No signals match these filters.')" />
                 </x-slot:emptyState>
 
                 @foreach ($this->signals as $signal)
                     <tr wire:key="signal-{{ $signal->id }}">
-                        <td><x-ui.badge variant="warning" icon="fa-bolt">{{ $signal->type->label() }}</x-ui.badge></td>
+                        <td><x-ui.badge variant="warning" icon="fa-solid fa-bolt">{{ $signal->type->label() }}</x-ui.badge></td>
                         <td>
                             @if ($canViewMembers && $signal->profile)
                                 <a href="{{ route('admin.members.show', ['profile' => $signal->profile->code]) }}" wire:navigate>{{ $signal->profile->code }}</a>

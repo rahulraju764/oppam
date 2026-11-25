@@ -1,8 +1,8 @@
 {{--
-    A12 system health panel (P9.2b1). Read-only; every figure comes from a cached, rescued reader, so
+    A12 system health panel (P9.2b1, alerts + webhook replay P9.2b2). Every figure comes from a cached, rescued reader, so
     a missing source shows "unavailable" instead of breaking the page ($scheduler, $webhooks,
     $delivery and $lag are null when their read failed). Times are IST. Re-reads every
-    minute. Alerts and webhook replay arrive in P9.2b2.
+    minute. The one write is the webhook replay (picked on the server, so the dialog names the row being replayed).
 --}}
 @use('Carbon\CarbonInterface')
 @use('Carbon\CarbonInterval')
@@ -24,10 +24,10 @@
         @if ($horizonUrl || $pulseUrl)
             <div class="d-flex flex-wrap gap-2">
                 @if ($horizonUrl)
-                    <x-ui.button :href="$horizonUrl" variant="outline" size="sm" icon="fa-tasks">{{ __('Open Horizon') }}</x-ui.button>
+                    <x-ui.button :href="$horizonUrl" variant="outline" size="sm" icon="fa-solid fa-bars-progress">{{ __('Open Horizon') }}</x-ui.button>
                 @endif
                 @if ($pulseUrl)
-                    <x-ui.button :href="$pulseUrl" variant="outline" size="sm" icon="fa-heartbeat">{{ __('Open Pulse') }}</x-ui.button>
+                    <x-ui.button :href="$pulseUrl" variant="outline" size="sm" icon="fa-solid fa-heart-pulse">{{ __('Open Pulse') }}</x-ui.button>
                 @endif
             </div>
         @endif
@@ -56,7 +56,7 @@
     @else
         <x-admin.table :headers="[__('Alert'), __('State'), __('Opened (IST)'), __('Resolved (IST)')]" :caption="__('Alerts')" :empty="$alerts->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-check" :title="__('No alerts')" :message="__('Nothing has crossed a threshold in the last :days days. Thresholds are in Settings → Business rules.', ['days' => \App\Livewire\Admin\System\SystemHealth::RESOLVED_SHOWN_DAYS])" />
+                <x-ui.empty-state icon="fa-solid fa-check" :title="__('No alerts')" :message="__('Nothing has crossed a threshold in the last :days days. Thresholds are in Settings → Business rules.', ['days' => \App\Livewire\Admin\System\SystemHealth::RESOLVED_SHOWN_DAYS])" />
             </x-slot:emptyState>
             @foreach ($alerts as $alert)
                 <tr wire:key="alert-{{ $alert->kind->value }}-{{ $alert->opened_at->getTimestamp() }}">
@@ -140,7 +140,7 @@
     {{-- Live updates (Reverb) --}}
     <h2 class="admin-section-title">{{ __('Live updates (Reverb)') }}</h2>
     @if (! $reverb->configured)
-        <div class="ui-card"><x-ui.empty-state icon="fa-plug" :title="__('Live updates are not set up here')" :message="__('Broadcasting is not set to Reverb or Pusher on this server, so there is nothing to ask.')" /></div>
+        <div class="ui-card"><x-ui.empty-state icon="fa-solid fa-plug" :title="__('Live updates are not set up here')" :message="__('Broadcasting is not set to Reverb or Pusher on this server, so there is nothing to ask.')" /></div>
     @elseif ($reverb->stats === null)
         <x-ui.alert type="danger">{{ __('The live server did not answer within 2 seconds. Members are not getting live updates until it is back.') }}</x-ui.alert>
     @else
@@ -158,7 +158,7 @@
                 <x-admin.table :headers="[__('Channel type'), __('Channels'), __('Subscribers')]" :caption="__('Channels by type')"
                                :empty="$reverb->stats->channels === []">
                     <x-slot:emptyState>
-                        <x-ui.empty-state icon="fa-comments-o" :title="__('No open channels')" :message="__('Nobody is subscribed to a live channel right now.')" />
+                        <x-ui.empty-state icon="fa-regular fa-comments" :title="__('No open channels')" :message="__('Nobody is subscribed to a live channel right now.')" />
                     </x-slot:emptyState>
                     @foreach ($channelLabels as $type => $label)
                         @isset($reverb->stats->channels[$type])
@@ -186,7 +186,7 @@
     <x-admin.table :headers="[__('Task'), __('Schedule'), __('Last run (IST)'), __('Status'), __('Took'), __('Next due (IST)')]" :caption="__('Scheduled tasks')"
                    :empty="$scheduler->tasks === []">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-clock-o" :title="__('No scheduled tasks')" :message="__('routes/console.php defines no schedule.')" />
+            <x-ui.empty-state icon="fa-regular fa-clock" :title="__('No scheduled tasks')" :message="__('routes/console.php defines no schedule.')" />
         </x-slot:emptyState>
         @foreach ($scheduler->tasks as $task)
             <tr wire:key="task-{{ $loop->index }}">
@@ -247,7 +247,7 @@
     <x-admin.table :headers="array_merge([__('Received (IST)'), __('Event'), __('Event id'), __('Gateway order'), __('Failed attempts')], $canReplay ? [__('Action')] : [])"
                    :caption="__('Payment webhooks not processed')" :empty="$webhooks->unprocessed === []">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-check" :title="__('Nothing waiting')" :message="__('Every stored payment webhook has been processed.')" />
+            <x-ui.empty-state icon="fa-solid fa-check" :title="__('Nothing waiting')" :message="__('Every stored payment webhook has been processed.')" />
         </x-slot:emptyState>
         @foreach ($webhooks->unprocessed as $event)
             <tr wire:key="unprocessed-{{ $event->gateway }}-{{ $event->eventId }}">
@@ -268,8 +268,8 @@
                 </td>
                 @if ($canReplay)
                     <td>
-                        <x-ui.button variant="outline" size="sm" type="button" icon="fa-repeat"
-                                     x-on:click="$wire.set('replayGateway', {{ Js::from($event->gateway) }}, false); $wire.set('replayEventId', {{ Js::from($event->eventId) }}, false); $dispatch('open-modal', { name: 'webhook-replay' })"
+                        <x-ui.button variant="outline" size="sm" type="button" icon="fa-solid fa-arrow-rotate-right"
+                                     wire:click="pickReplay({{ Js::from($event->gateway) }}, {{ Js::from($event->eventId) }})" loading="pickReplay"
                                      dusk="webhook-replay-open">{{ __('Replay') }}</x-ui.button>
                     </td>
                 @endif
@@ -281,7 +281,7 @@
     @endif
     @if ($canReplay)
         <x-admin.confirm-modal name="webhook-replay" :title="__('Replay payment webhook')" action="replay" :confirmLabel="__('Replay webhook')">
-            <p>{{ __('Event :id is processed again from its stored copy. A payment is replayed only if Razorpay still lists it for the order with the same status; processing is idempotent, so a payment already applied is not applied twice.', ['id' => $replayEventId]) }}</p>
+            <p dusk="webhook-replay-target">{{ __('Event :id is processed again from its stored copy. A payment is replayed only if Razorpay still lists the same payment, amount and status for the order; processing is idempotent, so a payment already applied is not applied twice.', ['id' => $replayEventId]) }}</p>
             @error('replayEventId') <p class="text-danger small mb-0">{{ $message }}</p> @enderror
         </x-admin.confirm-modal>
     @endif

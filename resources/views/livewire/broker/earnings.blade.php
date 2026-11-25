@@ -24,7 +24,7 @@
         <div class="dashboard-content mb-4">
             <h2 class="h5">{{ __('Payouts') }}</h2>
             @if ($payouts->isEmpty())
-                <x-ui.empty-state icon="fa-bank" :title="__('No payouts yet')" :message="__('Payouts are made monthly once your balance reaches :min.', ['min' => $minimum->formatWithSymbol()])" />
+                <x-ui.empty-state icon="fa-solid fa-building-columns" :title="__('No payouts yet')" :message="__('Payouts are made monthly once your balance reaches :min.', ['min' => $minimum->formatWithSymbol()])" />
             @else
                 <div class="table-responsive">
                     <table class="table broker-table align-middle mb-0">
@@ -52,7 +52,7 @@
                                     <td class="text-end">
                                         @if ($payout->status === \App\Enums\PayoutItemStatus::Paid)
                                             <a href="{{ route('broker.earnings.statement', ['run' => $payout->run?->code]) }}">
-                                                <i class="fa fa-file-pdf-o" aria-hidden="true"></i> {{ __('Statement') }}
+                                                <i class="fa-regular fa-file-pdf" aria-hidden="true"></i> {{ __('Statement') }}
                                             </a>
                                         @endif
                                     </td>
@@ -67,7 +67,7 @@
         <div class="dashboard-content" wire:loading.class="is-loading" wire:target="gotoPage, nextPage, previousPage">
             <h2 class="h5">{{ __('Commission by profile') }}</h2>
             @if ($ledger->isEmpty())
-                <x-ui.empty-state icon="fa-inr" :title="__('No commission yet')"
+                <x-ui.empty-state icon="fa-solid fa-indian-rupee-sign" :title="__('No commission yet')"
                     :message="__('When a family you referred or manage buys its first plan, the commission appears here.')" />
             @else
                 <div class="table-responsive">

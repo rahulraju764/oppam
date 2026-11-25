@@ -31,13 +31,13 @@ enum MatchTab: string
     public function icon(): string
     {
         return match ($this) {
-            self::All => 'fa-heart',
-            self::Unviewed => 'fa-eye-slash',
-            self::Viewed => 'fa-eye',
-            self::Mutual => 'fa-exchange',
-            self::New => 'fa-star',
-            self::NearMe => 'fa-map-marker',
-            self::Premium => 'fa-diamond',
+            self::All => 'fa-solid fa-heart',
+            self::Unviewed => 'fa-regular fa-eye-slash',
+            self::Viewed => 'fa-regular fa-eye',
+            self::Mutual => 'fa-solid fa-right-left',
+            self::New => 'fa-solid fa-star',
+            self::NearMe => 'fa-solid fa-location-dot',
+            self::Premium => 'fa-regular fa-gem',
         };
     }
 

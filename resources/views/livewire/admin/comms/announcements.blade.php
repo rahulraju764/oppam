@@ -9,14 +9,14 @@
             <p>{{ __('A banner at the top of member pages, e.g. an offer. To also notify members by email or in the bell, use a campaign.') }}</p>
         </div>
         @if ($canBroadcast)
-            <x-ui.button type="button" icon="fa-plus" wire:click="create" dusk="announcement-new">{{ __('New announcement') }}</x-ui.button>
+            <x-ui.button type="button" icon="fa-solid fa-plus" wire:click="create" dusk="announcement-new">{{ __('New announcement') }}</x-ui.button>
         @endif
     </div>
 
     <div wire:loading.class="is-loading" wire:target="gotoPage, nextPage, previousPage, end">
         <x-admin.table :headers="[__('Announcement'), __('Audience'), __('When (IST)'), __('Status'), '']" :caption="__('Announcements')" :empty="$this->announcements->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-bullhorn" :title="__('No announcements yet')" :message="__('Create one to show a banner to members.')" />
+                <x-ui.empty-state icon="fa-solid fa-bullhorn" :title="__('No announcements yet')" :message="__('Create one to show a banner to members.')" />
             </x-slot:emptyState>
 
             @foreach ($this->announcements as $row)

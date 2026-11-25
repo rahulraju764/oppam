@@ -43,9 +43,9 @@
                             {{-- M09: the Verified badge (live after an officer approves) or the way to get it. --}}
                             <div class="profile-badges">
                                 @if ($profile->is_verified)
-                                    <x-ui.badge variant="verified" icon="fa-check-circle">{{ __('Verified') }}</x-ui.badge>
+                                    <x-ui.badge variant="verified" icon="fa-solid fa-circle-check">{{ __('Verified') }}</x-ui.badge>
                                 @else
-                                    <a href="{{ route('member.verification') }}" class="chip" wire:navigate><i class="fa fa-id-card-o" aria-hidden="true"></i> {{ __('Get verified') }}</a>
+                                    <a href="{{ route('member.verification') }}" class="chip" wire:navigate><i class="fa-regular fa-id-card" aria-hidden="true"></i> {{ __('Get verified') }}</a>
                                 @endif
                             </div>
 
@@ -59,11 +59,11 @@
                                 <div class="intst-parent">
                                     <div class="intst-button">
                                         @if ($canEdit)
-                                            <a class="send-int" href="{{ route('member.onboarding', ['step' => 1]) }}" wire:navigate><i class="fa fa-pencil" aria-hidden="true"></i>{{ __('Edit Profile') }}</a>
-                                            <a class="call-btn" href="{{ route('member.onboarding', ['step' => 6]) }}" wire:navigate><i class="fa fa-camera" aria-hidden="true"></i>{{ __('Manage Photos') }}</a>
+                                            <a class="send-int" href="{{ route('member.onboarding', ['step' => 1]) }}" wire:navigate><i class="fa-solid fa-pencil" aria-hidden="true"></i>{{ __('Edit Profile') }}</a>
+                                            <a class="call-btn" href="{{ route('member.onboarding', ['step' => 6]) }}" wire:navigate><i class="fa-solid fa-camera" aria-hidden="true"></i>{{ __('Manage Photos') }}</a>
                                         @endif
                                         @if ($profile->status === \App\Enums\ProfileStatus::Active)
-                                            <a class="call-btn" href="{{ route('member.profile.show', ['profile' => $profile->code, 'preview' => 1]) }}" wire:navigate><i class="fa fa-eye" aria-hidden="true"></i>{{ __('Preview') }}</a>
+                                            <a class="call-btn" href="{{ route('member.profile.show', ['profile' => $profile->code, 'preview' => 1]) }}" wire:navigate><i class="fa-regular fa-eye" aria-hidden="true"></i>{{ __('Preview') }}</a>
                                         @endif
                                     </div>
                                 </div>
@@ -97,7 +97,7 @@
 
                     <div class="information-table">
                         <div class="info-block-head">
-                            <h2><i class="fa fa-line-chart" aria-hidden="true"></i> {{ __('This Week') }}</h2>
+                            <h2><i class="fa-solid fa-chart-line" aria-hidden="true"></i> {{ __('This Week') }}</h2>
                         </div>
                         <dl class="info-grid">
                             <div class="info-pair"><dt>{{ __('Profile views') }}</dt><dd>{{ $viewsThisWeek }}</dd></div>
@@ -107,7 +107,7 @@
 
                     <div class="information-table">
                         <div class="info-block-head">
-                            <h2><i class="fa fa-quote-left" aria-hidden="true"></i> {{ __('About Myself') }}</h2>
+                            <h2><i class="fa-solid fa-quote-left" aria-hidden="true"></i> {{ __('About Myself') }}</h2>
                             @if ($canEdit)<a href="{{ route('member.onboarding', ['step' => 6]) }}" class="edit-link" wire:navigate>{{ __('Edit') }}<span class="visually-hidden"> {{ __('About Myself') }}</span></a>@endif
                         </div>
                         <p class="about-text">{{ $profile->about ?? __('Not added yet.') }}</p>

@@ -5,7 +5,7 @@
             <p>{{ __('Search by member code, email, phone or name. Every change is written to the audit log.') }}</p>
         </div>
         @can('members.export')
-            <x-ui.button type="button" variant="outline" icon="fa-download" wire:click="export" loading="export">{{ __('Export CSV') }}</x-ui.button>
+            <x-ui.button type="button" variant="outline" icon="fa-solid fa-download" wire:click="export" loading="export">{{ __('Export CSV') }}</x-ui.button>
         @endcan
     </div>
 
@@ -44,7 +44,7 @@
             </div>
         </details>
         <div class="mt-2">
-            <x-ui.button size="sm" variant="ghost" type="button" wire:click="clearFilters" icon="fa-times">{{ __('Clear filters') }}</x-ui.button>
+            <x-ui.button size="sm" variant="ghost" type="button" wire:click="clearFilters" icon="fa-solid fa-xmark">{{ __('Clear filters') }}</x-ui.button>
         </div>
     </div>
 
@@ -54,7 +54,7 @@
             <x-ui.button size="sm" variant="ghost" type="button" wire:click="selectPage">{{ __('Select this page') }}</x-ui.button>
             @if ($selected !== [])
                 <x-ui.button size="sm" variant="ghost" type="button" wire:click="$set('selected', [])">{{ __('Clear selection') }}</x-ui.button>
-                <x-ui.button size="sm" type="button" icon="fa-bolt" x-on:click="$dispatch('open-modal', { name: 'bulk-action' })">{{ __('Bulk action…') }}</x-ui.button>
+                <x-ui.button size="sm" type="button" icon="fa-solid fa-bolt" x-on:click="$dispatch('open-modal', { name: 'bulk-action' })">{{ __('Bulk action…') }}</x-ui.button>
             @endif
         </div>
     @endcanany
@@ -63,7 +63,7 @@
         <x-admin.table :headers="['', __('Code'), __('Name'), __('Gender / age'), __('Phone'), __('Account'), __('Profile'), __('Registered'), __('Last active')]"
                        :caption="__('Members')" :empty="$this->members->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-users" :title="__('No members match')" :message="__('Try a different search or clear the filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-users" :title="__('No members match')" :message="__('Try a different search or clear the filters.')" />
             </x-slot:emptyState>
 
             @foreach ($this->members as $member)
@@ -87,8 +87,8 @@
                     <td>
                         @if ($profile)
                             <x-ui.badge :variant="$profile->status->badgeVariant()">{{ $profile->status->label() }}</x-ui.badge>
-                            @if ($profile->is_premium)<x-ui.badge variant="premium" icon="fa-diamond">{{ __('Paid') }}</x-ui.badge>@endif
-                            @if ($profile->is_verified)<x-ui.badge variant="verified" icon="fa-check">{{ __('Verified') }}</x-ui.badge>@endif
+                            @if ($profile->is_premium)<x-ui.badge variant="premium" icon="fa-regular fa-gem">{{ __('Paid') }}</x-ui.badge>@endif
+                            @if ($profile->is_verified)<x-ui.badge variant="verified" icon="fa-solid fa-check">{{ __('Verified') }}</x-ui.badge>@endif
                         @endif
                     </td>
                     <td>{{ $member->created_at?->timezone($timezone)->format('d M Y') }}</td>

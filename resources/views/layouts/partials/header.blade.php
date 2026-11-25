@@ -15,7 +15,7 @@
             <nav class="navbar navbar-expand-lg {{ $member ? 'navbar-member' : 'navbar-public' }}" aria-label="{{ __('Main') }}">
 
                 <a class="navbar-brand nav-logo" href="{{ $nav->homeUrl() }}" wire:navigate>
-                    <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" class="img-fluid" alt="{{ config('oppam.site.name') }}" width="600" height="301" fetchpriority="high" decoding="async">
+                    <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" class="img-fluid" alt="{{ config('oppam.site.name') }}" width="600" height="301" decoding="async">
                 </a>
 
                 @if ($member)
@@ -34,9 +34,9 @@
                 <div class="navbar-collapse" id="navbarSupportedContent" data-dialog-label="{{ __('Menu') }}">
 
                     <div class="nav-drawer-head d-lg-none">
-                        <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" class="nav-drawer-logo" alt="{{ config('oppam.site.name') }}" width="600" height="301" fetchpriority="high" decoding="async">
+                        <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" class="nav-drawer-logo" alt="{{ config('oppam.site.name') }}" width="600" height="301" decoding="async">
                         <button type="button" class="nav-drawer-close" aria-label="{{ __('Close menu') }}">
-                            <i class="fa fa-times" aria-hidden="true"></i>
+                            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                         </button>
                     </div>
 
@@ -44,7 +44,7 @@
                         @php($myProfileUrl = $nav->url('member.profile.me'))
                         @if ($myProfileUrl)
                             <a href="{{ $myProfileUrl }}" class="nav-drawer-user d-lg-none" wire:navigate>
-                                <img src="{{ $member->photoUrl }}" alt="" width="600" height="600" fetchpriority="high" decoding="async">
+                                <img src="{{ $member->photoUrl }}" alt="" width="600" height="600" decoding="async">
                                 <span class="nav-drawer-user-info">
                                     <strong>{{ $member->name }}</strong>
                                     <span class="profile-id">{{ $member->code }}</span>

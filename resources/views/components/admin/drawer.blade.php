@@ -13,7 +13,7 @@
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h2 class="h5 m-0" id="drawer-{{ $name }}-title">{{ $title }}</h2>
             <button type="button" class="ui-modal__close" x-on:click="open = false" aria-label="{{ __('Close') }}">
-                <i class="fa fa-times" aria-hidden="true"></i>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
         </div>
         {{ $slot }}

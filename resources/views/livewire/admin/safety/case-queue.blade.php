@@ -38,14 +38,14 @@
         <x-admin.table :headers="[__('Case'), __('Member'), __('Priority'), __('Reports'), $list === 'decided' ? __('Decided (IST)') : __('Act by (IST)'), $list === 'decided' ? __('Outcome') : __('Assigned'), '']"
                        :caption="__('Safety cases')" :empty="$this->cases->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-shield" :title="$list === 'decided' ? __('No decisions yet') : __('All caught up')"
+                <x-ui.empty-state icon="fa-solid fa-shield" :title="$list === 'decided' ? __('No decisions yet') : __('All caught up')"
                                   :message="$list === 'decided' ? __('No case was decided in the last 90 days.') : __('No open safety cases.')" />
             </x-slot:emptyState>
 
             @foreach ($this->cases as $case)
                 <tr wire:key="case-{{ $case->code }}" @class(['is-breach' => $case->isOverdue()])>
                     <td><strong>{{ $case->code }}</strong>
-                        @if ($case->escalated_at)<x-ui.badge variant="danger" icon="fa-level-up">{{ __('Escalated') }}</x-ui.badge>@endif
+                        @if ($case->escalated_at)<x-ui.badge variant="danger" icon="fa-solid fa-turn-up">{{ __('Escalated') }}</x-ui.badge>@endif
                     </td>
                     <td>{{ $case->reported?->code }}<div class="small text-muted-brand">{{ $case->reported?->fullName() }}</div></td>
                     <td><x-ui.badge :variant="$case->priority->badgeVariant()">{{ $case->priority->value }}</x-ui.badge></td>
@@ -56,7 +56,7 @@
                             {{ $case->decided_at?->timezone($timezone)->format('d M, g:i a') }}
                         @else
                             {{ $case->sla_due_at->timezone($timezone)->format('d M, g:i a') }}
-                            @if ($case->isOverdue())<div><x-ui.badge variant="danger" icon="fa-clock-o">{{ __('Overdue') }}</x-ui.badge></div>@endif
+                            @if ($case->isOverdue())<div><x-ui.badge variant="danger" icon="fa-regular fa-clock">{{ __('Overdue') }}</x-ui.badge></div>@endif
                         @endif
                     </td>
                     <td>

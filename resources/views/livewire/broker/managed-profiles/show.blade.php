@@ -55,22 +55,22 @@
             <div class="managed-detail__actions">
                 @if ($canEdit)
                     <a href="{{ route('broker.profiles.edit', ['code' => $profile->code]) }}" wire:navigate class="ui-btn ui-btn--primary">
-                        <i class="fa fa-pencil" aria-hidden="true"></i> {{ __('Edit details') }}
+                        <i class="fa-solid fa-pencil" aria-hidden="true"></i> {{ __('Edit details') }}
                     </a>
                 @endif
                 @if ($canSubmit)
-                    <x-ui.button type="button" variant="secondary" icon="fa-paper-plane" wire:click="submit" loading="submit" :disabled="! $progress->isReadyToSubmit()">
+                    <x-ui.button type="button" variant="secondary" icon="fa-solid fa-paper-plane" wire:click="submit" loading="submit" :disabled="! $progress->isReadyToSubmit()">
                         {{ __('Submit for review') }}
                     </x-ui.button>
                 @endif
                 @if ($canNotes)
                     <a href="{{ route('broker.profiles.notes', ['code' => $profile->code]) }}" wire:navigate class="ui-btn ui-btn--outline">
-                        <i class="fa fa-sticky-note-o" aria-hidden="true"></i> {{ __('Notes & follow-ups') }}
+                        <i class="fa-regular fa-note-sticky" aria-hidden="true"></i> {{ __('Notes & follow-ups') }}
                     </a>
                 @endif
                 @if ($canInbox)
                     <a href="{{ route('broker.profiles.inbox', ['code' => $profile->code]) }}" wire:navigate class="ui-btn ui-btn--outline">
-                        <i class="fa fa-inbox" aria-hidden="true"></i> {{ __('Client inbox') }}
+                        <i class="fa-solid fa-inbox" aria-hidden="true"></i> {{ __('Client inbox') }}
                         @if ($pendingInterests > 0)
                             <x-ui.badge variant="primary">{{ $pendingInterests }}<span class="visually-hidden"> {{ __('pending') }}</span></x-ui.badge>
                         @endif
@@ -105,11 +105,11 @@
                 <div class="managed-detail__actions">
                     {{-- Plain links (no wire:navigate): the files stream from a controller. --}}
                     <a href="{{ route('broker.profiles.export.biodata', ['code' => $profile->code]) }}" class="ui-btn ui-btn--outline" download>
-                        <i class="fa fa-file-pdf-o" aria-hidden="true"></i> {{ __('Biodata PDF') }}
+                        <i class="fa-regular fa-file-pdf" aria-hidden="true"></i> {{ __('Biodata PDF') }}
                     </a>
                     @if ($approvedPhotos > 0)
                         <a href="{{ route('broker.profiles.export.photos', ['code' => $profile->code]) }}" class="ui-btn ui-btn--outline" download>
-                            <i class="fa fa-file-archive-o" aria-hidden="true"></i> {{ trans_choice('{1} Photo (1)|[2,*] Photos (:count)', $approvedPhotos, ['count' => $approvedPhotos]) }}
+                            <i class="fa-regular fa-file-zipper" aria-hidden="true"></i> {{ trans_choice('{1} Photo (1)|[2,*] Photos (:count)', $approvedPhotos, ['count' => $approvedPhotos]) }}
                         </a>
                     @else
                         <span class="form-text">{{ __('Photos can be downloaded once our team approves them.') }}</span>
@@ -145,9 +145,9 @@
                 @foreach (\App\Enums\WizardStep::cases() as $step)
                     <li>
                         @if ($progress->isComplete($step))
-                            <i class="fa fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Done:') }}</span>
+                            <i class="fa-solid fa-check" aria-hidden="true"></i><span class="visually-hidden">{{ __('Done:') }}</span>
                         @else
-                            <i class="fa fa-circle-o" aria-hidden="true"></i><span class="visually-hidden">{{ __('To do:') }}</span>
+                            <i class="fa-regular fa-circle" aria-hidden="true"></i><span class="visually-hidden">{{ __('To do:') }}</span>
                         @endif
                         {{ $step->title() }}
                     </li>

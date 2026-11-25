@@ -45,7 +45,7 @@
                         </select>
                         @error('scope') <p class="invalid-feedback d-block" role="alert">{{ $message }}</p> @enderror
                     </div>
-                    <x-ui.button loading="save" icon="fa-check">{{ __('Save') }}</x-ui.button>
+                    <x-ui.button loading="save" icon="fa-solid fa-check">{{ __('Save') }}</x-ui.button>
                 </form>
             </div>
         @elseif ($staff->isOwner())
@@ -120,7 +120,7 @@
                                @error('confirm') aria-invalid="true" aria-describedby="staffConfirm-error" @enderror>
                         @error('confirm') <p class="invalid-feedback d-block" id="staffConfirm-error" role="alert">{{ $message }}</p> @enderror
                     </div>
-                    <x-ui.button variant="danger" loading="deactivate" icon="fa-ban">{{ __('Deactivate :name', ['name' => $staff->displayName()]) }}</x-ui.button>
+                    <x-ui.button variant="danger" loading="deactivate" icon="fa-solid fa-ban">{{ __('Deactivate :name', ['name' => $staff->displayName()]) }}</x-ui.button>
                 </form>
             </div>
         @endif

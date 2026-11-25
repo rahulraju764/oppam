@@ -8,7 +8,7 @@
         <div class="preloader-mark">
             <span class="preloader-ring"></span>
             <span class="preloader-ring preloader-ring-2"></span>
-            <img src="{{ asset('images/logo/oppam-logo.webp') }}" class="preloader-logo" alt="" width="600" height="301" fetchpriority="high" decoding="async">
+            <img src="{{ asset('images/logo/oppam-logo.webp') }}" class="preloader-logo" alt="" width="600" height="301" decoding="async">
         </div>
         <p class="preloader-title">{{ config('oppam.site.name') }}</p>
         <p class="preloader-tag">{{ __(config('oppam.site.tagline')) }}</p>

@@ -8,7 +8,7 @@
 
     @if ($this->items->isEmpty())
         <div class="ui-card">
-            <x-ui.empty-state icon="fa-pencil-square-o" :title="__('All caught up')" :message="__('No edited texts are waiting.')" />
+            <x-ui.empty-state icon="fa-regular fa-pen-to-square" :title="__('All caught up')" :message="__('No edited texts are waiting.')" />
         </div>
     @else
         @if ($canDecide)
@@ -31,7 +31,7 @@
                     <div class="mb-2">
                         <strong>{{ $row['label'] }}</strong>
                         @foreach ($row['flags'] as $flag)
-                            <x-ui.badge variant="warning" icon="fa-flag">{{ $flag }}</x-ui.badge>
+                            <x-ui.badge variant="warning" icon="fa-solid fa-flag">{{ $flag }}</x-ui.badge>
                         @endforeach
                         <div class="mod-diff">
                             <del>{{ $row['old'] ?? '—' }}</del>
@@ -41,11 +41,11 @@
                 @endforeach
 
                 @if ($item->isClaimedByOther(auth('admin')->user()))
-                    <x-ui.badge variant="warning" icon="fa-eye">{{ __('Being reviewed by :name', ['name' => $item->claimedBy?->name]) }}</x-ui.badge>
+                    <x-ui.badge variant="warning" icon="fa-regular fa-eye">{{ __('Being reviewed by :name', ['name' => $item->claimedBy?->name]) }}</x-ui.badge>
                 @elseif ($canDecide)
                     <div class="d-flex gap-2">
-                        <x-ui.button size="sm" type="button" wire:click="approve('{{ $item->id }}', '{{ $item->fieldsFingerprint() }}')" loading="approve" icon="fa-check">{{ __('Approve') }}</x-ui.button>
-                        <x-ui.button size="sm" variant="danger" type="button" wire:click="reject('{{ $item->id }}', '{{ $item->fieldsFingerprint() }}')" loading="reject" icon="fa-times">{{ __('Reject') }}</x-ui.button>
+                        <x-ui.button size="sm" type="button" wire:click="approve('{{ $item->id }}', '{{ $item->fieldsFingerprint() }}')" loading="approve" icon="fa-solid fa-check">{{ __('Approve') }}</x-ui.button>
+                        <x-ui.button size="sm" variant="danger" type="button" wire:click="reject('{{ $item->id }}', '{{ $item->fieldsFingerprint() }}')" loading="reject" icon="fa-solid fa-xmark">{{ __('Reject') }}</x-ui.button>
                     </div>
                 @endif
             </div>

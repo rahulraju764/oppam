@@ -23,7 +23,7 @@
 
         <div class="dashboard-content" wire:loading.class="is-loading" wire:target="stage, gotoPage, nextPage, previousPage">
             @if ($referrals->isEmpty())
-                <x-ui.empty-state icon="fa-share-alt" :title="$stage === '' ? __('No referrals yet') : __('No referrals at this stage')"
+                <x-ui.empty-state icon="fa-solid fa-share-nodes" :title="$stage === '' ? __('No referrals yet') : __('No referrals at this stage')"
                     :message="__('Share your link or QR poster from Materials. Families who register with your code appear here.')" />
                 <p class="text-center mb-0"><a href="{{ route('broker.materials') }}" wire:navigate>{{ __('Open materials') }}</a></p>
             @else

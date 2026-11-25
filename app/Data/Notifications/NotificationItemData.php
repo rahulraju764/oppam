@@ -40,7 +40,7 @@ final readonly class NotificationItemData
             title: is_string($data['title'] ?? null) ? $data['title'] : __('Notification'),
             body: is_string($data['body'] ?? null) ? $data['body'] : '',
             url: self::internal($data['url'] ?? null),
-            icon: $event?->icon() ?? 'fa-bell',
+            icon: $event?->icon() ?? 'fa-solid fa-bell',
             unread: $notification->read_at === null,
             when: $created->diffForHumans(),
             day: match (true) {

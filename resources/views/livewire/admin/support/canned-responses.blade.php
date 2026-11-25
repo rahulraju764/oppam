@@ -3,7 +3,7 @@
     <div class="admin-page-head">
         <div>
             <h1>{{ __('Canned responses') }}</h1>
-            <p><a href="{{ route('admin.support.tickets') }}" wire:navigate><i class="fa fa-arrow-left" aria-hidden="true"></i> {{ __('Back to tickets') }}</a></p>
+            <p><a href="{{ route('admin.support.tickets') }}" wire:navigate><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ __('Back to tickets') }}</a></p>
         </div>
     </div>
 
@@ -11,7 +11,7 @@
         <div class="col-lg-7">
             <x-admin.table :headers="[__('Title'), __('Topic'), '']" :caption="__('Canned responses')" :empty="$responses->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-commenting-o" :title="__('No canned responses yet')" :message="__('Save replies you send often, then insert them into a ticket.')" />
+                    <x-ui.empty-state icon="fa-regular fa-comment-dots" :title="__('No canned responses yet')" :message="__('Save replies you send often, then insert them into a ticket.')" />
                 </x-slot:emptyState>
                 @foreach ($responses as $response)
                     <tr wire:key="canned-{{ $response->id }}">

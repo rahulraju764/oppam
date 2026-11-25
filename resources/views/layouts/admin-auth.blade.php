@@ -14,6 +14,7 @@
     @livewireStyles
 </head>
 <body class="is-admin">
+    <a class="skip-link" href="#main">{{ __('Skip to main content') }}</a>
     <main id="main" tabindex="-1" class="admin-auth">
         <div class="admin-auth__card">
             <img src="{{ app(\App\Services\Settings\SiteIdentity::class)->logoUrl() }}" alt="{{ config('oppam.site.name') }}" class="admin-auth__logo" width="600" height="301">

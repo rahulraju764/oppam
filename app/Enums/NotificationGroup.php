@@ -29,12 +29,12 @@ enum NotificationGroup: string
     public function icon(): string
     {
         return match ($this) {
-            self::Interests => 'fa-heart',
-            self::Likes => 'fa-thumbs-o-up',
-            self::Messages => 'fa-envelope',
-            self::Views => 'fa-eye',
-            self::Matches => 'fa-bolt',
-            self::System => 'fa-cog',
+            self::Interests => 'fa-solid fa-heart',
+            self::Likes => 'fa-regular fa-thumbs-up',
+            self::Messages => 'fa-solid fa-envelope',
+            self::Views => 'fa-regular fa-eye',
+            self::Matches => 'fa-solid fa-bolt',
+            self::System => 'fa-solid fa-gear',
         };
     }
 

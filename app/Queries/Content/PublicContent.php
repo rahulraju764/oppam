@@ -133,7 +133,7 @@ final class PublicContent
         return array_values(array_filter([
             new CounterData('images/about/computing.png', $figures['members'], $labels->text('members_label')),
             new CounterData('images/about/heart.png', $figures['marriages'], $labels->text('marriages_label')),
-            new CounterData('fa-map-marker', $figures['branches'], $labels->text('branches_label')),
+            new CounterData('fa-solid fa-location-dot', $figures['branches'], $labels->text('branches_label')),
         ], fn (CounterData $counter): bool => $counter->value > 0));
     }
 

@@ -8,9 +8,12 @@ use App\Enums\AuditActorType;
 use App\Models\AdminUser;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Queries\Audit\AuditLogQuery;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -66,7 +69,29 @@ final class AuditLogger
             'user_agent' => Str::limit((string) $this->request->userAgent(), 255, ''),
         ])->save();
 
+        // After the commit (a render in the transaction window would re-cache the list without the new value for a day),
+        // and rescued (a cache outage must never roll back the admin action being audited) — P9.3c review.
+        DB::afterCommit(fn () => rescue(fn () => $this->forgetStaleFilterLists($log), report: false));
+
         return $log;
+    }
+
+    /**
+     * The A12 viewer's area / subject-type filters are cached for a day (AuditLogQuery, P9.3c): a row with
+     * an area or type the cached list doesn't have yet makes the list re-read on the next view. Two cache
+     * reads per write; nothing when the lists aren't cached.
+     */
+    private function forgetStaleFilterLists(AuditLog $log): void
+    {
+        $areas = Cache::get(AuditLogQuery::AREAS_KEY);
+        if (is_array($areas) && ! in_array(explode('.', $log->action)[0], $areas, true)) {
+            Cache::forget(AuditLogQuery::AREAS_KEY);
+        }
+
+        $types = Cache::get(AuditLogQuery::SUBJECT_TYPES_KEY);
+        if ($log->subject_type !== null && is_array($types) && ! in_array($log->subject_type, $types, true)) {
+            Cache::forget(AuditLogQuery::SUBJECT_TYPES_KEY);
+        }
     }
 
     /**

@@ -32,7 +32,7 @@
                                  alt="{{ $primary ? __('Photo of :name', ['name' => $name]) : __('No photo yet') }}"
                                  width="600" height="600" fetchpriority="high">
                             @if ($primary?->blurred)
-                                <span class="photo-locked"><i class="fa fa-lock" aria-hidden="true"></i> {{ __('Photo visible on request') }}</span>
+                                <span class="photo-locked"><i class="fa-solid fa-lock" aria-hidden="true"></i> {{ __('Photo visible on request') }}</span>
                             @endif
                         </div>
                         <div class="profile-tittle">
@@ -40,10 +40,10 @@
                             <h3 class="pf-dt-n">{{ $profile->code }}</h3>
                             <div class="profile-badges">
                                 @if ($profile->is_verified)
-                                    <x-ui.badge variant="verified" icon="fa-check-circle">{{ __('Verified') }}</x-ui.badge>
+                                    <x-ui.badge variant="verified" icon="fa-solid fa-circle-check">{{ __('Verified') }}</x-ui.badge>
                                 @endif
                                 @if ($profile->is_premium)
-                                    <x-ui.badge variant="premium" icon="fa-diamond">{{ __('Premium') }}</x-ui.badge>
+                                    <x-ui.badge variant="premium" icon="fa-regular fa-gem">{{ __('Premium') }}</x-ui.badge>
                                 @endif
                             </div>
                             <div class="profile-list">
@@ -62,10 +62,10 @@
                                             <x-engagement.interest-button :code="$profile->code" :state="$interestState" />
                                             @foreach ($requestable as $type => $pending)
                                                 @if ($pending)
-                                                    <span class="chip chip--warning interest-chip"><i class="fa fa-check" aria-hidden="true"></i> {{ $type === 'PHOTO' ? __('Photo request sent') : __('Horoscope request sent') }}</span>
+                                                    <span class="chip chip--warning interest-chip"><i class="fa-solid fa-check" aria-hidden="true"></i> {{ $type === 'PHOTO' ? __('Photo request sent') : __('Horoscope request sent') }}</span>
                                                 @else
                                                     <button type="button" class="send-int" wire:click="requestAccess('{{ $type }}')" wire:loading.attr="disabled" wire:target="requestAccess('{{ $type }}')">
-                                                        <i class="fa {{ $type === 'PHOTO' ? 'fa-picture-o' : 'fa-file-text-o' }}" aria-hidden="true"></i>{{ $type === 'PHOTO' ? __('Request photos') : __('Request horoscope') }}
+                                                        <i class="{{ $type === 'PHOTO' ? 'fa-regular fa-image' : 'fa-regular fa-file-lines' }}" aria-hidden="true"></i>{{ $type === 'PHOTO' ? __('Request photos') : __('Request horoscope') }}
                                                     </button>
                                                 @endif
                                             @endforeach
@@ -126,7 +126,7 @@
                                 @endforeach
 
                                 @if ($horoscopeLink)
-                                    <p><a href="{{ $horoscopeLink }}" target="_blank" rel="noopener"><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ __('View horoscope') }}</a></p>
+                                    <p><a href="{{ $horoscopeLink }}" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> {{ __('View horoscope') }}</a></p>
                                 @endif
                             </div>
 
@@ -151,10 +151,10 @@
                     @if ($neighbours['previous'] || $neighbours['next'])
                         <nav class="profile-neighbours" aria-label="{{ __('Browse profiles') }}">
                             @if ($neighbours['previous'])
-                                <a href="{{ route('member.profile.show', ['profile' => $neighbours['previous']]) }}" wire:navigate rel="prev"><i class="fa fa-arrow-left" aria-hidden="true"></i> {{ __('Previous profile') }}</a>
+                                <a href="{{ route('member.profile.show', ['profile' => $neighbours['previous']]) }}" wire:navigate rel="prev"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ __('Previous profile') }}</a>
                             @endif
                             @if ($neighbours['next'])
-                                <a href="{{ route('member.profile.show', ['profile' => $neighbours['next']]) }}" wire:navigate rel="next">{{ __('Next profile') }} <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
+                                <a href="{{ route('member.profile.show', ['profile' => $neighbours['next']]) }}" wire:navigate rel="next">{{ __('Next profile') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                             @endif
                         </nav>
                     @endif

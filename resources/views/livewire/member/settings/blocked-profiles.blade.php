@@ -9,7 +9,7 @@
         <h2 class="safety-list__title">{{ __('Blocked') }}</h2>
         <p class="form-text">{{ __('You and these members can’t see each other anywhere on Oppam.') }}</p>
         @if ($blocked->isEmpty())
-            <x-ui.empty-state icon="fa-ban" :title="__('You haven’t blocked anyone')" :message="__('Use More → Block on a profile if someone makes you uncomfortable.')" />
+            <x-ui.empty-state icon="fa-solid fa-ban" :title="__('You haven’t blocked anyone')" :message="__('Use More → Block on a profile if someone makes you uncomfortable.')" />
         @else
             <ul class="safety-list">
                 @foreach ($blocked as $row)
@@ -20,7 +20,7 @@
                         </span>
                         @if ($row->blocked)
                             <span class="d-flex flex-wrap gap-2">
-                                <x-ui.button size="sm" variant="ghost" type="button" icon="fa-flag" wire:click="openReport('{{ $row->blocked->code }}')"
+                                <x-ui.button size="sm" variant="ghost" type="button" icon="fa-solid fa-flag" wire:click="openReport('{{ $row->blocked->code }}')"
                                              loading="openReport('{{ $row->blocked->code }}')">{{ __('Report') }}<span class="visually-hidden"> {{ $row->blocked->first_name }}</span></x-ui.button>
                                 <x-ui.button size="sm" variant="outline" type="button" wire:click="unblock('{{ $row->blocked->code }}')"
                                              loading="unblock('{{ $row->blocked->code }}')">{{ __('Unblock') }}<span class="visually-hidden"> {{ $row->blocked->first_name }}</span></x-ui.button>
@@ -36,7 +36,7 @@
         <h2 class="safety-list__title">{{ __('Ignored') }}</h2>
         <p class="form-text">{{ __('These members don’t appear in your search and lists. Nothing changes for them.') }}</p>
         @if ($ignored->isEmpty())
-            <x-ui.empty-state icon="fa-eye-slash" :title="__('You haven’t ignored anyone')" :message="__('Use More → Ignore on a profile to stop seeing it.')" />
+            <x-ui.empty-state icon="fa-regular fa-eye-slash" :title="__('You haven’t ignored anyone')" :message="__('Use More → Ignore on a profile to stop seeing it.')" />
         @else
             <ul class="safety-list">
                 @foreach ($ignored as $row)
@@ -68,5 +68,5 @@
         </x-slot:footer>
     </x-ui.modal>
 
-    <p class="mt-4"><a href="{{ route('safety') }}" wire:navigate><i class="fa fa-shield" aria-hidden="true"></i> {{ __('Safety Centre — tips and how to report') }}</a></p>
+    <p class="mt-4"><a href="{{ route('safety') }}" wire:navigate><i class="fa-solid fa-shield" aria-hidden="true"></i> {{ __('Safety Centre — tips and how to report') }}</a></p>
 </div>

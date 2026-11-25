@@ -23,7 +23,7 @@
         <div class="wizard-steps">
             @if ($wizard->prev)
                 <a class="wizard-step" href="{{ $wizard->prev->url }}" wire:navigate>
-                    <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
                     <span>{{ __('Prev') }}<span class="wizard-step-to">: {{ $wizard->prev->label }}</span></span>
                 </a>
             @endif
@@ -31,7 +31,7 @@
             @if ($wizard->next)
                 <a class="wizard-step is-next" href="{{ $wizard->next->url }}" wire:navigate>
                     <span>{{ __('Next') }}<span class="wizard-step-to">: {{ $wizard->next->label }}</span></span>
-                    <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
                 </a>
             @endif
         </div>
@@ -40,21 +40,21 @@
     @if ($dashboardUrl)
         @php($active = $nav->isActive('member.dashboard'))
         <a href="{{ $dashboardUrl }}" @class(['is-current' => $active]) @if ($active) aria-current="page" @endif wire:navigate>
-            <i class="fa fa-home" aria-hidden="true"></i>
+            <i class="fa-solid fa-house" aria-hidden="true"></i>
             <span>{{ __('Home') }}</span>
         </a>
     @endif
 
     @if ($matchesLinks !== [])
         <button type="button" @class(['tab-sheet-toggle', 'is-current' => $nav->inMatchesSection()]) aria-expanded="false" aria-controls="matches-sheet">
-            <i class="fa fa-heart" aria-hidden="true"></i>
+            <i class="fa-solid fa-heart" aria-hidden="true"></i>
             <span>{{ __('Matches') }}</span>
         </button>
     @endif
 
     @if ($interestsUrl)
         <button type="button" @class(['tab-sheet-toggle', 'is-current' => $nav->isActive('member.interests')]) aria-expanded="false" aria-controls="interests-sheet">
-            <i class="fa fa-address-book" aria-hidden="true"></i>
+            <i class="fa-solid fa-address-book" aria-hidden="true"></i>
             <span>{{ __('Interests') }}</span>
         </button>
     @endif
@@ -62,14 +62,14 @@
     @if ($searchUrl)
         @php($active = $nav->isActive('member.search'))
         <a href="{{ $searchUrl }}" @class(['is-current' => $active]) @if ($active) aria-current="page" @endif wire:navigate>
-            <i class="fa fa-search" aria-hidden="true"></i>
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
             <span>{{ __('Search') }}</span>
         </a>
     @endif
 
     @if ($myProfileUrl)
         <a href="{{ $myProfileUrl }}" @class(['is-current' => $nav->inProfileSection()]) @if ($nav->isActive('member.profile.me')) aria-current="page" @endif wire:navigate>
-            <i class="fa fa-user-o" aria-hidden="true"></i>
+            <i class="fa-regular fa-user" aria-hidden="true"></i>
             <span>{{ __('Profile') }}</span>
         </a>
     @endif
@@ -83,7 +83,7 @@
             <div class="tab-sheet-head">
                 <p class="tab-sheet-title">{{ __('Matches') }}</p>
                 <button type="button" class="tab-sheet-close" aria-label="{{ __('Close Matches') }}">
-                    <i class="fa fa-times" aria-hidden="true"></i>
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="tab-sheet-body">
@@ -91,7 +91,7 @@
                 <div class="tab-sheet-links">
                     @foreach ($matchesLinks as $link)
                         <a href="{{ $link->url }}" @class(['tab-sheet-link', 'active' => $link->active]) @if ($link->active) aria-current="page" @endif wire:navigate>
-                            <i class="fa {{ $link->icon }}" aria-hidden="true"></i>
+                            <i class="{{ $link->icon }}" aria-hidden="true"></i>
                             <span>{{ $link->label }}</span>
                             <small class="tab-sheet-link-desc">{{ $link->description }}</small>
                         </a>
@@ -102,13 +102,13 @@
                 <div class="tab-sheet-links">
                     @if ($interestsUrl)
                         <a href="{{ $interestsUrl }}" @class(['tab-sheet-link', 'active' => $nav->isActive('member.interests')]) wire:navigate>
-                            <i class="fa fa-address-book" aria-hidden="true"></i>
+                            <i class="fa-solid fa-address-book" aria-hidden="true"></i>
                             <span>{{ __('Interests') }}</span>
                         </a>
                     @endif
                     @if ($plansUrl)
                         <a href="{{ $plansUrl }}" @class(['tab-sheet-link', 'active' => $nav->isActive('plans')]) wire:navigate>
-                            <i class="fa fa-diamond" aria-hidden="true"></i>
+                            <i class="fa-regular fa-gem" aria-hidden="true"></i>
                             <span>{{ __('Upgrade') }}</span>
                         </a>
                     @endif
@@ -125,7 +125,7 @@
             <div class="tab-sheet-head">
                 <p class="tab-sheet-title">{{ __('Interests') }}</p>
                 <button type="button" class="tab-sheet-close" aria-label="{{ __('Close Interests') }}">
-                    <i class="fa fa-times" aria-hidden="true"></i>
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="tab-sheet-body">
@@ -145,13 +145,13 @@
                 <div class="tab-sheet-links">
                     @if ($matchesLinks !== [])
                         <a href="{{ $matchesLinks[0]->url }}" class="tab-sheet-link" wire:navigate>
-                            <i class="fa fa-heart" aria-hidden="true"></i>
+                            <i class="fa-solid fa-heart" aria-hidden="true"></i>
                             <span>{{ __('Matches') }}</span>
                         </a>
                     @endif
                     @if ($plansUrl)
                         <a href="{{ $plansUrl }}" class="tab-sheet-link" wire:navigate>
-                            <i class="fa fa-diamond" aria-hidden="true"></i>
+                            <i class="fa-regular fa-gem" aria-hidden="true"></i>
                             <span>{{ __('Upgrade') }}</span>
                         </a>
                     @endif

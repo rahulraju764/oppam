@@ -30,7 +30,7 @@
         <p class="unlock-title">{{ __('Unlock Features :') }}</p>
         <ul class="feature-list">
             @foreach ($plan->features as $feature)
-                <li><i class="fa fa-check" aria-hidden="true"></i> {{ $feature }}</li>
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ $feature }}</li>
             @endforeach
         </ul>
         @if ($plan->ctaUrl)

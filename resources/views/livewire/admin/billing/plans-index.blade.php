@@ -12,7 +12,7 @@
 
     <x-admin.table :headers="[__('Plan'), __('Prices before GST'), __('Running'), __('Status'), __('Actions')]" :caption="__('Membership plans')" :empty="$plans->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-tags" :title="__('No plans')" :message="__('Run the plans seeder to add them.')" />
+            <x-ui.empty-state icon="fa-solid fa-tags" :title="__('No plans')" :message="__('Run the plans seeder to add them.')" />
         </x-slot:emptyState>
 
         @foreach ($plans as $plan)

@@ -1,7 +1,7 @@
 <div>
     <x-admin.table :headers="[__('Plan'), __('Source'), __('Status'), __('Starts (IST)'), __('Ends (IST)')]" :caption="__('Subscriptions')" :empty="$subscriptions->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-credit-card" :title="__('No subscriptions')" :message="__('This member is on the Free plan.')" />
+            <x-ui.empty-state icon="fa-regular fa-credit-card" :title="__('No subscriptions')" :message="__('This member is on the Free plan.')" />
         </x-slot:emptyState>
 
         @foreach ($subscriptions as $subscription)
@@ -11,7 +11,7 @@
                 <td>
                     {{ $subscription->status->label() }}
                     @if ($subscription->paused_at)
-                        <x-ui.badge variant="warning" icon="fa-pause">{{ __('Paused since :d', ['d' => $subscription->paused_at->timezone($timezone)->format('d M Y')]) }}</x-ui.badge>
+                        <x-ui.badge variant="warning" icon="fa-solid fa-pause">{{ __('Paused since :d', ['d' => $subscription->paused_at->timezone($timezone)->format('d M Y')]) }}</x-ui.badge>
                     @elseif ($subscription->ends_at->isPast())
                         <x-ui.badge variant="muted">{{ __('Ended') }}</x-ui.badge>
                     @endif

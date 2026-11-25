@@ -64,7 +64,7 @@
                             @error('mapping.'.$field) <p class="invalid-feedback d-block" role="alert">{{ $message }}</p> @enderror
                         </div>
                     @endforeach
-                    <x-ui.button loading="saveMapping" icon="fa-check">{{ __('Save and check the rows') }}</x-ui.button>
+                    <x-ui.button loading="saveMapping" icon="fa-solid fa-check">{{ __('Save and check the rows') }}</x-ui.button>
                 </form>
             @elseif ($batch->status !== \App\Enums\ImportBatchStatus::Cancelled)
                 <dl class="managed-detail__facts">
@@ -86,7 +86,7 @@
                 @if ($batch->rows_error + $batch->rows_warning > 0)
                     <div class="import-fixes mt-3">
                         <a href="{{ route('broker.import.errors', ['batch' => $batch->code]) }}" class="ui-btn ui-btn--outline" download>
-                            <i class="fa fa-download" aria-hidden="true"></i> {{ __('Download rows to fix (errors.xlsx)') }}
+                            <i class="fa-solid fa-download" aria-hidden="true"></i> {{ __('Download rows to fix (errors.xlsx)') }}
                         </a>
                         <form wire:submit="uploadFixes" novalidate class="import-fixes__upload">
                             <label for="import-fixes" class="form-label">{{ __('Upload the fixed file (keep the “row” column)') }}</label>
@@ -94,7 +94,7 @@
                                    @class(['form-control', 'is-invalid' => $errors->has('fixes')])
                                    @error('fixes') aria-invalid="true" aria-describedby="import-fixes-error" @enderror>
                             @error('fixes') <p class="invalid-feedback d-block" id="import-fixes-error" role="alert">{{ $message }}</p> @enderror
-                            <x-ui.button variant="secondary" size="sm" loading="uploadFixes" icon="fa-upload">{{ __('Re-check these rows') }}</x-ui.button>
+                            <x-ui.button variant="secondary" size="sm" loading="uploadFixes" icon="fa-solid fa-upload">{{ __('Re-check these rows') }}</x-ui.button>
                         </form>
                     </div>
                 @endif
@@ -108,7 +108,7 @@
                             <x-ui.checkbox name="consent" wire:model="consent">
                                 {{ __('I confirm that every client in this file has agreed to have their profile on Oppam Matrimony, managed by our bureau.') }}
                             </x-ui.checkbox>
-                            <x-ui.button loading="attest" icon="fa-check">{{ __('Confirm consent') }}</x-ui.button>
+                            <x-ui.button loading="attest" icon="fa-solid fa-check">{{ __('Confirm consent') }}</x-ui.button>
                         </form>
                     @else
                         <p>{{ __('Consent confirmed :when.', ['when' => $batch->consent_attested_at->timezone(config('oppam.display_timezone'))->format('j M Y, g:i A')]) }}</p>
@@ -122,7 +122,7 @@
                                 @endif
                                 {{ __('Rows with errors are not imported.') }}
                             </p>
-                            <x-ui.button type="button" wire:click="import" loading="import" icon="fa-cloud-upload" :disabled="$paused || $remaining === 0">{{ __('Import now') }}</x-ui.button>
+                            <x-ui.button type="button" wire:click="import" loading="import" icon="fa-solid fa-cloud-arrow-up" :disabled="$paused || $remaining === 0">{{ __('Import now') }}</x-ui.button>
                         @endif
                     @endif
                 </div>
@@ -132,7 +132,7 @@
                 <div class="import-submit mt-4">
                     <h2>{{ __('Send for review') }}</h2>
                     <p>{{ __('Imported profiles are drafts. Complete each one (family, preferences, photos), then send the complete ones to Oppam’s review team.') }}</p>
-                    <x-ui.button type="button" variant="secondary" wire:click="submitAll" loading="submitAll" icon="fa-paper-plane">{{ __('Submit all complete profiles') }}</x-ui.button>
+                    <x-ui.button type="button" variant="secondary" wire:click="submitAll" loading="submitAll" icon="fa-solid fa-paper-plane">{{ __('Submit all complete profiles') }}</x-ui.button>
                 </div>
             @endif
 
@@ -157,7 +157,7 @@
 
                 <div wire:loading.class="is-loading" wire:target="filter, gotoPage, nextPage, previousPage, fixCell">
                     @if ($rows->isEmpty())
-                        <x-ui.empty-state icon="fa-check-circle" :title="__('No rows here')" :message="__('Try another filter.')" />
+                        <x-ui.empty-state icon="fa-solid fa-circle-check" :title="__('No rows here')" :message="__('Try another filter.')" />
                     @else
                         <ul class="import-rows">
                             @foreach ($rows as $row)

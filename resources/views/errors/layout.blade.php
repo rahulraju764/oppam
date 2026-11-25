@@ -28,7 +28,7 @@
                 <p class="error-lead">{{ $lead }}</p>
 
                 <a href="{{ $homeUrl }}" class="view-btn error-btn">
-                    <i class="fa fa-home" aria-hidden="true"></i> {{ __('Back to home') }}
+                    <i class="fa-solid fa-house" aria-hidden="true"></i> {{ __('Back to home') }}
                 </a>
 
                 @if ($links !== [])

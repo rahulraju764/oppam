@@ -41,7 +41,7 @@
             </div>
         </div>
         <div class="mt-2">
-            <x-ui.button size="sm" variant="ghost" type="button" wire:click="clearFilters" icon="fa-times">{{ __('Clear filters') }}</x-ui.button>
+            <x-ui.button size="sm" variant="ghost" type="button" wire:click="clearFilters" icon="fa-solid fa-xmark">{{ __('Clear filters') }}</x-ui.button>
         </div>
     </div>
 
@@ -55,7 +55,7 @@
         <x-admin.table :headers="array_values(array_filter([__('When'), $embedded ? null : __('Bureau'), __('Staff'), __('Profile'), __('Type'), __('Result'), __('Pattern')]))"
                        :caption="__('Export audit')" :empty="$rows->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-download" :title="__('No exports')" :message="__('No export attempt matches these filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-download" :title="__('No exports')" :message="__('No export attempt matches these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($rows as $row)
@@ -82,9 +82,9 @@
                     </td>
                     <td>
                         @if ($anomaly === 'burst')
-                            <x-ui.badge variant="warning" icon="fa-exclamation-triangle">{{ __('Many exports in an hour') }}</x-ui.badge>
+                            <x-ui.badge variant="warning" icon="fa-solid fa-triangle-exclamation">{{ __('Many exports in an hour') }}</x-ui.badge>
                         @elseif ($anomaly === 'repeat')
-                            <x-ui.badge variant="warning" icon="fa-repeat">{{ __('Exported again soon') }}</x-ui.badge>
+                            <x-ui.badge variant="warning" icon="fa-solid fa-arrow-rotate-right">{{ __('Exported again soon') }}</x-ui.badge>
                         @else
                             —
                         @endif

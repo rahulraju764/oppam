@@ -26,7 +26,7 @@
                             </div>
                         </div>
                         @can('brokers.imports.manage')
-                            <x-ui.button size="sm" type="button" icon="fa-play" wire:click="confirm('imports-resume', '{{ $pausedBureau->code }}')">{{ __('Resume imports') }}</x-ui.button>
+                            <x-ui.button size="sm" type="button" icon="fa-solid fa-play" wire:click="confirm('imports-resume', '{{ $pausedBureau->code }}')">{{ __('Resume imports') }}</x-ui.button>
                         @endcan
                     </li>
                 @endforeach
@@ -35,7 +35,7 @@
     @elseif ($embedded)
         @can('brokers.imports.manage')
             <div class="mb-3">
-                <x-ui.button size="sm" variant="outline" type="button" icon="fa-pause" wire:click="confirm('imports-pause', '{{ $bureau }}')">{{ __('Pause imports') }}</x-ui.button>
+                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-pause" wire:click="confirm('imports-pause', '{{ $bureau }}')">{{ __('Pause imports') }}</x-ui.button>
             </div>
         @endcan
     @endif
@@ -57,7 +57,7 @@
         <x-admin.table :headers="array_values(array_filter([__('Batch'), $embedded ? null : __('Bureau'), __('Uploaded'), __('Rows'), __('Imported'), __('Reviewed'), __('Status'), '']))"
                        :caption="__('Import batches')" :empty="$batches->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-upload" :title="__('No import batches')" :message="__('No batch matches these filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-upload" :title="__('No import batches')" :message="__('No batch matches these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($batches as $batch)
@@ -67,7 +67,7 @@
                     @unless ($embedded)
                         <td>
                             <a href="{{ route('admin.brokers.show', ['broker' => $batch->broker?->code, 'tab' => 'imports']) }}" wire:navigate>{{ $batch->broker?->code }}</a>
-                            @if ($batch->broker?->imports_paused_at)<div><x-ui.badge variant="warning" icon="fa-pause">{{ __('Paused') }}</x-ui.badge></div>@endif
+                            @if ($batch->broker?->imports_paused_at)<div><x-ui.badge variant="warning" icon="fa-solid fa-pause">{{ __('Paused') }}</x-ui.badge></div>@endif
                         </td>
                     @endunless
                     <td>
@@ -90,29 +90,29 @@
                         <x-ui.badge :variant="$batch->status->badgeVariant()">{{ $batch->status->label() }}</x-ui.badge>
                         {{-- P7.8c (B.12 "flag batch"): rows sharing a mobile pattern; photos matching other profiles --}}
                         @if ((int) ($batch->signal_flags['mobile_pattern'] ?? 0) > 0)
-                            <div><x-ui.badge variant="danger" icon="fa-flag">{{ __(':n mobiles share a pattern', ['n' => $batch->signal_flags['mobile_pattern']]) }}</x-ui.badge></div>
+                            <div><x-ui.badge variant="danger" icon="fa-solid fa-flag">{{ __(':n mobiles share a pattern', ['n' => $batch->signal_flags['mobile_pattern']]) }}</x-ui.badge></div>
                         @endif
                         @if ((int) ($batch->signal_flags['photo_matches'] ?? 0) > 0)
-                            <div><x-ui.badge variant="danger" icon="fa-flag">{{ __(':n photos match other profiles', ['n' => $batch->signal_flags['photo_matches']]) }}</x-ui.badge></div>
+                            <div><x-ui.badge variant="danger" icon="fa-solid fa-flag">{{ __(':n photos match other profiles', ['n' => $batch->signal_flags['photo_matches']]) }}</x-ui.badge></div>
                         @endif
                     </td>
                     <td class="text-end">
                         @can('brokers.imports.manage')
                             <div class="d-flex flex-wrap justify-content-end gap-1">
                                 @if ($batch->files_purged_at === null && $batch->sheetType() !== null)
-                                    <x-ui.button size="sm" variant="ghost" icon="fa-file-excel-o"
+                                    <x-ui.button size="sm" variant="ghost" icon="fa-regular fa-file-excel"
                                                  :href="route('admin.brokers.imports.source', ['broker' => $batch->broker?->code, 'batch' => $batch->code, 'file' => 'sheet'])">{{ __('Sheet') }}</x-ui.button>
                                     @if ($batch->photos_zip_path)
-                                        <x-ui.button size="sm" variant="ghost" icon="fa-file-archive-o"
+                                        <x-ui.button size="sm" variant="ghost" icon="fa-regular fa-file-zipper"
                                                      :href="route('admin.brokers.imports.source', ['broker' => $batch->broker?->code, 'batch' => $batch->code, 'file' => 'photos'])">{{ __('Photos') }}</x-ui.button>
                                     @endif
                                 @endif
                                 @if (! $embedded && $batch->broker && ! $batch->broker->imports_paused_at)
-                                    <x-ui.button size="sm" variant="ghost" type="button" icon="fa-pause"
+                                    <x-ui.button size="sm" variant="ghost" type="button" icon="fa-solid fa-pause"
                                                  wire:click="confirm('imports-pause', '{{ $batch->broker->code }}')">{{ __('Pause bureau') }}</x-ui.button>
                                 @endif
                                 @if ($batch->isCancellable())
-                                    <x-ui.button size="sm" variant="outline" type="button" icon="fa-times"
+                                    <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-xmark"
                                                  wire:click="confirm('imports-cancel', '{{ $batch->broker?->code }}', '{{ $batch->code }}')">{{ __('Cancel') }}</x-ui.button>
                                 @endif
                             </div>

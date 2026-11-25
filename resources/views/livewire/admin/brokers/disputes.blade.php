@@ -9,13 +9,13 @@
                 <p>{{ __('Clients who say they never agreed to a profile a bureau created. Recording one suspends the profile and opens a safety case.') }}</p>
             </div>
             @can('brokers.edit')
-                <x-ui.button type="button" icon="fa-plus" x-on:click="$dispatch('open-modal', { name: 'dispute-record' })" dusk="dispute-record-open">{{ __('Record dispute') }}</x-ui.button>
+                <x-ui.button type="button" icon="fa-solid fa-plus" x-on:click="$dispatch('open-modal', { name: 'dispute-record' })" dusk="dispute-record-open">{{ __('Record dispute') }}</x-ui.button>
             @endcan
         </div>
     @else
         @can('brokers.edit')
             <div class="mb-3">
-                <x-ui.button size="sm" type="button" icon="fa-plus" x-on:click="$dispatch('open-modal', { name: 'dispute-record' })">{{ __('Record dispute') }}</x-ui.button>
+                <x-ui.button size="sm" type="button" icon="fa-solid fa-plus" x-on:click="$dispatch('open-modal', { name: 'dispute-record' })">{{ __('Record dispute') }}</x-ui.button>
             </div>
         @endcan
     @endunless
@@ -37,7 +37,7 @@
         <x-admin.table :headers="array_values(array_filter([__('Dispute'), $embedded ? null : __('Bureau'), __('Profile'), __('Complaint'), __('Case'), __('Status'), '']))"
                        :caption="__('Consent disputes')" :empty="$disputes->isEmpty()">
             <x-slot:emptyState>
-                <x-ui.empty-state icon="fa-balance-scale" :title="__('No disputes')" :message="__('No consent dispute matches these filters.')" />
+                <x-ui.empty-state icon="fa-solid fa-scale-balanced" :title="__('No disputes')" :message="__('No consent dispute matches these filters.')" />
             </x-slot:emptyState>
 
             @foreach ($disputes as $dispute)

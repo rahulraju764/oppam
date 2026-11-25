@@ -22,7 +22,7 @@
                         <x-ui.input :label="__('Second member’s code')" name="codeB" id="bgCodeB" wire:model="codeB" placeholder="OPM12371" autocomplete="off" />
                     </div>
                     <div class="col-12">
-                        <x-ui.button variant="outline" icon="fa-search" loading="find">{{ __('Find conversation') }}</x-ui.button>
+                        <x-ui.button variant="outline" icon="fa-solid fa-magnifying-glass" loading="find">{{ __('Find conversation') }}</x-ui.button>
                     </div>
                 </form>
 
@@ -41,7 +41,7 @@
             <div class="ui-card">
                 <h2 class="admin-section-title mt-0">{{ __('2. Why you need to read it') }}</h2>
                 @if (! $thread)
-                    <x-ui.empty-state icon="fa-lock" :title="__('Find the conversation first')" />
+                    <x-ui.empty-state icon="fa-solid fa-lock" :title="__('Find the conversation first')" />
                 @else
                     <form wire:submit="open" class="d-grid gap-3">
                         <x-ui.select :label="__('Reference')" name="referenceType" id="bgRefType" wire:model.live="referenceType" error="reference_type" :options="$referenceTypes" :placeholder="__('Choose…')" required />
@@ -52,7 +52,7 @@
                         @endif
                         <x-ui.textarea :label="__('Reason (at least 20 characters; recorded with every page you read)')" name="reason" id="bgReason" wire:model="reason" rows="3" required />
                         <div>
-                            <x-ui.button variant="danger" icon="fa-unlock-alt" loading="open">{{ __('Open for :minutes minutes', ['minutes' => $minutes]) }}</x-ui.button>
+                            <x-ui.button variant="danger" icon="fa-solid fa-unlock" loading="open">{{ __('Open for :minutes minutes', ['minutes' => $minutes]) }}</x-ui.button>
                         </div>
                     </form>
                 @endif
@@ -63,7 +63,7 @@
     <h2 class="admin-section-title">{{ __('Latest break-glass sessions') }}</h2>
     <x-admin.table :headers="[__('Opened (IST)'), __('By'), __('Members'), __('Reference'), __('Reason'), __('Status')]" :caption="__('Latest break-glass sessions')" :empty="$recent->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-unlock-alt" :title="__('No conversation has been read this way')" />
+            <x-ui.empty-state icon="fa-solid fa-unlock" :title="__('No conversation has been read this way')" />
         </x-slot:emptyState>
         @foreach ($recent as $grant)
             <tr wire:key="grant-{{ $grant->id }}">

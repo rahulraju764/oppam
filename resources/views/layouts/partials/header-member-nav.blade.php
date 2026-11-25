@@ -10,7 +10,7 @@
     @php($active = $nav->isActive('member.dashboard'))
     <li class="nav-item">
         <a @class(['nav-link head-link', 'active' => $active]) href="{{ $dashboardUrl }}" wire:navigate @if ($active) aria-current="page" @endif>
-            <i class="fa fa-home" aria-hidden="true"></i>
+            <i class="fa-solid fa-house" aria-hidden="true"></i>
             <span>{{ __('Home') }}</span>
         </a>
     </li>
@@ -21,14 +21,14 @@
     <li class="nav-item dropdown">
         <button type="button" @class(['nav-link head-link dropdown-toggle', 'active' => $nav->inMatchesSection()])
                 id="navMatches" data-bs-toggle="dropdown" aria-controls="navMatchesMenu" aria-expanded="false">
-            <i class="fa fa-user" aria-hidden="true"></i>
+            <i class="fa-solid fa-user" aria-hidden="true"></i>
             <span>{{ __('Matches') }}</span>
         </button>
         <ul class="dropdown-menu nav-dropdown" id="navMatchesMenu" aria-labelledby="navMatches">
             @foreach ($matchesLinks as $link)
                 <li>
                     <a @class(['dropdown-item', 'active' => $link->active]) href="{{ $link->url }}" wire:navigate @if ($link->active) aria-current="page" @endif>
-                        <i class="fa {{ $link->icon }}" aria-hidden="true"></i> {{ $link->label }}
+                        <i class="{{ $link->icon }}" aria-hidden="true"></i> {{ $link->label }}
                     </a>
                 </li>
             @endforeach
@@ -37,16 +37,16 @@
 @endif
 
 @foreach ([
-    ['member.interests', 'Interests', 'fa-address-book'],
-    ['member.search', 'Search', 'fa-search'],
-    ['plans', 'Membership', 'fa-diamond'],
+    ['member.interests', 'Interests', 'fa-solid fa-address-book'],
+    ['member.search', 'Search', 'fa-solid fa-magnifying-glass'],
+    ['plans', 'Membership', 'fa-regular fa-gem'],
 ] as [$routeName, $label, $icon])
     @php($url = $nav->url($routeName))
     @if ($url)
         @php($active = $nav->isActive($routeName))
         <li class="nav-item">
             <a @class(['nav-link head-link', 'active' => $active]) href="{{ $url }}" wire:navigate @if ($active) aria-current="page" @endif>
-                <i class="fa {{ $icon }}" aria-hidden="true"></i>
+                <i class="{{ $icon }}" aria-hidden="true"></i>
                 <span>{{ __($label) }}</span>
             </a>
         </li>
@@ -73,7 +73,7 @@
     {{-- No signed-in member (style guide, previews): the static bell from the chrome data. --}}
     <li class="nav-item d-none d-lg-flex">
         <a href="{{ $notificationsUrl }}" class="nav-bell" aria-label="{{ trans_choice('Notifications (:count unread)', $member->unreadNotifications, ['count' => $member->unreadNotifications]) }}" wire:navigate>
-            <i class="fa fa-bell-o" aria-hidden="true"></i>
+            <i class="fa-regular fa-bell" aria-hidden="true"></i>
             @if ($member->unreadNotifications > 0)
                 <span class="nav-bell-count" aria-hidden="true">{{ $member->unreadNotifications }}</span>
             @endif
@@ -84,13 +84,13 @@
 {{-- Account menu --}}
 <li class="nav-item profile-dropdown">
     <button type="button" class="profile-toggle" aria-expanded="false" aria-haspopup="true">
-        <img src="{{ $member->photoUrl }}" alt="" width="600" height="600" fetchpriority="high" decoding="async">
+        <img src="{{ $member->photoUrl }}" alt="" width="600" height="600" decoding="async">
         <span class="visually-hidden">{{ __('Open account menu') }}</span>
         <span class="profile-toggle-meta" aria-hidden="true">
             <strong>{{ $member->name }}</strong>
             <span class="member-badge">{{ $member->planLabel }}</span>
         </span>
-        <i class="fa fa-angle-down" aria-hidden="true"></i>
+        <i class="fa-solid fa-angle-down" aria-hidden="true"></i>
     </button>
 
     <div class="profile-dropdown-content">
@@ -115,22 +115,22 @@
 
         <div class="profile-links">
             @foreach ([
-                ['member.profile.me', 'My Profile', 'fa-user-o', ['member.profile.me']],
-                ['member.profile.me', 'Edit Profile & Preferences', 'fa-pencil', ['member.onboarding']],
-                ['member.messages', 'Messages', 'fa-envelope-o', ['member.messages']],
-                ['member.billing', 'Membership & billing', 'fa-credit-card', ['member.billing', 'member.billing.*', 'member.checkout']],
-                ['member.verification', 'Verify profile', 'fa-id-card-o', ['member.verification']],
-                ['member.settings', 'Settings & privacy', 'fa-cog', ['member.settings', 'member.settings.*']],
-                ['member.help', 'Help & support', 'fa-life-ring', ['member.help', 'member.help.*']],
-                ['plans', 'Packages & FAQ', 'fa-question-circle-o', ['plans'], '#faq'],
-                ['contact', 'Contact', 'fa-phone', ['contact']],
-                ['privacy', 'Privacy Policy', 'fa-shield', ['privacy']],
+                ['member.profile.me', 'My Profile', 'fa-regular fa-user', ['member.profile.me']],
+                ['member.profile.me', 'Edit Profile & Preferences', 'fa-solid fa-pencil', ['member.onboarding']],
+                ['member.messages', 'Messages', 'fa-regular fa-envelope', ['member.messages']],
+                ['member.billing', 'Membership & billing', 'fa-regular fa-credit-card', ['member.billing', 'member.billing.*', 'member.checkout']],
+                ['member.verification', 'Verify profile', 'fa-regular fa-id-card', ['member.verification']],
+                ['member.settings', 'Settings & privacy', 'fa-solid fa-gear', ['member.settings', 'member.settings.*']],
+                ['member.help', 'Help & support', 'fa-solid fa-life-ring', ['member.help', 'member.help.*']],
+                ['plans', 'Packages & FAQ', 'fa-regular fa-circle-question', ['plans'], '#faq'],
+                ['contact', 'Contact', 'fa-solid fa-phone', ['contact']],
+                ['privacy', 'Privacy Policy', 'fa-solid fa-shield', ['privacy']],
             ] as $item)
                 @php($url = $nav->url($item[0]))
                 @if ($url)
                     @php($active = $nav->isActive($item[3]))
                     <a href="{{ $url }}{{ $item[4] ?? '' }}" @class(['active' => $active]) @if ($active) aria-current="page" @endif wire:navigate>
-                        <i class="fa {{ $item[2] }}" aria-hidden="true"></i>
+                        <i class="{{ $item[2] }}" aria-hidden="true"></i>
                         {{ __($item[1]) }}
                     </a>
                 @endif

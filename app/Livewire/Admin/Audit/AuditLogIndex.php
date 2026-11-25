@@ -122,6 +122,8 @@ final class AuditLogIndex extends Component
         $this->authorize('audit.view');
         $result = $audit->page($this->filters());
         $open = $this->entry !== '' ? AuditLog::query()->find($this->entry) : null;
+        $areas = $audit->areas();
+        $types = $audit->subjectTypes();
 
         return view('livewire.admin.audit.audit-log-index', [
             'rows' => $result['rows'],
@@ -130,8 +132,8 @@ final class AuditLogIndex extends Component
             'timelineCapped' => $result['capped'],
             'cap' => TimelineSubjects::CAP,
             'names' => $audit->actorNames([...$result['rows']->items(), ...($open !== null ? [$open] : [])]),
-            'areas' => array_combine($audit->areas(), $audit->areas()),
-            'subjectTypes' => array_combine($audit->subjectTypes(), $audit->subjectTypes()),
+            'areas' => array_combine($areas, $areas),
+            'subjectTypes' => array_combine($types, $types),
             'open' => $open,
             'lines' => $open !== null ? $diff->lines($open) : [],
             'canExport' => Gate::forUser($this->admin())->allows('audit.export'),

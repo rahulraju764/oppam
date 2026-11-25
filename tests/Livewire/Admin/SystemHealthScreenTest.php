@@ -227,7 +227,7 @@ it('A12 replay UI: a replay from the panel runs the Action, is audited, toasts a
     healthAs('super_admin');
 
     Livewire::withoutLazyLoading()->test(SystemHealth::class)
-        ->set('replayGateway', $event->gateway)->set('replayEventId', $event->event_id)->set('reason', 'Retry after the outage')
+        ->call('pickReplay', $event->gateway, $event->event_id)->set('reason', 'Retry after the outage')
         ->call('replay')
         ->assertHasNoErrors()
         ->assertDispatched('toast', type: 'success')
@@ -237,23 +237,24 @@ it('A12 replay UI: a replay from the panel runs the Action, is audited, toasts a
         ->and(App\Models\AuditLog::query()->where('action', 'system.webhook_replayed')->sole()->reason)->toBe('Retry after the outage');
 });
 
-it('A12 replay UI security: without the permission the action is refused; a tampered event id is a validation error; an unknown one is a 404', function (): void {
+it('A12 replay UI security: the target is #[Locked] (only pickReplay sets it); without the permission replay is refused; an unknown id is a 404', function (): void {
     healthRealtime(null, configured: false);
     $event = stuckWebhook();
 
+    healthAs('super_admin');
+    expect(fn () => Livewire::withoutLazyLoading()->test(SystemHealth::class)->set('replayEventId', $event->event_id))
+        ->toThrow(\Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException::class)
+        ->and(fn () => Livewire::withoutLazyLoading()->test(SystemHealth::class)->set('replayGateway', 'razorpay'))
+        ->toThrow(\Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException::class);
+
     healthAs('read_only');
-    Livewire::withoutLazyLoading()->test(SystemHealth::class)
-        ->set('replayGateway', $event->gateway)->set('replayEventId', $event->event_id)->set('reason', 'Retry after the outage')
+    Livewire::withoutLazyLoading()->test(SystemHealth::class)->set('reason', 'Retry after the outage')
         ->call('replay')->assertForbidden();
     expect($event->refresh()->processed_at)->toBeNull();
 
     healthAs('super_admin');
     Livewire::withoutLazyLoading()->test(SystemHealth::class)
-        ->set('replayGateway', $event->gateway)->set('replayEventId', "evt' OR 1=1 --")->set('reason', 'Retry after the outage')
-        ->call('replay')->assertHasErrors(['replayEventId']);
-
-    Livewire::withoutLazyLoading()->test(SystemHealth::class)
-        ->set('replayGateway', $event->gateway)->set('replayEventId', 'evt_nobody')->set('reason', 'Retry after the outage')
+        ->call('pickReplay', $event->gateway, 'evt_nobody')->set('reason', 'Retry after the outage')
         ->call('replay')->assertNotFound();
 });
 
@@ -263,12 +264,12 @@ it('A12 replay UI: a refusal (short reason → validation; already processed →
     healthAs('super_admin');
 
     Livewire::withoutLazyLoading()->test(SystemHealth::class)
-        ->set('replayGateway', $event->gateway)->set('replayEventId', $event->event_id)->set('reason', 'no')
+        ->call('pickReplay', $event->gateway, $event->event_id)->set('reason', 'no')
         ->call('replay')->assertHasErrors(['reason']);
 
     $event->forceFill(['processed_at' => now(), 'outcome' => 'activated'])->save();
     Livewire::withoutLazyLoading()->test(SystemHealth::class)
-        ->set('replayGateway', $event->gateway)->set('replayEventId', $event->event_id)->set('reason', 'Retry after the outage')
+        ->call('pickReplay', $event->gateway, $event->event_id)->set('reason', 'Retry after the outage')
         ->call('replay')->assertDispatched('toast', type: 'danger');
 });
 
@@ -305,4 +306,41 @@ it('A12 alerts: the panel and the A02 dashboard listen for .system.alert only fo
     healthAs('super_admin');
     expect(Livewire::test(App\Livewire\Admin\Dashboard::class)->instance()->getListeners())
         ->toHaveKey('echo-private:admin.dashboard,.system.alert');
+});
+
+it('A12 replay UI (review M1): picking a row opens the dialog naming THAT row — switching rows switches the name and the target', function (): void {
+    healthRealtime(null, configured: false);
+    $first = stuckWebhook('evt_first_row');
+    $second = stuckWebhook('evt_second_row');
+    healthAs('super_admin');
+
+    $panel = Livewire::withoutLazyLoading()->test(SystemHealth::class)
+        ->call('pickReplay', $first->gateway, $first->event_id)
+        ->assertDispatched('open-modal', name: 'webhook-replay')
+        ->assertSee('Event evt_first_row is processed again');
+
+    $panel->set('reason', 'half typed')
+        ->call('pickReplay', $second->gateway, $second->event_id)
+        ->assertSee('Event evt_second_row is processed again')
+        ->assertDontSee('Event evt_first_row is processed again')
+        ->assertSet('reason', '')
+        ->set('reason', 'Retry after the outage')
+        ->call('replay')
+        ->assertDispatched('toast', type: 'success');
+
+    expect($second->refresh()->processed_at)->not->toBeNull()->and($first->refresh()->processed_at)->toBeNull();
+});
+
+it('A12 replay UI security: picking needs system.webhooks.replay; a tampered id is refused before the dialog opens', function (): void {
+    healthRealtime(null, configured: false);
+    $event = stuckWebhook();
+
+    healthAs('read_only');
+    Livewire::withoutLazyLoading()->test(SystemHealth::class)->call('pickReplay', $event->gateway, $event->event_id)->assertForbidden();
+
+    healthAs('super_admin');
+    Livewire::withoutLazyLoading()->test(SystemHealth::class)
+        ->call('pickReplay', $event->gateway, '<script>x</script>')
+        ->assertHasErrors(['replayEventId'])
+        ->assertNotDispatched('open-modal');
 });

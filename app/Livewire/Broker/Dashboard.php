@@ -54,23 +54,23 @@ final class Dashboard extends Component
 
         // B.4 "Visible to", by role ceiling: a widget shows even before KYC (with zeros), the page behind it is gated.
         $widgets = array_values(array_filter([
-            $can(BureauPermission::ReferralsView) ? ['key' => 'referrals', 'title' => __('Referrals'), 'icon' => 'fa-share-alt',
+            $can(BureauPermission::ReferralsView) ? ['key' => 'referrals', 'title' => __('Referrals'), 'icon' => 'fa-solid fa-share-nodes',
                 'stats' => self::referralStats($referrals->stats($broker->id))] : null,
-            ['key' => 'profiles', 'title' => __('Managed profiles'), 'icon' => 'fa-users', 'stats' => [
+            ['key' => 'profiles', 'title' => __('Managed profiles'), 'icon' => 'fa-solid fa-users', 'stats' => [
                 __('Total') => $counts['total'], __('Draft') => $counts['draft'], __('In review') => $counts['review'],
                 __('Active') => $counts['active'], __('Rejected') => $counts['rejected'], __('Claimed') => $counts['claimed'],
             ]],
-            ['key' => 'moderation', 'title' => __('Moderation feed'), 'icon' => 'fa-check-square-o', 'items' => self::feed($managed->latestDecisions($staff)),
+            ['key' => 'moderation', 'title' => __('Moderation feed'), 'icon' => 'fa-regular fa-square-check', 'items' => self::feed($managed->latestDecisions($staff)),
                 'empty' => __('Approvals and rejections of your profiles appear here as they happen.')],
-            $can(BureauPermission::ProfilesImport) ? ['key' => 'imports', 'title' => __('Imports'), 'icon' => 'fa-upload', 'empty' => __('No import running.')] : null,
-            $can(BureauPermission::ClientInboxRespond) ? ['key' => 'inbox', 'title' => __('Client inbox'), 'icon' => 'fa-inbox',
+            $can(BureauPermission::ProfilesImport) ? ['key' => 'imports', 'title' => __('Imports'), 'icon' => 'fa-solid fa-upload', 'empty' => __('No import running.')] : null,
+            $can(BureauPermission::ClientInboxRespond) ? ['key' => 'inbox', 'title' => __('Client inbox'), 'icon' => 'fa-solid fa-inbox',
                 'stats' => [__('Pending interests') => $gate->allows($user, BureauPermission::ClientInboxRespond) ? $managed->pendingInterests($staff) : 0]] : null,
-            ['key' => 'followups', 'title' => __('Follow-ups due today'), 'icon' => 'fa-bell-o',
+            ['key' => 'followups', 'title' => __('Follow-ups due today'), 'icon' => 'fa-regular fa-bell',
                 'items' => $can(BureauPermission::ClientNotesWrite) && $gate->allows($user, BureauPermission::ClientNotesWrite) ? self::followUps($managed->dueFollowUps($staff)) : [],
                 'empty' => __('No follow-ups due today.')],
-            $can(BureauPermission::EarningsView) ? ['key' => 'commission', 'title' => __('Commission'), 'icon' => 'fa-inr',
+            $can(BureauPermission::EarningsView) ? ['key' => 'commission', 'title' => __('Commission'), 'icon' => 'fa-solid fa-indian-rupee-sign',
                 'stats' => [__('Earned') => '₹0', __('Pending') => '₹0', __('Paid') => '₹0']] : null,
-            $can(BureauPermission::StaffManage) ? ['key' => 'staff', 'title' => __('Staff'), 'icon' => 'fa-id-badge',
+            $can(BureauPermission::StaffManage) ? ['key' => 'staff', 'title' => __('Staff'), 'icon' => 'fa-regular fa-id-badge',
                 'stats' => [
                     __('Seats used') => $seats->used($broker).' / '.$seats->limit($broker),
                     __('Active today') => BrokerStaff::query()->where('broker_id', $broker->id)->where('status', BureauStaffStatus::Active->value)

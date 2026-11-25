@@ -5,14 +5,14 @@
 <div>
     <div class="admin-page-head">
         <div>
-            <p class="mb-1"><a href="{{ route('admin.brokers.index') }}" wire:navigate><i class="fa fa-angle-left" aria-hidden="true"></i> {{ __('All brokers') }}</a></p>
+            <p class="mb-1"><a href="{{ route('admin.brokers.index') }}" wire:navigate><i class="fa-solid fa-angle-left" aria-hidden="true"></i> {{ __('All brokers') }}</a></p>
             <h1>{{ $broker->displayName() }} <span class="text-muted-brand">· {{ $broker->code }}</span></h1>
             <p>
                 <x-ui.badge :variant="$broker->status->badgeVariant()">{{ __('Status: :s', ['s' => $broker->status->label()]) }}</x-ui.badge>
                 <x-ui.badge :variant="$broker->kyc_status->badgeVariant()">{{ __('KYC: :s', ['s' => $broker->kyc_status->label()]) }}</x-ui.badge>
-                @if ($broker->imports_paused_at)<x-ui.badge variant="warning" icon="fa-pause">{{ __('Imports paused') }}</x-ui.badge>@endif
-                @if ($broker->payouts_held_at)<x-ui.badge variant="danger" icon="fa-lock">{{ __('Payouts held') }}</x-ui.badge>@endif
-                @if ($broker->creation_paused_at)<x-ui.badge variant="danger" icon="fa-pause">{{ __('Adding profiles paused') }}</x-ui.badge>@endif
+                @if ($broker->imports_paused_at)<x-ui.badge variant="warning" icon="fa-solid fa-pause">{{ __('Imports paused') }}</x-ui.badge>@endif
+                @if ($broker->payouts_held_at)<x-ui.badge variant="danger" icon="fa-solid fa-lock">{{ __('Payouts held') }}</x-ui.badge>@endif
+                @if ($broker->creation_paused_at)<x-ui.badge variant="danger" icon="fa-solid fa-pause">{{ __('Adding profiles paused') }}</x-ui.badge>@endif
             </p>
         </div>
     </div>
@@ -67,7 +67,7 @@
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <h2 class="h6">{{ __('Terms & limits') }}</h2>
                         @canany(['brokers.edit', 'brokers.commission_bps'])
-                            <x-ui.button size="sm" variant="outline" type="button" icon="fa-pencil" x-on:click="$dispatch('open-modal', { name: 'broker-terms' })" dusk="broker-terms-open">{{ __('Edit') }}</x-ui.button>
+                            <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-pencil" x-on:click="$dispatch('open-modal', { name: 'broker-terms' })" dusk="broker-terms-open">{{ __('Edit') }}</x-ui.button>
                         @endcanany
                     </div>
                     <dl class="mod-facts">
@@ -85,32 +85,32 @@
                     <div class="d-flex flex-wrap gap-2">
                         @can('brokers.edit')
                             @if ($canSuspend)
-                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-ban" x-on:click="$dispatch('open-modal', { name: 'broker-suspend' })" dusk="broker-suspend-open">{{ __('Suspend') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-solid fa-ban" x-on:click="$dispatch('open-modal', { name: 'broker-suspend' })" dusk="broker-suspend-open">{{ __('Suspend') }}</x-ui.button>
                             @endif
                             @if ($canReactivate)
-                                <x-ui.button size="sm" type="button" icon="fa-check" x-on:click="$dispatch('open-modal', { name: 'broker-reactivate' })">{{ __('Reactivate') }}</x-ui.button>
+                                <x-ui.button size="sm" type="button" icon="fa-solid fa-check" x-on:click="$dispatch('open-modal', { name: 'broker-reactivate' })">{{ __('Reactivate') }}</x-ui.button>
                             @endif
                             @if ($canDeactivate)
-                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-power-off" x-on:click="$dispatch('open-modal', { name: 'broker-deactivate' })" dusk="broker-deactivate-open">{{ __('Deactivate') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="danger" type="button" icon="fa-solid fa-power-off" x-on:click="$dispatch('open-modal', { name: 'broker-deactivate' })" dusk="broker-deactivate-open">{{ __('Deactivate') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('brokers.edit')
                             @if ($broker->creation_paused_at)
-                                <x-ui.button size="sm" type="button" icon="fa-play" x-on:click="$dispatch('open-modal', { name: 'broker-resume-creation' })">{{ __('Allow adding profiles') }}</x-ui.button>
+                                <x-ui.button size="sm" type="button" icon="fa-solid fa-play" x-on:click="$dispatch('open-modal', { name: 'broker-resume-creation' })">{{ __('Allow adding profiles') }}</x-ui.button>
                             @else
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-pause" x-on:click="$dispatch('open-modal', { name: 'broker-pause-creation' })">{{ __('Pause adding profiles') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-pause" x-on:click="$dispatch('open-modal', { name: 'broker-pause-creation' })">{{ __('Pause adding profiles') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('brokers.kyc')
                             @if ($broker->kyc_status === \App\Enums\BrokerKycStatus::Verified)
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-id-card-o" x-on:click="$dispatch('open-modal', { name: 'broker-revoke-kyc' })" dusk="broker-revoke-kyc-open">{{ __('Revoke KYC') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-regular fa-id-card" x-on:click="$dispatch('open-modal', { name: 'broker-revoke-kyc' })" dusk="broker-revoke-kyc-open">{{ __('Revoke KYC') }}</x-ui.button>
                             @endif
                         @endcan
                         @can('brokers.payout')
                             @if ($broker->payouts_held_at)
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-unlock" x-on:click="$dispatch('open-modal', { name: 'broker-release' })">{{ __('Release payouts') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-unlock" x-on:click="$dispatch('open-modal', { name: 'broker-release' })">{{ __('Release payouts') }}</x-ui.button>
                             @else
-                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-lock" x-on:click="$dispatch('open-modal', { name: 'broker-hold' })">{{ __('Hold payouts') }}</x-ui.button>
+                                <x-ui.button size="sm" variant="outline" type="button" icon="fa-solid fa-lock" x-on:click="$dispatch('open-modal', { name: 'broker-hold' })">{{ __('Hold payouts') }}</x-ui.button>
                             @endif
                         @endcan
                     </div>

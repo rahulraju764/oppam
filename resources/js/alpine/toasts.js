@@ -34,7 +34,7 @@ document.addEventListener('alpine:init', () => {
                 title: data.title,
                 body: typeof data.body === 'string' ? data.body : '',
                 url: sameSite(data.url),
-                icon: typeof data.icon === 'string' && /^fa-[a-z0-9-]+$/.test(data.icon) ? data.icon : 'fa-bell',
+                icon: typeof data.icon === 'string' && /^fa-(solid|regular|brands) fa-[a-z0-9-]+$/.test(data.icon) ? data.icon : 'fa-solid fa-bell',
                 type: ['success', 'danger'].includes(data.type) ? data.type : 'info',
                 timer: null,
             };

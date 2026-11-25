@@ -24,7 +24,7 @@
                                 <x-ui.textarea :label="__('How can we help?')" name="message" id="helpMessage" wire:model="message" error="message" rows="5" maxlength="5000" required />
                             </div>
                             <p class="form-text">{{ __('To help us help you faster, your plan and recent account activity are shared with our support team.') }}</p>
-                            <x-ui.button type="submit" loading="send" icon="fa-paper-plane">{{ __('Send') }}</x-ui.button>
+                            <x-ui.button type="submit" loading="send" icon="fa-solid fa-paper-plane">{{ __('Send') }}</x-ui.button>
                         </form>
                         <p class="form-text mt-3 mb-0">
                             {{ __('Worried about a member?') }} <a href="{{ route('safety') }}" wire:navigate>{{ __('Visit the Safety Centre') }}</a>
@@ -37,7 +37,7 @@
                         <h2 class="safety-list__title">{{ __('Your requests') }}</h2>
                         <div wire:loading.class="is-loading" wire:target="gotoPage,nextPage,previousPage,send">
                             @if ($tickets->isEmpty())
-                                <x-ui.empty-state icon="fa-life-ring" :title="__('No requests yet')" :message="__('When you ask us something, it appears here with our replies.')" />
+                                <x-ui.empty-state icon="fa-solid fa-life-ring" :title="__('No requests yet')" :message="__('When you ask us something, it appears here with our replies.')" />
                             @else
                                 <ul class="safety-list">
                                     @foreach ($tickets as $ticket)

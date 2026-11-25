@@ -65,7 +65,9 @@ final class AcceptTerms extends Component
     {
         $intended = session()->pull('url.intended');
 
-        return is_string($intended) && str_starts_with($intended, url('/')) ? $intended : app(MemberLanding::class)->url($this->member());
+        // url('/') has no trailing slash: compare with one, so `https://oppam.in.evil.com` can't pass (review P9.3b M2).
+        return is_string($intended) && ($intended === url('/') || str_starts_with($intended, url('/').'/'))
+            ? $intended : app(MemberLanding::class)->url($this->member());
     }
 
     private function member(): User

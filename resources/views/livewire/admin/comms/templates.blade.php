@@ -10,7 +10,7 @@
             <p>{{ __('Change what members receive by email, SMS and in the app. Every save is a new version you can compare and bring back.') }}</p>
         </div>
         @if ($tab === 'campaigns')
-            <x-ui.button type="button" icon="fa-plus" wire:click="newCampaign" dusk="template-new-campaign">{{ __('New campaign text') }}</x-ui.button>
+            <x-ui.button type="button" icon="fa-solid fa-plus" wire:click="newCampaign" dusk="template-new-campaign">{{ __('New campaign text') }}</x-ui.button>
         @endif
     </div>
 
@@ -53,7 +53,7 @@
         @else
             <x-admin.table :headers="[__('Name'), __('Key'), __('Channel'), __('Version'), '']" :caption="__('Campaign texts')" :empty="$campaigns->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-file-text-o" :title="__('No campaign texts yet')" :message="__('Save a text here to reuse it in campaigns.')" />
+                    <x-ui.empty-state icon="fa-regular fa-file-lines" :title="__('No campaign texts yet')" :message="__('Save a text here to reuse it in campaigns.')" />
                 </x-slot:emptyState>
                 @foreach ($campaigns as $row)
                     <tr wire:key="camp-{{ $row->key }}">

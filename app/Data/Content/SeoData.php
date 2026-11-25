@@ -33,6 +33,10 @@ final readonly class SeoData
         public string $ogImage = 'images/banner/banner2.webp',
         public int $ogImageWidth = 1920,
         public int $ogImageHeight = 700,
+        /** @var list<array<string, mixed>> schema.org JSON-LD blocks for public pages (App\Services\Seo\StructuredData; P9.3b) */
+        public array $jsonLd = [],
+        /** The page's LCP image (P9.3c): preloaded with high priority so it starts before CSS / JS are parsed. */
+        public ?string $preloadImage = null,
     ) {}
 
     /** Pages behind auth: they name real people, so they are never indexed. */
@@ -41,7 +45,7 @@ final readonly class SeoData
         return new self(title: $title, indexable: false);
     }
 
-    /** The same page data, never indexed — member and broker layouts apply it to every $seo. */
+    /** The same page data, never indexed — member and broker layouts apply it to every $seo (no structured data). */
     public function asPrivate(): self
     {
         return new self(

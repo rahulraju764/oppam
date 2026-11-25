@@ -17,7 +17,7 @@
 
     <x-admin.table :headers="[__('What'), __('Order'), __('Details'), __('Found (IST)'), __('Outcome')]" :caption="__('Investigate rows')" :empty="$rows->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-check" :title="__('Nothing to investigate')" :message="__('Our records and the gateway agree.')" />
+            <x-ui.empty-state icon="fa-solid fa-check" :title="__('Nothing to investigate')" :message="__('Our records and the gateway agree.')" />
         </x-slot:emptyState>
 
         @foreach ($rows as $row)

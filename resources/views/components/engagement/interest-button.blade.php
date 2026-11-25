@@ -28,25 +28,25 @@
 <span {{ $attributes->class('engage engage--interest') }} wire:ignore x-data="interestButton(@js($state), @js($code), @js($chatUrl))"
       data-chat-soon="{{ __('You are connected. Chat opens here very soon.') }}">
     <button type="button" class="send-int interest-btn" x-show="state === 'none'" x-on:click="compose()" @if ($state !== 'none') x-cloak @endif>
-        <i class="fa fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}
+        <i class="fa-solid fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}
     </button>
 
     {{-- M04 / R-M06-3: listed, but this member's contact filter keeps the viewer out (the server refuses too). --}}
     <button type="button" class="send-int interest-btn" x-show="state === 'filtered'" disabled aria-describedby="{{ $filteredHint }}"
             title="{{ __('This member accepts interests only from profiles matching their preferences') }}" @if ($state !== 'filtered') x-cloak @endif>
-        <i class="fa fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}
+        <i class="fa-solid fa-envelope" aria-hidden="true"></i>{{ __('Send Interest') }}
     </button>
     <span class="visually-hidden" id="{{ $filteredHint }}" x-show="state === 'filtered'" @if ($state !== 'filtered') x-cloak @endif>{{ __('This member accepts interests only from profiles matching their preferences') }}</span>
 
     <span class="chip chip--warning interest-chip" x-show="state === 'sent'" @if ($state !== 'sent') x-cloak @endif>
-        <i class="fa fa-check" aria-hidden="true"></i> {{ __('Interest sent') }}
+        <i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Interest sent') }}
     </span>
 
     <a href="{{ route('member.interests') }}" class="send-int interest-btn" x-show="state === 'received'" wire:navigate @if ($state !== 'received') x-cloak @endif>
-        <i class="fa fa-reply" aria-hidden="true"></i>{{ __('Respond to interest') }}
+        <i class="fa-solid fa-reply" aria-hidden="true"></i>{{ __('Respond to interest') }}
     </a>
 
     <button type="button" class="send-int interest-btn chat-btn" x-show="state === 'connected'" x-on:click="chat()" @if ($state !== 'connected') x-cloak @endif>
-        <i class="fa fa-comments" aria-hidden="true"></i>{{ __('Chat') }}
+        <i class="fa-solid fa-comments" aria-hidden="true"></i>{{ __('Chat') }}
     </button>
 </span>

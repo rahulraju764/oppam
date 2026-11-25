@@ -180,7 +180,7 @@ it('A12 webhooks: a 5xx is an error; a throttled 429 and a non-webhook route are
 ]);
 
 it('A12 webhooks: a webhook that throws through the real route is a 500 and an ERROR receipt (Razorpay retries)', function (): void {
-    App\Models\PaymentWebhookEvent::updating(fn () => throw new RuntimeException('processing broke'));
+    App\Models\Payment::creating(fn () => throw new RuntimeException('processing broke'));
     $delivery = fakeGateway()->capture((string) checkoutOrder(groom())->gateway_order_id);
 
     postWebhook($delivery)->assertStatus(500);

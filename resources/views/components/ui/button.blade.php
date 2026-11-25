@@ -3,7 +3,7 @@
     default, so inside a form it submits; pass type="button" for plain actions).
     variant  primary | secondary | outline | ghost | danger | link
     size     sm | md | lg
-    icon     Font Awesome 4.7 class without the "fa " prefix, e.g. "fa-heart"
+    icon     a full Font Awesome 6 class, style + name, e.g. "fa-solid fa-heart" (docs/fa4-to-fa6-map.md)
     loading  a Livewire action name: shows a spinner and disables the button while it runs
              (wire:loading + wire:target) — no double submits.
 --}}
@@ -29,7 +29,7 @@
 
 @if ($href)
     <a href="{{ $href }}" {{ $attributes->class($classes) }}>
-        @if ($icon)<i class="fa {{ $icon }}" aria-hidden="true"></i>@endif
+        @if ($icon)<i class="{{ $icon }}" aria-hidden="true"></i>@endif
         {{ $slot }}
     </a>
 @else
@@ -39,7 +39,7 @@
             <span class="ui-spinner" wire:loading wire:target="{{ $loading }}" aria-hidden="true"></span>
         @endif
         @if ($icon)
-            <i class="fa {{ $icon }}" aria-hidden="true" @if ($loading) wire:loading.remove wire:target="{{ $loading }}" @endif></i>
+            <i class="{{ $icon }}" aria-hidden="true" @if ($loading) wire:loading.remove wire:target="{{ $loading }}" @endif></i>
         @endif
         {{ $slot }}
     </button>

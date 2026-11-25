@@ -58,7 +58,7 @@
                 @endforeach
             </x-admin.table>
         @empty
-            <x-ui.empty-state icon="fa-search" :title="__('No rule matches “:q”', ['q' => $q])" :message="__('Try another word, or clear the search.')" />
+            <x-ui.empty-state icon="fa-solid fa-magnifying-glass" :title="__('No rule matches “:q”', ['q' => $q])" :message="__('Try another word, or clear the search.')" />
         @endforelse
     </div>
 

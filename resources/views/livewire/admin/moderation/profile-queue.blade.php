@@ -16,7 +16,7 @@
 
     <x-admin.table :headers="[__('Profile'), __('Member'), __('Lane'), __('Waiting since (IST)'), __('Reviewer'), '']" :caption="__('Profiles waiting for review')" :empty="$this->items->isEmpty()">
         <x-slot:emptyState>
-            <x-ui.empty-state icon="fa-check-square-o" :title="__('All caught up')" :message="__('No profiles are waiting for review.')" />
+            <x-ui.empty-state icon="fa-regular fa-square-check" :title="__('All caught up')" :message="__('No profiles are waiting for review.')" />
         </x-slot:emptyState>
 
         @foreach ($this->items as $item)
@@ -25,7 +25,7 @@
                 <td>{{ $item->profile?->fullName() }} <span class="text-muted-brand">{{ $item->profile?->gender->label() }}, {{ $item->profile?->age() }}</span></td>
                 <td>
                     @if ($item->is_priority)
-                        <x-ui.badge variant="premium" icon="fa-diamond">{{ __('Paid') }}</x-ui.badge>
+                        <x-ui.badge variant="premium" icon="fa-regular fa-gem">{{ __('Paid') }}</x-ui.badge>
                     @else
                         <x-ui.badge variant="muted">{{ __('Standard') }}</x-ui.badge>
                     @endif
@@ -33,7 +33,7 @@
                 <td>{{ $item->submitted_at->timezone(config('oppam.display_timezone'))->format('d M, g:i a') }}</td>
                 <td>
                     @if ($item->claimed_until?->isFuture())
-                        <x-ui.badge variant="warning" icon="fa-eye">{{ __('Being reviewed by :name', ['name' => $item->claimedBy?->name]) }}</x-ui.badge>
+                        <x-ui.badge variant="warning" icon="fa-regular fa-eye">{{ __('Being reviewed by :name', ['name' => $item->claimedBy?->name]) }}</x-ui.badge>
                     @endif
                 </td>
                 <td class="text-end">

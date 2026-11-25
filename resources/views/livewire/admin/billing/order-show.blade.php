@@ -13,7 +13,7 @@
         @if ($order->status !== \App\Enums\OrderStatus::Paid)
             <div class="d-flex flex-wrap gap-2">
                 @can('billing.refund')
-                    <x-ui.button variant="outline" type="button" icon="fa-refresh" wire:click="repoll" loading="repoll" dusk="order-repoll">{{ __('Re-poll gateway') }}</x-ui.button>
+                    <x-ui.button variant="outline" type="button" icon="fa-solid fa-arrows-rotate" wire:click="repoll" loading="repoll" dusk="order-repoll">{{ __('Re-poll gateway') }}</x-ui.button>
                     <x-ui.button variant="outline" type="button" x-on:click="$dispatch('open-modal', { name: 'order-fail' })" dusk="order-fail-open">{{ __('Mark failed') }}</x-ui.button>
                 @endcan
                 @if ($canForce)
@@ -55,7 +55,7 @@
         <div class="col-12 col-lg-7">
             <x-admin.table class="mb-4" :headers="[__('Payment'), __('Amount'), __('Status'), __('Refundable'), '']" :caption="__('Payments')" :empty="$order->payments->isEmpty()">
                 <x-slot:emptyState>
-                    <x-ui.empty-state icon="fa-credit-card" :title="__('No payments yet')" :message="__('Nothing has reached the gateway for this order.')" />
+                    <x-ui.empty-state icon="fa-regular fa-credit-card" :title="__('No payments yet')" :message="__('Nothing has reached the gateway for this order.')" />
                 </x-slot:emptyState>
                 @foreach ($order->payments as $payment)
                     <tr wire:key="pay-{{ $payment->id }}">

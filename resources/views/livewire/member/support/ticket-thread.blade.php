@@ -26,7 +26,7 @@
                 @if ($ticket->status->acceptsReplies())
                     <form wire:submit="send" class="mt-3" novalidate>
                         <x-ui.textarea :label="__('Your reply')" name="reply" id="ticketReply" wire:model="reply" error="body" rows="4" maxlength="5000" required />
-                        <x-ui.button type="submit" loading="send" icon="fa-reply" class="mt-2">{{ __('Send reply') }}</x-ui.button>
+                        <x-ui.button type="submit" loading="send" icon="fa-solid fa-reply" class="mt-2">{{ __('Send reply') }}</x-ui.button>
                     </form>
                 @else
                     <x-ui.alert type="info" class="mt-3">{{ __('This request is closed. Need more help?') }} <a href="{{ route('member.help') }}" wire:navigate>{{ __('Open a new request') }}</a></x-ui.alert>
